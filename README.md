@@ -19,11 +19,14 @@ It contains the documentation source files and build scripts to generate the sta
 GitHub (re)builds and (re)deploys the website.
 
   
-* `build.sh`: script which compiles markdown files under `src` to html and pdf and populates the `docs` dir with the generated documentation.
+* `build.py`: python script which compiles markdown files under `src` to html and pdf and populates the `docs` dir with the generated documentation.
+
+  + arg 1: MAJOR Stan version, required (expecting number, should be positive int)
+  + arg 2: MINOR Stan version, required (expecting number, should be positive int)
+  + arg 3: name of document (optional - will build entire docset)
+  + arg 4: output format, either "html" or "pdf" (optional - default builds both html and pdfs)
   
 * `LICENSE`: licensing terms.
-
-
 
 
 ## Generating the static site
@@ -32,6 +35,6 @@ GitHub (re)builds and (re)deploys the website.
 
 2. Install on OS and ensure on PATH: pandoc, pandoc-citeproc, pdflatex
 
-3. In the shell, execute ./build.sh
+3. In the shell, run ./build.py.
 
-4. The generated html pages will be in directory `docs`.
+4. The generated documents will be in directory `docs`.

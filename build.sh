@@ -27,8 +27,17 @@ mv _book ../../docs/${VERSION_STRING}/bayes-stats-stan
 rm -rf _book _main.rds stan-manual.css
 popd
 
+pushd src/bayes-stats-stan
+Rscript -e "bookdown::render_book('index.Rmd', output_format='bookdown::gitbook')"
+Rscript -e "bookdown::render_book('index.Rmd', output_format='bookdown::pdf_book')"
+mv _book/_main.pdf ../../docs/bayes-stats-stan-${VERSION_STRING}.pdf
+rm _book/*.md
+mv _book ../../docs/${VERSION_STRING}/bayes-stats-stan
+rm -rf _book _main.rds stan-manual.css
+popd
+
 pushd src
-Rscript -e "bookdown::render_book('index.Rmd', output_format='bookdown::html_book')"
+Rscript -e "bookdown::render_book('index.md', output_format='bookdown::html_book')"
 mv _book/index.html ../docs/
 rm -rf _book _main.rds
 popd

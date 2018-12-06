@@ -4,12 +4,14 @@ Documentation for Stan language and platform
 
 ## GitHub Pages
 
-This repository has configured
+This repository uses
 [GitHub Pages](https://help.github.com/categories/github-pages-basics)
-to serve a 
-[_project pages_](https://help.github.com/articles/user-organization-and-project-pages/#project-pages-sites) site
+to serve the
+[project pages](https://help.github.com/articles/user-organization-and-project-pages/#project-pages-sites) site
 with URL `https://mc-stan.org/docs`.
-It contains the documentation source files and build scripts to generate the static HTML.
+The publishing strategy is to serve the contents of the directory `docs` on branch `master`.
+The `docs` directory contains an empty file named `.nojekyll` so that GitHub will treat the contents
+as pre-generated HTML instead of trying to run [jekyll](https://jekyllrb.com).
 
 ## Directory Structure
 
@@ -35,6 +37,6 @@ GitHub (re)builds and (re)deploys the website.
 
 2. Install on OS and ensure on PATH: pandoc, pandoc-citeproc, pdflatex
 
-3. In the shell, run ./build.py.
+3. Run `python build.py <MAJOR> <MINOR> (<document> (<format>))`
 
-4. The generated documents will be in directory `docs`.
+4. The generated html and/or pdfs will be in the versioned subdirectory of `docs`.

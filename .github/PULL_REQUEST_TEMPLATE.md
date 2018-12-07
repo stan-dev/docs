@@ -1,18 +1,9 @@
 #### Submission Checklist
 
-- [ ] Run unit tests: `./runTests.py src/test/unit`
-- [ ] Run cpplint: `make cpplint`
+- [ ] Builds locally 
 - [ ] Declare copyright holder and open-source license: see below
 
 #### Summary
-
-#### Intended Effect
-
-#### How to Verify
-
-#### Side Effects
-
-#### Documentation
 
 #### Copyright and Licensing
 

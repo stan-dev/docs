@@ -41,7 +41,7 @@ def make_docs(docspath, version, document, format="all"):
             pdfname = ''.join([document,'-',version,".pdf"])
             pdfpath = os.path.join(docspath, pdfname)
             shutil.move(srcpdf, pdfpath)
-        shexec("rm _book/*.md _main.rds stan-manual.css")  # cleanup after bookdown
+        shexec("rm _book/*.md _main.rds")  # cleanup after bookdown
         if (format == "all" or format == "html"):
             htmlpath = os.path.join(docspath, document)
             command = ' '.join(["mv _book", htmlpath])

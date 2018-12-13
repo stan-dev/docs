@@ -4,12 +4,12 @@
 
 ### Bayesian inference and Stan {-}
 
-Bayesian inference is the ultimate statistical power tool.  You embed
+Bayesian inference is a statistical power tool.  You embed
 your data and unknowns in a probability model, and then you get a
 "posterior distribution" which you can use to make inferences and
 predictions about everything.
 
-Until recently, a big challenge for applied Bayesian inference was
+A big challenge for applied Bayesian inference is
 computation: converting the mathematical expression of the posterior
 distribution into specific inferences or predictions such as the
 posterior probability that some coefficient is positive, or a 90%
@@ -18,7 +18,7 @@ large or complex problems, such quantities are expressed
 mathematically in terms of high-dimensional integrals with no
 closed-form expressions.
 
-Over the past fifty years, though, a series of advances in
+Over the past fifty years, a series of advances in
 computational statistics have allowed these intergrals to be computed
 using approximations and simulations.  The simulations use random
 numbers and are called "Monte Carlo methods," named after the city in
@@ -44,8 +44,8 @@ data of moderate size, we can transparently program our Bayesian
 models in Stan and perform inference automatically.  This represent
 the culmination of decades of work in compuational statistics, along
 with corresponding decades of experience fitting and understanding
-these models.  (The challenge is not just fitting the model; it is
-also deciding what models to fit.)
+these models.  The challenge is not just fitting the model; it is
+also deciding what models to fit.
 
 Future work, by ourselves and others, will increase the speed and
 scalability of Stan in various ways, including more seamless
@@ -126,12 +126,12 @@ steps on that page.
 
 ### A Stan program for simple linear regression {-}
 
-Our "Hello World" example for R and Stan is a linear regression,
+Our "Hello World" example is a linear regression,
 $$y_i=a+bx_i +\mbox{error}_i, \mbox{ for } i=1,\dots,N,$$ with errors
 independent and normally distributed with mean 0 and standard
 deviation $\sigma$.
 
-Just one little thing to be careful of: statistical notation, the
+Just one little thing to be careful of: in statistical notation, the
 normal distribution with mean $\mu$ and standard deviation $\sigma$ is
 written as $N(\mu,\sigma^2)$.  In Stan, we write it as `normal(mu,
 sigma)` (_not_ `sigma^2`).
@@ -144,7 +144,7 @@ print_file("stan/simplest-regression.stan")
 
 The first block of this program declares the inputs to the model, the
 second declares the parameters to be estimated, and the third presents
-the statistical model.  And now we can run it:
+the statistical model.  And now we can run it.
 
 ### Basic Bayesian workflow {-}
 
@@ -161,141 +161,6 @@ into the program, and estimate the parameters.
 3. _Evaluate the fit._ Compare the estimated parameters (or, more
 fully, the posterior distribution of the parameters) to their true
 values, which in this simulated-data scenario are known.
-
-We begin by setting up R and Stan, setting it to run in parallel and
-to save compiled Stan programs in the working directory:
-
-```{r rstan-options, echo=TRUE}
-library("rstan")
-options(mc.cores = parallel::detectCores())
-rstan_options(auto_write = TRUE)
-```
-
-### Simulating fake data {-}
-
-Then we write the program to simulate fake data:
-
-```{r}
-print_file("stan/fake-data.stan")
-```
-
-The first part of this program declares all the inputs to the program;
-the second part simulates the data $y$ using the normal random number
-generator in Stan.  To run the program, we need to specify the sample
-size $N$, the regression coefficients $a$ and $b$, the residual
-standard deviation $\sigma$, and the vector of predictors $x$, which
-we create in R and put in a list:
-
-```{r create-fake-data, echo=TRUE}
-N <- 100
-a <- 10
-b <- 4
-sigma <- 5
-x <- runif(N, 0, 10)
-input_data <- list(N=N, a=a, b=b, sigma=sigma, x=x)
-```
-The awkward `N=N, ..., x=x` formulation arises because we want to give
-a name to each item in the list.  It is not necessary that the names
-of the objects and the names within the list be the same.  But for
-convenience we often use the same names inside and outside the list,
-as above.
-
-We then run the Stan model and create the fake data:
-
-```{r gen-data-cmd, echo=TRUE, eval=FALSE}
-fake_data <- stan("stan/fake-data.stan",
-                  chains=1, iter=1, algorithm="Fixed_param",
-		  data=input_data)
-```
-```{r gen-data-do, include=FALSE}
-fake_data <- stan("stan/fake-data.stan",
-                  chains=1, iter=1, algorithm="Fixed_param",
-		  data=input_data)
-```
-
-We only needed one chain and one iteration as we are just simulating
-one fake dataset (in this case, a vector $y$ of length `r N`).  Also,
-just to know: the first time you run this on your computer, you'll
-have to wait 15 seconds or so for the Stan model to compile.  After
-that, it will save the compiled code to a file with suffix `.rds`,
-e.g., the compiled model `fake-data.stan` is saved as `fake-data.rds`.
-
-We then extract the simulated data vector and put it in a list:
-
-```{r echo=TRUE}
-y <- extract_one_draw(fake_data)$y
-hello_data <- list(N=N, x=x, y=y)
-```
-
-Alternatively we could use R to simulate fake data $y$
-from $N, a, b, x, \sigma$:
-
-```{r echo=TRUE}
-y <- rnorm(N, a + b*x, sigma)
-hello_data <- list(N=N, x=x, y=y)
-```
-
-For this example it was simple enough to simulate the fake data in R.  But
-we wanted to show above how to do it in Stan, as this can be useful
-for more complicated models.
-
-### Fitting the Stan model {-}
-
-In any case, now that we have the data list, we can use it to estimate
-the parameters:
-
-```{r fit-data-cmd, echo=TRUE, eval=FALSE}
-fit <- stan("stan/simplest-regression.stan", data = hello_data)
-```
-```{r fit-data-do, include=FALSE}
-fit <- stan("stan/simplest-regression.stan", data = hello_data)
-```
-
-Here is the summary of the fitted model:
-
-```{r fit-data}
-print(fit)
-```
-
-Now we go through the output:
-
-* The first few lines summarize the Stan run, with the name of the
-  file, the number of chains and iterations.  In this case, Stan ran
-  the default 4 chains with 1000 warmup iterations followed by 1000
-  post-warmup iterations, yielding 4000 post-warmup simulation draws
-  in total.
-
-* The left column of the table has the names of parameters,
-  transformed parameters, and generated quantities produced by
-  `model.stan`.  In this case, the parameters are a, b, and sigma; the
-  only transformed parameter is `lp__` (the log-posterior density or
-  target function created by the Stan model); and there are no
-  generated quantities.
-
-* The next column of the table shows the mean (average) of the 4000
-  draws for each quantity.
-
-* The next column shows the Monte Carlo standard error, which is an
-  estimate of the uncertainty in the mean.
-
-* The next column shows the standard deviation of the draws for each
-  quantity.  As the number of simulation draws increases, mean should
-  approach the posterior mean, se_mean should go to zero, and sd
-  should approach the posterior standard deviation.  For most purposes
-  we can ignore se_mean.
-
-* The next several columns give quantiles of the simulations.
-
-* The next columns gives the effective sample size and
-  $\widehat{R}$. Typically we want $\widehat{R}$ to be less then 1.1
-  for each row of the table.
-
-In the above output, $\widehat{R}$ is less then 1.1 for all
-quantities, so the chains seem to have mixed well, and we use the
-results to summarize the posterior distribution.  We can compare the
-posterior inferences to the true parameter values (here, $a=`r a`$, $b=`r b`$,
-and $\sigma=`r sigma`$).  These true values are roughly within the range of
-uncertainty of the inferences.
 
 ## Bayesian workflow
 
@@ -325,9 +190,9 @@ with fake data.
 
 ### Idealized plan for Bayesian case studies {-}
 
-Chapter 2 of this book includes several case studies to give some
+Chapter ** of this book includes several case studies to give some
 sense of Bayesian modeling on some fairly simple problems, and Chapter
-3 offers a guide to a large number of Stan case studies that are
+** offers a guide to a large number of Stan case studies that are
 available on the Stan webpage.  Presentation of these examples vary,
 but the paradigmatic format for a case study would follow these steps:
 
@@ -498,7 +363,7 @@ default when fitting models in Stan.  When running NUTS (or HMC, or
 any other sampling algorithm), the output of Stan is a list of
 posterior simulations.
 
-We gave an example earlier, when we typed:
+We gave an example earlier, when we type:
 
 ```{r ex-fit-cmd, echo=TRUE, eval=FALSE}
 fit <- stan("stan/simplest-regression.stan", data=hello_data)
@@ -630,7 +495,7 @@ to become more adaptive, running fewer iterations if that is all that
 is needed, and automatically running more when 2000 iterations are not
 enough.
 
-### Multiple chains, mixing, R-hat {-}
+### Multiple chains, mixing, R-hat, effective sample size {-}
 
 To have trust in the results of an iterative algorithm, it can be
 helpful to run it from different starting points and check that the
@@ -655,6 +520,7 @@ for any parameters, the algorithm is slow to converge and we might run
 it longer and then, if mixing remains poor, consider
 reparameterization of the problem.
 
+Stan also computes for each parameter, transformed parameter, and generated quantity an "effective sample size" which represents . . .
 
 ### Blocks and declarations {-}
 

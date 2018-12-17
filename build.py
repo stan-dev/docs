@@ -70,6 +70,7 @@ def make_docs(docspath, version, document, formats):
 def make_index_page(docset, formats):
     # TODO: generate index.md based on current and new docs
     # command = "Rscript -e \"bookdown::render_book(\'index.md\', output_format=\'bookdown::html_page\')\""
+    return
 
 def main():
     global all_docs

@@ -168,7 +168,11 @@ used in `[lp]'` to construct a row vector and then transpose it
 to a vector to return.
 
 The data are taken in as before.  There is an additional transformed
-data block that breaks the data up into three shards.^[The term "shard" is borrowed from databases, where it refers to a slice of the rows of a database.  That is exactly what it is here if we think of rows of a dataframe.  Stan's shards are more general in that they need not correspond to rows of a dataframe.]
+data block that breaks the data up into three shards.^[The term
+"shard" is borrowed from databases, where it refers to a slice of the
+rows of a database.  That is exactly what it is here if we think of
+rows of a dataframe.  Stan's shards are more general in that they need
+not correspond to rows of a dataframe.]
 
 The value `3` is also hard coded; a more practical program would
 allow the number of shards to be controlled.  There are three parallel
@@ -231,7 +235,7 @@ data {
   int<lower = 0, upper = 1> y[N];
 }
 parameters {
-  vector[2] beta[K];
+  matrix[K,2] beta;
   vector[2] mu;
   vector<lower=0>[2] sigma;
 }
@@ -244,9 +248,13 @@ model {
 }
 ```
 
+For this model the vector of predictors `x` is coded as a vector,
+corresponding to how it is used in the likelihood.
 The priors for `mu` and `sigma` are vectorized.  The priors
 on the two components of `beta` (intercept and slope,
-respectively) are vectorized over the groups.  The likelihood is also
+respectively) are stored in a $K \times 2$ matrix.
+
+The likelihood is also
 vectorized using multi-indexing with index `kk` for the states
 and elementwise multiplication (`.*`) for the income `x`.
 The vectorized likelihood works out to the same thing as the following

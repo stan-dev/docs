@@ -9,6 +9,9 @@ your data and unknowns in a probability model, and then you get a
 "posterior distribution" which you can use to make inferences and
 predictions about everything.
 
+Stan is a platform for statistical modeling and high-performance
+statistical computation.
+
 A big challenge for applied Bayesian inference is
 computation: converting the mathematical expression of the posterior
 distribution into specific inferences or predictions such as the
@@ -17,6 +20,7 @@ predictive interval for some future outcome.  For even moderately
 large or complex problems, such quantities are expressed
 mathematically in terms of high-dimensional integrals with no
 closed-form expressions.
+
 
 Over the past fifty years, a series of advances in
 computational statistics have allowed these intergrals to be computed
@@ -42,14 +46,14 @@ problems.
 Where we stand now is that, for a fairly broad class of models and
 data of moderate size, we can transparently program our Bayesian
 models in Stan and perform inference automatically.  This represent
-the culmination of decades of work in compuational statistics, along
+the culmination of decades of work in computational statistics, along
 with corresponding decades of experience fitting and understanding
 these models.  The challenge is not just fitting the model; it is
 also deciding what models to fit.
 
 Future work, by ourselves and others, will increase the speed and
 scalability of Stan in various ways, including more seamless
-implentation of parallel processing.
+implantation of parallel processing.
 
 ### Appealing features of Bayesian inference {-}
 
@@ -88,23 +92,11 @@ tool for these problems.  We do think, however, that Stan is the best
 tool for fitting continuous-parameter models that arise in many
 application areas, including astronomy, ecology, economic forecasting,
 earth science, insurance, public health, survey sampling, to just name
-a few.  See here for some case studies:
-http://mc-stan.org/users/documentation/case-studies and here for some
-example models: https://github.com/stan-dev/example-models/wiki
+a few.  A wide-ranging set of case studies is available on the Stan
+website at: http://mc-stan.org/users/documentation/case-studies
+and in the conference proceedings from every StanCon:
+https://github.com/stan-dev/stancon_talks.
 
-### Model checking, model improvement, and workflow {-}
-
-In Bayesian inference we make a sort of deal with the devil: we commit
-to a strong model, and from this we get strong inferences.  But, as
-the saying goes, with great power comes great responsibility.  We need
-to vigilantly _check_ the fit of our models, following this up with
-model _improvement_.  As a result, Bayesian workflow does not involve
-fitting just one model to data.  We typically fit multiple models,
-including some models that we know are too simple (to get a sense of
-what is lost by not including certain features in our analysis) and
-others that we suspect are too complex (to get a sense of the
-boundaries of what we can learn given the resolution of the our
-available data).
 
 ## Hello World
 
@@ -135,6 +127,9 @@ Just one little thing to be careful of: in statistical notation, the
 normal distribution with mean $\mu$ and standard deviation $\sigma$ is
 written as $N(\mu,\sigma^2)$.  In Stan, we write it as `normal(mu,
 sigma)` (_not_ `sigma^2`).
+Also, note that when we are talking about the elements of a Stan program
+we use `typewriter font` and when we are talking about the elements
+of a statistical model we use Greek letters and math notation.
 
 Here is the full model written in Stan:
 
@@ -142,71 +137,140 @@ Here is the full model written in Stan:
 print_file("stan/simplest-regression.stan")
 ```
 
-The first block of this program declares the inputs to the model, the
-second declares the parameters to be estimated, and the third presents
-the statistical model.  And now we can run it.
+The program has three named blocks: the data block which
+declares the inputs to the model, the parameters block which
+declares the parameters to be estimated, and the model block
+which presents the statistical model.
+In this program the variables `y` and `x` are vectors of length
+`N` which come as input data and the variables `a`, `b`, and `sigma`
+are scalar values which are estimated jointly by the model.
 
-### Basic Bayesian workflow {-}
+In order to run the program, you must provide inputs for all
+variables declared in the data block. 
+Therefore we need to simulate some data
+for the vector length `N` and a vector of values for both
+`x` and `y` using known values for model parameters
+`a`, `b`, and `sigma`.
+We can do this using Stan or directly in R:
 
-We will perform the following steps which are a key part of our
-workflow:
+```{r echo=TRUE}
+N <- 100
+a <- 10
+b <- 4
+sigma <- 5
+x <- runif(N, 0, 10)
+y <- rnorm(N, a + b*x, sigma)
+hello_data <- list(N=N, x=x, y=y)
+```
 
-1. _Simulate fake data._ Set the sample size $N$, predictor vector
-$x$, and parameters $a,b,\sigma$, and from that information simulate
-fake data $y$ from the model above.
+The last statement creates a single R data structure `hello_data`
+which contains the names and values of all inputs.
+This object is passed into the Stan algorithm which
+fits the the model with the simulated data.
+In this example we use Stan's default sampling algorithm:
 
-2. _Fit the model._ Express the model in Stan, pass the data $N,x,y$
+```{r ex-fit-cmd, echo=TRUE, eval=FALSE}
+fit <- stan("stan/simplest-regression.stan", data=hello_data)
+```
+```{r ex-fit-cmd-do, include=FALSE}
+fit <- stan("stan/simplest-regression.stan", data=hello_data, refresh=0)
+```
+
+To evaluate the fit,
+we can print the estimates of the model parameters
+`a`, `b`, and `sigma`:
+
+```{r ex-fit-print, echo=TRUE}
+print(fit, pars=c("a","b","sigma"), probs=c(0.025,0.975))
+```
+
+To simulate the data `y` we picked `10`, `4` and `5` as
+the values of `a`, `b`, and `sigma`, respectively.
+As the true values are within the inferential ranges,
+we have reason to trust our computation.
+In the [workflow chapter](#workflow-in-action) we show more ways to
+assess parameter recovery.
+
+## Bayesian workflow for model checking and model improvement {-}
+
+In Bayesian inference we make a sort of deal with the devil: we commit
+to a strong model, and from this we get strong inferences.  But, as
+the saying goes, with great power comes great responsibility.  We need
+to vigilantly _check_ the fit of our models, following this up with
+model _improvement_.  As a result, Bayesian workflow does not involve
+fitting just one model to data.  We typically fit multiple models,
+including some models that we know are too simple (to get a sense of
+what is lost by not including certain features in our analysis) and
+others that we suspect are too complex (to get a sense of the
+boundaries of what we can learn given the resolution of the our
+available data).
+
+_Model checking_ consists of the following steps:
+
+1. _Simulate fake data._ Specify sizes and values for all predictors
+in a model and choose a set of values for all model parameters
+and generate the corresponding data values $y$.
+
+2. _Fit the model._ Express the model in Stan, pass the simulated data
 into the program, and estimate the parameters.
 
 3. _Evaluate the fit._ Compare the estimated parameters (or, more
 fully, the posterior distribution of the parameters) to their true
 values, which in this simulated-data scenario are known.
 
-## Bayesian workflow
+These are exactly the steps that we just carried out in our
+"Hello World" example in the previous section.
 
-The first page of _Bayesian Data Analysis_ lists the following three
-idealized steps:
+_Model improvement_ follows the idealized steps listed on the
+first page of _Bayesian Data Analysis_:
 
-1. Setting up a full probability model---a joint probability
+1. _Set up a full probability model._  Define a joint probability
 distribution for all observable and unobservable quantities in a
 problem. The model should be consistent with knowledge about the
 underlying scientific problem and the data collection process.
 
-2. Conditioning on observed data: calculating and interpreting the
-appropriate posterior distribution—the conditional probability
+2. _Condition on observed data._   Calculate and interpret the
+appropriate posterior distribution -- the conditional probability
 distribution of the unobserved quantities of ultimate interest, given
 the observed data.
 
-3. Evaluating the fit of the model and the implications of the
-resulting posterior distribution: how well does the model fit the
+3. _Evaluate the fit of the model and the implications of the
+resulting posterior distribution._  How well does the model fit the
 data, are the substantive conclusions reasonable, and how sensitive
-are the results to the modeling assumptions in step 1? In response,
-one can alter or expand the model and repeat the three steps.
+are the results to the modeling assumptions? In response,
+one can alter or expand the model and repeat.
 
-More recently we have been thinking about _workflow_, a general
-expression which, in addition to the above three steps, also includes
-the processes of trying out different models and checking computations
-with fake data.
+This workflow helps us to think generatively about
+the underlying scientific problem expressed by the model.
+While our models are imperfect compared to
+the true data generating process, the above procedure
+provides a clear specification of the
+data generating process encoded by our model.
 
 ### Idealized plan for Bayesian case studies {-}
 
-Chapter ** of this book includes several case studies to give some
-sense of Bayesian modeling on some fairly simple problems, and Chapter
-** offers a guide to a large number of Stan case studies that are
-available on the Stan webpage.  Presentation of these examples vary,
+The [workflow chapter](#workflow-in-action) of this book
+includes several case studies to give some
+sense of Bayesian modeling on some fairly simple problems.
+Many more case studies are available on the Stan website at: 
+http://mc-stan.org/users/documentation/case-studies
+and in the StanCon conference proceedings at:
+https://github.com/stan-dev/stancon_talks.
+
+Presentation of these examples vary,
 but the paradigmatic format for a case study would follow these steps:
 
 1.  Applied example to give context
 
-2.  Fake-data simulation, including discussion of reasonable parameter
-values, in R or Stan
+2.  Discussion of reasonable parameter values and fake-data simulation
+in Stan or in your scientific computing environment of choice
 
 3.  Graph of fake data
 
 4.  Stan program
 
-5.  Fit fake data in Stan; discuss convergence etc and parameter
-estimates and uncertainties
+5.  Fit fake data in Stan; discuss convergence, model diagnostics,
+and parameter estimates and uncertainties
 
 6.  Graph the fitted model along with the data
 
@@ -218,16 +282,14 @@ estimates and uncertainties
 
 10.  Directions for model expansion
 
-## What is Stan?
 
-Stan is a platform for statistical modeling and high-performance
-statistical computation.  When you write a Stan program, you're
+## Writing a Stan program {-}
+
+When you write a Stan program, you're
 writing C++ code that gives instructions for computing an "objective
 function."  In this book we will be using Stan for Bayesian inference,
 and the objective function is interpreted as the logarithm of the
 posterior density, up to an arbitrary constant.
-
-### Writing a Stan program {-}
 
 A Stan program includes various blocks to declare data and parameters
 and make transformations, but the heart of a Stan program, where it
@@ -240,8 +302,10 @@ model {
 }
 ```
 
-In this case, $y$ and $x$ are vectors of length
-$N$, and the above code is mathematically (but not computationally)
+In this case, `y` and `x` are vectors of length `N` that are
+input to the Stan program as data and `a`, `b`, and `sigma`
+are the parameters estimated jointly by the model.
+The above code is mathematically (but not computationally)
 equivalent to:
 ```
 model {
@@ -252,14 +316,15 @@ model {
 ```
 Each line inside the loop adds a term to the objective function with
 the logarithm of the corresponding normal density; thus,
-$\log(\frac{1}{\sqrt{2\pi}\sigma}\exp(-\frac{1}{2}(\frac{y_n - (a +
+$$\log(\frac{1}{\sqrt{2\pi}\sigma}\exp(-\frac{1}{2}(\frac{y_n - (a +
 bx_n)}{\sigma})^2)) = - \frac{1}{2}\log(2\pi) - \frac{1}{2}\log\sigma
-- \frac{1}{2}(\frac{y_n - (a + bx_n)}{\sigma})^2$.  For most purposes,
+- \frac{1}{2}(\frac{y_n - (a + bx_n)}{\sigma})^2$$
+For most purposes,
 we do not care about arbitrary multiplicative constants in the
 posterior density or, equivalently, arbitrary additive constants in
-the log-posterior density, so it does not matter if the $-
-\frac{1}{2}\log(2\pi)$ term is present.  We _do_ need to include $-
-\frac{1}{2}\log\sigma$, however, because $\sigma$ is a parameter in
+the log-posterior density, so it does not matter if the
+$-\frac{1}{2}\log(2\pi)$ term is present.  We _do_ need to include
+$-\frac{1}{2}\log\sigma$, however, because $\sigma$ is a parameter in
 the model and thus we cannot consider this term as constant.
 
 For reasons that we shall discuss later, the above code is more
@@ -285,16 +350,16 @@ model {
 Here, "target" is the objective function, "lpdf" stands for "log
 probability density function," and the vertical bar is statistics
 notation for conditioning: thus, we are adding to the objective
-function the normal log density function of $y$, given mean $a+bx$ and
-standard deviation $\sigma$.
+function the normal log density function of `y`, given mean `a+bx` and
+standard deviation `sigma`.
 
 Here is a slightly more elaborate version, in which we include
-$\mbox{normal}(0,1)$ prior distributions for $a$, $b$, and $\sigma$
-(actually the prior for $\sigma$ is half-normal as this parameter has
+$\mbox{normal}(0,1)$ prior distributions for `a`, `b`, and `sigma`
+(actually the prior for `sigma` is half-normal as this parameter has
 been constrained to be positive).  We will talk more about priors in a
 bit; for here, you can just think of these extra statements as
-representing additional information that the parameters $a$, $b$, and
-$\sigma$ are likely to be not too far from 0:
+representing additional information that the parameters `a`, `b`, and
+`sigma` are likely to be not too far from 0:
 ```
 model {
   y ~ normal(a + b * x, sigma);
@@ -325,8 +390,8 @@ model {
   sigma ~ normal(0, 1);
 }
 ```
-Here we wanted to assign a prior distribution not to the parameter $a$
-but to the shifted parameter $a+2b$.  The above code is executed
+Here we wanted to assign a prior distribution not to the parameter `a`
+but to the shifted parameter `a+2b`.  The above code is executed
 directly, with an augmentation of "target" for every line with a
 tilde.
 
@@ -345,10 +410,10 @@ it is enough to be able to compute $g$.
 
 As described above, a Stan program can be viewed as instructions for
 computing an objective function.
-
 When you run a Stan program, it performs optimization or approximation
 or sampling of this objective function, using one of the algorithms
 described below.
+
 
 #### Option 1: Sampling {-}
 
@@ -357,15 +422,16 @@ distribution that is proportional to the exponential of the objective
 function.  Currently available in Stan are two different sampling
 algorithms: Hamiltonian Monte Carlo (HMC) and the no-U-turn sampler
 (NUTS).  For background on HMC, see Chapter 12 of _Bayesian Data
-Analysis_.  NUTS is an adaptive version of HMC (for more information,
-see Chapter ** of this book) and is the algorithm that we use by
-default when fitting models in Stan.  When running NUTS (or HMC, or
-any other sampling algorithm), the output of Stan is a list of
-posterior simulations.
+Analysis_.  NUTS is an adaptive version of HMC
+and is the algorithm that we use by default when fitting models in Stan.
+For more information on NUTS 
+see Chapter "MCMC Sampling" of the _Stan Reference Manual_.
+When running NUTS (or HMC, or any other sampling algorithm),
+the output of Stan is a list of posterior simulations.
 
-We gave an example earlier, when we type:
+We have already seen an example of this above:
 
-```{r ex-fit-cmd, echo=TRUE, eval=FALSE}
+```{r ex-fit-cmd-again, echo=TRUE, eval=FALSE}
 fit <- stan("stan/simplest-regression.stan", data=hello_data)
 ```
 
@@ -382,7 +448,7 @@ print(sims_as_list$a[1:5])
 ```
 
 Each row of the above matrix is a different posterior simulation: we
-see the parameters $a$, $b$, and $\sigma$, along with the objective
+see the parameters `a`, `b`, and `sigma`, along with the objective
 function (or log-posterior density), "lp__".
 
 #### Option 2: Optimization {-}
@@ -455,8 +521,10 @@ regular NUTS.
 Stan's fitting algorithms are iterative.  The algorithm starts with
 some initial values for all the parameters (these can be
 user-specified and fed into the call to Stan, or else Stan will
-simulate them from a default distribution; see Chapter ** of this
-book) and then, at each _iteration_, the parameter values are updated.
+simulate them from a default distribution; (see
+Chapter "MCMC Sampling", section "Initialization"
+of the _Stan Reference Manual_)
+and then, at each _iteration_, the parameter values are updated.
 After enough iterations, the parameter values converge to an estimate
 of the optimum (if Stan is being set to optimization) or to an
 estimate of the center of the distribution (if Stan is being set to
@@ -468,8 +536,9 @@ default), each iteration includes some number of _steps_.  In each
 step, Stan computes the gradient of the objective function, which is
 used in the "leapfrog algoritm" to determine the direction in which
 the algorithm moves (see Section 12.4 of _Bayesian Data Analysis_ and
-Chapter ** of this book).  An iteration might have tens or hundreds of
-steps.  The information from the steps is not saved by Stan; what is
+the "MCMC Sampling" chapter of the _Stan Reference Manual_).
+An iteration might have tens or hundreds of steps.
+The information from each step is not saved by Stan; what is
 returned is the value of the parameters at the end of each iteration.
 
 As a user, you typically don't need to worry about steps or
@@ -520,7 +589,11 @@ for any parameters, the algorithm is slow to converge and we might run
 it longer and then, if mixing remains poor, consider
 reparameterization of the problem.
 
-Stan also computes for each parameter, transformed parameter, and generated quantity an "effective sample size" which represents . . .
+Stan also computes for each parameter, transformed parameter,
+and generated quantity an "effective sample size" which represents
+the number of uncorrelated draws in the sample.
+For more information see section "Effective Sample Size"
+in Chapter "Posterior Analysis" of the _Stan Reference Manual_.
 
 ### Blocks and declarations {-}
 
@@ -531,7 +604,8 @@ into _blocks_:
   for the program to run.  For example, in a regression model, the
   data would be x, y, and N.  Each data object in a Stan program must
   be given a type, such as int (integer), real, vector, matrix, etc.
-  Explanations of all the types are in Chapter ** of this book.
+  Explanations of all the types are in chapter on
+  [matrices, vectors, and arrays](#matrices-vectors-and-arrays) of this book.
 
 - Transformed data.  These are mathematical operations that are
   performed once when the Stan program is called.
@@ -539,7 +613,8 @@ into _blocks_:
 - Parameters.  These are the unknown quantities that are estimated
   when the Stan program is run.  Parameters also need to be declared,
   and they need to be continuous.  You cannot have an integer-valued
-  parameter.  See Chapter ** for further discussion of this point.
+  parameter.  See the [latent discrete parameters](#latent-discrete.chapter)
+  chapter for further discussion of this point.
 
 - Transformed parameters.  Computations that depend on parameters as
   well as data, thus must be computed in each step when Stan runs.
@@ -594,54 +669,46 @@ sims_as_list <- extract(fit_3)
 print(sims_as_list$b[1:5,])
 ```
 
-The parameter $b$ is a vector, and so the posterior simulations are a
-2-dimensional array.  Similarly, if $b$ is a matrix or array of
+The parameter `b` is a vector, and so the posterior simulations are a
+2-dimensional array.  Similarly, if `b` is a matrix or array of
 vectors, the posterior simulations will become a 3-dimensional array,
 and so on.  We shall encounter such parameter structures when fitting
 hierarchical models.
-
-### Troubleshooting, warnings, etc {-}
-
-Stan gives warnings and also lots of default output.  We should talk
-about this.
-
-### Stan and other probabilistic programming languages {-}
-
-Programs that perform Bayesian inference are called _probabilistic
-programming languages_.  Compared to other such languages, Stan is
-particularly flexible in its expression of models . . .
 
 ## Software environment
 
 ### Working in R and Stan {-}
 
 In this book, we will work with data and fit Stan models using the
-rstan package in R, as demonstrated above.  Our focus, though, is on
+Rstan package in R, as demonstrated above.  Our focus, though, is on
 statistical modeling and writing Stan programs, so in most of the book
 we suppress the R.  All the code is available (see below) so that you
 can reproduce any of the computations we perform.
 
-### Other options: Python, Julia, etc. {-}
+### Other Stan interfaces: Python, Julia, command line, and more {-}
 
 Stan can also be run from the command line or from other statistical
-environments such as Python and Julia.  See the Stan webpage and look
-under interfaces for more information.
+environments such as Python and Julia.  The Stan website contains
+a list of interfaces and installation instructions at
+http://mc-stan.org/users/interfaces/index.html.
 
-### How to use this book: Github, knitr, etc. {-}
+### Source code for this book and its programs, scripts, data {-}
 
 You may be reading this book as an html or pdf file or even as a
-printed document.  The underlying content lives on the Github page
-here: **.  Each chapter of the book is a "knitr file," which means
-that it can be run in R, most conveniently using Rstudio.  You can
-also go to the raw knitr docs (again, most conveniently using the
+printed document.  The underlying content lives in the GitHub repository
+https://github.com/stan-dev/docs in the subdirectory
+https://github.com/stan-dev/docs/tree/master/src/bayes-stats-stan.
+Each chapter of the book is a "knitr file," which means
+that it can be run in R, most conveniently using Rstudio.
+You can also go to the raw knitr docs (again, most conveniently using the
 editor in Rstudio): these are the files with .Rmd extensions.  These
 documents have the text of the book (e.g., the words you are reading
-now) along with all the R code, some of which is hidden in this html
-or pdf document that you are reading but is visible in the raw .Rmd
-documents.
+now) along with R code for analysis and visualization,
+some of which is hidden in this html or pdf document that
+you are reading but is visible in the raw .Rmd documents.
 
-The Stan programs used in this book are all in `.stan` files in this
-same directory tree.
+The Stan programs used in this book are all in `.stan` files in
+the directory https://github.com/stan-dev/docs/tree/master/src/bayes-stats-stan/stan.
 
 ## Bayes and Stan
 
@@ -678,21 +745,24 @@ well, using Stan.  Other software has problems with such models too.
   of the posterior distribution; we give two such examples in Section
   1.4 of _Bayesian Data Analysis_.  For more complicated examples, we
   can sometimes average over the discrete parameters analytically; see
-  Chapter ** of this book for general discussion and examples of
+  the [mixture modeling](#mixture-modeling.chapter) chapter
+  of this book for general discussion and examples of
   finite mixture and hidden Markov models.  More generally, posterior
   distributions for models with discrete unknowns can be explored
   using various stochastic algorithms, but except in certain special
   cases these can be very slow to converge: the challenge is to
   perform a tour of a discrete space without simply going through all
-  the possible values, which would result in a combinatorical
+  the possible values, which would result in a combinatorial
   explosion.  Thus, we sometimes say that Stan can't walk through
   discrete spaces, but no other algorithm can do so effectively
   either.
 
 In any case, if you want to perform Bayesian inference for a model
 with discrete unknowns, you need to either average over the discrete
-variables as described in Chapter **, or fit the model outside of
-Stan.  Either way, we recommend fake-data simulation to check that the
+variables as described in
+the [latent discrete parameters](#latent-discrete.chapter) chapter,
+or fit the model outside of Stan.  Either way, we recommend fake-data
+simulation to check that the
 fit can recover the parameter values under reasonable assumptions.
 
 - Models with likelihoods or priors that contain uncomputable
@@ -704,19 +774,22 @@ fit can recover the parameter values under reasonable assumptions.
 - Models for which the NUTS algorithm mixes very slowly.  This can
   include continuous models with discrete aspects to their geometry,
   such as multimodal posterior distributions.  Sometimes we can get
-  these models to run more smoothly by reparameterizing; see Chapter
-  ** of this book for the important example of the use of the
+  these models to run more smoothly by reparameterizing; see the
+  [optimization](#optimization.chapter) chapter of this book
+  for the important example of the use of the
   non-centered parameterization to avoid the "funnel problem" with
   hierarchical models.
 
 - Models for which the objective function takes a long time to
   compute.  This includes some models with differential equations (see
-  Chapter ??) or even simple models, if the size of the data or the
+  the [ordinary differential equations](#ode-solver.chapter)
+  chapter) or even simple models, if the size of the data or the
   number of parameters is large enough.  There are various approaches
   to managing large and slow computations in Stan, including data
   subsetting, and posterior approximations, and parallel computing.
   For most of this book we focus on small and moderate-sized problems;
-  we discuss big-data strategies in Chapter **.
+  we discuss big-data strategies in the [map-reduce](#map-reduce.chapter)
+  chapter.
 
 
 ## More information about Bayesian data analysis and Stan
@@ -737,9 +810,6 @@ formal:
 
 - _Regression and Other Stories_ by Gelman, Hill, and Vehtari
   (forthcoming)
-
-- List of example models translated from Bugs and Arm:
-  https://github.com/stan-dev/example-models/wiki
 
 - Stan case studies:
   http://mc-stan.org/users/documentation/case-studies.html and

@@ -345,29 +345,29 @@ format.</p>
 <div id="affinely-transformed-real" class="section level3 unnumbered">
 <h3>Affinely Transformed Real</h3>
 <p>Real variables may be declared on a space that has been transformed using an
-affine transformation <span class="math inline">\(x\mapsto \mu + \sigma * x\)</span> with location <span class="math inline">\(\mu\)</span> and
-(positive) scale <span class="math inline">\(\sigma\)</span>, using a syntax similar to
+affine transformation <span class="math inline">\(x\mapsto \mu + \sigma * x\)</span> with offset <span class="math inline">\(\mu\)</span> and
+(positive) multiplier <span class="math inline">\(\sigma\)</span>, using a syntax similar to
 that for bounds.
 While these transforms do not change the asymptotic sampling behaviour of
 the resulting Stan program (in a sense, the model the program implements),
 they can be useful for making the sampling process
 more efficient by transforming the geometry of the problem to a more natural
-scale and to a more natural location for the sampling process,
+multiplier and to a more natural offset for the sampling process,
 for instance by fascilitating a non-centered parameterisation.
 While these affine transformation declarations do not impose a hard constraint
 on variables, they behave like the bounds constraints in many ways and could
 perhaps be viewed as acting as a sort of soft constraint.</p>
-<p>The variable <code>x</code> may be declared to have location <span class="math inline">\(1\)</span> as follows.</p>
-<pre class="stan"><code>real&lt;location=1&gt; x;</code></pre>
-<p>Similarly, it can be declared to have scale <span class="math inline">\(2\)</span> as follows.</p>
-<pre class="stan"><code>real&lt;scale=2&gt; x;</code></pre>
-<p>Finally, we can combine both declarations to declare a variable with location
-<span class="math inline">\(1\)</span> and scale <span class="math inline">\(2\)</span>.</p>
-<pre class="stan"><code>real&lt;location=1,scale=2&gt; x;</code></pre>
+<p>The variable <code>x</code> may be declared to have offset <span class="math inline">\(1\)</span> as follows.</p>
+<pre class="stan"><code>real&lt;offset=1&gt; x;</code></pre>
+<p>Similarly, it can be declared to have multiplier <span class="math inline">\(2\)</span> as follows.</p>
+<pre class="stan"><code>real&lt;multiplier=2&gt; x;</code></pre>
+<p>Finally, we can combine both declarations to declare a variable with offset
+<span class="math inline">\(1\)</span> and multiplier <span class="math inline">\(2\)</span>.</p>
+<pre class="stan"><code>real&lt;offset=1,multiplier=2&gt; x;</code></pre>
 <p>As an example, we can give <code>x</code> a normal distribution with non-centered
 parameterization as follows.</p>
 <pre class="stan"><code>parameters {
-  real&lt;location=mu,scale=sigma&gt; x;
+  real&lt;offset=mu,multiplier=sigma&gt; x;
 }
 model {
   x ~ normal(mu, sigma);
@@ -381,15 +381,15 @@ model {
 }</code></pre>
 <p>or equivalently</p>
 <pre class="stan"><code>parameters {
-  real&lt;location=0,scale=1&gt; x;
+  real&lt;offset=0,multiplier=1&gt; x;
 }
 model {
   x ~ normal(mu, sigma);
 }</code></pre>
 </div>
-<div id="expressions-as-bounds-and-locationscale" class="section level3 unnumbered">
-<h3>Expressions as Bounds and Location/Scale</h3>
-<p>Bounds (and location and scale)
+<div id="expressions-as-bounds-and-offsetmultiplier" class="section level3 unnumbered">
+<h3>Expressions as Bounds and Offset/Multiplier</h3>
+<p>Bounds (and offset and multiplier)
 for integer or real variables may be arbitrary expressions.
 The only requirement is that they only include variables that have
 been declared (though not necessarily defined) before the declaration.
@@ -509,9 +509,9 @@ the keyword <code>vector</code>, as follows.</p>
 <p>Vectors may also be declared with constraints, as in the following
 declaration of a 3-vector of non-negative values.</p>
 <pre class="stan"><code>vector&lt;lower=0&gt;[3] u;</code></pre>
-<p>Similarly, they may be declared with a location and/or scale, as in the
+<p>Similarly, they may be declared with a offset and/or multiplier, as in the
 following example</p>
-<pre class="stan"><code>vector&lt;location=42,scale=3&gt;[3] u;</code></pre>
+<pre class="stan"><code>vector&lt;offset=42,multiplier=3&gt;[3] u;</code></pre>
 </div>
 <div id="unit-simplexes" class="section level3 unnumbered">
 <h3>Unit Simplexes</h3>
@@ -586,9 +586,9 @@ a 1093-dimensional row vector <code>u</code> would be declared as</p>
 <p>Constraints are declared as for vectors, as in the following example
 of a 10-vector with values between -1 and 1.</p>
 <pre class="stan"><code>row_vector&lt;lower=-1,upper=1&gt;[10] u;</code></pre>
-<p>Location and scale are also similar as for the following 3-row-vector with
-location -42 and scale 3.</p>
-<pre class="stan"><code>row_vector&lt;location=-42,scale=3&gt;[3] u;</code></pre>
+<p>Offset and multiplier are also similar as for the following 3-row-vector with
+offset -42 and multiplier 3.</p>
+<pre class="stan"><code>row_vector&lt;offset=-42,multiplier=3&gt;[3] u;</code></pre>
 <p>Row vectors may not be assigned to column vectors, nor may column
 vectors be assigned to row vectors. If assignments are required, they
 may be accommodated through the transposition operator.</p>
@@ -605,9 +605,9 @@ the data or transformed data block and before the matrix declaration.</p>
 <p>Matrices may also be declared with constraints, as in this (<span class="math inline">\(3 \times 4\)</span>)
 matrix of non-positive values.</p>
 <pre class="stan"><code>matrix&lt;upper=0&gt;[3, 4] B;</code></pre>
-<p>Similarly, matrices can be declared to have a set location and/or scale, as in
-this matrix with scale 5.</p>
-<pre class="stan"><code>matrix&lt;scale=5&gt;[3, 4] B;</code></pre>
+<p>Similarly, matrices can be declared to have a set offset and/or multiplier, as in
+this matrix with multiplier 5.</p>
+<pre class="stan"><code>matrix&lt;multiplier=5&gt;[3, 4] B;</code></pre>
 <div id="assigning-to-rows-of-a-matrix" class="section level4 unnumbered">
 <h4>Assigning to Rows of a Matrix</h4>
 <p>Rows of a matrix can be assigned by indexing the left-hand side of an
@@ -1114,7 +1114,7 @@ gitbook.start({
 "collapse": "section",
 "scroll_highlight": true
 },
-"search": false,
+"search": true,
 "toolbar": {
 "position": "static"
 }

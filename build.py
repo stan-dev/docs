@@ -61,11 +61,12 @@ def make_docs(docspath, version, document, formats):
             [safe_rm(f) for f in ("stan-manual.css", "_main.rds")]
             [safe_rm(f) for f in glob.glob(os.path.join("_book","*.md"))]
             htmlpath = os.path.join(docspath, document)
+            safe_rmdir(htmlpath)
             command = ' '.join(["mv _book", htmlpath])
             shexec(command)
         else:
             [safe_rm(f) for f in ("stan-manual.css", "_main.rds")]
-            shutil.rmtree("_book", ignore_errors=True)
+            safe_rmdir("_book")
 
 def make_index_page(docset, formats):
     # TODO: generate index.md based on current and new docs

@@ -38,12 +38,6 @@ def safe_rm(fname):
     if os.path.exists(fname):
         os.remove(fname)
 
-def safe_rmdir(fname):
-    [safe_rm(f) for f in glob.glob(os.path.join(fname,"*"))]
-    [safe_rm(f) for f in glob.glob(os.path.join(fname,".*"))]
-    if os.path.exists(fname):
-        os.rmdir(fname)
-
 def make_docs(docspath, version, document, formats):
     path = os.getcwd()
     srcpath = os.path.join(path, "src", document)
@@ -61,12 +55,12 @@ def make_docs(docspath, version, document, formats):
             [safe_rm(f) for f in ("stan-manual.css", "_main.rds")]
             [safe_rm(f) for f in glob.glob(os.path.join("_book","*.md"))]
             htmlpath = os.path.join(docspath, document)
-            safe_rmdir(htmlpath)
+            shutil.rmtree(htmlpath, ignore_errors=True)
             command = ' '.join(["mv _book", htmlpath])
             shexec(command)
         else:
             [safe_rm(f) for f in ("stan-manual.css", "_main.rds")]
-            safe_rmdir("_book")
+            shutil.rmtree("_book", ignore_errors=True)
 
 def make_index_page(docset, formats):
     # TODO: generate index.md based on current and new docs

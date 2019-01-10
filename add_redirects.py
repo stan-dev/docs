@@ -24,10 +24,17 @@ contents = '''<!DOCTYPE html>
 '''
 
 stan_site = "https://mc-stan.org"
-stan_version = "2_18"
-base_dir = "bayes-stats-stan"
 
 def main():
+    if (len(sys.argv) > 3):
+        stan_major = long(sys.argv[1])
+        stan_minor = long(sys.argv[2])
+    else:
+        print "Expecting 3 arguments <MAJOR> <MINOR> version numbers, <docset name>"
+        sys.exit(1)
+    stan_version = '_'.join([str(stan_major), str(stan_minor)])
+    base_dir = (sys.argv[3])
+
     version_dir = "/".join(["docs", stan_version, base_dir])
     no_version_dir = "/".join(["docs", base_dir])
 

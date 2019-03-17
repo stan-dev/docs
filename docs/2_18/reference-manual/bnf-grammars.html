@@ -107,8 +107,7 @@
 <li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#constrained-integer"><i class="fa fa-check"></i>Constrained Integer</a></li>
 <li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#unconstrained-real"><i class="fa fa-check"></i>Unconstrained Real</a></li>
 <li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#constrained-real"><i class="fa fa-check"></i>Constrained Real</a></li>
-<li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#affinely-transformed-real"><i class="fa fa-check"></i>Affinely Transformed Real</a></li>
-<li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#expressions-as-bounds-and-offsetmultiplier"><i class="fa fa-check"></i>Expressions as Bounds and Offset/Multiplier</a></li>
+<li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#expressions-as-bounds"><i class="fa fa-check"></i>Expressions as Bounds</a></li>
 <li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#declaring-optional-variables"><i class="fa fa-check"></i>Declaring Optional Variables</a></li>
 </ul></li>
 <li class="chapter" data-level="5.4" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html"><i class="fa fa-check"></i><b>5.4</b> Vector and Matrix Data Types</a><ul>
@@ -393,6 +392,7 @@
 <li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#prng-function-locations"><i class="fa fa-check"></i>PRNG function locations</a></li>
 <li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#probability-function-naming"><i class="fa fa-check"></i>Probability function naming</a></li>
 <li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#algebraic-solver-argument-types-and-origins"><i class="fa fa-check"></i>Algebraic solver argument types and origins</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#integrate-1d-argument-types-and-origins"><i class="fa fa-check"></i>Integrate 1D argument types and origins</a></li>
 <li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#ode-solver-argument-types-and-origins"><i class="fa fa-check"></i>ODE solver argument types and origins</a></li>
 <li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#indexes"><i class="fa fa-check"></i>Indexes</a></li>
 </ul></li>
@@ -588,7 +588,9 @@ var_type ::= &#39;int&#39; range_constraint
            | &#39;corr_matrix&#39; &#39;[&#39; expression &#39;]&#39;
            | &#39;cov_matrix&#39; &#39;[&#39; expression &#39;]&#39;
 
-constraint ::= range_constraint | &#39;&lt;&#39; offset_multiplier &#39;&gt;&#39;)
+---
+#constraint ::= range_constraint | &#39;&lt;&#39; offset_multiplier &#39;&gt;&#39;)
+---
 
 range_constraint ::= ?(&#39;&lt;&#39; range &#39;&gt;&#39;)
 
@@ -596,9 +598,11 @@ range ::= &#39;lower&#39; &#39;=&#39; constr_expression &#39;,&#39; &#39;upper&#
         | &#39;lower&#39; &#39;=&#39; constr_expression
         | &#39;upper&#39; &#39;=&#39; constr_expression
 
-offset_multiplier ::= &#39;offset&#39; &#39;=&#39; constr_expression &#39;,&#39; &#39;multiplier&#39; = constr_expression
-            | &#39;offset&#39; &#39;=&#39; constr_expression
-            | &#39;multiplier&#39; &#39;=&#39; constr_expression
+---
+#offset_multiplier ::= &#39;offset&#39; &#39;=&#39; constr_expression &#39;,&#39; &#39;multiplier&#39; = constr_expression
+#            | &#39;offset&#39; &#39;=&#39; constr_expression
+#            | &#39;multiplier&#39; &#39;=&#39; constr_expression
+---
 
 dims ::= &#39;[&#39;  expressions &#39;]&#39;
 
@@ -622,20 +626,20 @@ constr_expression ::= constr_expression arithmeticInfixOp constr_expression
                     | constr_expression &#39;[&#39; indexes &#39;]&#39;
                     | common_expression
 
-common_expression ::= real_literal
-                    | variable
-                    | &#39;{&#39; expressions &#39;}&#39;
-                    | &#39;[&#39; expressions &#39;]&#39;
-                    | function_literal &#39;(&#39; ?expressions &#39;)&#39;
-                    | function_literal &#39;(&#39; expression ?(&#39;|&#39; expression % &#39;,&#39;) &#39;)&#39;
-                    | integrate_ode &#39;(&#39; function_literal (&#39;,&#39; expression){6} &#39;)&#39;
-                    | integrate_ode_rk45
-                      &#39;(&#39; function_literal (&#39;,&#39; expression){6|9} &#39;)&#39;
-                    | integrate_ode_bdf
-                      &#39;(&#39; function_literal (&#39;,&#39; expression){6|9} &#39;)&#39;
-                    | algebra_solver
-                    &#39;(&#39; function_literal (&#39;,&#39; expression){4|7} &#39;)&#39;
-                    | &#39;(&#39; expression &#39;)&#39;
+common_expression
+  ::= real_literal
+    | variable
+    | &#39;{&#39; expressions &#39;}&#39;
+    | &#39;[&#39; expressions &#39;]&#39;
+    | function_literal &#39;(&#39; ?expressions &#39;)&#39;
+    | function_literal &#39;(&#39; expression ?(&#39;|&#39; expression % &#39;,&#39;) &#39;)&#39;
+    | &#39;integrate_1d&#39; &#39;(&#39; function_literal (&#39;,&#39; expression){5|6} &#39;)&#39;
+    | &#39;integrate_ode&#39; &#39;(&#39; function_literal (&#39;,&#39; expression){6} &#39;)&#39;
+    | &#39;integrate_ode_rk45&#39; &#39;(&#39; function_literal (&#39;,&#39; expression){6|9} &#39;)&#39;
+    | &#39;integrate_ode_bdf&#39; &#39;(&#39; function_literal (&#39;,&#39; expression){6|9} &#39;)&#39;
+    | &#39;algebra_solver&#39; &#39;(&#39; function_literal (&#39;,&#39; expression){4|7} &#39;)&#39;
+    | &#39;map_rect&#39; &#39;(&#39; function_literal (&#39;,&#39; expression){4} &#39;)&#39;
+    | &#39;(&#39; expression &#39;)&#39;
 
 prefixOp ::= (&#39;!&#39; | &#39;-&#39; | &#39;+&#39; | &#39;^&#39;)
 

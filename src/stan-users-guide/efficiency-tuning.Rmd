@@ -85,16 +85,16 @@ Hessian, the matrix of second derivatives of the log density $\log
 p(\theta)$ with respect to the parameter vector $\theta$, defined
 as
 $$
-H(\theta) = \nabla \, \nabla \, \log p(\theta | y),
+H(\theta) = \nabla \, \nabla \, \log p(\theta \mid y),
 $$
 so that
 $$
-H_{i, j}(\theta) = \frac{\partial^2 \log p(\theta | y)}
+H_{i, j}(\theta) = \frac{\partial^2 \log p(\theta \mid y)}
                 {\partial \theta_i \ \partial \theta_j}.
 $$
 For pure penalized maximum likelihood problems, the posterior log
-density $\log p(\theta | y)$ is replaced by the penalized likelihood
-function $\mathcal{L}(\theta) = \log p(y | \theta) - \lambda(\theta)$.
+density $\log p(\theta \mid y)$ is replaced by the penalized likelihood
+function $\mathcal{L}(\theta) = \log p(y \mid \theta) - \lambda(\theta)$.
 
 ### Condition Number and Adaptation {-}
 
@@ -254,8 +254,8 @@ sampling straightforward.  Neal's example has support for $y \in
 \mathbb{R}$ and $x \in \mathbb{R}^9$ with density
 
 $$
-p(y,x) = \mathsf{normal}(y|0,3) * \prod_{n=1}^9
-\mathsf{normal}(x_n|0,\exp(y/2)).
+p(y,x) = \mathsf{normal}(y \mid 0,3) \times \prod_{n=1}^9
+\mathsf{normal}(x_n \mid 0,\exp(y/2)).
 $$
 
 The probability contours are shaped like ten-dimensional funnels.  The
@@ -287,11 +287,11 @@ changes with $y$, so that a step size that works well in the body will
 be too large for the neck and a step size that works in the neck will be
  inefficient in the body.  This can be seen in the following plot.
 
-4000 draws from a run of Stan's sampler with default settings.  Both
+4000 draws are taken from a run of Stan's sampler with default settings.  Both
 plots are restricted to the shown window of $x_1$ and $y$ values; some
 draws fell outside of the displayed area as would be expected given
 the density.  The samples are consistent with the marginal density
-$p(y) = \mathsf{normal}(y|0,3)$, which has mean 0 and standard
+$p(y) = \mathsf{normal}(y \mid 0,3)$, which has mean 0 and standard
 deviation 3.
 
 ![](img/funnel-fit.png)
@@ -359,7 +359,7 @@ $$
 F^{-1}_X(y) = \mu + \tau \tan \left( \pi \left( y - \frac{1}{2} \right) \right).
 $$
 Thus if the random variable $Y$ has a unit uniform distribution, $Y
-\sim \mathsf{Uniform}(0,1)$, then $F^{-1}_X(Y)$ has a Cauchy
+\sim \mathsf{uniform}(0,1)$, then $F^{-1}_X(Y)$ has a Cauchy
 distribution with location $\mu$ and scale $\tau$, i.e., $F^{-1}_X(Y) \sim
 \mathsf{Cauchy}(\mu,\tau)$.
 
@@ -383,7 +383,7 @@ uniform-distributed parameter `beta_unif`.
 
 ```
 parameters {
-  real<lower=-pi()/2, upper=pi()/2> beta_unif;
+  real<lower = -pi()/2, upper = pi()/2> beta_unif;
   ...
 }
 transformed parameters {
@@ -406,7 +406,7 @@ sampler's output.
 The uniform distribution on `beta_unif` is defined explicitly in
 the model block, but it could be safely removed from the program
 without changing sampling behavior.  This is because $\log
-\mathsf{Uniform}(\beta_{\mathrm{unif}}|-\pi/2,\pi/2) =
+\mathsf{uniform}(\beta_{\mathsf{unif}} \mid -\pi/2,\pi/2) =
 -\log \pi$ is a constant and Stan only
 needs the total log probability up to an additive constant.  Stan will spend
 some time checking that that `beta_unif` is between
@@ -420,7 +420,7 @@ heavy-tailedness of Student-t distributions is to use the
 gamma-mixture representation, which says that you can generate a
 Student-t distributed variable $\beta$,
 $$
-\beta \sim \mathsf{Student-t}(\nu, 0, 1),
+\beta \sim \mathsf{Student\!-\!t}(\nu, 0, 1),
 $$
 by first generating a gamma-distributed precision (inverse variance)
 $\tau$ according to
@@ -429,37 +429,34 @@ $$
 $$
 and then generating $\beta$ from the normal distribution,
 $$
-\beta \sim \mathsf{normal}(0,\tau^{-\frac{1}{2}}).
+\beta \sim \mathsf{normal}\left(0,\tau^{-\frac{1}{2}}\right).
 $$
 
 Because $\tau$ is precision, $\tau^{-\frac{1}{2}}$ is the scale
 (standard deviation), which is the parameterization used by Stan.
 
 The marginal distribution of $\beta$ when you integrate out $\tau$ is
-$\mathsf{Student-t}(\nu, 0, 1)$, i.e.,
+$\mathsf{Student\!-\!t}(\nu, 0, 1)$, i.e.,
 $$
-\mathsf{Student-t}(\beta | \nu, 0, 1).
+\mathsf{Student\!-\!t}(\beta \mid \nu, 0, 1)
 =
 \int_0^{\infty}
 \,
-\mathsf{normal}(\beta | 0, \tau^{-0.5})
-*
-\mathsf{Gamma}(\tau | \nu/2, \nu/2)
+\mathsf{normal}\left(\beta \middle| 0, \tau^{-0.5}\right)
+\times
+\mathsf{Gamma}\left(\tau \middle| \nu/2, \nu/2\right)
 \
-\mathrm{d} \tau.
+\mathsf{d} \tau.
 $$
 
 
 To go one step further, instead of defining a $\beta$ drawn from a
 normal with precision $\tau$, define $\alpha$ to be drawn from a unit
 normal,
-
 $$
 \alpha \sim \mathsf{normal}(0,1)
 $$
-
 and rescale by defining
-
 $$
 \beta = \alpha \, \tau^{-\frac{1}{2}}.
 $$
@@ -526,7 +523,7 @@ centered parameterization is as follows.
 ```
 parameters {
   real mu_beta;
-  real<lower=0> sigma_beta;
+  real<lower = 0> sigma_beta;
   vector[K] beta;
   ...
 model {
@@ -732,16 +729,14 @@ A Wishart distribution can also be reparameterized in terms of standard
 normal variates and chi-squared variates. Let $L$ be the Cholesky factor
 of a $K \times K$ positive definite scale matrix $S$ and let $\nu$ be
 the degrees of freedom. If
-
-\begin{equation*}
-A = \left( \begin{array}{cccc}
-\sqrt{c_{1}} & 0 & \cdots & 0\\
-z_{21} & \sqrt{c_{2}} & \ddots & \vdots\\
-\vdots & \ddots & \ddots & 0\\
-z_{K1} & \cdots & z_{K\left(K-1\right)} & \sqrt{c_{K}}
- \end{array} \right),
-\end{equation*}
-
+$$
+A = \begin{pmatrix}
+\sqrt{c_{1}} & 0            & \cdots                & 0 \\
+z_{21}       & \sqrt{c_{2}} & \ddots                & \vdots \\
+\vdots       & \ddots       & \ddots                & 0 \\
+z_{K1}       & \cdots       & z_{K\left(K-1\right)} & \sqrt{c_{K}}
+\end{pmatrix},
+$$
 where each $c_i$ is distributed chi-squared with $\nu - i + 1$ degrees
 of freedom and each $z_{ij}$ is distributed standard normal, then
 $W = LAA^{\top}L^{\top}$ is distributed Wishart with scale matrix
@@ -799,7 +794,7 @@ If $W$ is distributed Wishart with scale matrix $S$ and degrees of
 freedom $\nu$, then $W^{-1}$ is distributed inverse Wishart with inverse
 scale matrix $S^{-1}$ and degrees of freedom $\nu$. Thus, the previous
 result can be used to reparameterize the inverse Wishart distribution.
-Since $W = L * A * A^{\top} * L^{\top}$,
+Since $W = L A A^{\top} L^{\top}$,
 $W^{-1} = L^{{\top}^{-1}} A^{{\top}^{-1}} A^{-1} L^{-1}$, where all four
 inverses exist, but
 $L^{{-1}^{\top}} = L^{{\top}^{-1}}$ and $A^{{-1}^{\top}} = A^{{\top}^{-1}}$.
@@ -857,9 +852,9 @@ model {
 Another candidate for reparameterization is the Dirichlet distribution
 with all $K$ shape parameters equal. @ZyczkowskiSommers:2001 shows
 that if $\theta_i$ is equal to the sum of $\beta$ independent squared
-standard normal variates and $\rho_i = \frac{\theta_i}{\sum \theta_i}$,
+standard normal variates and $\rho_i = {}^{\theta_i}\!/_{\sum \theta_i}$,
 then the $K$-vector $\rho$ is distributed Dirichlet with all shape
-parameters equal to $\frac{\beta}{2}$. In particular, if $\beta = 2$,
+parameters equal to ${}^{\beta}\!/_{2}$. In particular, if $\beta = 2$,
 then $\rho$ is uniformly distributed on the unit simplex. Thus, we can
 make $\rho$ be a transformed parameter to reduce dependence, as in:
 
@@ -986,7 +981,7 @@ Although it produces equivalent results, the dot product should not be
 replaced with a transpose and multiply, as in
 
 ```
-        y[n] ~ normal(x[n]' * beta, 1);
+y[n] ~ normal(x[n]' * beta, 1);
 ```
 
 The relative inefficiency of the transpose and multiply approach is
@@ -1111,6 +1106,7 @@ vectorize all at once.
   for (n in 1:N)
     mu_ii[n] = mu[ii[n]];
   y ~ normal(mu_ii, sigma);
+}
 ```
 
 If there aren't many levels (values `ii[n]` can take), then it
@@ -1120,9 +1116,9 @@ And because Stan doesn't support ragged arrays, it means K
 declarations.  For instance, with 5 levels, we have
 
 ```
-  y_1 ~ normal(mu[1], sigma);
-  ...
-  y_5 ~ normal(mu[5], sigma);
+y_1 ~ normal(mu[1], sigma);
+...
+y_5 ~ normal(mu[5], sigma);
 ```
 
 This way, both the `mu` and `sigma` parameters are shared.
@@ -1161,8 +1157,8 @@ sufficient statistic for the chance of success `theta`.  The
 model may be recoded using the binomial distribution as follows.
 
 ```
-    theta ~ beta(alpha, beta);
-    sum(y) ~ binomial(N, theta);
+theta ~ beta(alpha, beta);
+sum(y) ~ binomial(N, theta);
 ```
 
 Because truth is represented as one and falsehood as zero, the sum
@@ -1171,7 +1167,7 @@ positive outcomes out of a total of `N` trials.
 
 This can be generalized to other discrete cases (one wouldn't expect
 continuous observations to be duplicated if they are random).  Suppose
-there are only $K$ possible discrete outcomes, $z_1, \ldots, z_K$, but
+there are only $K$ possible discrete outcomes, $z_1, \dotsc, z_K$, but
 there are $N$ observations, where $N$ is much larger than $K$.  If
 $f_k$ is the frequency of outcome $z_k$, then the entire likelihood
 with distribution `foo` can be coded as follows.
@@ -1183,7 +1179,7 @@ for (k in 1:K)
 
 where the ellipses are the parameters of the log probability mass
 function for distribution `foo` (there's no distribution called
-``foo"; this is just a placeholder for any discrete distribution
+"foo"; this is just a placeholder for any discrete distribution
 name).
 
 The resulting program looks like a "weighted" regression, but here
@@ -1222,7 +1218,7 @@ beta prior and binomial sampling distribution allow the model to be
 further optimized to the following equivalent form.
 
 ```
-    theta ~ beta(alpha + sum(y), beta + N - sum(y));
+theta ~ beta(alpha + sum(y), beta + N - sum(y));
 ```
 
 To make the model even more efficient, a transformed data variable
@@ -1235,8 +1231,8 @@ Stan programs will run faster if the input is standardized to have a
 zero sample mean and unit sample variance.  This section illustrates
 the principle with a simple linear regression.
 
-Suppose that $y = (y_1,\ldots,y_N)$ is a sequence of $N$ outcomes and
-$x = (x_1,\ldots,x_N)$ a parallel sequence of $N$ predictors.  A
+Suppose that $y = (y_1,\dotsc,y_N)$ is a sequence of $N$ outcomes and
+$x = (x_1,\dotsc,x_N)$ a parallel sequence of $N$ predictors.  A
 simple linear regression involving an intercept coefficient $\alpha$
 and slope coefficient $\beta$ can be expressed as
 $$
@@ -1253,9 +1249,9 @@ then it can be more efficient to standardize the outputs $y_n$ and
 predictors $x_n$.  The data are first centered by subtracting the
 sample mean, and then scaled by dividing by the sample deviation.
 Thus a data point $u$ is standardized with respect to
-a vector $y$  by the function $\mbox{z}_y$, defined by
+a vector $y$  by the function $\mathsf{z}_y$, defined by
 $$
-\mbox{z}_y(u) = \frac{u - \bar{y}}{\mbox{sd}(y)}
+\mathsf{z}_y(u) = \frac{u - \bar{y}}{\mathtt{sd}(y)}
 $$
 where the sample mean of $y$ is
 $$
@@ -1264,7 +1260,7 @@ $$
 $$
 and the sample standard deviation of $y$ is
 $$
-\mbox{sd}(y)
+\mathtt{sd}(y)
 = \left(
 \frac{1}{N} \sum_{n=1}^N (y_n - \bar{y})^2
 \right)^{1/2}.
@@ -1273,7 +1269,7 @@ The inverse transform is
 defined by reversing the two normalization steps, first rescaling by
 the same deviation and relocating by the sample mean,
 $$
-\mbox{z}_y^{-1}(v) = \mbox{sd}(y) v + \bar{y}.
+\mathrm{z}_y^{-1}(v) = \mathtt{sd}(y) v + \bar{y}.
 $$
 
 To standardize a regression problem, the predictors and outcomes are
@@ -1336,7 +1332,7 @@ model {
 ```
 
 The parameters are renamed to indicate that they aren't the
-``natural" parameters, but the model is otherwise identical.  In
+"natural" parameters, but the model is otherwise identical.  In
 particular, the fairly diffuse priors on the coefficients and error
 scale are the same.  These could have been transformed as well, but
 here they are left as is, because the scales make sense as 
@@ -1352,79 +1348,39 @@ y_n
 $$
 has been transformed to a regression on the standardized variables,
 $$
-\mbox{z}_y(y_n)
+\mathrm{z}_y(y_n)
 = \alpha'
-+ \beta' \mbox{z}_x(x_n)
++ \beta' \mathrm{z}_x(x_n)
 + \epsilon'_n.
 $$
 The original parameters can be recovered with a little algebra,
-
-$$
-\begin{array}{rcl}
-y_n
-& = & \mbox{z}_y^{-1}(\mbox{z}_y(y_n))
-\\[4pt]
-& = &
-\mbox{z}_y^{-1}
-\left(
-\alpha'
-+ \beta' \mbox{z}_x(x_n)
-+ \epsilon_n'
-\right)
-\\[4pt]
-& = &
-\mbox{z}_y^{-1}
-\left(
-\alpha'
-+ \beta'
-    \left(
-      \frac{x_n - \bar{x}}{\mbox{sd}(x)}
-    \right)
-+ \epsilon_n'
-\right)
-\\[4pt]
-& = &
-\mbox{sd}(y)
-\left(
-\alpha'
-+ \beta'
-    \left(
-      \frac{x_n - \bar{x}}{\mbox{sd}(x)}
-    \right)
-+ \epsilon_n'
-\right)
-+ \bar{y}
-\\[4pt]
-& = &
-\left(
-  \mbox{sd}(y)
-      \left(
-          \alpha'
-          - \beta' \frac{\bar{x}}{\mbox{sd}(x)}
-      \right)
-  + \bar{y}
-\right)
-+ \left(
-      \beta' \frac{\mbox{sd}(y)}{\mbox{sd}(x)}
-  \right) x_n
-+ \mbox{sd}(y) \epsilon'_n,
-\end{array}
-$$
-
+\begin{align*}
+y_n &= \mathrm{z}_y^{-1}(\mathrm{z}_y(y_n)) \\
+    &= \mathrm{z}_y^{-1}
+\left( \alpha' + \beta' \mathrm{z}_x(x_n) + \epsilon_n' \right) \\
+    &= \mathrm{z}_y^{-1}
+\left( \alpha' + \beta' \left( \frac{x_n - \bar{x}}{\mathtt{sd}(x)} \right) + \epsilon_n' \right) \\
+    &= \mathtt{sd}(y)
+\left( \alpha' + \beta' \left( \frac{x_n - \bar{x}}{\mathtt{sd}(x)} \right) + \epsilon_n' \right) + \bar{y} \\
+    &=
+\left( \mathtt{sd}(y) \left( \alpha' - \beta' \frac{\bar{x}}{\mathtt{sd}(x)} \right) + \bar{y} \right)
++ \left( \beta' \frac{\mathtt{sd}(y)}{\mathtt{sd}(x)} \right) x_n
++ \mathtt{sd}(y) \epsilon'_n,
+\end{align*}
 from which the original scale parameter values can be read off,
 $$
 \alpha
 =
-\mbox{sd}(y)
+\mathtt{sd}(y)
       \left(
           \alpha'
-          - \beta' \frac{\bar{x}}{\mbox{sd}(x)}
+          - \beta' \frac{\bar{x}}{\mathtt{sd}(x)}
       \right)
   + \bar{y};
-\ \ \ \ \
-\beta = \beta' \frac{\mbox{sd}(y)}{\mbox{sd}(x)};
-\ \ \ \ \
-\sigma = \mbox{sd}(y) \sigma'.
+\qquad
+\beta = \beta' \frac{\mathtt{sd}(y)}{\mathtt{sd}(x)};
+\qquad
+\sigma = \mathtt{sd}(y) \sigma'.
 $$
 
 These recovered parameter values on the original scales can be
@@ -1448,7 +1404,7 @@ calculated once and stored as transformed data.  Furthermore, the
 model sampling statement can be easily vectorized, for instance, in
 the transformed model, to
 ```
-    y_std ~ normal(alpha_std + beta_std * x_std, sigma_std);
+y_std ~ normal(alpha_std + beta_std * x_std, sigma_std);
 ```
 
 ### Standard Normal Distribution {-}

@@ -44,14 +44,14 @@ only touches on some basic models.  For more information, see
 ## Gaussian Process Regression
 
 The data for a multivariate Gaussian process regression consists of a
-series of $N$ inputs $x_1,\ldots,x_N \in \mathbb{R}^D$ paired with outputs
-$y_1,\ldots,y_N \in \mathbb{R}$.  The defining feature of Gaussian
+series of $N$ inputs $x_1,\dotsc,x_N \in \mathbb{R}^D$ paired with outputs
+$y_1,\dotsc,y_N \in \mathbb{R}$.  The defining feature of Gaussian
 processes is that the probability of a finite number of outputs $y$
 conditioned on their inputs $x$ is Gaussian:
 $$
-y \sim \mathsf{multivariate\ normal}(m(x), K(x | \theta)),
+y \sim \mathsf{multivariate\ normal}(m(x), K(x \mid \theta)),
 $$
-where $m(x)$ is an $N$-vector and $K(x | \theta)$ is an $N \times N$
+where $m(x)$ is an $N$-vector and $K(x \mid \theta)$ is an $N \times N$
 covariance matrix.  The mean function $m : \mathbb{R}^{N \times D}
 \rightarrow \mathbb{R}^{N}$ can be anything, but the covariance function
 $K : \mathbb{R}^{N \times D} \rightarrow \mathbb{R}^{N \times N}$ must produce
@@ -60,7 +60,7 @@ a positive-definite matrix for any input $x$.^[Gaussian processes can be extende
 A popular covariance function, which will be used in the implementations later
 in this chapter, is an exponentiated quadratic function,
 $$
-  K(x | \alpha, \rho, \sigma)_{i, j}
+  K(x \mid \alpha, \rho, \sigma)_{i, j}
 = \alpha^2
 \exp \left(
 - \dfrac{1}{2 \rho^2} \sum_{d=1}^D (x_{i,d} - x_{j,d})^2
@@ -74,7 +74,7 @@ test is between the indexes $i$ and $j$, not between values $x_i$ and
 $x_j$. This kernel is obtained through a convolution of two
 independent Gaussian processes, $f_1$ and $f_2$, with kernels
 $$
-  K_1(x | \alpha, \rho)_{i, j}
+  K_1(x \mid \alpha, \rho)_{i, j}
 = \alpha^2
 \exp \left(
 - \dfrac{1}{2 \rho^2} \sum_{d=1}^D (x_{i,d} - x_{j,d})^2
@@ -82,7 +82,7 @@ $$
 $$
 and
 $$
-  K_2(x | \sigma)_{i, j}
+  K_2(x \mid \sigma)_{i, j}
 =
  \delta_{i, j} \sigma^2,
 $$
@@ -107,7 +107,7 @@ the inputs $x_i$ and $x_j$ is their vector difference, $x_i - x_j$.
 This produces a process with stationary covariance in the sense that
 if an input vector $x$ is translated by a vector $\epsilon$ to $x +
 \epsilon$, the covariance at any pair of outputs is unchanged, because
-$K(x | \theta) = K(x + \epsilon| \theta)$.
+$K(x \mid \theta) = K(x + \epsilon \mid \theta)$.
 
 The summation involved is just the squared Euclidean distance between
 $x_i$ and $x_j$ (i.e., the $L_2$ norm of their difference, $x_i -
@@ -132,7 +132,7 @@ a multivariate normal distribution.  To make the model concrete, the
 squared exponential covariance function described in the previous section
 will be used with hyperparameters set to $\alpha^2 = 1$, $\rho^2 = 1$,
 and $\sigma^2 = 0.1$, and the mean function $m$ is defined to always
-return the zero vector, $m(x) = {\bf 0}$.  Consider the following
+return the zero vector, $m(x) = \mathbf{0}$.  Consider the following
 implementation of a Gaussian process simulator.
 
 ```
@@ -202,7 +202,6 @@ data {
 }
 transformed data {
 ...
-...
 ```
 
 The data are now declared as an array of vectors instead of an array of
@@ -219,15 +218,15 @@ A more efficient implementation of the simulation model can be
 coded in Stan by relocating, rescaling and rotating an isotropic standard
 normal variate.  Suppose $\eta$ is an an isotropic standard normal variate
 $$
-\eta \sim \mathsf{normal}({\bf 0}, {\bf 1}),
+\eta \sim \mathsf{normal}(\mathbf{0}, \mathbf{1}),
 $$
-where ${\bf 0}$ is an $N$-vector of 0 values and ${\bf 1}$ is the $N
+where $\mathbf{0}$ is an $N$-vector of 0 values and $\mathbf{1}$ is the $N
 \times N$ identity matrix.  Let $L$ be the Cholesky decomposition of
-$K(x | \theta)$, i.e., the lower-triangular matrix $L$ such that $LL^{\top} =
-K(x | \theta)$.  Then the transformed variable $\mu + L\eta$ has the intended
+$K(x \mid \theta)$, i.e., the lower-triangular matrix $L$ such that $LL^{\top} =
+K(x \mid \theta)$.  Then the transformed variable $\mu + L\eta$ has the intended
 target distribution,
 $$
-  \mu + L\eta \sim \mathsf{multivariate\ normal}(\mu(x), K(x | \theta)).
+  \mu + L\eta \sim \mathsf{multivariate\ normal}(\mu(x), K(x \mid \theta)).
 $$
 
 This transform can be applied directly to Gaussian process
@@ -273,25 +272,23 @@ encoding of the transform described above.
 
 The full generative model for a GP with a normal outcome,
 $y \in \mathbb{R}^N$, with inputs $x \in \mathbb{R}^N$, for a finite $N$:
-
-$$ \begin{aligned}
-  \rho & \sim \mathsf{InvGamma}(5, 5) \\
-  \alpha & \sim \mathsf{normal}(0, 1) \\
-  \sigma & \sim \mathsf{normal}(0, 1) \\
-  f & \sim \mathsf{multivariate\ normal}\left(0, K(x | \alpha, \rho)\right) \\
-  y_i & \sim \mathsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\}
-\end{aligned} $$
+\begin{align*}
+\rho   &\sim \mathsf{InvGamma}(5, 5) \\
+\alpha &\sim \mathsf{normal}(0, 1) \\
+\sigma &\sim \mathsf{normal}(0, 1) \\
+f      &\sim \mathsf{multivariate\ normal}\left(0, K(x \mid \alpha, \rho)\right) \\
+y_i    &\sim \mathsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\}
+\end{align*}
 
 With a normal outcome, it is possible to integrate out the Gaussian
 process $f$, yielding the more parsimonious model:
-
-$$ \begin{aligned}
-  \rho & \sim \mathsf{InvGamma}(5, 5) \\
-  \alpha & \sim \mathsf{normal}(0, 1) \\
-  \sigma & \sim \mathsf{normal}(0, 1) \\
-  y & \sim \mathsf{multivariate\ normal}
-  \left(0, K(x | \alpha, \rho) + \mathbf{I}_N \sigma^2\right) \\
-\end{aligned} $$
+\begin{align*}
+\rho   &\sim \mathsf{InvGamma}(5, 5) \\
+\alpha &\sim \mathsf{normal}(0, 1) \\
+\sigma &\sim \mathsf{normal}(0, 1) \\
+y      &\sim \mathsf{multivariate\ normal}
+         \left(0, K(x \mid \alpha, \rho) + \mathbf{I}_N \sigma^2\right) \\
+\end{align*}
 
 It can be more computationally efficient when dealing with a normal
 outcome to integrate out the Gaussian process, because this yields a
@@ -478,11 +475,11 @@ For binary classification problems, the observed outputs $z_n \in
 \{ 0,1 \}$ are binary.  These outputs are modeled using a Gaussian
 process with (unobserved) outputs $y_n$ through the logistic link,
 $$
-z_n \sim \mathsf{Bernoulli}(\mbox{logit}^{-1}(y_n)),
+z_n \sim \mathsf{Bernoulli}(\operatorname{logit}^{-1}(y_n)),
 $$
 or in other words,
 $$
-\mbox{Pr}[z_n = 1] = \mbox{logit}^{-1}(y_n).
+\mathsf{Pr}[z_n = 1] = \operatorname{logit}^{-1}(y_n).
 $$
 
 We can extend our latent variable GP Stan program to deal with classification
@@ -511,7 +508,7 @@ If we have multivariate inputs $x \in \mathbb{R}^D$, the squared exponential
 covariance function can be further generalized by fitting a scale
 parameter $\rho_d$ for each dimension $d$,
 $$
-  k(x | \alpha, \vec{\rho}, \sigma)_{i, j} = \alpha^2 \exp
+  k(x \mid \alpha, \vec{\rho}, \sigma)_{i, j} = \alpha^2 \exp
 \left(-\dfrac{1}{2}
 \sum_{d=1}^D \dfrac{1}{\rho_d^2} (x_{i,d} - x_{j,d})^2
 \right)
@@ -619,12 +616,12 @@ We may wish to put further soft constraints on the length-scale, but these are
 dependent on how the GP is used in our statistical model.
 
 If our model consists of only the GP, i.e.:
-
-$$ \begin{aligned}
-  f & \sim \mathsf{multivariate\ normal}\left(0, K(x | \alpha, \rho)\right) \\
-  y_i & \sim \mathsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\} \\
-  & x \in \mathbb{R}^{N \times D}, \, f \in \mathbb{R}^N
-\end{aligned} $$
+\begin{align*}
+f   &\sim \mathsf{multivariate\ normal}\left(0, K(x \mid \alpha, \rho)\right) \\
+y_i &\sim \mathsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\} \\
+    & x \in \mathbb{R}^{N \times D}, \quad
+      f \in \mathbb{R}^N
+\end{align*}
 
 we likely don't need constraints beyond penalizing small
 length-scales.  We'd like to allow the GP prior to represent both
@@ -642,13 +639,14 @@ zero-avoiding or boundary-avoiding distributions. See
 If we're using the GP as a component in a larger model that includes an overall
 mean and fixed effects for the same variables we're using as the domain for the
 GP, i.e.:
-
-$$ \begin{aligned}
-  f & \sim \mathsf{multivariate\ normal}\left(0, K(x | \alpha, \rho)\right) \\ y_i &
-  \sim \mathsf{normal}(\beta_0 + x_i \beta_{[1:D]} + f_i, \sigma) \, \forall i
-  \in \{1, \dots, N\} \\ & x_i^T, \beta_{[1:D]} \in \mathbb{R}^D,\, x \in \mathbb{R}^{N
-  \times D},\, f \in \mathbb{R}^N
-\end{aligned} $$
+\begin{align*}
+f   &\sim \mathsf{multivariate\ normal}\big(0, K(x \mid \alpha, \rho)\big) \\
+y_i &\sim \mathsf{normal}\left(\beta_0 + x_i \beta_{[1:D]} + f_i, \sigma\right) \, \forall i
+  \in \{1, \dots, N\} \\
+    & x_i^T, \beta_{[1:D]} \in \mathbb{R}^D,\quad
+      x \in \mathbb{R}^{N \times D},\quad
+      f \in \mathbb{R}^N
+\end{align*}
 
 we'll likely want to constrain large length-scales as well.  A length scale
 that is larger than the scale of the data yields a GP posterior that is
@@ -659,12 +657,12 @@ explain similar variation. In order to limit the amount of overlap between the
 GP and the linear regression, we should use a prior with a sharper right tail
 to limit the GP to higher-frequency functions. We can use a generalized inverse
 Gaussian distribution:
-
-$$ \begin{aligned}
-  f(x | a, b, p) & = \dfrac{(a/b)^{p/2}}{2K_p(\sqrt{ab})} x^{p - 1}\exp(-(ax + b
-  / x)/2) \\
-  & x, a, b \in \mathbb{R}^{+}, \, p \in \mathbb{Z}
-\end{aligned} $$
+\begin{align*}
+f(x \mid a, b, p) &= \dfrac{\left(a/b\right)^{p/2}}{2K_p\left(\sqrt{ab}\right)} x^{p - 1}\exp\big(-(ax + b
+  / x)/2\big) \\
+  & x, a, b \in \mathbb{R}^{+},\quad
+    p \in \mathbb{Z}
+\end{align*}
 
 which has an inverse gamma left tail if $p \leq 0$ and an inverse Gaussian
 right tail.  This has not yet been implemented in Stan's math library, but it
@@ -716,12 +714,12 @@ outputs $y$ are observed.  Given a new sequence of inputs $\tilde{x}$,
 the posterior predictive distribution of their labels is computed by
 sampling outputs $\tilde{y}$ according to
 $$
-p(\tilde{y}|\tilde{x},x,y)
+p\left(\tilde{y} \mid \tilde{x},x,y\right)
 \ = \
-\frac{p(\tilde{y}, y|\tilde{x},x)}
-     {p(y|x)}
+\frac{p\left(\tilde{y}, y \mid \tilde{x},x\right)}
+     {p(y \mid x)}
 \ \propto \
-p(\tilde{y}, y|\tilde{x},x).
+p\left(\tilde{y}, y \mid \tilde{x},x\right).
 $$
 
 A direct implementation in Stan defines a model in terms of the
@@ -866,22 +864,21 @@ from it.
 
 Jumping straight to the result,
 $$
-p(\tilde{y}|\tilde{x},y,x)
+p\left(\tilde{y} \mid \tilde{x},y,x\right)
 =
-\mathsf{normal}(K^{\top}\Sigma^{-1}y,\
-                \Omega - K^{\top}\Sigma^{-1}K),
+\mathsf{normal}\left(K^{\top}\Sigma^{-1}y,\
+                \Omega - K^{\top}\Sigma^{-1}K\right),
 $$
-where $\Sigma = K(x | \alpha, \rho, \sigma)$ is the result of applying the covariance
+where $\Sigma = K(x \mid \alpha, \rho, \sigma)$ is the result of applying the covariance
 function to the inputs $x$ with observed outputs $y$, $\Omega =
-K(\tilde{x} | \alpha, \rho)$ is the result of applying the covariance function to the
+K(\tilde{x} \mid \alpha, \rho)$ is the result of applying the covariance function to the
 inputs $\tilde{x}$ for which predictions are to be inferred, and $K$
 is the matrix of covariances between inputs $x$ and $\tilde{x}$, which
 in the case of the exponentiated quadratic covariance function
 would be
-
 $$
-K(x | \alpha, \rho)_{i, j} = \eta^2 \exp(-\dfrac{1}{2 \rho^2}
-\sum_{d=1}^D (x_{i,d} - \tilde{x}_{j,d})^2).
+K(x \mid \alpha, \rho)_{i, j} = \eta^2 \exp\left(-\dfrac{1}{2 \rho^2}
+\sum_{d=1}^D \left(x_{i,d} - \tilde{x}_{j,d}\right)^2\right).
 $$
 
 There is no noise term including $\sigma^2$ because the indexes of
@@ -983,58 +980,66 @@ generated quantities {
 
 Suppose we have observations $y_i \in \mathbb{R}^M$ observed at
 $x_i \in \mathbb{R}^K$. One can model the data like so:
-$$ \begin{aligned}
-  y_i & \sim \mathsf{multivariate\ normal}(f(x_i), \mathbf{I}_M \sigma^2) \\
-  f(x) & \sim \mathsf{GP}(m(x), K(x | \theta, \phi)) \\
-  K(x & | \theta) \in \mathbb{R}^{M \times M}, \, f(x), \, m(x) \in \mathbb{R}^M
-\end{aligned} $$
-where the $K(x, x^\prime | \theta, \phi)_{[m, m^\prime]}$ entry defines the
+\begin{align*}
+y_i  &\sim \mathsf{multivariate\ normal}\left(f(x_i), \mathbf{I}_M \sigma^2\right) \\
+f(x) &\sim \mathsf{GP}\big(m(x), K(x \mid \theta, \phi)\big) \\
+     & K(x \mid \theta) \in \mathbb{R}^{M \times M}, \quad
+       f(x), m(x) \in \mathbb{R}^M
+\end{align*}
+where the $K(x, x^\prime \mid \theta, \phi)_{[m, m^\prime]}$ entry defines the
 covariance between $f_m(x)$ and $f_{m^\prime}(x^\prime)(x)$. This construction
 of Gaussian processes allows us to learn the covariance between the output
 dimensions of $f(x)$. If we parameterize our kernel $K$:
-$$ \begin{aligned} K(x, x^\prime | \theta, \phi)_{[m, m^\prime]} = k(x, x^\prime |
-\theta) k(m, m^\prime | \phi) \end{aligned} $$
+$$
+K(x, x^\prime \mid \theta, \phi)_{[m, m^\prime]} = k\left(x, x^\prime \mid
+\theta\right) k\left(m, m^\prime \mid \phi\right)
+$$
 then our finite dimensional generative model for the above is:
-$$ \begin{aligned}
-  f & \sim \mathsf{Matrixnormalal}(m(x), K(x | \alpha, \rho), C(\phi)) \\
-  y_{i, m} & \sim \mathsf{normal}(f_{i,m}, \sigma) \\
-  f & \in \mathbb{R}^{N \times M}
-\end{aligned} $$
-where $K(x | \alpha, \rho)$ is the exponentiated quadratic kernel we've used
+\begin{align*}
+f        &\sim \mathsf{matrixnormal}\big(m(x), K(x \mid \alpha, \rho), C(\phi)\big) \\
+y_{i, m} &\sim \mathsf{normal}(f_{i,m}, \sigma) \\
+f        &\in  \mathbb{R}^{N \times M}
+\end{align*}
+where $K(x \mid \alpha, \rho)$ is the exponentiated quadratic kernel we've used
 throughout this chapter, and $C(\phi)$ is a positive-definite matrix,
 parameterized by some vector $\phi$.
 
-The matrix normal distribution has two covariance matrices: $K(x |
+The matrix normal distribution has two covariance matrices: $K(x \mid
 \alpha, \rho)$ to encode column covariance, and $C(\phi)$ to define row
 covariance. The salient features of the matrix normal are that the rows
 of the matrix $f$ are distributed:
-$$ \begin{aligned} f_{[n,]} \sim \mathsf{multivariate\ normal}(m(x)_{[n,]}, K(x | \alpha,
-\rho)_{[n,n]} C(\phi)) \end{aligned} $$ and that the columns of the matrix $f$ are
-distributed: $$ \begin{aligned} f_{[,m]} \sim \mathsf{multivariate\ normal}(m(x)_{[,m]}, K(x
-  | \alpha, \rho) C(\phi)_{[m,m]}) \end{aligned} $$
+$$
+f_{[n,]} \sim \mathsf{multivariate\ normal}\big(m(x)_{[n,]}, K(x \mid \alpha,
+\rho)_{[n,n]} C(\phi)\big)
+$$
+and that the columns of the matrix $f$ are
+distributed:
+$$
+f_{[,m]} \sim \mathsf{multivariate\ normal}\big(m(x)_{[,m]}, K(x
+  \mid \alpha, \rho) C(\phi)_{[m,m]}\big)
+$$
 This also means means that $\mathbb{E}\left[f^T f\right]$ is equal to
-$\text{trace}(K(x | \alpha, \rho)) * C$, whereas $\mathbb{E}\left[ff^T\right]$
-is $\text{trace}(C) * K(x | \alpha, \rho)$. We can derive this using
+$\operatorname{trace}\!\big(K(x \mid \alpha, \rho)\big) \times C$, whereas $\mathbb{E}\left[ff^T\right]$
+is $\operatorname{trace}(C) \times K(x \mid \alpha, \rho)$. We can derive this using
 properties of expectation and the matrix normal density.
 
 We should set $\alpha$ to $1.0$ because the parameter is not identified unless
-we constrain $\text{trace}(C) = 1$. Otherwise, we can multiply $\alpha$ by a scalar $d$ and
+we constrain $\operatorname{trace}(C) = 1$. Otherwise, we can multiply $\alpha$ by a scalar $d$ and
 $C$ by $1/d$ and our likelihood will not change.
 
 We can generate a random variable $f$ from a matrix normal density in
 $\mathbb{R}^{N \times M}$ using the following algorithm:
-
-$$ \begin{aligned}
-  \eta_{i,j} & \sim \mathsf{normal}(0, 1) \, \forall i,j \\
-  f & = L_{K(x | 1.0, \rho)} \, \eta \, L_C(\phi)^T \\
-  f & \sim \mathsf{MatrixNormal}(0, K(x | 1.0, \rho), C(\phi)) \\
-  \eta & \in \mathbb{R}^{N \times M} \\
-  L_C(\phi) & = \text{cholesky\_decompose}(C(\phi)) \\
-  L_{K(x | 1.0, \rho)} & = \text{cholesky\_decompose}(K(x | 1.0, \rho))
-\end{aligned} $$
+\begin{align*}
+\eta_{i,j} &\sim \mathsf{normal}(0, 1) \, \forall i,j \\
+f          &= L_{K(x \mid 1.0, \rho)} \, \eta \, L_C(\phi)^T \\
+f          &\sim \mathsf{matrixnormal}\big(0, K(x \mid 1.0, \rho), C(\phi)\big) \\
+\eta       &\in \mathbb{R}^{N \times M} \\
+L_C(\phi)  &= \mathtt{cholesky\_decompose}\big(C(\phi)\big) \\
+L_{K(x \mid 1.0, \rho)} &= \mathtt{cholesky\_decompose}\big(K(x \mid 1.0, \rho)\big)
+\end{align*}
 
 This can be implemented in Stan using a latent-variable GP formulation. We've used
-$\mathsf{LkjCorr}$ for $C(\phi)$, but any positive-definite matrix will do.
+$\mathsf{LKJCorr}$ for $C(\phi)$, but any positive-definite matrix will do.
 
 
 ```

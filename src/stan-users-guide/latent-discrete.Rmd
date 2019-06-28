@@ -38,16 +38,12 @@ The first example is a model of coal mining disasters in the U.K. for the years 
 $D_t$ in year $t$ with two rate parameters, an early rate ($e$)
 and late rate ($l$), that change at a given point in time $s$.  The
 full model expressed using a latent discrete parameter $s$ is
-
-$$
-e  \sim  \mathsf{Exponential}(r_e)
-\\
-l  \sim  \mathsf{Exponential}(r_l)
-\\
-s \sim  \mathsf{Uniform}(1, T)
-\\
-D_t \sim  \mathsf{Poisson}(t < s \ ? \ e \ : \ l)
-$$
+\begin{align*}
+e   &\sim  \mathsf{exponential}(r_e) \\
+l   &\sim  \mathsf{exponential}(r_l) \\
+s   &\sim  \mathsf{uniform}(1, T) \\
+D_t &\sim  \mathsf{Poisson}(t < s \; ? \; e \: : \: l)
+\end{align*}
 
 The last line uses the conditional operator (also known as the ternary
 operator), which is borrowed from C and related languages.  The
@@ -56,17 +52,15 @@ conditional operator has the same behavior as its counterpart in C++.^[The R cou
 It uses a compact notation involving separating its three arguments by
 a question mark (`?`) and a colon (`:`).  The conditional
 operator is defined by
-
 $$
-c \ ? \ x_1 \ : \ x_2
+c \; ? \; x_1 \: : \: x_2
 =
 \begin{cases}
-\ x_1 & \mbox{if } c \mbox{ is true (i.e., non-zero), and}
-\\
-\ x_2 & \mbox{if } c \mbox{ is false (i.e., zero).}
+\ x_1 & \quad\text{if } c \text{ is true (i.e., non-zero), and} \\
+\ x_2 & \quad\text{if } c \text{ is false (i.e., zero).}
 \end{cases}
 $$
-As of version 2.10, Stan supports the conditional operator.
+<!--As of version 2.10, Stan supports the conditional operator.-->
 
 
 ### Marginalizing out the Discrete Parameter {-}
@@ -75,60 +69,39 @@ To code this model in Stan, the discrete parameter $s$ must be
 marginalized out to produce a model defining the log of the
 probability function $p(e,l,D_t)$.  The full joint probability factors
 as
-
-$$
-p(e,l,s,D)
- =  p(e) \, p(l) \, p(s) \, p(D | s, e, l)
-\\
- = 
-\mathsf{Exponential}(e|r_e) \ \mathsf{Exponential}(l|r_l) \
-\mathsf{Uniform}(s|1, T)
-\prod_{t=1}^T \mathsf{Poisson}(D_t | t < s \ ? \ e \ : \ l),
-$$
-
+\begin{align*}
+p(e,l,s,D) &=  p(e) \, p(l) \, p(s) \, p(D \mid s, e, l) \\
+ &= \mathsf{exponential}(e \mid r_e) \ \mathsf{exponential}(l \mid r_l) \
+    \mathsf{uniform}(s \mid 1, T) \\
+ &\qquad \prod_{t=1}^T \mathsf{Poisson}(D_t \mid t < s \; ? \; e \: : \: l),
+\end{align*}
 
 To marginalize, an alternative factorization into prior and likelihood
 is used,
-
 $$
-\begin{array}{rcl}
-p(e,l,D) & = & p(e,l) \, p(D|e,l),
-\end{array}
+p(e,l,D) = p(e,l) \, p(D \mid e,l),
 $$
-
 where the likelihood is defined by marginalizing $s$ as
-
-$$
-\begin{array}{rcl}
-p(D | e,l)
-& = &
-\sum_{s=1}^T p(s, D | e,l)
-\\[3pt]
-& = &
-\sum_{s=1}^T p(s) p(D | s,e,l)
-\\[3pt]
-& = &
-\sum_{s=1}^T \mathsf{Uniform}(s | 1,T)
-\, \prod_{t=1}^T \mathsf{Poisson}(D_t | t < s \ ? \ e \ : \ l)
-\end{array}
-$$
+\begin{align*}
+p(D \mid e,l) &= \sum_{s=1}^T p(s, D \mid e,l) \\
+ &= \sum_{s=1}^T p(s) \, p(D \mid s,e,l) \\
+ &= \sum_{s=1}^T \mathsf{uniform}(s \mid 1,T) \,
+    \prod_{t=1}^T \mathsf{Poisson}(D_t \mid t < s \; ? \; e \: : \: l)
+\end{align*}
 
 Stan operates on the log scale and thus requires the log likelihood,
-
-$$
-\log p(D | e,l) =
-\mbox{log\_sum\_exp}_{s=1}^T
-(
- \log \mathsf{Uniform}(s \, | \, 1, T)
-+ \sum_{t=1}^T \log \mathsf{Poisson}(D_t \, | \, t < s \ ?
-\ e \ : \ l) ),
-$$
-
+\begin{align*}
+\log p(D \mid e,l)
+ &= \mathtt{log\_sum\_exp}_{s=1}^T
+    \left( \log \mathsf{uniform}(s \mid 1, T) \vphantom{\sum_{t=1}^T}\right. \\
+ &\qquad \left.
+    + \sum_{t=1}^T \log \mathsf{Poisson}(D_t \mid t < s \; ? \; e \: : \: l)
+\right),
+\end{align*}
 where the log sum of exponents function is defined by
 $$
-\mbox{log\_sum\_exp}_{n=1}^N \, \alpha_n
-\ = \
-\log \sum_{n=1}^N \mbox{exp}(\alpha_n).
+\mathtt{log\_sum\_exp}_{n=1}^N \, \alpha_n =
+\log \sum_{n=1}^N \exp(\alpha_n).
 $$
 
 The log sum of exponents function allows the model to be coded
@@ -141,7 +114,7 @@ model calculations.
 
 The Stan program for the change point model is shown in
 the figure below.  The transformed parameter
-`lp[s]` stores the quantity $\log p(s, D \, | \, e, l)$.
+`lp[s]` stores the quantity $\log p(s, D \mid e, l)$.
 
 ```
 data {
@@ -172,7 +145,6 @@ model {
   target += log_sum_exp(lp);
 }
 ```
-id:change-point-model.figure
 
 A change point model in which disaster rates `D[t]` have one rate,
 `e`, before the change point and a different rate, `l`, after the
@@ -235,57 +207,44 @@ values every iteration.
 ### Posterior Distribution of the Discrete Change Point {-}
 
 The value of `lp[s]` in a given iteration is given by $\log
-p(s,D|e,l)$ for the values of the early and late rates, $e$ and $l$,
+p(s,D \mid e,l)$ for the values of the early and late rates, $e$ and $l$,
 in the iteration.  In each iteration after convergence, the early and
 late disaster rates, $e$ and $l$, are drawn from the posterior
-$p(e,l|D)$ by MCMC sampling and the associated `lp` calculated.
-The value of `lp` may be normalized to calculate $p(s|e,l,D)$ in
+$p(e,l \mid D)$ by MCMC sampling and the associated `lp` calculated.
+The value of `lp` may be normalized to calculate $p(s \mid e,l,D)$ in
 each iteration, based on on the current values of $e$ and $l$.
 Averaging over iterations provides an unnormalized probability
 estimate of the change point being $s$ (see below for the normalizing
 constant),
-
-$$
-\begin{array}{rcl}
-p(s | D)
-& \propto &
-q(s | D)
-\\[3pt]
-& = &
-\frac{1}{M} \sum_{m=1}^{M} \exp(`lp`[m,s]).
-\end{array}
-$$
-
-where $\mbox{lp}[m,s]$ represents the value of `lp` in
+\begin{align*}
+p(s \mid D) &\propto q(s \mid D) \\
+ &= \frac{1}{M} \sum_{m=1}^{M} \exp(\mathtt{lp}[m,s]).
+\end{align*}
+where $\mathtt{lp}[m,s]$ represents the value of `lp` in
 posterior draw $m$ for change point $s$.  By averaging over draws,
 $e$ and $l$ are themselves marginalized out, and the result has no
 dependence on a given iteration's value for $e$ and $l$.  A final
 normalization then produces the quantity of interest, the posterior
 probability of the change point being $s$ conditioned on the data $D$,
-
 $$
-p(s | D)
-=
-\frac{q(s|D)}{\sum_{s'=1}^T q(s' | D)}.
+p(s \mid D) = \frac{q(s \mid D)}{\sum_{s'=1}^T q(s' \mid D)}.
 $$
 
-A plot of the values of $\log p(s|D)$ computed using Stan 2.4's
+A plot of the values of $\log p(s \mid D)$ computed using Stan 2.4's
 default MCMC implementation is shown in the posterior plot.
 
 Log probability of change point being in year, calculated analytically.
 
 ```{r include=TRUE, fig.align="center", fig.cap=c("Analytical change-point posterior"), echo=FALSE}
-knitr::include_graphics("./img/change-point-posterior.pdf")
+knitr::include_graphics("./img/change-point-posterior.png", auto_pdf = TRUE)
 ```
 
 The frequency of change points generated by sampling the discrete change
 points.
 
 ```{r include=TRUE, fig.align="center", fig.cap=c("Sampled change-point posterior"), echo=FALSE}
-knitr::include_graphics("./img/s-discrete-posterior.pdf")
+knitr::include_graphics("./img/s-discrete-posterior.png", auto_pdf = TRUE)
 ```
-
-id:change-point-posterior.figure
 
 In order their range of estimates be visible, the first plot is on the log
 scale and the second plot on the linear scale; note the narrower range
@@ -386,7 +345,6 @@ produce a real-valued estimate of the population size.
 
 The Lincoln-Petersen [@Lincoln:1930,@Petersen:1896] method for
 estimating population size is
-
 $$
 \hat{N} = \frac{M C}{R}.
 $$
@@ -394,7 +352,7 @@ $$
 This population estimate would arise from a probabilistic model in
 which the number of recaptured animals is distributed binomially,
 $$
-R \sim \mathsf{Binomial}(C, M / N)
+R \sim \mathsf{binomial}(C, M / N)
 $$
 given the total number of animals captured in the second round ($C$)
 with a recapture probability of $M/N$, the fraction of the total
@@ -413,7 +371,7 @@ model {
   R ~ binomial(C, M / N);
 }
 ```
-id:lincoln-petersen-model.figure
+<a name="id:lincoln-petersen-model.figure"></a>
 
 A probabilistic formulation of the Lincoln-Petersen
 estimator for population size based on data from a one-step
@@ -477,17 +435,15 @@ should be used to tighten these priors in practice.
 The CJS model also employs a latent discrete parameter $z_{i,t}$
 indicating for each individual $i$ whether it is alive at time $t$,
 distributed as
-
 $$
-z_{i,t} \sim \mathsf{Bernoulli}(z_{i,t-1} \ ? \ 0 \ : \ \phi_{t-1}).
+z_{i,t} \sim \mathsf{Bernoulli}(z_{i,t-1} \; ? \; 0 \: : \: \phi_{t-1}).
 $$
 
 The conditional prevents the model positing zombies; once an animal is
 dead, it stays dead.  The data distribution is then simple to express
 conditional on $z$ as
-
 $$
-_{i,t} \sim \mathsf{Bernoulli}(z_{i,t} \ ? \ 0 \ : \ p_t).
+y_{i,t} \sim \mathsf{Bernoulli}(z_{i,t} \; ? \; 0 \: : \: p_t).
 $$
 
 The conditional enforces the constraint that dead animals cannot be captured.
@@ -509,11 +465,9 @@ $$
 \chi_t
 =
 \begin{cases}
-1
-& \mbox{if } t = T
-\\[3pt]
+1 & \quad\text{if } t = T \\
 (1 - \phi_t) + \phi_t (1 - p_{t+1}) \chi_{t+1}
-& \mbox{ if } t < T
+  & \quad\text{if } t < T
 \end{cases}
 $$
 
@@ -531,6 +485,30 @@ With three capture times, there are three captured/not-captured
 profiles an individual may have.  These may be naturally coded as
 binary numbers as follows.
 
+<!-- This next table is for HTML output -->
+```{=html}
+<table>
+  <colgroup>
+    <col span="1" style="border-right: 2px solid rgb(128,128,128);">
+    <col span="3">
+    <col span="1" style="border-left: 2px solid rgb(128,128,128);">
+  <thead>
+    <tr><th rowspan="2">profile</th><th colspan="3">captures</th><th rowspan="2">probability</th></tr>
+    <tr>                            <th>1</th><th>2</th><th>3</th></tr></th>
+  </thead>
+  <tbody style="border-top: 2px solid rgb(128,128,128); border-bottom: 2px solid rgb(128,128,128); text-align: center;">
+    <tr><td>0</td><td>-</td><td>-</td><td>-</td><td>n/a</td></tr>
+    <tr><td>1</td><td>-</td><td>-</td><td>+</td><td>n/a</td></tr>
+    <tr><td>2</td><td>-</td><td>+</td><td>-</td><td>\(\chi_2\)</td></tr>
+    <tr><td>3</td><td>-</td><td>+</td><td>+</td><td>\(\phi_2 \, p_3\)</td></tr>
+    <tr><td>4</td><td>+</td><td>-</td><td>-</td><td>\(\chi_1\)</td></tr>
+    <tr><td>5</td><td>+</td><td>-</td><td>+</td><td>\(\phi_1 \, (1 - p_2) \, \phi_2 \, p_3\)</td></tr>
+    <tr><td>6</td><td>+</td><td>+</td><td>-</td><td>\(\phi_1 \, p_2 \, \chi_2\)</td></tr>
+    <tr><td>7</td><td>+</td><td>+</td><td>+</td><td>\(\phi_1 \, p_2 \, \phi_2 \, p_3\)</td></tr>
+  </tbody>
+</table>
+```
+<!-- This next table is for LaTeX output -->
 \begin{center}
 \begin{tabular}{c|ccc|c}
 & \multicolumn{3}{|c|}{{\it captures}}
@@ -549,7 +527,7 @@ binary numbers as follows.
 \\
 {5} & + & - & + & $\phi_1 \, (1 - p_2) \, \phi_2 \, p_3$
 \\ \hline
-{6} & + & + & - & $ \phi_1 \, p_2 \, \chi_2$
+{6} & + & + & - & $\phi_1 \, p_2 \, \chi_2$
 \\
 {7} & + & + & + & $\phi_1 \, p_2 \, \phi_2 \, p_3$
 \end{tabular}
@@ -574,7 +552,7 @@ parameters $\phi$ and $p$.  In the model block, the log probability is
 incremented for each history based on its count.  This second step is
 similar to collecting Bernoulli observations into a binomial or
 categorical observations into a multinomial, only it is coded directly
-in the Stan program using `target~+=` rather than
+in the Stan program using `target +=` rather than
 being part of a built-in probability function.
 
 The following is the Stan program for the Cormack-Jolly-Seber
@@ -611,8 +589,7 @@ generated quantities {
   beta3 = phi[2] * p[3];
 }
 ```
-
-id:change-point-model.figure
+<a name="id:change-point-model.figure"></a>
 
 
 
@@ -785,7 +762,7 @@ must survive between the first and last capture (i.e., no zombies).
 The loop starts after the first capture, because all
 information in the CJS model is conditional on the first capture.
 
-In the inner loop, the observed capture status `y[i,~t]` for
+In the inner loop, the observed capture status `y[i,t]` for
 individual `i` at time `t` has a Bernoulli distribution
 based on the capture probability `p[t]` at time `t`.
 
@@ -901,7 +878,7 @@ for diagnostic procedures.
 
 The data for the model consists of $J$ raters (diagnostic tests), $I$
 items (patients), and $K$ categories (condition statuses) to annotate,
-with $y_{i, j} \in 1{:}K$ being the rating provided by rater $j$ for
+with $y_{i, j} \in \{1, \dotsc, K\}$ being the rating provided by rater $j$ for
 item $i$.  In a diagnostic test setting for a particular condition,
 the raters are diagnostic procedures and often $K=2$, with values
 signaling the presence or absence of the condition.^[Diagnostic procedures are often ordinal, as in stages of cancer in oncological diagnosis or the severity of a cavity in dental diagnosis.  Dawid and Skene's model may be used as is or naturally generalized for ordinal ratings using a latent continuous rating and cutpoints as in ordinal logistic regression.]
@@ -915,7 +892,7 @@ once.
 The model is based on three parameters, the first of which is discrete:
 
 
-* $z_i$ : a value in $1{:}K$ indicating the true category of item $i$,
+* $z_i$ : a value in $\{1, \dotsc, K\}$ indicating the true category of item $i$,
 * $\pi$ : a $K$-simplex for the prevalence of the $K$
   categories in the population, and
 * $\theta_{j,k}$ : a $K$-simplex for the response of annotator $j$
@@ -927,15 +904,14 @@ The model is based on three parameters, the first of which is discrete:
 The true category of an item is assumed to be generated by a simple
 categorical distribution based on item prevalence,
 $$
-z_i \sim \mathsf{Categorical}(\pi).
+z_i \sim \mathsf{categorical}(\pi).
 $$
 
 The rating $y_{i, j}$ provided for item $i$ by rater $j$ is modeled as
 a categorical response of rater $i$ to an item of category $z_i$,^[In the subscript, $z[i]$ is written as $z_i$ to
   improve legibility.]
-
 $$
-y_{i, j} \sim \mathsf{Categorical}(\theta_{j,\pi_{z[i]}}).
+y_{i, j} \sim \mathsf{categorical}(\theta_{j,\pi_{z[i]}}).
 $$
 
 #### Priors and Hierarchical Modeling {-}
@@ -971,27 +947,24 @@ marginalized out of the joint posterior in order to carry out sampling
 or maximum likelihood estimation in Stan. The joint posterior factors
 as
 $$
-p(y, \theta, \pi) = p(y | \theta,\pi) \, p(\pi) \, p(\theta),
+p(y, \theta, \pi) = p(y \mid \theta,\pi) \, p(\pi) \, p(\theta),
 $$
-where $p(y | \theta,\pi)$ is derived by marginalizing $z$ out of
-
+where $p(y \mid \theta,\pi)$ is derived by marginalizing $z$ out of
 $$
-p(z, y | \theta, \pi)
-\ = \
-\prod_{i=1}^I \left( \mathsf{Categorical}(z_i | \pi)
+p(z, y \mid \theta, \pi) =
+\prod_{i=1}^I \left( \mathsf{categorical}(z_i \mid \pi)
                      \prod_{j=1}^J
-                     \mathsf{Categorical}(y_{i, j}|\theta_{j, z[i]})
+                     \mathsf{categorical}(y_{i, j} \mid \theta_{j, z[i]})
               \right).
 $$
 
 This can be done item by item, with
 $$
-p(y | \theta, \pi)
-\ = \
+p(y \mid \theta, \pi) =
 \prod_{i=1}^I \sum_{k=1}^K
-  \left( \mathsf{Categorical}(z_i | \pi)
+  \left( \mathsf{categorical}(z_i \mid \pi)
          \prod_{j=1}^J
-         \mathsf{Categorical}(y_{i, j}|\theta_{j, z[i]})
+         \mathsf{categorical}(y_{i, j} \mid \theta_{j, z[i]})
   \right).
 $$
 
@@ -999,21 +972,17 @@ In the missing data model, only the observed labels would be used in
 the inner product.
 
 @DawidSkene:1979 derive exactly the same equation in their
-Equation~(2.7), required for the E-step in their expectation
+Equation (2.7), required for the E-step in their expectation
 maximization (EM) algorithm.  Stan requires the marginalized
 probability function on the log scale,
-$$
-\begin{array}{l}
-\mbox{ } \ \log p(y | \theta, \pi)
-\\[3pt]
-\mbox{ } \  = \
-\sum_{i=1}^I \log \left( \sum_{k=1}^K \exp
-  \left( \log \mathsf{Categorical}(z_i | \pi)
-         + \sum_{j=1}^J
-         \log \mathsf{Categorical}(y_{i, j}|\theta_{j, z[i]})
-  \right) \right),
-\end{array}
-$$
+\begin{align*}
+\log p(y \mid \theta, \pi)
+ &= \sum_{i=1}^I \log \left( \sum_{k=1}^K \exp
+    \left(\log \mathsf{categorical}(z_i \mid \pi) \vphantom{\sum_{j=1}^J}\right.\right.\\
+ &\qquad \left.\left. + \sum_{j=1}^J
+           \log \mathsf{categorical}(y_{i, j} \mid \theta_{j, z[i]})
+    \right) \right),
+\end{align*}
 which can be directly coded using Stan's built-in `log_sum_exp`
 function.
 
@@ -1057,11 +1026,11 @@ model {
     target += log_sum_exp(log_q_z[i]);
 }
 ```
-id:dawid-skene-model.figure
+<a name="id:dawid-skene-model.figure"></a>
 
 The model marginalizes out the discrete parameter $z$, storing the
-unnormalized conditional probability $\log q(z_i=k|\theta,\pi)$ in\
-`log_q_z[i,~k]`.
+unnormalized conditional probability $\log q(z_i=k \mid \theta,\pi)$ in
+`log_q_z[i,k]`.
 
 The Stan model converges quickly and mixes well using NUTS starting at
 diffuse initial points, unlike the equivalent model implemented with
@@ -1075,7 +1044,7 @@ as the expectation maximization (EM) algorithm of
 #### Inference for the True Category {-}
 
 The quantity `log_q_z[i]` is defined as a transformed
-parameter.  It encodes the (unnormalized) log of $p(z_i | \theta,
+parameter.  It encodes the (unnormalized) log of $p(z_i \mid \theta,
 \pi)$.  Each iteration provides a value conditioned on that
 iteration's values for $\theta$ and $\pi$.  Applying the softmax
 function to `log_q_z[i]` provides a simplex corresponding to

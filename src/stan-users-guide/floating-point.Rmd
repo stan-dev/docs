@@ -28,7 +28,7 @@ representation is divided into two signed components:
 The *value* of a finite floating point number is
 
 $$
-v = (-1)^s \times c \ 2^q
+v = (-1)^s \times c \, 2^q
 $$
 
 
@@ -41,8 +41,8 @@ I/O systems support subnormal numbers.
 ### Ranges and extreme values
 
 There are some reserved exponent values so that legal exponent values
-range between$-(2^10) + 2 = -1022$ and $2^10 - 1 = 1023$.  Legal
-significand values are between $-2^52$ and $2^52 - 1$.
+range between$-(2^{10}) + 2 = -1022$ and $2^{10} - 1 = 1023$.  Legal
+significand values are between $-2^{52}$ and $2^{52} - 1$.
 Floating point allows the representation of both really big and really
 small values.  Some extreme values are
 
@@ -67,7 +67,7 @@ A specially chosen bit pattern is used for the *not-a-number* value
 (often written as `NaN` in programming language output, including
 Stan's).
 
-Stan provides a value function `nan()` that returns this special
+Stan provides a value function `not_a_number()` that returns this special
 not-a-number value.  It is meant to represent error conditions, not
 missing values.  Usually when not-a-number is an argument to a
 function, the result will not-a-number if an exception (a rejection in
@@ -89,7 +89,7 @@ when any of their arguments is not-a-number.
 Comparisons with not-a-number always return false, up to and including
 comparison with itself.  That is, `not_a_number() == not_a_number()`
 somewhat confusingly returns false.  That is why there is a built-in
-`is_not_a_number()` function in Stan (and in C++).  The only exception
+`is_nan()` function in Stan (and in C++).  The only exception
 is negation, which remains coherent.  This means `not_a_number() !=
 not_a_number()` returns true.
 
@@ -109,7 +109,7 @@ done in Stan because the chain rule used to calculate the derivatives
 will attempt illegal operations and return not-a-number.
 
 There are value functions `positive_infinity()` and
-`negative_infinity()` as well as a test function `is_infinity()`.
+`negative_infinity()` as well as a test function `is_inf()`.
 
 Positive and negative infinity have the expected comparison behavior,
 so that `negative_infinty() < 0` evaluates to true (represented with 1
@@ -132,11 +132,11 @@ significant digits as they cannot be represented.  A number may be
 coded in Stan using *scientific notation*, which consists of a signed
 decimal representation of a base and a signed integer decimal
 exponent.  For example, `36.29e-3` represents the number $36.29 \times
-10^{-3}$, which is the same number as is represented by `0.3629`.
+10^{-3}$, which is the same number as is represented by `0.03629`.
 
 ## Arithmetic Precision
 
-The choice of significand provides $\log_10 2^53 \approx 15.95$
+The choice of significand provides $\log_{10} 2^{53} \approx 15.95$
 decimal (base 10) digits of *arithmetic precision*.  This is just the
 precision of the floating-point representation.  After several
 operations are chained together, the realized arithmetic precision is
@@ -154,7 +154,11 @@ accuracy,
 ```
 
 The closest floating point number to $1 + 10^{-20}$ turns out to be
-$1$ itself.   By contrast, `0 + 1e-20 == 1e-20`.
+$1$ itself.   By contrast,
+
+```
+0 + 1e-20 == 1e-20
+```
 
 This highlights the fact that precision depends on scale.  Even though
 `1 + 1e-20 == 1`, we have `1e-20 + 1e-20 == 2e-20`, as expected.
@@ -172,7 +176,7 @@ may render the result $L \, L^{\top}$ neither symmetric nor positive
 definite.
 
 In practice, care must be taken to defend against rounding.  For
-example, symmetry may be produced by adding $L \, L^{top}$ with its
+example, symmetry may be produced by adding $L \, L^{\top}$ with its
 transpose and dividing by two, or by copying the lower triangular
 portion into the upper portion.  Positive definiteness may be
 maintained by adding a small quantity to the diagonal.
@@ -184,7 +188,7 @@ largest number less than zero is roughly $1 - 10^{-15.95}$.  The
 asymmetry is apparent when considering the representation of that
 largest number smaller than one---the exponent is of no help, and the
 number is represented as the binary equivalent of
-`0.9999999999999999`.
+$0.9999999999999999$.
 
 For this reason, the *machine precision* is said to be roughly
 $10^{15.95}$.  This constant is available as `machine_precision()` in
@@ -215,11 +219,11 @@ Another downside to floating point representations is that
 subtraction of two numbers close to each other results in a loss of
 precision that depends on how close they are.  This is easy to see in
 practice.  Consider
-```
-  1.23456789012345
-- 1.23456789012344
-= 0.00000000000001
-```
+\begin{align*}
+  1&.23456789012345 \\
+- 1&.23456789012344 \\
+= 0&.00000000000001
+\end{align*}
 We start with fifteen decimal places of accuracy in the arguments and
 are left with a single decimal place of accuracy in the result.
 
@@ -250,16 +254,13 @@ to *underflow*.  For instance, `1e-200` may be represented, but
 
 Underflow is a ubiquitous problem in likelihood calculations,
 For example, if $p(y_n \mid \theta) < 0.1$, then
-
 $$
 p(y \mid \theta) = \prod_{n=1}^N p(y_n \mid \theta)
 $$
-
 will underflow as soon as $N > 350$ or so.
 
 To deal with underflow, work on the log scale.  Even though $p(y \mid
 \theta)$ can't be represented, there is no problem representing
-
 $$
 \begin{array}{rcl}
 \log p(y \mid \theta)
@@ -281,48 +282,42 @@ $$
 Thus we can just start on the log scale and stay there through
 multiplication.  But what about addition?  If we have $\log a$ and
 $\log b$, how do we get $\log (a + b)$?  Working out the algebra,
-
 $$
 \log (a + b)
-\ = \
+=
 \log (\exp(\log a) + \exp(\log b))
 $$
 
 The nested log of sum of exponentials is so common, it has its own
 name,
-
 $$
-\mathrm{log\_sum\_exp}(u, v)
-\ = \
+\mathtt{log\_sum\_exp}(u, v)
+=
 \log (\exp(u) + \exp(v)).
 $$
-
 so that
-
 $$
 \log (a + b)
-\ = \
-\mathrm{log\_sum\_exp}(\log a, \log b).
+=
+\mathtt{log\_sum\_exp}(\log a, \log b).
 $$
 
 Although it appears this might overflow as soon as exponentiation is
 introduced, evaluation does not proceed by evaluating the terms as
 written.  Instead, with a little algebra, the terms are rearranged
 into a stable form,
-
 $$
-\mathrm{log\_sum\_exp}(u, v)
-\ = \
-\max(u, v) + \log\left( \exp(u - \max(u, v)) + \exp(v - \max(u, v)) \right).
+\mathtt{log\_sum\_exp}(u, v)
+=
+\max(u, v) + \log\big( \exp(u - \max(u, v)) + \exp(v - \max(u, v)) \big).
 $$
 
 Because the terms inside the exponentiations are $u - \max(u, v)$ and
 $v - \max(u, v)$, one will be zero, and the other will be negative.
 Because the operation is symmetric, it may be assumed without loss of
 generality that $u \geq v$, so that
-
 $$
-\mathrm{log\_sum\_exp}(u, v) = u + \log(1 + \exp(v - u)).
+\mathtt{log\_sum\_exp}(u, v) = u + \log\big(1 + \exp(v - u)\big).
 $$
 
 The inner term may itself be evaluated using `log1p`, there is only
@@ -333,8 +328,8 @@ To conclude, when evaluating $\log (a + b)$ given $\log a$ and $\log
 b$, and assuming $\log a > \log b$, return
 
 $$
-\log (a + b) \ = \
-\log a + \mathrm{log1p}(\exp(\log b - \log a)).
+\log (a + b) =
+\log a + \mathtt{log1p}\big(\exp(\log b - \log a)\big).
 $$
 
 ## Comparing floating-point numbers

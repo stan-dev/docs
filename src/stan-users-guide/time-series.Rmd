@@ -15,7 +15,6 @@ spatial) data.
 
 A first-order autoregressive model (AR(1)) with normal noise takes
 each point $y_n$ in a sequence $y$ to be generated according to
-
 $$
 y_n \sim \mathsf{normal}(\alpha + \beta y_{n-1}, \sigma).
 $$
@@ -27,7 +26,7 @@ noise scaled as $\sigma$.
 
 With improper flat priors on the regression coefficients $\alpha$ and
 $\beta$ and on the positively-constrained noise scale ($\sigma$), the
-Stan program for the AR(1) model is as follows.^[The intercept in this model is $\alpha / (1 - \beta)$.  An alternative parameterization in terms of an intercept $\gamma$ suggested Mark Scheuerell on GitHub is $y_n \sim \mathsf{normal}(\alpha + \gamma \cdot (y_{n-1} - \alpha), \sigma)$.]
+Stan program for the AR(1) model is as follows.^[The intercept in this model is $\alpha / (1 - \beta)$.  An alternative parameterization in terms of an intercept $\gamma$ suggested Mark Scheuerell on GitHub is $y_n \sim \mathsf{normal}\left(\alpha + \gamma \times (y_{n-1} - \alpha), \sigma\right)$.]
 
 ```
 data {
@@ -148,17 +147,12 @@ The ARCH(1) model is typically presented as the following sequence of
 equations, where $r_t$ is the observed return at time point $t$
 and $\mu$, $\alpha_0$, and $\alpha_1$ are unknown regression coefficient parameters.
 
-$$
-\begin{array}{rcl}
-r_t & = & \mu + a_t
-\\[2pt]
-a_t & = & \sigma_t \epsilon_t
-\\[2pt]
-\epsilon_t & \sim & \mathsf{normal}(0,1)
-\\[2pt]
-\sigma^2_t & = & \alpha_0 + \alpha_1 a_{t-1}^2
-\end{array}
-$$
+\begin{align*}
+r_t        &=  \mu + a_t \\
+a_t        &=  \sigma_t \epsilon_t \\
+\epsilon_t &\sim \mathsf{normal}(0,1) \\
+\sigma^2_t &=  \alpha_0 + \alpha_1 a_{t-1}^2
+\end{align*}
 
 In order to ensure the noise terms $\sigma^2_t$ are positive, the
 scale coefficients are constrained to be positive, $\alpha_0, \alpha_1
@@ -169,8 +163,8 @@ The ARCH(1) model may be coded directly in Stan as follows.
 
 ```
 data {
-  int<lower=0> T;   // number of time points
-  real r[T];        // return at time t
+  int<lower=0> T;                // number of time points
+  real r[T];                     // return at time t
 }
 parameters {
   real mu;                       // average return
@@ -201,7 +195,6 @@ The basic generalized autoregressive conditional heteroscedasticity
 (GARCH) model, GARCH(1,1), extends the ARCH(1) model by including the
 squared previous difference in return from the mean at time $t-1$ as a
 predictor of volatility at time $t$, defining
-
 $$
 \sigma^2_t = \alpha_0 + \alpha_1 a^2_{t-1} + \beta_1 \sigma^2_{t-1}.
 $$
@@ -267,7 +260,7 @@ there is an overall mean parameter $\mu$ and regression coefficients
 $\theta_q$ for previous error terms.  With $\epsilon_t$ being the
 noise at time $t$, the model for outcome $y_t$ is defined by
 $$
-y_t = \mu + \theta_1 \epsilon_{t-1} + \cdots + \theta_Q \epsilon_{t-Q}
+y_t = \mu + \theta_1 \epsilon_{t-1} + \dotsb + \theta_Q \epsilon_{t-Q}
 + \epsilon_t,
 $$
 with the noise term $\epsilon_t$ for outcome $y_t$ modeled as
@@ -284,16 +277,16 @@ An $\mbox{MA}(2)$ model can be coded in Stan as follows.
 
 ```
 data {
-  int<lower=3> T;  // number of observations
-  vector[T] y;     // observation at time T
+  int<lower=3> T;          // number of observations
+  vector[T] y;             // observation at time T
 }
 parameters {
-  real mu;              // mean
-  real<lower=0> sigma;  // error scale
-  vector[2] theta;      // lag coefficients
+  real mu;                 // mean
+  real<lower=0> sigma;     // error scale
+  vector[2] theta;         // lag coefficients
 }
 transformed parameters {
-  vector[T] epsilon;    // error terms
+  vector[T] epsilon;       // error terms
   epsilon[1] = y[1] - mu;
   epsilon[2] = y[2] - mu - theta[1] * epsilon[1];
   for (t in 3:T)
@@ -333,9 +326,9 @@ may be defined as follows.
 
 ```
 data {
-  int<lower=0> Q;  // num previous noise terms
-  int<lower=3> T;  // num observations
-  vector[T] y;     // observation at time t
+  int<lower=0> Q;       // num previous noise terms
+  int<lower=3> T;       // num observations
+  vector[T] y;          // observation at time t
 }
 parameters {
   real mu;              // mean
@@ -368,7 +361,7 @@ Here all of the data are modeled, with missing terms just dropped from
 the regressions as in the calculation of the error terms.  Both models
 converge  quickly and mix  well at convergence, with the
 vectorized model being faster (per iteration, not to
-converge --- they compute the same model).
+converge---they compute the same model).
 
 
 ## Autoregressive Moving Average Models
@@ -392,13 +385,13 @@ parameters {
 model {
   vector[T] nu;              // prediction for time t
   vector[T] err;             // error for time t
-  nu[1] = mu + phi * mu;    // assume err[0] == 0
+  nu[1] = mu + phi * mu;     // assume err[0] == 0
   err[1] = y[1] - nu[1];
   for (t in 2:T) {
     nu[t] = mu + phi * y[t-1] + theta * err[t-1];
     err[t] = y[t] - nu[t];
   }
-  mu ~ normal(0, 10);         // priors
+  mu ~ normal(0, 10);        // priors
   phi ~ normal(0, 2);
   theta ~ normal(0, 2);
   sigma ~ cauchy(0, 5);
@@ -495,18 +488,13 @@ the volatility term.  The variable $\epsilon_t$ represents the
 white-noise shock (i.e., multiplicative error) on the asset return at
 time $t$, whereas $\delta_t$ represents the shock on volatility at
 time $t$.
-$$
-y_t = \epsilon_t \exp(h_t / 2),
-$$
-$$
-h_{t+1} = \mu + \phi (h_t - \mu) + \delta_t \sigma
-$$
-$$
-h_1 \sim \mathsf{normal}\left( \mu, \frac{\sigma}{\sqrt{1 - \phi^2}} \right)
-$$
-$$
-\epsilon_t \sim \mathsf{normal}(0,1); \ \ \ \ \  \delta_t \sim \mathsf{normal}(0,1)
-$$
+\begin{align*}
+y_t        &=    \epsilon_t \exp(h_t / 2) \\
+h_{t+1}    &=    \mu + \phi (h_t - \mu) + \delta_t \sigma \\
+h_1        &\sim \mathsf{normal}\left( \mu, \frac{\sigma}{\sqrt{1 - \phi^2}} \right) \\
+\epsilon_t &\sim \mathsf{normal}(0,1) \\
+\delta_t   &\sim \mathsf{normal}(0,1)
+\end{align*}
 
 Rearranging the first line, $\epsilon_t = y_t \exp(-h_t / 2)$,
 allowing the sampling distribution for $y_t$ to be written as
@@ -554,7 +542,7 @@ The posterior of a stochastic volatility model such as this one
 typically has high posterior variance.  For example, simulating 500
 data points from the above model with $\mu = -1.02$, $\phi = 0.95$,
 and $\sigma = 0.25$ leads to 95% posterior intervals for $\mu$ of
-$(-1.23, -0.54)$, for $\phi$ of $(0.82,0.98 )$ and for $\sigma$ of
+$(-1.23, -0.54)$, for $\phi$ of $(0.82,0.98 )$, and for $\sigma$ of
 $(0.16,0.38)$.
 
 The samples using NUTS show a high degree of autocorrelation among the
@@ -581,7 +569,7 @@ declared instead of `h`.
 ```
 parameters {
   ...
-  vector[T] h_std;             // std log volatility time t
+  vector[T] h_std;  // std log volatility time t
 ```
 
 The original value of `h` is then defined in a transformed
@@ -629,25 +617,25 @@ time of the original iterations.
 
 A hidden Markov model (HMM) generates a sequence of $T$ output
 variables $y_t$ conditioned on a parallel sequence of latent
-categorical state variables $z_t \in \{1,\ldots, K\}$.  These
-``hidden" state variables are assumed to form a Markov chain so that
+categorical state variables $z_t \in \{ 1, \dotsc, K \}$.  These
+"hidden" state variables are assumed to form a Markov chain so that
 $z_t$ is conditionally independent of other variables given $z_{t-1}$.
 This Markov chain is parameterized by a transition matrix $\theta$
-where $\theta_k$ is a $K$-simplex for $k \in \{1,\ldots, K\}$.  The
+where $\theta_k$ is a $K$-simplex for $k \in \{ 1, \dotsc, K \}$.  The
 probability of transitioning to state $z_t$ from state $z_{t-1}$ is
 $$
-z_t \sim \mathsf{Categorical}(\theta_{z[t-1]}).
+z_t \sim \mathsf{categorical}(\theta_{z[t-1]}).
 $$
 The output $y_t$ at time $t$ is generated conditionally independently
 based on the latent state $z_t$.
 
 This section describes HMMs with a simple categorical model for
-outputs $y_t \in \{1,\ldots,V\}$.  The categorical distribution for
+outputs $y_t \in \{ 1, \dotsc, V \}$.  The categorical distribution for
 latent state $k$ is parameterized by a $V$-simplex $\phi_k$.  The
 observed output $y_t$ at time $t$ is generated based on the hidden
 state indicator $z_t$ at time $t$,
 $$
-y_t \sim \mathsf{Categorical}(\phi_{z[t]}).
+y_t \sim \mathsf{categorical}(\phi_{z[t]}).
 $$
 In short, HMMs form a discrete mixture model where the mixture
 component indicators form a latent Markov chain.
@@ -661,17 +649,17 @@ naive model can be used to fit the parameters $\theta$ and $\phi$.
 
 ```
 data {
-  int<lower=1> K;  // num categories
-  int<lower=1> V;  // num words
-  int<lower=0> T;  // num instances
-  int<lower=1,upper=V> w[T]; // words
-  int<lower=1,upper=K> z[T]; // categories
-  vector<lower=0>[K] alpha;  // transit prior
-  vector<lower=0>[V] beta;   // emit prior
+  int<lower=1> K;             // num categories
+  int<lower=1> V;             // num words
+  int<lower=0> T;             // num instances
+  int<lower=1,upper=V> w[T];  // words
+  int<lower=1,upper=K> z[T];  // categories
+  vector<lower=0>[K] alpha;   // transit prior
+  vector<lower=0>[V] beta;    // emit prior
 }
 parameters {
-  simplex[K] theta[K];  // transit probs
-  simplex[V] phi[K];    // emit probs
+  simplex[K] theta[K];        // transit probs
+  simplex[V] phi[K];          // emit probs
 }
 model {
   for (k in 1:K)
@@ -804,8 +792,8 @@ In Stan, the forward algorithm is coded as follows.  First, two additional data 
 ```
 data {
   ...
-  int<lower=1> T_unsup;  // num unsupervised items
-  int<lower=1,upper=V> u[T_unsup]; // unsup words
+  int<lower=1> T_unsup;             // num unsupervised items
+  int<lower=1,upper=V> u[T_unsup];  // unsup words
   ...
 ```
 
@@ -832,11 +820,11 @@ model {
   }
 ```
 
-The forward values `gamma[t,~k]` are defined to be the log
+The forward values `gamma[t,k]` are defined to be the log
 marginal probability of the inputs `u[1],...,u[t]` up to time
 `t` and the latent state being equal to `k` at time
 `t`; the previous latent states are marginalized out.  The first
-row of `gamma` is initialized by setting `gamma[1,~k]` equal
+row of `gamma` is initialized by setting `gamma[1,k]` equal
 to the log probability of latent state `k` generating the first
 output `u[1]`; as before, the probability of the first latent
 state is not itself modeled.  For each subsequent time `t` and
@@ -857,8 +845,8 @@ clearer to keep their declaration near their use.
 ### Predictive Inference {-}
 
 Given the transition and emission parameters, $\theta_{k, k'}$ and
-$\phi_{k,v}$ and an observation sequence $u_1,\ldots,u_T \in \{
-1,\ldots,V \}$, the Viterbi (dynamic programming) algorithm
+$\phi_{k,v}$ and an observation sequence $u_1, \dotsc, u_T \in \{
+1, \dotsc, V \}$, the Viterbi (dynamic programming) algorithm
 computes the state sequence which is most likely to have generated the
 observed output $u$.
 
@@ -911,7 +899,7 @@ local so they will not be output.  The variable `y_star` will
 hold the label sequence with the highest probability given the input
 sequence `u`.  Unlike the forward algorithm, where the
 intermediate quantities were total probability, here they consist of
-the maximum probability `best_logp[t,~k]` for the sequence up to
+the maximum probability `best_logp[t,k]` for the sequence up to
 time `t` with final output category `k` for time `t`,
 along with a backpointer to the source of the link.  Following the
 backpointers from the best final log probability for the final time
@@ -922,7 +910,7 @@ as are used to fit the semisupervised model.  The above code can be
 found in the same model file as the unsupervised fit.  This is the
 Bayesian approach to inference, where the data being reasoned about is
 used in a semisupervised way to train the model.  It is not
-``cheating" because the underlying states for `u` are never
+"cheating" because the underlying states for `u` are never
 observed --- they are just estimated along with all of the other
 parameters.
 

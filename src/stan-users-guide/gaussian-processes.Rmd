@@ -58,7 +58,8 @@ $K : \mathbb{R}^{N \times D} \rightarrow \mathbb{R}^{N \times N}$ must produce
 a positive-definite matrix for any input $x$.^[Gaussian processes can be extended to covariance functions producing positive semi-definite matrices, but Stan does not support inference in the resulting models because the resulting distribution does not have unconstrained support.]
 
 A popular covariance function, which will be used in the implementations later
-in this chapter, is an exponentiated quadratic function,
+in this chapter, is an exponentiated quadratic function, also known as a Gaussian
+covariance function, and a radial basis function:
 $$
   K(x | \alpha, \rho, \sigma)_{i, j}
 = \alpha^2
@@ -857,7 +858,6 @@ generated quantities {
 }
 ```
 
-
 #### Analytical Form of Joint Predictive Inference {-}
 
 Bayesian predictive inference for Gaussian processes with Gaussian observations
@@ -1082,3 +1082,46 @@ generated quantities {
   Omega = L_Omega * L_Omega';
 }
 ```
+
+### Supported Gaussian Process Covariance Functions
+
+Draft, don't take this too seriously...
+
+One of the advantages of modeling non-linearities with Gaussian processes
+is the ability to specify a covariance function that models structure in the data.
+For example, in probabilistic weather forecasting [beroccal, citatation], one
+might choose to use a matern52 covariance function because the function allows
+for greater correlation between observations. If a process has inherent periodic
+components one might leverage the periodic covariance function. For these reasons,
+we choose to support a default set of covariance functions.
+
+ARD!!!!
+
+#### The Matern Class of Covariance Functions
+
+The general form of the Matern covariance function is as follows:
+
+$$ \begin{aligned}
+ \sim \sim \sim
+\end{aligned} $$
+
+However, for ease of implementation, we've temporarily decided to support special
+cases of the Matern covariance function. That is, $\vega= \frac{1}{2}$ or the exponential
+covariance function, $\vega = \frac{3}{2}$, $\vega = \frac{5}{2}$ and $lim_{\vega -> \infty}$
+is just the squared exponential used in previous examples.
+
+
+#### The Dot Product Covariance Function
+
+The Dot Product covariance function is equivalent to Bayesian
+linear regression with $N(0, 1)$ priors on regression coefficients.
+This can be handy to combine with other covariance functions to introduce
+independence between linearities and non-linearities (This is your intuition,
+but is it true? Can you show it?).
+
+#### The Periodic Covariance Function
+
+It extracts smooth periods. Sweet. We could also have non-smooth
+periodic cov funs with some work
+
+

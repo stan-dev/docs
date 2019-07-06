@@ -9,6 +9,7 @@ by name to the higher-order functions.
 if (knitr::is_html_output()) {
 cat(' * <a href="functions-algebraic-solver.html">Algebraic Equation Solver</a>\n')
 cat(' * <a href="functions-ode-solver.html">Ordinary Differential Equation Solvers</a>\n')
+cat(' * <a href="functions-1d-integrator.html">1D Integrator</a>\n')
 cat(' * <a href="functions-map.html">Higher-Order Map</a>\n')
 }
 ```
@@ -22,7 +23,7 @@ two ways.
 First, the algebraic solver is a higher-order function, i.e. it takes
 another function as one of its arguments. The only other functions in
 Stan which share this feature are the ordinary differential equation
-solvers (see section [Ordinary Differential Equation Solvers](#functions-ode-solver).
+solvers (see section [Ordinary Differential Equation Solvers](#functions-ode-solver)).
 Ordinary Stan functions do not allow functions as arguments.
 
 Second, some of the arguments of the algebraic solvers are restricted
@@ -286,6 +287,104 @@ solver,
 
 *   parameters, real data and integer data passed to the solver will
 be passed to the system function
+
+## 1D Integrator {#functions-1d-integrator}
+
+Stan provides a built-in mechanism to perform 1D integration of a function via quadrature methods.
+
+It operates similarly to the [algebraic solver](#functions-algebraic-solver) and
+the [ordinary differential equations solver](#functions-ode-solver) in that it allows as an argument a function.
+
+Like both of those utilities, some of the arguments are limited
+to data only expressions. These expressions must not contain variables
+other than those declared in the data or transformed data blocks.
+
+### Specifying an Integrand as a Function
+
+Performing a 1D integration requires the integrand to be specified somehow.
+This is done by defining a function in the Stan functions block with the special signature:
+
+```
+real integrand(real x, real xc, real[] theta,
+                      real[] x_r, int[] x_i)
+```
+
+The function should return the value of the integrand evaluated at
+the point x.
+
+The argument of this function are:
+
+* *`x`*, the independent variable being integrated over
+
+* *`xc`*, a high precision version of the distance from x to the nearest endpoint in a definite integral (for more into see section [Precision Loss](#precision-loss)).
+
+* *`theta`*, parameter values used to evaluate the integral
+
+* *`x_r`*, data values used to evaluate the integral
+
+* *`x_i`*, integer data used to evaluate the integral
+
+Like algebraic solver and the differential equations solver, the 1D
+integrator separates parameter values, `theta`, from data values, `x_r`.
+
+### Call to the 1D Integrator
+
+<!-- vector; integrate_1d; (function integrand, real a, real b, real[] theta, real[] x_r, int[] x_i); -->
+\index{{\tt \bfseries integrate\_1d }!{\tt (function integrand, real a, real b, real[] theta, real[] x\_r, int[] x\_i): vector}|hyperpage}
+
+`vector` **`integrate_1d`** `(function integrand, real a, real b, real[] theta, real[] x_r, int[] x_i)`<br>\newline
+Integrates the integrand from a to b.
+
+
+<!-- vector; integrate_1d; (function integrand, real a, real b, real[] theta, real[] x_r, int[] x_i), real relative_tolerance); -->
+\index{{\tt \bfseries integrate\_1d }!{\tt (function integrand, real a, real b, real[] theta, real[] x\_r, int[] x\_i, real relative\_tolerance): vector}|hyperpage}
+
+`vector` **`integrate\_1d`** `(function integrand, real a, real b, real[] theta, real[] x_r, int[] x_i, real relative_tolerance)`<br>\newline
+Integrates the integrand from a to b with the given relative tolerance.
+
+
+#### Arguments to the 1D Integrator
+
+The arguments to the 1D integrator are as follows:
+
+* *`integrand`*: function literal referring to a function specifying the integrand with signature  `(real, real, real[], real[], int[]):real`
+The arguments represent
+    + (1) where integrand is evaluated,
+    + (2) distance from evaluation point to integration limit for definite integrals,
+    + (3) parameters,
+    + (4) real data
+    + (5) integer data, and the return value is the integrand evaluated at the given point,
+
+* *`a`*: left limit of integration, may be negative infinity, type `real`,
+* *`b`*: right limit of integration, may be positive infinity, type `real`,
+* *`theta`*: parameters only, type `real[]`,
+* *`x_r`*: real data only, type `real[]`,
+* *`x_i`*: integer data only, type `int[]`.
+
+
+A `relative_tolerance` argument can also be provided for more control over the algorithm:
+
+  * *`relative_tolerance`*: relative tolerance for the 1d integrator, type `real`, data only.
+
+
+#### Return value
+
+The return value for the 1D integrator is a `real`, the value of the integral.
+
+#### Zero-crossing integrals {#zero-crossing}
+
+For numeric stability, integrals on the (possibly infinite) interval $(a, b)$ that cross zero are split into two integrals, one from $(a, 0)$ and one from $(0, b)$. Each integral is separately integrated to the given `relative_tolerance`.
+
+#### Precision loss near limits of integration in definite integrals {#precision-loss}
+
+When integrating certain definite integrals, there can be significant precision loss in evaluating the integrand near the endpoints. This has to do with the breakdown in precision of double precision floating point values when adding or subtracting a small number from a number much larger than it in magnitude (for instance, `1.0 - x`). `xc` (as passed to the integrand) is a high-precision version of the distance between `x` and the definite integral endpoints and can be used to address this issue. More information (and an example where this is useful) is given in the User's Guide. For zero crossing integrals, `xc` will be a high precision version of the distance to the endpoints of the two smaller integrals. For any integral with an endpoint at negative infinity or positive infinity, `xc` is set to `NaN`.
+
+#### Algorithmic details
+
+Internally the 1D integrator uses the double-exponential methods in the Boost 1D quadrature library. Boost in turn makes use of quadrature methods developed in [@Takahasi:1974], [@Mori:1978], [@Bailey:2005], and [@Tanaka:2009].
+
+The gradients of the integral are computed in accordance with the Leibniz integral rule. Gradients of the integrand are computed internally with Stan's automatic differentiation.
+
 
 ## Higher-Order Map {#functions-map}
 

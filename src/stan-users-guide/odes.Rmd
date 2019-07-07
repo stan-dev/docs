@@ -97,8 +97,8 @@ state function, although the accuracy of points near the discontinuity
 may be problematic (requiring many small steps).  An example of such a
 discontinuity is a lag in a pharmacokinetic model, where a
 concentration is going to be zero for times $0 < t < t'$ for some
-lag-time $t'$, whereas it will be nonzero for times $t \geq t'$.  As
-an example, would involve code in the system such as
+lag-time $t'$, whereas it will be nonzero for times $t \geq t'$.
+In this example example, we would use code in the system such as
 
 ```
 if (t < t_lag)
@@ -106,16 +106,6 @@ if (t < t_lag)
 else
   ... return non-zero value...;
 ```
-
-
-### Varying Initial Time {-}
-
-Stan's ODE solvers require the initial time argument to be a constant
-(i.e., a function of data or transformed data variables and
-constants).  This means that, in general, there's no way to use the
-`integrate_ode` function to accept a parameter for the initial
-time and thus no way in general to estimate the initial time of an ODE
-system from measurements.
 
 ## Solving a System of Linear ODEs using a Matrix Exponential
 
@@ -270,7 +260,9 @@ system parameters `theta` and initial state `y0` are read in as data
 along with the initial time `t0` and observation times `ts`. The
 generated quantities block is used to solve the ODE for the specified
 times and then add random measurement error, producing observations
-`y_hat`.  Because the system is not stiff, the `rk45` solver is used.
+`y_hat`.  Because the system is not stiff, the `rk45` solver is used
+(in fact, the system being linear, the most efficient approach would
+be to use the matrix exponential function).
 
 
 This program illustrates the way in which the ODE solver is called in
@@ -296,11 +288,11 @@ solution times.
 ### Data versus Parameters {-}
 
 Unlike other functions, the integration functions for ODEs are limited
-as to the origins of variables in their arguments.  In particular, the
-time `t`, real data `x`, and integer data `x_int` must
+as to the origins of variables in their arguments.  In particular,
+real data `x`, and integer data `x_int` must
 be expressions that only involve data or transformed data variables.
-The initial state `y` or the parameters `theta` are the only
-arguments which may involve parameters.
+The initial state `y`, the initial time `t0`, the requested solution
+times `ts`, or the parameters `theta` may involve parameters.
 
 
 ### Estimating System Parameters and Initial State {-}

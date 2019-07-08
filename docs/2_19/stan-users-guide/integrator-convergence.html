@@ -5,11 +5,11 @@
 
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>20 Problematic Posteriors | Stan User’s Guide</title>
+  <title>14.2 Integrator Convergence | Stan User’s Guide</title>
   <meta name="description" content="Stan user’s guide with examples and programming techniques.">
   <meta name="generator" content="bookdown  and GitBook 2.6.7">
 
-  <meta property="og:title" content="20 Problematic Posteriors | Stan User’s Guide" />
+  <meta property="og:title" content="14.2 Integrator Convergence | Stan User’s Guide" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="img/logo-tm.pdf" />
@@ -17,7 +17,7 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="20 Problematic Posteriors | Stan User’s Guide" />
+  <meta name="twitter:title" content="14.2 Integrator Convergence | Stan User’s Guide" />
   
   <meta name="twitter:description" content="Stan user’s guide with examples and programming techniques." />
   <meta name="twitter:image" content="img/logo-tm.pdf" />
@@ -31,8 +31,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   
   
-<link rel="prev" href="examples.html">
-<link rel="next" href="collinearity-section.html">
+<link rel="prev" href="calling-the-integrator.html">
+<link rel="next" href="part-2-programming-techniques.html">
 <script src="libs/jquery/jquery.min.js"></script>
 <link href="libs/gitbook/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook/css/plugin-table.css" rel="stylesheet" />
@@ -572,25 +572,96 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="problematic-posteriors.chapter" class="section level1">
-<h1><span class="header-section-number">20</span> Problematic Posteriors</h1>
-<p>Mathematically speaking, with a proper posterior, one can do Bayesian
-inference and that’s that. There is not even a need to require a
-finite variance or even a finite mean—all that’s needed is a finite
-integral. Nevertheless, modeling is a tricky business and even
-experienced modelers sometimes code models that lead to improper
-priors. Furthermore, some posteriors are mathematically sound, but
-ill-behaved in practice. This chapter discusses issues in models that
-create problematic posterior inferences, either in general for
-Bayesian inference or in practice for Stan.</p> 
+<div id="integrator-convergence" class="section level2">
+<h2><span class="header-section-number">14.2</span> Integrator Convergence</h2>
+<p>The integral is performed with the iterative 1D quadrature methods implemented
+in the Boost library <span class="citation">(Agrawal et al. <a href="#ref-BoostQuadrature:2017">2017</a>)</span>. If the nth estimate of the
+integral is denoted <span class="math inline">\(I_n\)</span> and the nth estimate of the norm of the integral is
+denoted <span class="math inline">\(|I|_n\)</span>, the iteration is terminated when</p>
+<p><span class="math display">\[
+  \frac{{|I_{n + 1} - I_n|}}{{|I|_{n + 1}}} &lt; \text{relative tolerance}
+\]</span></p>
+<p>The <code>relative_tolerance</code> parameter can be optionally specified as the
+last argument to <code>integrate_1d</code> and defaults to the square root of the
+machine epsilon of double precision floating point numbers (that is a relative
+tolerance of around <code>1.5e-8</code>).</p>
+<div id="zero-crossing" class="section level3">
+<h3><span class="header-section-number">14.2.1</span> Zero-crossing Integrals</h3>
+<p>Integrals on the (possibly infinite) interval <span class="math inline">\((a, b)\)</span> that cross zero are
+split into two integrals, one from <span class="math inline">\((a, 0)\)</span> and one from <span class="math inline">\((0, b)\)</span>. This is
+because the quadrature methods employed internally can have difficulty near
+zero.</p>
+<p>In this case, each integral is separately integrated to the given
+<code>relative_tolerance</code>.</p>
+</div>
+<div id="integral-precision" class="section level3">
+<h3><span class="header-section-number">14.2.2</span> Avoiding precision loss near limits of integration in definite integrals</h3>
+<p>If care is not taken, the quadrature can suffer from numerical loss of
+precision near the endpoints of definite integrals.</p>
+<p>For instance, in integrating the pdf of a beta distribution when the values of
+<span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> are small, most of the probability mass is lumped near zero
+and one.</p>
+<p>The pdf of a beta distribution is proportional to</p>
+<p><span class="math display">\[
+p(x) \propto x^{\alpha - 1}(1 - x)^{\beta - 1}
+\]</span></p>
+<p>Normalizing this distribution requires computing the integral of <span class="math inline">\(p(x)\)</span> from
+zero to one. In Stan code, the integrand might look like:</p>
+<pre><code>real beta(real x, real xc, real[] theta, real[] x_r, int[] x_i) {
+  real alpha = theta[1];
+  real beta = theta[2];
+
+  return x^(alpha - 1.0) * (1.0 - x)^(beta - 1.0);
+}</code></pre>
+<p>The issue is that there will be numerical breakdown in the precision of
+<code>1.0 - x</code> as <code>x</code> gets close to one. This is because of the limited
+precision of double precision floating numbers. This integral will fail to
+converge for values of <code>alpha</code> and <code>beta</code> much less than one.</p>
+<p>This is where <code>xc</code> is useful. It is defined, for definite integrals,
+as a high precision version of the distance from <code>x</code> to the nearest
+endpoint. To make use of this for the beta integral, the integrand can be
+re-coded:</p>
+<pre><code>real beta(real x, real xc, real[] theta, real[] x_r, int[] x_i) {
+  real alpha = theta[1];
+  real beta = theta[2];
+  real v;
+
+  if(x &gt; 0.5) {
+    v = x^(alpha - 1.0) * xc^(beta - 1.0);
+  } else {
+    v = x^(alpha - 1.0) * (1.0 - x)^(beta - 1.0);
+  }
+
+  return v;
+}</code></pre>
+<p>This version of the integrand will converge for much smaller values of
+<code>alpha</code> and <code>beta</code> than otherwise possible.</p>
+<p>Note, <code>xc</code> is only used for definite integrals. If either the left endpoint
+is at negative infinity or the right endpoint is at positive infinity, <code>xc</code>
+will be NaN.</p>
+<p>For zero-crossing definite integrals (see section <a href="integrator-convergence.html#zero-crossing">Zero Crossing</a>) the
+integrals are broken into two pieces (<span class="math inline">\((a, 0)\)</span> and <span class="math inline">\((0, b)\)</span> for endpoints
+<span class="math inline">\(a &lt; 0\)</span> and <span class="math inline">\(b &gt; 0\)</span>) and <code>xc</code> is a high precision version of the distance
+to the limits of each of the two integrals separately. This means <code>xc</code> will
+be the a high precision version of <code>a - x</code>, <code>x</code>, or <code>b - x</code>,
+depending on the value of x and the endpoints.</p>
+
+</div>
+</div>
+<!-- </div> -->
+<h3><i style="font-size: 110%; color:#990017;">References</i></h3>
+<div id="refs" class="references">
+<div id="ref-BoostQuadrature:2017">
+<p>Agrawal, Nikhar, Anton Bikineev, Paul Bristow, Marco Guazzone, Christopher Kormanyos, Hubert Holin, Bruno Lalande, et al. 2017. “Double-Exponential Quadrature.” https://www.boost.org/doc/libs/1_66_0/libs/math/doc/html/math_toolkit/double_exponential.html.</p>
+</div>
 </div>
             </section>
 
           </div>
         </div>
       </div>
-<a href="examples.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="collinearity-section.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="calling-the-integrator.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="part-2-programming-techniques.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook/js/app.min.js"></script>

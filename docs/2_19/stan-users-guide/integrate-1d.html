@@ -5,11 +5,11 @@
 
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>20 Problematic Posteriors | Stan User’s Guide</title>
+  <title>14 Computing One Dimensional Integrals | Stan User’s Guide</title>
   <meta name="description" content="Stan user’s guide with examples and programming techniques.">
   <meta name="generator" content="bookdown  and GitBook 2.6.7">
 
-  <meta property="og:title" content="20 Problematic Posteriors | Stan User’s Guide" />
+  <meta property="og:title" content="14 Computing One Dimensional Integrals | Stan User’s Guide" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="img/logo-tm.pdf" />
@@ -17,7 +17,7 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="20 Problematic Posteriors | Stan User’s Guide" />
+  <meta name="twitter:title" content="14 Computing One Dimensional Integrals | Stan User’s Guide" />
   
   <meta name="twitter:description" content="Stan user’s guide with examples and programming techniques." />
   <meta name="twitter:image" content="img/logo-tm.pdf" />
@@ -31,8 +31,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   
   
-<link rel="prev" href="examples.html">
-<link rel="next" href="collinearity-section.html">
+<link rel="prev" href="control-parameters-for-ode-solving.html">
+<link rel="next" href="calling-the-integrator.html">
 <script src="libs/jquery/jquery.min.js"></script>
 <link href="libs/gitbook/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook/css/plugin-table.css" rel="stylesheet" />
@@ -572,25 +572,54 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="problematic-posteriors.chapter" class="section level1">
-<h1><span class="header-section-number">20</span> Problematic Posteriors</h1>
-<p>Mathematically speaking, with a proper posterior, one can do Bayesian
-inference and that’s that. There is not even a need to require a
-finite variance or even a finite mean—all that’s needed is a finite
-integral. Nevertheless, modeling is a tricky business and even
-experienced modelers sometimes code models that lead to improper
-priors. Furthermore, some posteriors are mathematically sound, but
-ill-behaved in practice. This chapter discusses issues in models that
-create problematic posterior inferences, either in general for
-Bayesian inference or in practice for Stan.</p> 
+<div id="integrate-1d" class="section level1">
+<h1><span class="header-section-number">14</span> Computing One Dimensional Integrals</h1>
+<p>Definite and indefinite one dimensional integrals can be performed in Stan using the <code>integrate\_1d</code> function.</p>
+<p>As an example, the normalizing constant of a left-truncated normal distribution is</p>
+<p><span class="math display">\[
+  \int_a^\infty \frac{1}{\sqrt{2 \pi \sigma^2}} e^{-\frac{1}{2}\frac{(x - \mu)^2}{\sigma^2}}
+\]</span></p>
+<p>To compute this integral in Stan, the integrand must first be defined as a Stan function
+(see the Stan Reference Manual chapter on User-Defined Functions
+for more information on coding user-defined functions).</p>
+<pre><code>real normal_density(real x,          // Function argument
+                    real xc,         // Complement of function argument
+                                     //  on the domain (defined later)
+                    real[] theta,    // parameters
+                    real[] x_r,      // data (real)
+                    int[] x_i) {     // data (integer)
+  real mu = theta[1];
+  real sigma = theta[2];
+
+  return 1 / (sqrt(2 * pi()) * sigma) * exp(-0.5 * ((x - mu) / sigma)^2);
+}</code></pre>
+<p>This function is expected to return the value of the integrand evaluated at point <code>x</code>. The
+argument <code>xc</code> is used in definite integrals to avoid loss of precision near
+the limits of integration and is set to NaN when either limit is infinite
+(see the section on precision/loss in the chapter on
+Higher-Order Functions
+of the Stan Functions Reference for details on how to use this).
+The argument <code>theta</code> is used to pass in arguments of the integral
+that are a function of the parameters in our model. The arguments <code>x_r</code>
+and <code>x_i</code> are used to pass in real and integer arguments of the integral that are
+not a function of our parameters.</p>
+<div id="strict-signature-2" class="section level3">
+<h3><span class="header-section-number">14.0.1</span> Strict Signature</h3>
+<p>The function defining the integrand must have exactly the argument types and
+return type of <code>normal_density</code> above, though argument naming is not important.
+Even if <code>x_r</code> and <code>x_i</code> are unused in the integrand, they must be
+included in the function signature. This may require passing in zero-length arrays
+for data or a zero-length vector for parameters if the integral does not involve
+data or parameters.</p>
+</div> 
 </div>
             </section>
 
           </div>
         </div>
       </div>
-<a href="examples.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="collinearity-section.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="control-parameters-for-ode-solving.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="calling-the-integrator.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook/js/app.min.js"></script>

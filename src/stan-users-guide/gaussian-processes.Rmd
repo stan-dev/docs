@@ -49,7 +49,7 @@ $y_1,\dotsc,y_N \in \mathbb{R}$.  The defining feature of Gaussian
 processes is that the probability of a finite number of outputs $y$
 conditioned on their inputs $x$ is Gaussian:
 $$
-y \sim \mathsf{multivariate\ normal}(m(x), K(x \mid \theta)),
+y \sim \textsf{multivariate normal}(m(x), K(x \mid \theta)),
 $$
 where $m(x)$ is an $N$-vector and $K(x \mid \theta)$ is an $N \times N$
 covariance matrix.  The mean function $m : \mathbb{R}^{N \times D}
@@ -132,7 +132,7 @@ a multivariate normal distribution.  To make the model concrete, the
 squared exponential covariance function described in the previous section
 will be used with hyperparameters set to $\alpha^2 = 1$, $\rho^2 = 1$,
 and $\sigma^2 = 0.1$, and the mean function $m$ is defined to always
-return the zero vector, $m(x) = \mathbf{0}$.  Consider the following
+return the zero vector, $m(x) = \textbf{0}$.  Consider the following
 implementation of a Gaussian process simulator.
 
 ```
@@ -218,15 +218,15 @@ A more efficient implementation of the simulation model can be
 coded in Stan by relocating, rescaling and rotating an isotropic standard
 normal variate.  Suppose $\eta$ is an an isotropic standard normal variate
 $$
-\eta \sim \mathsf{normal}(\mathbf{0}, \mathbf{1}),
+\eta \sim \textsf{normal}(\textbf{0}, \textbf{1}),
 $$
-where $\mathbf{0}$ is an $N$-vector of 0 values and $\mathbf{1}$ is the $N
+where $\textbf{0}$ is an $N$-vector of 0 values and $\textbf{1}$ is the $N
 \times N$ identity matrix.  Let $L$ be the Cholesky decomposition of
 $K(x \mid \theta)$, i.e., the lower-triangular matrix $L$ such that $LL^{\top} =
 K(x \mid \theta)$.  Then the transformed variable $\mu + L\eta$ has the intended
 target distribution,
 $$
-  \mu + L\eta \sim \mathsf{multivariate\ normal}(\mu(x), K(x \mid \theta)).
+  \mu + L\eta \sim \textsf{multivariate normal}(\mu(x), K(x \mid \theta)).
 $$
 
 This transform can be applied directly to Gaussian process
@@ -273,21 +273,21 @@ encoding of the transform described above.
 The full generative model for a GP with a normal outcome,
 $y \in \mathbb{R}^N$, with inputs $x \in \mathbb{R}^N$, for a finite $N$:
 \begin{align*}
-\rho   &\sim \mathsf{InvGamma}(5, 5) \\
-\alpha &\sim \mathsf{normal}(0, 1) \\
-\sigma &\sim \mathsf{normal}(0, 1) \\
-f      &\sim \mathsf{multivariate\ normal}\left(0, K(x \mid \alpha, \rho)\right) \\
-y_i    &\sim \mathsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\}
+\rho   &\sim \textsf{InvGamma}(5, 5) \\
+\alpha &\sim \textsf{normal}(0, 1) \\
+\sigma &\sim \textsf{normal}(0, 1) \\
+f      &\sim \textsf{multivariate normal}\left(0, K(x \mid \alpha, \rho)\right) \\
+y_i    &\sim \textsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\}
 \end{align*}
 
 With a normal outcome, it is possible to integrate out the Gaussian
 process $f$, yielding the more parsimonious model:
 \begin{align*}
-\rho   &\sim \mathsf{InvGamma}(5, 5) \\
-\alpha &\sim \mathsf{normal}(0, 1) \\
-\sigma &\sim \mathsf{normal}(0, 1) \\
-y      &\sim \mathsf{multivariate\ normal}
-         \left(0, K(x \mid \alpha, \rho) + \mathbf{I}_N \sigma^2\right) \\
+\rho   &\sim \textsf{InvGamma}(5, 5) \\
+\alpha &\sim \textsf{normal}(0, 1) \\
+\sigma &\sim \textsf{normal}(0, 1) \\
+y      &\sim \textsf{multivariate normal}
+         \left(0, K(x \mid \alpha, \rho) + \textbf{I}_N \sigma^2\right) \\
 \end{align*}
 
 It can be more computationally efficient when dealing with a normal
@@ -422,7 +422,7 @@ Two differences between the latent variable GP and the marginal likelihood GP
 are worth noting. The first is that we have augmented our parameter block with
 a new parameter vector of length $N$ called $`eta`$. This is used in the model
 block to generate a multivariate normal vector called $f$, corresponding to the
-latent GP. We put a $\mathsf{normal}(0,1)$ prior on `eta` like we did in the
+latent GP. We put a $\textsf{normal}(0,1)$ prior on `eta` like we did in the
 Cholesky-parameterized GP in the simulation section.  The second difference is
 that our likelihood is now univariate, though we could code $N$ likelihood
 terms as one $N$-dimensional multivariate normal with an identity covariance
@@ -475,11 +475,11 @@ For binary classification problems, the observed outputs $z_n \in
 \{ 0,1 \}$ are binary.  These outputs are modeled using a Gaussian
 process with (unobserved) outputs $y_n$ through the logistic link,
 $$
-z_n \sim \mathsf{Bernoulli}(\operatorname{logit}^{-1}(y_n)),
+z_n \sim \textsf{Bernoulli}(\operatorname{logit}^{-1}(y_n)),
 $$
 or in other words,
 $$
-\mathsf{Pr}[z_n = 1] = \operatorname{logit}^{-1}(y_n).
+\textsf{Pr}[z_n = 1] = \operatorname{logit}^{-1}(y_n).
 $$
 
 We can extend our latent variable GP Stan program to deal with classification
@@ -617,8 +617,8 @@ dependent on how the GP is used in our statistical model.
 
 If our model consists of only the GP, i.e.:
 \begin{align*}
-f   &\sim \mathsf{multivariate\ normal}\left(0, K(x \mid \alpha, \rho)\right) \\
-y_i &\sim \mathsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\} \\
+f   &\sim \textsf{multivariate normal}\left(0, K(x \mid \alpha, \rho)\right) \\
+y_i &\sim \textsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\} \\
     & x \in \mathbb{R}^{N \times D}, \quad
       f \in \mathbb{R}^N
 \end{align*}
@@ -640,8 +640,8 @@ If we're using the GP as a component in a larger model that includes an overall
 mean and fixed effects for the same variables we're using as the domain for the
 GP, i.e.:
 \begin{align*}
-f   &\sim \mathsf{multivariate\ normal}\big(0, K(x \mid \alpha, \rho)\big) \\
-y_i &\sim \mathsf{normal}\left(\beta_0 + x_i \beta_{[1:D]} + f_i, \sigma\right) \, \forall i
+f   &\sim \textsf{multivariate normal}\big(0, K(x \mid \alpha, \rho)\big) \\
+y_i &\sim \textsf{normal}\left(\beta_0 + x_i \beta_{[1:D]} + f_i, \sigma\right) \, \forall i
   \in \{1, \dots, N\} \\
     & x_i^T, \beta_{[1:D]} \in \mathbb{R}^D,\quad
       x \in \mathbb{R}^{N \times D},\quad
@@ -866,7 +866,7 @@ Jumping straight to the result,
 $$
 p\left(\tilde{y} \mid \tilde{x},y,x\right)
 =
-\mathsf{normal}\left(K^{\top}\Sigma^{-1}y,\
+\textsf{normal}\left(K^{\top}\Sigma^{-1}y,\
                 \Omega - K^{\top}\Sigma^{-1}K\right),
 $$
 where $\Sigma = K(x \mid \alpha, \rho, \sigma)$ is the result of applying the covariance
@@ -981,8 +981,8 @@ generated quantities {
 Suppose we have observations $y_i \in \mathbb{R}^M$ observed at
 $x_i \in \mathbb{R}^K$. One can model the data like so:
 \begin{align*}
-y_i  &\sim \mathsf{multivariate\ normal}\left(f(x_i), \mathbf{I}_M \sigma^2\right) \\
-f(x) &\sim \mathsf{GP}\big(m(x), K(x \mid \theta, \phi)\big) \\
+y_i  &\sim \textsf{multivariate normal}\left(f(x_i), \textbf{I}_M \sigma^2\right) \\
+f(x) &\sim \textsf{GP}\big(m(x), K(x \mid \theta, \phi)\big) \\
      & K(x \mid \theta) \in \mathbb{R}^{M \times M}, \quad
        f(x), m(x) \in \mathbb{R}^M
 \end{align*}
@@ -996,8 +996,8 @@ K(x, x^\prime \mid \theta, \phi)_{[m, m^\prime]} = k\left(x, x^\prime \mid
 $$
 then our finite dimensional generative model for the above is:
 \begin{align*}
-f        &\sim \mathsf{matrixnormal}\big(m(x), K(x \mid \alpha, \rho), C(\phi)\big) \\
-y_{i, m} &\sim \mathsf{normal}(f_{i,m}, \sigma) \\
+f        &\sim \textsf{matrixnormal}\big(m(x), K(x \mid \alpha, \rho), C(\phi)\big) \\
+y_{i, m} &\sim \textsf{normal}(f_{i,m}, \sigma) \\
 f        &\in  \mathbb{R}^{N \times M}
 \end{align*}
 where $K(x \mid \alpha, \rho)$ is the exponentiated quadratic kernel we've used
@@ -1009,13 +1009,13 @@ The matrix normal distribution has two covariance matrices: $K(x \mid
 covariance. The salient features of the matrix normal are that the rows
 of the matrix $f$ are distributed:
 $$
-f_{[n,]} \sim \mathsf{multivariate\ normal}\big(m(x)_{[n,]}, K(x \mid \alpha,
+f_{[n,]} \sim \textsf{multivariate normal}\big(m(x)_{[n,]}, K(x \mid \alpha,
 \rho)_{[n,n]} C(\phi)\big)
 $$
 and that the columns of the matrix $f$ are
 distributed:
 $$
-f_{[,m]} \sim \mathsf{multivariate\ normal}\big(m(x)_{[,m]}, K(x
+f_{[,m]} \sim \textsf{multivariate normal}\big(m(x)_{[,m]}, K(x
   \mid \alpha, \rho) C(\phi)_{[m,m]}\big)
 $$
 This also means means that $\mathbb{E}\left[f^T f\right]$ is equal to
@@ -1030,16 +1030,16 @@ $C$ by $1/d$ and our likelihood will not change.
 We can generate a random variable $f$ from a matrix normal density in
 $\mathbb{R}^{N \times M}$ using the following algorithm:
 \begin{align*}
-\eta_{i,j} &\sim \mathsf{normal}(0, 1) \, \forall i,j \\
+\eta_{i,j} &\sim \textsf{normal}(0, 1) \, \forall i,j \\
 f          &= L_{K(x \mid 1.0, \rho)} \, \eta \, L_C(\phi)^T \\
-f          &\sim \mathsf{matrixnormal}\big(0, K(x \mid 1.0, \rho), C(\phi)\big) \\
+f          &\sim \textsf{matrixnormal}\big(0, K(x \mid 1.0, \rho), C(\phi)\big) \\
 \eta       &\in \mathbb{R}^{N \times M} \\
-L_C(\phi)  &= \mathtt{cholesky\_decompose}\big(C(\phi)\big) \\
-L_{K(x \mid 1.0, \rho)} &= \mathtt{cholesky\_decompose}\big(K(x \mid 1.0, \rho)\big)
+L_C(\phi)  &= \texttt{cholesky}\mathtt{\_}\texttt{decompose}\big(C(\phi)\big) \\
+L_{K(x \mid 1.0, \rho)} &= \texttt{cholesky}\mathtt{\_}\texttt{decompose}\big(K(x \mid 1.0, \rho)\big)
 \end{align*}
 
 This can be implemented in Stan using a latent-variable GP formulation. We've used
-$\mathsf{LKJCorr}$ for $C(\phi)$, but any positive-definite matrix will do.
+$\textsf{LKJCorr}$ for $C(\phi)$, but any positive-definite matrix will do.
 
 
 ```

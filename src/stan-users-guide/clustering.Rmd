@@ -54,9 +54,9 @@ Stan) as a multivariate normal mixture model.
 In the full generative model, each data point $n$ in $\{1,\dotsc,N\}$ is assigned
 a cluster $z_n \in \{1,\dotsc,K\}$ with symmetric uniform probability,
 $$
-z_n \sim \mathsf{categorical}(\mathbf{1}/K),
+z_n \sim \textsf{categorical}(\textbf{1}/K),
 $$
-where $\mathbf{1}$ is the unit vector of $K$ dimensions, so that $\mathbf{1}/K$
+where $\textbf{1}$ is the unit vector of $K$ dimensions, so that $\textbf{1}/K$
 is the symmetric $K$-simplex.  Thus the model assumes that
 each data point is drawn from a hard decision about cluster
 membership.  The softness arises only from the uncertainty about which
@@ -66,18 +66,18 @@ The data points themselves are generated from a multivariate normal
 distribution whose parameters are determined by the cluster assignment
 $z_n$,
 $$
-y_n \sim  \mathsf{normal}(\mu_{z[n]},\Sigma_{z[n]})
+y_n \sim  \textsf{normal}(\mu_{z[n]},\Sigma_{z[n]})
 $$
 
 The sample implementation in this section assumes a fixed unit
 covariance matrix shared by all clusters $k$,
 $$
-\Sigma_k = \mathtt{diag\_matrix}(\mathbf{1}),
+\Sigma_k = \texttt{diag}\mathtt{\_}\texttt{matrix}(\textbf{1}),
 $$
 so that the log multivariate normal can be implemented directly up to a proportion
 by
 $$
-\mathsf{normal}\left( y_n \mid \mu_k, \mathtt{diag\_matrix}(\mathbf{1}) \right)
+\textsf{normal}\left( y_n \mid \mu_k, \texttt{diag\_matrix}(\textbf{1}) \right)
 \propto \exp \left (- \frac{1}{2} \sum_{d=1}^D \left( \mu_{k,d} - y_{n,d}
   \right)^2 \right).
 $$
@@ -225,7 +225,7 @@ The multinomial mixture model generates a single category $z_m \in
 \{1,\dotsc,K\}$ for each document $m \in \{1,\dotsc,M\}$ according to a categorical
 distribution,
 $$
-z_m \sim \mathsf{categorical}(\theta).
+z_m \sim \textsf{categorical}(\theta).
 $$
 The $K$-simplex parameter $\theta$ represents the prevalence of each
 category in the data.
@@ -235,7 +235,7 @@ independently of each other and the words in other documents based on
 the category of the document, with word $n$ of document $m$ being
 generated as
 $$
-w_{m,n} \sim \mathsf{categorical}(\phi_{z[m]}).
+w_{m,n} \sim \textsf{categorical}(\phi_{z[m]}).
 $$
 The parameter $\phi_{z[m]}$ is a $V$-simplex representing the
 probability of each word in the vocabulary in documents of category
@@ -349,12 +349,12 @@ likelihood is now computed as the marginal document probability
 \begin{align*}
 \log\, &p(w_{m,1},\dotsc,w_{m,N_m} \mid \theta,\phi) \\
  &= \log \sum_{k=1}^K
-    \left( \mathsf{categorical}(k \mid \theta)
-           \times \prod_{n=1}^{N_m} \mathsf{categorical}(w_{m,n} \mid \phi_k)
+    \left( \textsf{categorical}(k \mid \theta)
+           \times \prod_{n=1}^{N_m} \textsf{categorical}(w_{m,n} \mid \phi_k)
     \right) \\
  &= \log \sum_{k=1}^K \exp \left(
-    \log \mathsf{categorical}(k \mid \theta)
-     + \sum_{n=1}^{N_m} \log \mathsf{categorical}(w_{m,n} \mid \phi_k)
+    \log \textsf{categorical}(k \mid \theta)
+     + \sum_{n=1}^{N_m} \log \textsf{categorical}(w_{m,n} \mid \phi_k)
     \right).
 \end{align*}
 
@@ -382,14 +382,14 @@ model {
 
 The local variable `gamma[m, k]` represents the value
 $$
-\gamma_{m,k} = \log \mathsf{categorical}(k \mid \theta)
-+ \sum_{n=1}^{N_m} \log \mathsf{categorical}(w_{m,n} \mid \phi_k).
+\gamma_{m,k} = \log \textsf{categorical}(k \mid \theta)
++ \sum_{n=1}^{N_m} \log \textsf{categorical}(w_{m,n} \mid \phi_k).
 $$
 
 Given $\gamma$, the posterior probability that document
 $m$ is assigned category $k$ is
 $$
-\mathsf{Pr}[z_m = k \mid w,\alpha,\beta]
+\textsf{Pr}[z_m = k \mid w,\alpha,\beta]
 =
 \exp \left(
 \gamma_{m,k}
@@ -451,7 +451,7 @@ The basic model assumes each document is generated independently based
 on fixed hyperparameters. For document $m$, the first step is to draw a topic
 distribution simplex $\theta_m$ over the $K$ topics,
 $$
-\theta_m \sim \mathsf{Dirichlet}(\alpha).
+\theta_m \sim \textsf{Dirichlet}(\alpha).
 $$
 
 The prior hyperparameter $\alpha$ is fixed to a $K$-vector of positive
@@ -460,18 +460,18 @@ conditional on the distribution $\theta_m$.  First, a topic
 $z_{m,n} \in \{1,\dotsc,K\}$ is drawn for the word based on the
 document-specific topic-distribution,
 $$
-z_{m,n} \sim \mathsf{categorical}(\theta_m).
+z_{m,n} \sim \textsf{categorical}(\theta_m).
 $$
 
 Finally, the word $w_{m,n}$ is drawn according to the word distribution
 for topic $z_{m,n}$,
 $$
-w_{m,n} \sim \mathsf{categorical}(\phi_{z[m,n]}).
+w_{m,n} \sim \textsf{categorical}(\phi_{z[m,n]}).
 $$
 The distributions $\phi_k$ over words for topic $k$ are also given a
 Dirichlet prior,
 $$
-\phi_k \sim \mathsf{Dirichlet}(\beta)
+\phi_k \sim \textsf{Dirichlet}(\beta)
 $$
 
 where $\beta$ is a fixed $V$-vector of positive values.
@@ -502,11 +502,11 @@ Plugging the distributions in and converting to the log scale provides a
 formula that can be implemented directly in Stan,
 \begin{align*}
 \log\, &p(\theta,\phi \mid w,\alpha,\beta) \\
- &= \sum_{m=1}^M \log \mathsf{Dirichlet}(\theta_m \mid \alpha)
-    + \sum_{k=1}^K \log \mathsf{Dirichlet}(\phi_k \mid \beta) \\
+ &= \sum_{m=1}^M \log \textsf{Dirichlet}(\theta_m \mid \alpha)
+    + \sum_{k=1}^K \log \textsf{Dirichlet}(\phi_k \mid \beta) \\
  &\qquad + \sum_{m=1}^M \sum_{n=1}^{N[m]} \log \left(
-    \sum_{z=1}^K \mathsf{categorical}(z \mid \theta_m)
-    \times \mathsf{categorical}(w_{m,n} \mid \phi_z)
+    \sum_{z=1}^K \textsf{categorical}(z \mid \theta_m)
+    \times \textsf{categorical}(w_{m,n} \mid \phi_z)
   \right)
 \end{align*}
 
@@ -637,11 +637,11 @@ model {
 }
 ```
 
-The $\mathsf{LKJCorr}$ distribution with shape $\alpha > 0$ has support
+The $\textsf{LKJCorr}$ distribution with shape $\alpha > 0$ has support
 on correlation matrices (i.e., symmetric positive definite with unit
 diagonal).  Its density is defined by
 $$
-\mathsf{LKJCorr}(\Omega \mid \alpha) \propto \operatorname{det}(\Omega)^{\alpha - 1}
+\textsf{LKJCorr}(\Omega \mid \alpha) \propto \operatorname{det}(\Omega)^{\alpha - 1}
 $$
 With a scale of $\alpha = 2$, the weakly informative prior favors a
 unit correlation matrix.  Thus the compound effect of this prior on

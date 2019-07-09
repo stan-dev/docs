@@ -16,7 +16,7 @@ spatial) data.
 A first-order autoregressive model (AR(1)) with normal noise takes
 each point $y_n$ in a sequence $y$ to be generated according to
 $$
-y_n \sim \mathsf{normal}(\alpha + \beta y_{n-1}, \sigma).
+y_n \sim \textsf{normal}(\alpha + \beta y_{n-1}, \sigma).
 $$
 
 That is, the expected value of $y_n$ is $\alpha + \beta y_{n-1}$, with
@@ -26,7 +26,7 @@ noise scaled as $\sigma$.
 
 With improper flat priors on the regression coefficients $\alpha$ and
 $\beta$ and on the positively-constrained noise scale ($\sigma$), the
-Stan program for the AR(1) model is as follows.^[The intercept in this model is $\alpha / (1 - \beta)$.  An alternative parameterization in terms of an intercept $\gamma$ suggested Mark Scheuerell on GitHub is $y_n \sim \mathsf{normal}\left(\alpha + \gamma \times (y_{n-1} - \alpha), \sigma\right)$.]
+Stan program for the AR(1) model is as follows.^[The intercept in this model is $\alpha / (1 - \beta)$.  An alternative parameterization in terms of an intercept $\gamma$ suggested Mark Scheuerell on GitHub is $y_n \sim \textsf{normal}\left(\alpha + \gamma \times (y_{n-1} - \alpha), \sigma\right)$.]
 
 ```
 data {
@@ -150,7 +150,7 @@ and $\mu$, $\alpha_0$, and $\alpha_1$ are unknown regression coefficient paramet
 \begin{align*}
 r_t        &=  \mu + a_t \\
 a_t        &=  \sigma_t \epsilon_t \\
-\epsilon_t &\sim \mathsf{normal}(0,1) \\
+\epsilon_t &\sim \textsf{normal}(0,1) \\
 \sigma^2_t &=  \alpha_0 + \alpha_1 a_{t-1}^2
 \end{align*}
 
@@ -266,7 +266,7 @@ $$
 with the noise term $\epsilon_t$ for outcome $y_t$ modeled as
 normal,
 $$
-\epsilon_t \sim \mathsf{normal}(0,\sigma).
+\epsilon_t \sim \textsf{normal}(0,\sigma).
 $$
 In a proper Bayesian model, the parameters $\mu$, $\theta$, and
 $\sigma$ must all be given priors.
@@ -491,20 +491,20 @@ time $t$.
 \begin{align*}
 y_t        &=    \epsilon_t \exp(h_t / 2) \\
 h_{t+1}    &=    \mu + \phi (h_t - \mu) + \delta_t \sigma \\
-h_1        &\sim \mathsf{normal}\left( \mu, \frac{\sigma}{\sqrt{1 - \phi^2}} \right) \\
-\epsilon_t &\sim \mathsf{normal}(0,1) \\
-\delta_t   &\sim \mathsf{normal}(0,1)
+h_1        &\sim \textsf{normal}\left( \mu, \frac{\sigma}{\sqrt{1 - \phi^2}} \right) \\
+\epsilon_t &\sim \textsf{normal}(0,1) \\
+\delta_t   &\sim \textsf{normal}(0,1)
 \end{align*}
 
 Rearranging the first line, $\epsilon_t = y_t \exp(-h_t / 2)$,
 allowing the sampling distribution for $y_t$ to be written as
 $$
-y_t \sim \mathsf{normal}(0,\exp(h_t/2)).
+y_t \sim \textsf{normal}(0,\exp(h_t/2)).
 $$
 The recurrence equation for $h_{t+1}$ may be combined with the
 scaling and sampling of $\delta_t$ to yield the sampling distribution
 $$
-h_t \sim \mathsf{normal}(\mu + \phi(h_t - \mu), \sigma).
+h_t \sim \textsf{normal}(\mu + \phi(h_t - \mu), \sigma).
 $$
 This formulation can be directly encoded, as shown in the following
 Stan model.
@@ -586,11 +586,11 @@ transformed parameters {
 ```
 
 The first assignment rescales `h_std` to have a
-$\mathsf{normal}(0,\sigma)$ distribution and temporarily assigns it to
+$\textsf{normal}(0,\sigma)$ distribution and temporarily assigns it to
 `h`.  The second assignment rescales `h[1]` so that its
 prior differs from that of `h[2]` through `h[T]`.  The next
 assignment supplies a `mu` offset, so that `h[2]` through
-`h[T]` are now distributed $\mathsf{normal}(\mu,\sigma)$; note
+`h[T]` are now distributed $\textsf{normal}(\mu,\sigma)$; note
 that this shift must be done after the rescaling of `h[1]`.  The
 final loop adds in the moving average so that `h[2]` through
 `h[T]` are appropriately modeled relative to `phi` and
@@ -624,7 +624,7 @@ This Markov chain is parameterized by a transition matrix $\theta$
 where $\theta_k$ is a $K$-simplex for $k \in \{ 1, \dotsc, K \}$.  The
 probability of transitioning to state $z_t$ from state $z_{t-1}$ is
 $$
-z_t \sim \mathsf{categorical}(\theta_{z[t-1]}).
+z_t \sim \textsf{categorical}(\theta_{z[t-1]}).
 $$
 The output $y_t$ at time $t$ is generated conditionally independently
 based on the latent state $z_t$.
@@ -635,7 +635,7 @@ latent state $k$ is parameterized by a $V$-simplex $\phi_k$.  The
 observed output $y_t$ at time $t$ is generated based on the hidden
 state indicator $z_t$ at time $t$,
 $$
-y_t \sim \mathsf{categorical}(\phi_{z[t]}).
+y_t \sim \textsf{categorical}(\phi_{z[t]}).
 $$
 In short, HMMs form a discrete mixture model where the mixture
 component indicators form a latent Markov chain.

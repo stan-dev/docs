@@ -307,15 +307,15 @@ $$
 
 The inverse of the link function appears in the model:
 $$
-\operatorname{logit}^{-1}(u) = \mathtt{inv\_logit}(u) = \frac{1}{1 + \exp(-u)}.
+\operatorname{logit}^{-1}(u) = \texttt{inv}\mathtt{\_}\texttt{logit}(u) = \frac{1}{1 + \exp(-u)}.
 $$
 
 The model formulation above uses the logit-parameterized version of
 the Bernoulli distribution, which is defined by
 $$
-\mathtt{bernoulli\_logit}\left(y \mid \alpha \right)
+\texttt{bernoulli}\mathtt{\_}\texttt{logit}\left(y \mid \alpha \right)
 =
-\mathtt{bernoulli}\left(y \mid \operatorname{logit}^{-1}(\alpha)\right).
+\texttt{bernoulli}\left(y \mid \operatorname{logit}^{-1}(\alpha)\right).
 $$
 
 The formulation is also vectorized in the sense that `alpha` and
@@ -343,7 +343,7 @@ regression uses the cumulative normal distribution function, which is
 typically written as
 
 $$
-\Phi(x) = \int_{-\infty}^x \mathsf{normal}\left(y \mid 0,1 \right) \,\textrm{d}y.
+\Phi(x) = \int_{-\infty}^x \textsf{normal}\left(y \mid 0,1 \right) \,\textrm{d}y.
 $$
 
 The cumulative standard normal distribution function $\Phi$ is implemented
@@ -372,7 +372,7 @@ Multiple outcome forms of logistic regression can be coded directly in
 Stan.  For instance, suppose there are $K$ possible outcomes for each
 output variable $y_n$.  Also suppose that there is a $D$-dimensional
 vector $x_n$ of predictors for $y_n$.  The multi-logit model with
-$\mathsf{normal}(0,5)$ priors on the coefficients is coded as follows.
+$\textsf{normal}(0,5)$ priors on the coefficients is coded as follows.
 
 
 ```
@@ -404,13 +404,13 @@ efficiency.  Like the Bernoulli-logit, the categorical-logit
 distribution applies softmax internally to convert an arbitrary vector
 to a simplex,
 $$
-\mathtt{categorical\_logit}\left(y \mid \alpha\right)
+\texttt{categorical}\mathtt{\_}\texttt{logit}\left(y \mid \alpha\right)
 =
-\mathtt{categorical}\left(y \mid \mathtt{softmax}(\alpha)\right),
+\texttt{categorical}\left(y \mid \texttt{softmax}(\alpha)\right),
 $$
 where
 $$
-\mathtt{softmax}(u) = \exp(u) / \operatorname{sum}\left(\exp(u)\right).
+\texttt{softmax}(u) = \exp(u) / \operatorname{sum}\left(\exp(u)\right).
 $$
 
 The categorical distribution with log-odds (logit) scaled parameters
@@ -546,7 +546,7 @@ on `beta` in the original parameterization without the
 sum-to-zero constraint.  Most notably, a simple prior on each
 component of `beta_raw` produces different results than putting
 the same prior on each component of an unconstrained $K$-vector
-`beta`.  For example, providing a $\mathsf{normal}(0,5)$ prior
+`beta`.  For example, providing a $\textsf{normal}(0,5)$ prior
 on `beta` will produce a different posterior mode than placing
 the same prior on `beta_raw`.
 
@@ -630,7 +630,7 @@ With this parameterization, a Dirichlet prior can be placed on
 
 ### Soft Centering {-}
 
-Adding a prior such as $\beta \sim \mathsf{normal}(0,\sigma)$ will provide a kind
+Adding a prior such as $\beta \sim \textsf{normal}(0,\sigma)$ will provide a kind
 of soft centering of a parameter vector $\beta$ by preferring, all
 else being equal, that $\sum_{k=1}^K \beta_k = 0$.  This approach is only
 guaranteed to roughly center  if $\beta$ and the elementwise addition $\beta + c$
@@ -813,7 +813,7 @@ on the efficiency tradeoffs among arrays, vectors, and matrices.
 This model can be further sped up and at the same time made more
 arithmetically stable by replacing the application of inverse-logit
 inside the Bernoulli distribution with the logit-parameterized
-Bernoulli,^[The Bernoulli-logit distribution builds in the log link function, taking $$\mathtt{bernoulli\_logit}\left(y \mid \alpha\right) = \mathtt{bernoulli}\left(y \mid \operatorname{logit}^{-1}(\alpha)\right).$$]
+Bernoulli,^[The Bernoulli-logit distribution builds in the log link function, taking $$\texttt{bernoulli}\mathtt{\_}\texttt{logit}\left(y \mid \alpha\right) = \texttt{bernoulli}\left(y \mid \operatorname{logit}^{-1}(\alpha)\right).$$]
 
 
 ```
@@ -868,9 +868,9 @@ density grows without bound.  As an illustration, consider a simple
 hierarchical linear regression (with fixed prior mean) of $y_n \in
 \mathbb{R}$ on $x_n \in \mathbb{R}^K$, formulated as
 \begin{align*}
-y_n     & \sim \mathsf{normal}(x_n \beta, \sigma) \\
-\beta_k & \sim \mathsf{normal}(0,\tau) \\
-\tau    & \sim \mathsf{Cauchy}(0,2.5) \\
+y_n     & \sim \textsf{normal}(x_n \beta, \sigma) \\
+\beta_k & \sim \textsf{normal}(0,\tau) \\
+\tau    & \sim \textsf{Cauchy}(0,2.5) \\
 \end{align*}
 
 In this case, as $\tau \rightarrow 0$ and $\beta_k \rightarrow 0$, the
@@ -884,7 +884,7 @@ to be used for inference.  The approach recommended by
 @ChungEtAl:2013 is to use a gamma distribution as a prior, such
 as
 $$
-\sigma \sim \mathsf{Gamma}(2, 1/A),
+\sigma \sim \textsf{Gamma}(2, 1/A),
 $$
 for a reasonably large value of $A$, such as $A = 10$.
 
@@ -967,15 +967,15 @@ model {
 
 This model uses the logit-parameterized Bernoulli distribution, where
 $$
-\mathtt{bernoulli\_logit}\left(y \mid \alpha\right)
+\texttt{bernoulli}\mathtt{\_}\texttt{logit}\left(y \mid \alpha\right)
 =
-\mathtt{bernoulli}\left(y \mid \operatorname{logit}^{-1}(\alpha)\right).
+\texttt{bernoulli}\left(y \mid \operatorname{logit}^{-1}(\alpha)\right).
 $$
 
 The key to understanding it is the term inside the
 `bernoulli_logit` distribution, from which it follows that
 $$
-\mathsf{Pr}[y_n = 1] = \operatorname{logit}^{-1}\left(\alpha_{jj[n]} - \beta_{kk[n]}
+\textsf{Pr}[y_n = 1] = \operatorname{logit}^{-1}\left(\alpha_{jj[n]} - \beta_{kk[n]}
 + \delta\right).
 $$
 
@@ -1034,9 +1034,9 @@ model {
 
 The `std_normal` function is used here, defined by
 $$
-\mathtt{std\_normal}(y)
+\texttt{std}\mathtt{\_}\texttt{normal}(y)
 =
-\mathsf{normal}\left(y \mid 0, 1\right).
+\textsf{normal}\left(y \mid 0, 1\right).
 $$
 
 The sampling statement is also vectorized using elementwise
@@ -1097,7 +1097,7 @@ non-centered reparameterizations.
 
 The intercept term `mu_beta` can't itself be modeled
 hierarchically, so it is given a weakly informative
-$\mathsf{Cauchy}(0,5)$ prior.  Similarly, the scale terms,
+$\textsf{Cauchy}(0,5)$ prior.  Similarly, the scale terms,
 `sigma_beta`, and `sigma_gamma`, are given half-Cauchy
 priors.  As mentioned earlier, the scale and location for `alpha`
 are fixed to ensure identifiability.  The truncation in the
@@ -1121,7 +1121,7 @@ section](#collinearity.section) for a simple example of the problems
 this poses for estimation.
 
 The non-identifiability is resolved by providing a standard normal (i.e.,
-$\mathsf{normal}(0,1)$) prior on one group of coefficients, such as
+$\textsf{normal}(0,1)$) prior on one group of coefficients, such as
 the student abilities.  With a standard normal prior on the student
 abilities, the IRT model is identified in that the posterior will
 produce a group of estimates for student ability parameters that have
@@ -1189,7 +1189,7 @@ The model is a linear regression with slope and intercept coefficients
 varying by group, so that $\beta_j$ is the coefficient $K$-vector for
 group $j$.  The likelihood function for individual $n$ is then just
 $$
-y_n \sim \mathsf{normal}(x_n \, \beta_{jj[n]}, \, \sigma)
+y_n \sim \textsf{normal}(x_n \, \beta_{jj[n]}, \, \sigma)
 \quad\text{for}\quad n \in \{ 1, \dotsc, N \}.
 $$
 
@@ -1200,7 +1200,7 @@ Gelman and Hill model the coefficient vectors $\beta_j$ as being drawn
 from a multivariate distribution with mean vector $\mu$ and
 covariance matrix $\Sigma$,
 $$
-\beta_j \sim \mathsf{multivariate\ normal}(\mu, \, \Sigma)
+\beta_j \sim \textsf{multivariate normal}(\mu, \, \Sigma)
 \quad\text{for}\quad j \in \{ 1, \dotsc, J \}.
 $$
 
@@ -1215,7 +1215,7 @@ covariance matrix $\Sigma$ must themselves be given priors.  The
 group-level mean vector can be given a reasonable weakly-informative
 prior for independent coefficients, such as
 $$
-\mu_j \sim \mathsf{normal}(0,5).
+\mu_j \sim \textsf{normal}(0,5).
 $$
 If more is known about the expected coefficient values
 $\beta_{j, k}$, this information can be incorporated into the prior for
@@ -1232,7 +1232,7 @@ and Hill, we decompose our prior into a scale and a matrix, but are
 able to do so in a more natural way based on the actual variable
 scales and a correlation matrix.  Specifically, we define
 $$
-\Sigma = \mathtt{diag\_matrix}(\tau) \times \Omega \times \mathtt{diag\_matrix}(\tau),
+\Sigma = \texttt{diag}\mathtt{\_}\texttt{matrix}(\tau) \times \Omega \times \texttt{diag}\mathtt{\_}\texttt{matrix}(\tau),
 $$
 where $\Omega$ is a correlation matrix and $\tau$ is the vector of
 coefficient scales.   This mapping from scale vector $\tau$ and
@@ -1247,7 +1247,7 @@ The components of the scale vector $\tau$ can be given any reasonable
 prior for scales, but we recommend something weakly informative like a
 half-Cauchy distribution with a small scale, such as
 $$
-\tau_k \sim \mathsf{Cauchy}(0, 2.5)
+\tau_k \sim \textsf{Cauchy}(0, 2.5)
 \quad\text{for}\quad k \in \{ 1, \dotsc, K \}
 \quad\text{constrained\ by}\quad \tau_k > 0.
 $$
@@ -1261,12 +1261,12 @@ Our final recommendation is to give the correlation matrix $\Omega$ an
 LKJ prior with shape $\eta \geq 1$,^[The prior is named for Lewandowski, Kurowicka, and Joe, as it was derived by inverting the random correlation matrix generation strategy of @LewandowskiKurowickaJoe:2009.]
 
 $$
-\Omega \sim \mathsf{LKJCorr}(\eta).
+\Omega \sim \textsf{LKJCorr}(\eta).
 $$
 
 The LKJ correlation distribution is defined by
 $$
-\mathsf{LKJCorr}\left(\Sigma \mid \eta\right)
+\textsf{LKJCorr}\left(\Sigma \mid \eta\right)
 \propto
 \operatorname{det}\left(\Sigma\right)^{\eta - 1}.
 $$
@@ -1297,13 +1297,13 @@ predictors $u_j$.  The prior mean for the $\beta_j$ can then itself be
 modeled as a regression, using an $L$-dimensional coefficient vector
 $\gamma$.  The prior for the group-level coefficients then becomes
 $$
-\beta_j \sim \mathsf{multivariate\ normal}(u_j \, \gamma, \Sigma)
+\beta_j \sim \textsf{multivariate normal}(u_j \, \gamma, \Sigma)
 $$
 
 The group-level coefficients $\gamma$ may themselves be given
 independent weakly informative priors, such as
 $$
-\gamma_l \sim \mathsf{normal}(0,5).
+\gamma_l \sim \textsf{normal}(0,5).
 $$
 As usual, information about the group-level means should be
 incorporated into this prior.
@@ -1634,7 +1634,7 @@ independent errors [@Zellner:1962; @Greene:2011].
 The model is easy to write down as a regression,
 \begin{align*}
 y_n        &=  x_n \, \beta + \epsilon_n \\
-\epsilon_n &\sim \mathsf{multivariate\ normal}(0, \Sigma)
+\epsilon_n &\sim \textsf{multivariate normal}(0, \Sigma)
 \end{align*}
 
 where $x_n$ is a $J$-row-vector of predictors ($x$ is an $(N \times
@@ -1723,7 +1723,7 @@ on latent values $z_n$ drawn from a seemingly unrelated regression
 model (see the previous section),
 \begin{align*}
 z_n        &=     x_n \, \beta + \epsilon_n \\
-\epsilon_n &\sim  \mathsf{multivariate\ normal}(0, \Sigma)
+\epsilon_n &\sim  \textsf{multivariate normal}(0, \Sigma)
 \end{align*}
 
 These are then put through the step function to produce a $K$-vector $z_n$
@@ -1912,7 +1912,7 @@ $$
 p\left(\alpha, \beta, \sigma \mid x, y \right)
 \propto
 \prod_{n=1}^N
-  \mathsf{normal}\left(y_n \mid \alpha + \beta x_n, \sigma\right).
+  \textsf{normal}\left(y_n \mid \alpha + \beta x_n, \sigma\right).
 $$
 
 For this model, the posterior predictive inference for a new outcome
@@ -1921,10 +1921,10 @@ observed data $x$ and $y$, is
 $$
 p\left(\tilde{y}_n \mid \tilde{x}_n, x, y\right)
 = \int_{(\alpha,\beta,\sigma)}
-  \mathsf{normal}\left(\tilde{y}_n \mid \alpha + \beta \tilde{x}_n, \sigma\right)
+  \textsf{normal}\left(\tilde{y}_n \mid \alpha + \beta \tilde{x}_n, \sigma\right)
   \times
   p\left(\alpha, \beta, \sigma \mid x, y\right)
-  \,\mathrm{d}(\alpha,\beta,\sigma).
+  \,\textrm{d}(\alpha,\beta,\sigma).
 $$
 
 To code the posterior predictive inference in Stan, a standard linear

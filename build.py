@@ -71,10 +71,10 @@ def main():
     global all_docs
     global all_formats
     if (len(sys.argv) > 2):
-        stan_major = long(sys.argv[1])
-        stan_minor = long(sys.argv[2])
+        stan_major = int(sys.argv[1])
+        stan_minor = int(sys.argv[2])
     else:
-        print "Expecting arguments MAJOR MINOR version numbers"
+        print("Expecting arguments MAJOR MINOR version numbers")
         sys.exit(1)
 
     stan_version = '_'.join([str(stan_major), str(stan_minor)])
@@ -84,15 +84,15 @@ def main():
         try:  
             os.makedirs(docspath);
         except OSError:  
-            print "Creation of the directory %s failed" % docspath
+            print("Creation of the directory %s failed" % docspath)
         else:  
-            print "Successfully created the directory %s " % docspath
+            print("Successfully created the directory %s " % docspath)
 
     docset = all_docs
     if (len(sys.argv) > 3):
         if (sys.argv[3] != "all"):
             if (sys.argv[3] not in docset):
-                print "Expecting one of %s" % ' '.join(docset)
+                print("Expecting one of %s" % ' '.join(docset))
                 sys.exit(1)
             docset = (sys.argv[3],)
 
@@ -100,12 +100,12 @@ def main():
     if (len(sys.argv) > 4):
         if (sys.argv[4] != "all"):
             if (sys.argv[4] not in formats):
-                print "Expecting one of %s" % ' '.join(formats)
+                print("Expecting one of %s" % ' '.join(formats))
                 sys.exit(1)
             formats = (sys.argv[4],)
 
     if (len(sys.argv) > 5):
-        print "Unused arguments:  %s" % ' '.join(sys.argv[5: ])
+        print("Unused arguments:  %s" % ' '.join(sys.argv[5: ]))
 
     make_index_page(docset, formats)
     for doc in docset:

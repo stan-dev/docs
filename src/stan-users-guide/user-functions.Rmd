@@ -607,26 +607,27 @@ Following the same pattern, a standard normal RNG could be coded as
 ```
 real standard_normal_rng() {
   real u = uniform_rng(0, 1);
-  real y = Phi(u);
+  real y = inv_Phi(u);
   return y;
 }
 ```
 
+that is, $y = \Phi^{-1}(u)$, where $\Phi^{-1}$ is the inverse cumulative
+distribution function for the standard normal distribution, implemented in
+the Stan function `inv_Phi`.
 
 In order to generate non-standard variates of the location-scale
 variety, the variate is scaled by the scale parameter and shifted by
 the location parameter.  For example, to generate
 $\mathsf{normal}(\mu, \sigma)$ variates, it is enough to generate a
-uniform variate $u \sim \mathsf{Uniform}(0, 1)$, then convert to a
-standard normal variate, $z = \Phi(u)$, where
-$\Phi$ is the inverse cumulative distribution function for the
-standard normal, and then finally, scale and translate, $y = \mu +
-\sigma \cdot z$.  In code,
+uniform variate $u \sim \mathsf{Uniform}(0, 1)$, convert it to a
+standard normal variate, $z = \Phi^{-1}(u)$, and then, finally, scale
+and translate it, $y = \mu + \sigma z$.  In code,
 
 ```
 real my_normal_rng(real mu, real sigma) {
   real u = uniform_rng(0, 1);
-  real z = Phi(u);
+  real z = inv_Phi(u);
   real y = mu + sigma * z;
   return y;
 }
@@ -678,7 +679,7 @@ real normal_lub_rng(real mu, real sigma, real lb, real ub) {
   real p_lb = normal_cdf(lb, mu, sigma);
   real p_ub = normal_cdf(ub, mu, sigma);
   real u = uniform_rng(p_lb, p_ub);
-  real y = mu + sigma * Phi(u);
+  real y = mu + sigma * inv_Phi(u);
   return y;
 }
 ```
@@ -692,8 +693,8 @@ and naming for readability;  compare the multiple statement version
 above with the single statement
 
 ```
-  return mu + sigma * Phi(uniform_rng(normal_cdf(lb, mu, sigma),
-                                      normal_cdf(ub, mu, sigma)));
+  return mu + sigma * inv_Phi(uniform_rng(normal_cdf(lb, mu, sigma),
+                                          normal_cdf(ub, mu, sigma)));
 ```
 
 for readability.  The names like `p` indicate probabilities, and

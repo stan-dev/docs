@@ -5,6 +5,7 @@ library(bayesplot)
   # theme_set(bayesplot::theme_default())
 library(dplyr)
 library(ggplot2)
+library(kableExtra)
 library(knitr)
   knitr::opts_chunk$set(
     cache = TRUE,

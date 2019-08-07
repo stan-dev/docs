@@ -149,14 +149,16 @@ be based on clarity.
 In the previous example, the linear predictor can be written as $\eta
 = x \beta$, where $\eta$ is a $N$-vector of predictions, $x$ is a $N
 \times K$ matrix, and $\beta$ is a $K$-vector of coefficients.
-Presuming $N \geq K$, we can exploit the fact that any design matrix,
+Presuming $N \geq K$, we can exploit the fact that any design matrix
 $x$ can be decomposed using the thin QR decomposition into an
 orthogonal matrix $Q$ and an upper-triangular matrix $R$, i.e. $x = Q
-R$.  See the reference manual for a definition of the QR-decoposition.
-The functions `qr_Q` and `qr_R` implement the fat QR decomposition so
-here we thin it by including only $K$ columns in $Q$ and $K$ rows in
-$R$ (see the reference manual for more information on the `qr_Q` and
-`qr_R` functions). Also, in practice, it is best to write $x = Q^\ast
+R$.
+
+The functions `qr_thin_Q` and `qr_thin_R` implement the thin QR decomposition,
+which is to be preferred to the fat QR decomposition that would be obtained
+by using `qr_Q` and `qr_R`, as the latter would more easily run out of memory
+(see the Stan Functions Reference for more information on the `qr_thin_Q`
+and `qr_thin_R` functions). In practice, it is best to write $x = Q^\ast
 R^\ast$ where $Q^\ast = Q * \sqrt{n - 1}$ and $R^\ast =
 \frac{1}{\sqrt{n - 1}} R$. Thus, we can equivalently write $\eta = x
 \beta = Q R \beta = Q^\ast R^\ast \beta$. If we let $\theta = R^\ast
@@ -175,8 +177,8 @@ transformed data {
   matrix[K, K] R_ast;
   matrix[K, K] R_ast_inverse;
   // thin and scale the QR decomposition
-  Q_ast = qr_Q(x)[, 1:K] * sqrt(N - 1);
-  R_ast = qr_R(x)[1:K, ] / sqrt(N - 1);
+  Q_ast = qr_thin_Q(x) * sqrt(N - 1);
+  R_ast = qr_thin_R(x) / sqrt(N - 1);
   R_ast_inverse = inverse(R_ast);
 }
 parameters {

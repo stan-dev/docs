@@ -149,14 +149,16 @@ be based on clarity.
 In the previous example, the linear predictor can be written as $\eta
 = x \beta$, where $\eta$ is a $N$-vector of predictions, $x$ is a $N
 \times K$ matrix, and $\beta$ is a $K$-vector of coefficients.
-Presuming $N \geq K$, we can exploit the fact that any design matrix,
+Presuming $N \geq K$, we can exploit the fact that any design matrix
 $x$ can be decomposed using the thin QR decomposition into an
 orthogonal matrix $Q$ and an upper-triangular matrix $R$, i.e. $x = Q
-R$.  See the reference manual for a definition of the QR-decoposition.
-The functions `qr_Q` and `qr_R` implement the fat QR decomposition so
-here we thin it by including only $K$ columns in $Q$ and $K$ rows in
-$R$ (see the reference manual for more information on the `qr_Q` and
-`qr_R` functions). Also, in practice, it is best to write $x = Q^\ast
+R$.
+
+The functions `qr_thin_Q` and `qr_thin_R` implement the thin QR decomposition,
+which is to be preferred to the fat QR decomposition that would be obtained
+by using `qr_Q` and `qr_R`, as the latter would more easily run out of memory
+(see the Stan Functions Reference for more information on the `qr_thin_Q`
+and `qr_thin_R` functions). In practice, it is best to write $x = Q^\ast
 R^\ast$ where $Q^\ast = Q * \sqrt{n - 1}$ and $R^\ast =
 \frac{1}{\sqrt{n - 1}} R$. Thus, we can equivalently write $\eta = x
 \beta = Q R \beta = Q^\ast R^\ast \beta$. If we let $\theta = R^\ast
@@ -175,8 +177,8 @@ transformed data {
   matrix[K, K] R_ast;
   matrix[K, K] R_ast_inverse;
   // thin and scale the QR decomposition
-  Q_ast = qr_Q(x)[, 1:K] * sqrt(N - 1);
-  R_ast = qr_R(x)[1:K, ] / sqrt(N - 1);
+  Q_ast = qr_thin_Q(x) * sqrt(N - 1);
+  R_ast = qr_thin_R(x) / sqrt(N - 1);
   R_ast_inverse = inverse(R_ast);
 }
 parameters {
@@ -209,7 +211,7 @@ reasoning is threefold:
   can move around the parameter space with a smaller number of larger
   steps
 
-1. Since the covariance matrix for the columns of $Q\ast$ is an
+1. Since the covariance matrix for the columns of $Q^\ast$ is an
   identity matrix, $\theta$ typically has a reasonable scale if the
   units of $y$ are also reasonable. This also helps HMC move
   efficiently without compromising numerical accuracy.
@@ -226,7 +228,8 @@ model.
 
 ## Priors for Coefficients and Scales {#regression-priors.section}
 
-See our [general discussion of priors](#general-priors.section) for tips on priors for parameters in regression models.
+See our [general discussion of priors](https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations)
+for tips on priors for parameters in regression models.
 
 Later sections discuss [univariate
 hierarchical priors](#hierarchical-priors.section) and [multivariate
@@ -306,7 +309,7 @@ $$
 \mbox{logit}(v) = \log \left( \frac{v}{1-v} \right).
 $$
 
-The inverse of the link function appears in the model.
+The inverse of the link function appears in the model:
 
 $$
 \mbox{logit}^{-1}(u) = \frac{1}{1 + \exp(-u)}.
@@ -626,7 +629,7 @@ transformed parameters {
   ...
 ```
 
-Here `inv(K)` is just a short way to write `1.0~/~K`.  Given
+Here `inv(K)` is just a short way to write `1.0 / K`.  Given
 that `beta_raw` sums to 1 because it is a simplex, the
 elementwise subtraction of `inv(K)` is guaranteed to sum to zero.
 Because the magnitude of the elements of the simplex is bounded, a
@@ -1053,7 +1056,7 @@ model {
 The `std_normal` function is used here, defined by
 
 $$
-\mathsf{Stdnormalal}(y)
+\mathsf{std_normal}(y)
 \ = \
 \mathsf{normal}(y \mid 0, 1).
 $$
@@ -1221,7 +1224,7 @@ from a multivariate distribution with mean vector $\mu$ and
 covariance matrix $\Sigma$,
 
 $$
-\beta_j \sim \mathsf{multivariate\ normal}(\mu, \, \Sigma)
+\beta_j \sim \mathsf{multivariate normal}(\mu, \, \Sigma)
 \mbox{ for } j \in 1{:}J.
 $$
 
@@ -1380,7 +1383,7 @@ output `Sigma`, define it as a transformed parameter.  The function
 equivalent to `diag_matrix(tau) * Sigma * diag_matrix(tau)`, where
 `diag_matrix(tau)` returns the matrix with `tau` on the diagonal and
 zeroes off diagonal; the version using `quad_form_diag` should be
-faster.  For details on these and other matrix arithmtic operators and
+faster.  For details on these and other matrix arithmetic operators and
 functions, see the function reference manual.
 
 #### Optimization through Vectorization {-}
@@ -1514,7 +1517,7 @@ which are given independent standard normal priors; the `to_vector`
 operation turns the matrix into a vector so that it can be used as a
 vectorized argument to the univariate normal density.  Multiplying the
 Cholesky factor of the covariance matrix by `z` and adding the
-mean `(u\,*\,gamma)'` produces a `beta` distributed as in
+mean `(u * gamma)'` produces a `beta` distributed as in
 the original model.
 
 Omitting the data declarations, which are the same as before, the
@@ -1542,13 +1545,13 @@ model {
 }
 ```
 
-This model also reparameterizes the prior scale `tau` to avoid potential problems with the heavy tails of the Cauchy distribution. The statement `tau_unif ~ uniform(0,pi()/2)` can be omitted from the model block because stan increments the log posterior for parameters with uniform priors without it.
+This model also reparameterizes the prior scale `tau` to avoid potential problems with the heavy tails of the Cauchy distribution. The statement `tau_unif ~ uniform(0,pi()/2)` can be omitted from the model block because Stan increments the log posterior for parameters with uniform priors without it.
 
 ## Prediction, Forecasting, and Backcasting
 
 Stan models can be used for "predicting" the values of arbitrary
 model unknowns.  When predictions are about the future, they're called
-``forecasts;" when they are predictions about the past, as in climate
+"forecasts;" when they are predictions about the past, as in climate
 reconstruction or cosmology, they are sometimes called "backcasts"
 (or "aftcasts" or "hindcasts" or "antecasts," depending on the
 author's feelings about the opposite of "fore").

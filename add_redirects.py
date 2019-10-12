@@ -36,14 +36,14 @@ def main():
     base_dir = (sys.argv[3])
 
     version_dir = "/".join(["docs", stan_version, base_dir])
-    #no_version_dir = "/".join(["docs", base_dir])
+    no_version_dir = "/".join(["docs", base_dir])
 
     files = [x.split("/")[-1] for x in glob.glob(version_dir + "/*.html")]
     for file in files:
         # create redirect file in no_version_dir
-        filename = "/".join(["docs", file.replace("\\","/")])
+        filename = "/".join([no_version_dir, file])
         print(filename)
-        r_to = "/".join([stan_site,version_dir, file.replace("\\","/")])
+        r_to = "/".join([stan_site,version_dir, file])
         print(r_to)
         r_contents = contents.replace("REDIRECTTO",r_to)
         with open(filename, "w") as f:

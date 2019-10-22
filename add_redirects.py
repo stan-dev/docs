@@ -41,10 +41,8 @@ def main():
     files = [x.split("/")[-1] for x in glob.glob(version_dir + "/*.html")]
     for file in files:
         # create redirect file in no_version_dir
-        # WSL # filename = "/".join([no_version_dir, file.replace("functions-reference\\","").replace("reference-manual\\","").replace("stan-users-guide\\","")])
         filename = "/".join([no_version_dir, file])
         print(filename)
-        # WSL # r_to = "/".join([stan_site,version_dir, file.replace("functions-reference\\","").replace("reference-manual\\","").replace("stan-users-guide\\","")])
         r_to = "/".join([stan_site,version_dir, file])
         print(r_to)
         r_contents = contents.replace("REDIRECTTO",r_to)

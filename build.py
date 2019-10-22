@@ -82,7 +82,7 @@ def main():
     docspath = os.path.join(path, "docs", stan_version)
     if (not(os.path.exists(docspath))):
         try:  
-            os.makedirs(docspath);
+            os.makedirs(docspath)
         except OSError:  
             print("Creation of the directory %s failed" % docspath)
         else:  

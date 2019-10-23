@@ -102,6 +102,9 @@ def main():
     if (len(sys.argv) > 5):
         print("Unused arguments:  %s" % ' '.join(sys.argv[5: ]))
 
+    # set environmental variable used in the index.Rmd files
+    os.environ['STAN_DOCS_VERSION'] = '.'.join([str(stan_major), str(stan_minor)])
+
     for doc in docset:
         make_docs(docspath, stan_version, doc, formats)
 

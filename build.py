@@ -31,8 +31,8 @@ def pushd(new_dir):
 def shexec(command):
     returncode = subprocess.call(command, shell=True)
     if returncode != 0:
-        raise FailedCommand(returncode, command)
-    return returncode
+        print('Command {} failed'.format(command))
+        raise Exception(returncode)
 
 def safe_rm(fname):
     if os.path.exists(fname):
@@ -61,11 +61,6 @@ def make_docs(docspath, version, document, formats):
         else:
             [safe_rm(f) for f in ("stan-manual.css", "_main.rds")]
             shutil.rmtree("_book", ignore_errors=True)
-
-def make_index_page(docset, formats):
-    # TODO: generate index.md based on current and new docs
-    # command = "Rscript -e \"bookdown::render_book(\'index.md\', output_format=\'bookdown::html_page\')\""
-    return
 
 def main():
     global all_docs
@@ -107,7 +102,6 @@ def main():
     if (len(sys.argv) > 5):
         print("Unused arguments:  %s" % ' '.join(sys.argv[5: ]))
 
-    make_index_page(docset, formats)
     for doc in docset:
         make_docs(docspath, stan_version, doc, formats)
 

@@ -401,8 +401,8 @@
 <li class="chapter" data-level="15.1.2" data-path="normal-distribution.html"><a href="normal-distribution.html#sampling-statement-19"><i class="fa fa-check"></i><b>15.1.2</b> Sampling Statement</a></li>
 <li class="chapter" data-level="15.1.3" data-path="normal-distribution.html"><a href="normal-distribution.html#stan-functions-18"><i class="fa fa-check"></i><b>15.1.3</b> Stan Functions</a></li>
 <li class="chapter" data-level="15.1.4" data-path="normal-distribution.html"><a href="normal-distribution.html#standard-normal-distribution"><i class="fa fa-check"></i><b>15.1.4</b> Standard Normal Distribution</a></li>
-<li class="chapter" data-level="15.1.5" data-path="normal-distribution.html"><a href="normal-distribution.html#stan-functions-19"><i class="fa fa-check"></i><b>15.1.5</b> Stan Functions</a></li>
-<li class="chapter" data-level="15.1.6" data-path="normal-distribution.html"><a href="normal-distribution.html#sampling-statement-20"><i class="fa fa-check"></i><b>15.1.6</b> Sampling Statement</a></li>
+<li class="chapter" data-level="15.1.5" data-path="normal-distribution.html"><a href="normal-distribution.html#sampling-statement-20"><i class="fa fa-check"></i><b>15.1.5</b> Sampling Statement</a></li>
+<li class="chapter" data-level="15.1.6" data-path="normal-distribution.html"><a href="normal-distribution.html#stan-functions-19"><i class="fa fa-check"></i><b>15.1.6</b> Stan Functions</a></li>
 </ul></li>
 <li class="chapter" data-level="15.2" data-path="normal-id-glm.html"><a href="normal-id-glm.html"><i class="fa fa-check"></i><b>15.2</b> Normal-Id Generalised Linear Model (Linear Regression)</a>
 <ul>
@@ -696,7 +696,7 @@
 <div id="sampling-statement-19" class="section level3">
 <h3 number="15.1.2"><span class="header-section-number">15.1.2</span> Sampling Statement</h3>
 <p><code>y ~</code> <strong><code>normal</code></strong><code>(mu, sigma)</code></p>
-<p>Increment target log probability density with <code>normal_lpdf( y | mu, sigma)</code>
+<p>Increment target log probability density with <code>normal_lpdf(y | mu, sigma)</code>
 dropping constant additive terms.
 <!-- real; normal ~; -->
 </p>
@@ -721,16 +721,18 @@ be scaled and translated for anything other than a standard normal.</p>
 The log of the cumulative normal distribution of y given location mu
 and scale sigma; normal_lcdf will underflow to <span class="math inline">\(-\infty\)</span> for
 <span class="math inline">\(\frac{{y}-{\mu}}{{\sigma}}\)</span> below -37.5 and overflow to 0 for
-<span class="math inline">\(\frac{{y}-{\mu}}{{\sigma}}\)</span> above 8.25; see above for discussion of
-<code>Phi_approx</code> as an alternative.</p>
+<span class="math inline">\(\frac{{y}-{\mu}}{{\sigma}}\)</span> above 8.25; <code>log(Phi_approx(...))</code> is more
+robust in the tails, but must be scaled and translated for anything other
+than a standard normal.</p>
 <!-- real; normal_lccdf; (reals y | reals mu, reals sigma); -->
 <p></p>
 <p><code>real</code> <strong><code>normal_lccdf</code></strong><code>(reals y | reals mu, reals sigma)</code><br>
 The log of the complementary cumulative normal distribution of y given
 location mu and scale sigma; normal_lccdf will overflow to 0 for
 <span class="math inline">\(\frac{{y}-{\mu}}{{\sigma}}\)</span> below -37.5 and underflow to <span class="math inline">\(-\infty\)</span>
-for <span class="math inline">\(\frac{{y}-{\mu}}{{\sigma}}\)</span> above 8.25; see above for discussion
-of <code>Phi_approx</code> as an alternative.</p>
+for <span class="math inline">\(\frac{{y}-{\mu}}{{\sigma}}\)</span> above 8.25; <code>log1m(Phi_approx(...))</code> is
+more robust in the tails, but must be scaled and translated for anything
+other than a standard normal.</p>
 <!-- R; normal_rng; (reals mu, reals sigma); -->
 <p></p>
 <p><code>R</code> <strong><code>normal_rng</code></strong><code>(reals mu, reals sigma)</code><br>
@@ -744,7 +746,7 @@ For a description of argument and return types, see section
 <p>The standard normal distribution is so-called because its parameters
 are the units for their respective operations—the location (mean) is
 zero and the scale (standard deviation) one. The standard normal is
-parameter free and the unit parameters allow considerable
+parameter-free, and the unit parameters allow considerable
 simplification of the expression for the density. <span class="math display">\[
 \text{StdNormal}(y) \ = \ \text{Normal}(y \mid 0, 1) \ = \
 \frac{1}{\sqrt{2 \pi}} \, \exp \left( \frac{-y^2}{2} \right)\!. \]</span> Up
@@ -754,24 +756,45 @@ With no logarithm, no subtraction, and no division by a parameter, the
 standard normal log density is much more efficient to compute than the
 normal log density with constant location <span class="math inline">\(0\)</span> and scale <span class="math inline">\(1\)</span>.</p>
 </div>
+<div id="sampling-statement-20" class="section level3">
+<h3 number="15.1.5"><span class="header-section-number">15.1.5</span> Sampling Statement</h3>
+<p><code>y ~</code> <strong><code>std_normal</code></strong><code>()</code></p>
+<p>Increment target log probability density with <code>std_normal_lpdf(y)</code>
+dropping constant additive terms.
+<!-- real; std_normal ~; -->
+</p>
+</div>
 <div id="stan-functions-19" class="section level3">
-<h3 number="15.1.5"><span class="header-section-number">15.1.5</span> Stan Functions</h3>
-<p>Only the log probabilty density function is available for the standard
-normal distribution; for other functions, use the <code>normal_</code> versions
-with parameters <span class="math inline">\(\mu = 0\)</span> and <span class="math inline">\(\sigma = 1\)</span>.</p>
+<h3 number="15.1.6"><span class="header-section-number">15.1.6</span> Stan Functions</h3>
 <!-- real; std_normal_lpdf; (reals y); -->
 <p></p>
 <p><code>real</code> <strong><code>std_normal_lpdf</code></strong><code>(reals y)</code><br>
 The standard normal (location zero, scale one) log probability density
 of y.</p>
-</div>
-<div id="sampling-statement-20" class="section level3">
-<h3 number="15.1.6"><span class="header-section-number">15.1.6</span> Sampling Statement</h3>
-<p><code>y ~</code> <strong><code>std_normal</code></strong><code>(reals y)</code></p>
-<p>Increment target log probability density with <code>std_normal_lpdf(y)</code>
-dropping constant additive terms.
-<!-- real; std_normal ~; -->
-</p>
+<!-- real; std_normal_cdf; (reals y); -->
+<p></p>
+<p><code>real</code> <strong><code>std_normal_cdf</code></strong><code>(reals y)</code><br>
+The cumulative standard normal distribution of y; std_normal_cdf will
+underflow to 0 for <span class="math inline">\(y\)</span> below -37.5 and overflow to 1 for <span class="math inline">\(y\)</span> above 8.25;
+the function <code>Phi_approx</code> is more robust in the tails.</p>
+<!-- real; std_normal_lcdf; (reals y); -->
+<p></p>
+<p><code>real</code> <strong><code>std_normal_lcdf</code></strong><code>(reals y)</code><br>
+The log of the cumulative standard normal distribution of y; std_normal_lcdf
+will underflow to <span class="math inline">\(-\infty\)</span> for <span class="math inline">\(y\)</span> below -37.5 and overflow to 0 for <span class="math inline">\(y\)</span>
+above 8.25; <code>log(Phi_approx(...))</code> is more robust in the tails.</p>
+<!-- real; std_normal_lccdf; (reals y); -->
+<p></p>
+<p><code>real</code> <strong><code>std_normal_lccdf</code></strong><code>(reals y)</code><br>
+The log of the complementary cumulative standard normal distribution of y;
+std_normal_lccdf will overflow to 0 for <span class="math inline">\(y\)</span> below -37.5 and underflow to
+<span class="math inline">\(-\infty\)</span> for <span class="math inline">\(y\)</span> above 8.25; <code>log1m(Phi_approx(...))</code> is more robust in the
+tails.</p>
+<!-- real; std_normal_rng; (); -->
+<p></p>
+<p><code>real</code> <strong><code>std_normal_rng</code></strong><code>()</code><br>
+Generate a normal variate with location zero and scale one; may only
+be used in transformed data and generated quantities blocks.</p>
 </div>
 </div>
             </section>

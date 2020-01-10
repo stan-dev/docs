@@ -30,7 +30,7 @@ If $\mu \in \mathbb{R}$ and $\sigma \in \mathbb{R}^+$, then for $y \in
 
 `y ~ ` **`normal`**`(mu, sigma)`
 
-Increment target log probability density with `normal_lpdf( y | mu, sigma)`
+Increment target log probability density with `normal_lpdf(y | mu, sigma)`
 dropping constant additive terms.
 <!-- real; normal ~; -->
 \index{{\tt \bfseries normal }!sampling statement|hyperpage}
@@ -60,8 +60,9 @@ be scaled and translated for anything other than a standard normal.
 The log of the cumulative normal distribution of y given location mu
 and scale sigma; normal_lcdf will underflow to $-\infty$ for
 $\frac{{y}-{\mu}}{{\sigma}}$ below -37.5 and overflow to 0 for
-$\frac{{y}-{\mu}}{{\sigma}}$ above 8.25; see above for discussion of
-`Phi_approx` as an alternative.
+$\frac{{y}-{\mu}}{{\sigma}}$ above 8.25; `log(Phi_approx(...))` is more
+robust in the tails, but must be scaled and translated for anything other
+than a standard normal.
 
 <!-- real; normal_lccdf; (reals y | reals mu, reals sigma); -->
 \index{{\tt \bfseries normal\_lccdf }!{\tt (reals y \textbar\ reals mu, reals sigma): real}|hyperpage}
@@ -70,8 +71,9 @@ $\frac{{y}-{\mu}}{{\sigma}}$ above 8.25; see above for discussion of
 The log of the complementary cumulative normal distribution of y given
 location mu and scale sigma; normal_lccdf will overflow to 0 for
 $\frac{{y}-{\mu}}{{\sigma}}$ below -37.5 and underflow to $-\infty$
-for $\frac{{y}-{\mu}}{{\sigma}}$ above 8.25; see above for discussion
-of `Phi_approx` as an alternative.
+for $\frac{{y}-{\mu}}{{\sigma}}$ above 8.25; `log1m(Phi_approx(...))` is
+more robust in the tails, but must be scaled and translated for anything
+other than a standard normal.
 
 <!-- R; normal_rng; (reals mu, reals sigma); -->
 \index{{\tt \bfseries normal\_rng }!{\tt (reals mu, reals sigma): R}|hyperpage}
@@ -87,7 +89,7 @@ For a description of argument and return types, see section
 The standard normal distribution is so-called because its parameters
 are the units for their respective operations---the location (mean) is
 zero and the scale (standard deviation) one.  The standard normal is
-parameter free and the unit parameters allow considerable
+parameter-free, and the unit parameters allow considerable
 simplification of the expression for the density. \[
 \text{StdNormal}(y) \ = \ \text{Normal}(y \mid 0, 1) \ = \
 \frac{1}{\sqrt{2 \pi}} \, \exp \left( \frac{-y^2}{2} \right)\!. \] Up
@@ -97,11 +99,16 @@ With no logarithm, no subtraction, and no division by a parameter, the
 standard normal log density is much more efficient to compute than the
 normal log density with constant location $0$ and scale $1$.
 
-### Stan Functions
+### Sampling Statement
 
-Only the log probabilty density function is available for the standard
-normal distribution; for other functions, use the `normal_` versions
-with parameters $\mu = 0$ and $\sigma = 1$.
+`y ~ ` **`std_normal`**`()`
+
+Increment target log probability density with `std_normal_lpdf(y)`
+dropping constant additive terms.
+<!-- real; std_normal ~; -->
+\index{{\tt \bfseries std\_normal }!sampling statement|hyperpage}
+
+### Stan Functions
 
 <!-- real; std_normal_lpdf; (reals y); -->
 \index{{\tt \bfseries std\_normal\_lpdf }!{\tt (reals y): real}|hyperpage}
@@ -110,14 +117,38 @@ with parameters $\mu = 0$ and $\sigma = 1$.
 The standard normal (location zero, scale one) log probability density
 of y.
 
-### Sampling Statement
+<!-- real; std_normal_cdf; (reals y); -->
+\index{{\tt \bfseries std\_normal\_cdf }!{\tt (reals y): real}|hyperpage}
 
-`y ~ ` **`std_normal`**`(reals y)`
+`real` **`std_normal_cdf`**`(reals y)`<br>\newline
+The cumulative standard normal distribution of y; std_normal_cdf will
+underflow to 0 for $y$ below -37.5 and overflow to 1 for $y$ above 8.25;
+the function `Phi_approx` is more robust in the tails.
 
-Increment target log probability density with `std_normal_lpdf(y)`
-dropping constant additive terms.
-<!-- real; std_normal ~; -->
-\index{{\tt \bfseries std\_normal }!sampling statement|hyperpage}
+<!-- real; std_normal_lcdf; (reals y); -->
+\index{{\tt \bfseries std\_normal\_lcdf }!{\tt (reals y): real}|hyperpage}
+
+`real` **`std_normal_lcdf`**`(reals y)`<br>\newline
+The log of the cumulative standard normal distribution of y; std_normal_lcdf
+will underflow to $-\infty$ for $y$ below -37.5 and overflow to 0 for $y$
+above 8.25; `log(Phi_approx(...))` is more robust in the tails.
+
+<!-- real; std_normal_lccdf; (reals y); -->
+\index{{\tt \bfseries std\_normal\_lccdf }!{\tt (reals y): real}|hyperpage}
+
+`real` **`std_normal_lccdf`**`(reals y)`<br>\newline
+The log of the complementary cumulative standard normal distribution of y;
+std_normal_lccdf will overflow to 0 for $y$ below -37.5 and underflow to
+$-\infty$ for $y$ above 8.25; `log1m(Phi_approx(...))` is more robust in the
+tails.
+
+<!-- real; std_normal_rng; (); -->
+\index{{\tt \bfseries std\_normal\_rng }!{\tt (): real}|hyperpage}
+
+`real` **`std_normal_rng`**`()`<br>\newline
+Generate a normal variate with location zero and scale one; may only
+be used in transformed data and generated quantities blocks.
+
 
 ## Normal-Id Generalised Linear Model (Linear Regression) {#normal-id-glm}
 
@@ -138,7 +169,7 @@ If $x\in \mathbb{R}^{n\cdot m}, \alpha \in \mathbb{R}^n, \beta\in
 
 `y ~ ` **`normal_id_glm`**`(x, alpha, beta, sigma)`
 
-Increment target log probability density with `normal_id_glm_lpdf( y | x, alpha, beta, sigma)`
+Increment target log probability density with `normal_id_glm_lpdf(y | x, alpha, beta, sigma)`
 dropping constant additive terms.
 <!-- real; normal_id_glm ~; -->
 \index{{\tt \bfseries normal\_id\_glm }!sampling statement|hyperpage}
@@ -183,7 +214,7 @@ y}{\sqrt{2}\sigma}\right) . \]
 
 `y ~ ` **`exp_mod_normal`**`(mu, sigma, lambda)`
 
-Increment target log probability density with `exp_mod_normal_lpdf( y | mu, sigma, lambda)`
+Increment target log probability density with `exp_mod_normal_lpdf(y | mu, sigma, lambda)`
 dropping constant additive terms.
 <!-- real; exp_mod_normal ~; -->
 \index{{\tt \bfseries exp\_mod\_normal }!sampling statement|hyperpage}
@@ -243,7 +274,7 @@ If $\xi \in \mathbb{R}$, $\omega \in \mathbb{R}^+$, and $\alpha \in
 
 `y ~ ` **`skew_normal`**`(xi, omega, alpha)`
 
-Increment target log probability density with `skew_normal_lpdf( y | xi, omega, alpha)`
+Increment target log probability density with `skew_normal_lpdf(y | xi, omega, alpha)`
 dropping constant additive terms.
 <!-- real; skew_normal ~; -->
 \index{{\tt \bfseries skew\_normal }!sampling statement|hyperpage}
@@ -302,7 +333,7 @@ If $\nu \in \mathbb{R}^+$, $\mu \in \mathbb{R}$, and $\sigma \in
 
 `y ~ ` **`student_t`**`(nu, mu, sigma)`
 
-Increment target log probability density with `student_t_lpdf( y | nu, mu, sigma)`
+Increment target log probability density with `student_t_lpdf(y | nu, mu, sigma)`
 dropping constant additive terms.
 <!-- real; student_t ~; -->
 \index{{\tt \bfseries student\_t }!sampling statement|hyperpage}
@@ -359,7 +390,7 @@ If $\mu \in \mathbb{R}$ and $\sigma \in \mathbb{R}^+$, then for $y \in
 
 `y ~ ` **`cauchy`**`(mu, sigma)`
 
-Increment target log probability density with `cauchy_lpdf( y | mu, sigma)`
+Increment target log probability density with `cauchy_lpdf(y | mu, sigma)`
 dropping constant additive terms.
 <!-- real; cauchy ~; -->
 \index{{\tt \bfseries cauchy }!sampling statement|hyperpage}
@@ -427,7 +458,7 @@ a non-centered parameterization by taking \[ \beta^{\text{raw}} \sim
 
 `y ~ ` **`double_exponential`**`(mu, sigma)`
 
-Increment target log probability density with `double_exponential_lpdf( y | mu, sigma)`
+Increment target log probability density with `double_exponential_lpdf(y | mu, sigma)`
 dropping constant additive terms.
 <!-- real; double_exponential ~; -->
 \index{{\tt \bfseries double\_exponential }!sampling statement|hyperpage}
@@ -484,7 +515,7 @@ If $\mu \in \mathbb{R}$ and $\sigma \in \mathbb{R}^+$, then for $y \in
 
 `y ~ ` **`logistic`**`(mu, sigma)`
 
-Increment target log probability density with `logistic_lpdf( y | mu, sigma)`
+Increment target log probability density with `logistic_lpdf(y | mu, sigma)`
 dropping constant additive terms.
 <!-- real; logistic ~; -->
 \index{{\tt \bfseries logistic }!sampling statement|hyperpage}
@@ -540,7 +571,7 @@ If $\mu \in \mathbb{R}$ and $\beta \in \mathbb{R}^+$, then for $y \in
 
 `y ~ ` **`gumbel`**`(mu, beta)`
 
-Increment target log probability density with `gumbel_lpdf( y | mu, beta)`
+Increment target log probability density with `gumbel_lpdf(y | mu, beta)`
 dropping constant additive terms.
 <!-- real; gumbel ~; -->
 \index{{\tt \bfseries gumbel }!sampling statement|hyperpage}

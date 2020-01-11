@@ -58,38 +58,35 @@ In BUGS, statements are executed according to the directed graphical
 model so that variables are always defined when needed.  A side effect
 of the direct execution of Stan's modeling language is that statements
 execute in the order in which they are written.  For instance, the
-following Stan program, which sets `mu` before using it to sample `y`.
+following Stan program, which sets `mu` before using it to sample `y`:
 
 ```
 mu = a + b * x;
-y ~ normal(mu,sigma);
+y ~ normal(mu, sigma);
 ```
-
-It translates to the following C++ code.
+translates to the following C++ code:
 
 ```
 mu = a + b * x;
-lp += normal_log(mu,sigma);
+target += normal_lpdf(y | mu, sigma);
 ```
 
-Contrast this with the Stan program
+Contrast this with the following Stan program:
 
 ```
-y ~ normal(mu,sigma)
-mu = a + b * x
+y ~ normal(mu, sigma);
+mu = a + b * x;
 ```
 
 This program is well formed, but is almost certainly
 a coding error, because it attempts to use `mu` before
-it is set. It translates to the following C++ code.
+it is set. The direct translation to C++ code
+highlights the potential error of using `mu` in the first
+statement:
 ```
-lp += normal_log(mu,sigma);
+target += normal_lpdf(y | mu, sigma);
 mu = a + b * x;
 ```
-
-The direct translation to the imperative language of C++ code
-highlights the potential error of using `mu` in the first
-statement.
 
 To trap these kinds of errors, variables are initialized to the
 special not-a-number (`NaN`) value.  If `NaN` is passed to a

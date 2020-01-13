@@ -176,18 +176,18 @@ the strength of the prior mean measured in number of prior observations.
 
 ### Transforming Unconstrained Priors: Probit and Logit {-}
 
-If the variable $u$ has a $\mathsf{Uniform}(0, 1)$ distribution, then
-$\mbox{logit}(u)$ is distributed as $\mathsf{Logistic}(0, 1)$.  This
-is because inverse logit is the cumulative distribution function (CDF)
+If the variable $u$ has a $\textsf{uniform}(0, 1)$ distribution, then
+$\operatorname{logit}(u)$ is distributed as $\textsf{logistic}(0, 1)$.  This
+is because inverse logit is the cumulative distribution function (cdf)
 for the logistic distribution, so that the logit function itself is
 the inverse CDF and thus maps a uniform draw in $(0, 1)$ to a
 logistically-distributed quantity.
 
 Things work the same way for the probit case: if $u$ has a
-$\mathsf{Uniform}(0, 1)$ distribution, then $\Phi^{-1}(u)$ has a
-$\mathsf{normal}(0, 1)$ distribution.  The other way around, if $v$
-has a $\mathsf{normal}(0, 1)$ distribution, then $\Phi(v)$ has a
-$\mathsf{Uniform}(0, 1)$ distribution.
+$\textsf{uniform}(0, 1)$ distribution, then $\Phi^{-1}(u)$ has a
+$\textsf{normal}(0, 1)$ distribution.  The other way around, if $v$
+has a $\textsf{normal}(0, 1)$ distribution, then $\Phi(v)$ has a
+$\textsf{uniform}(0, 1)$ distribution.
 
 In order to use the probit and logistic as priors on variables
 constrained to $(0, 1)$, create an unconstrained variable and
@@ -280,7 +280,7 @@ desired, the number of parameters can be reduced back to $K$ using a
 vectorized normal distribution as follows.
 
 ```
-  theta_raw ~ normal(mu, sigma);
+theta_raw ~ normal(mu, sigma);
 ```
 
 where either or both of `mu` and `sigma` can be vectors.
@@ -306,17 +306,14 @@ In the case of log normals, if $y$'s logarithm is normal with mean
 $\mu$ and deviation $\sigma$, then the distribution of $y$ is given by
 $$
 p(y)
-\ = \
-\mathsf{normal}(\log y| \mu, \sigma) \  \left| \frac{d}{dy} \log y \right|
-\ = \
-\mathsf{normal}(\log y| \mu, \sigma) \frac{1}{y}.
+= \textsf{normal}(\log y \mid \mu, \sigma) \, \left| \frac{d}{dy} \log y \right|
+= \textsf{normal}(\log y \mid \mu, \sigma) \, \frac{1}{y}.
 $$
 Stan works on the log scale to prevent underflow, where
 $$
 \log p(y)
 =
-\log \mathsf{normal}(\log y| \mu, \sigma)
-- \log y.
+\log \textsf{normal}(\log y \mid \mu, \sigma) - \log y.
 $$
 
 In Stan, the change of variables can be applied in the sampling
@@ -421,12 +418,9 @@ transform, which in this case is
 
 $$
 \log \left| \frac{d}{du} \left( \frac{1}{u} \right) \right|
-\ = \
-\log | - u^{-2} |
-\ = \
-\log u^{-2}
-\ = \
- -2 \log u.
+= \log \left| - u^{-2} \right|
+= \log u^{-2}
+=  -2 \log u.
 $$
 
 
@@ -461,7 +455,7 @@ In many cases, the Jacobian matrix will be triangular, so that only
 the diagonal elements will be required for the determinant
 calculation.  Triangular Jacobians arise when each element `v[k]`
 of the transformed parameter vector only depends on elements
-`u[1]`, \ldots, `u[k]` of the parameter vector.  For
+`u[1]`, &hellip;, `u[k]` of the parameter vector.  For
 triangular matrices, the determinant is the product of the diagonal
 elements, so the transformed parameters block of the above model can
 be simplified and made more efficient by recoding as follows.
@@ -509,8 +503,8 @@ The Jacobian for adding a constant is one, so its log drops out of the
 log density.
 
 Even if the lower bound is a parameter rather than data, there is no
-Jacobian required, because the transform from $(L, \alpha_{\mathrm
-  raw})$ to $(L + \alpha_{\mathrm raw}, \alpha_{\mathrm raw}$ produces
+Jacobian required, because the transform from $(L, \alpha_{\textrm{raw}})$
+to $(L + \alpha_{\textrm{raw}}, \alpha_{\textrm{raw}})$ produces
 a Jacobian derivative matrix with a unit determinant.
 
 It's also possible implement the transform by directly transforming
@@ -533,13 +527,13 @@ model {
 ```
 
 The adjustment in the the log Jacobian determinant of the transform
-mapping $\alpha_{\mathrm{raw}}$ to
-$\alpha = L + \exp(\alpha_{\mathrm{raw}})$.  The details are simple in
+mapping $\alpha_{\textrm{raw}}$ to
+$\alpha = L + \exp(\alpha_{\textrm{raw}})$.  The details are simple in
 this case because the Jacobian is diagonal; see the reference manual
 chapter on constrained parameter transforms for full details.  Here
 $L$ can even be a vector containing parameters that don't depend on
-$\alpha_{\mathrm{raw}}$; if the bounds do depend on
-$\alpha_{\mathrm{raw}}$ then a revised Jacobian needs to be calculated
+$\alpha_{\textrm{raw}}$; if the bounds do depend on
+$\alpha_{\textrm{raw}}$ then a revised Jacobian needs to be calculated
 taking into account the dependencies.
 
 ### Varying Upper and Lower Bounds {-}

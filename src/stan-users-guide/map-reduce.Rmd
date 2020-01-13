@@ -133,7 +133,8 @@ functionality as follows.
 ```
 functions {
   vector lr(vector beta, vector theta, real[] x, int[] y) {
-    real lp = bernoulli_logit_lpmf(y | beta[1] + to_vector(x) * beta[2]);
+    real lp = bernoulli_logit_lpmf(y | beta[1]
+                                       + to_vector(x) * beta[2]);
     return [lp]';
   }
 }
@@ -201,26 +202,23 @@ Consider a hierarchical model of American presidential voting behavior
 based on state of residence.^[This example is a simplified form of the model
 described in [@GelmanHill:2007, Section 14.2]]
 
-Each of the fifty states $k \in 1{:}50$ will have its own slope
+Each of the fifty states $k \in \{1,\dotsc,50\}$ will have its own slope
 $\beta_k$ and intercept $\alpha_k$ to model the log odds of voting for
 the Republican candidate as a function of income.  Suppose there are
 $N$ voters and with voter $n \in 1{:}N$ being in state $s[n]$ with
 income $x_n$.  The likelihood for the vote $y_n \in \{ 0, 1 \}$ is
-
 $$
-y_n \sim \mathsf{Bernoulli}
-\left(
-  \mathrm{logit}^{-1}\left( \alpha_{s[n]} +  \beta_{s[n]} \, x_n \right)
-\right).
+y_n \sim \textsf{Bernoulli}
+\Big(
+  \operatorname{logit}^{-1}\left( \alpha_{s[n]} + \beta_{s[n]} \, x_n \right)
+\Big).
 $$
 
 The slopes and intercepts get hierarchical priors,
-
-$$
-\alpha_k \sim \mathsf{normal}(\mu_{\alpha}, \sigma_{\alpha})
-\\
-\beta_k \sim \mathsf{normal}(\mu_{\beta}, \sigma_{\beta})
-$$
+\begin{align*}
+\alpha_k &\sim \textsf{normal}(\mu_{\alpha}, \sigma_{\alpha}) \\
+\beta_k  &\sim \textsf{normal}(\mu_{\beta}, \sigma_{\beta})
+\end{align*}
 
 ### Unmapped Implementation {-}
 
@@ -355,6 +353,7 @@ model {
   mu ~ normal(0, 2);
   sigma ~ normal(0, 2);
   target += sum(map_rect(bl_glm, append_row(mu, sigma), beta, x_r, x_i));
+                         
 }
 ```
 

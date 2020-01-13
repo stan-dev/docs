@@ -29,10 +29,8 @@ def pushd(new_dir):
     os.chdir(previous_dir)
 
 def shexec(command):
-    returncode = subprocess.call(command, shell=True)
-    if returncode != 0:
-        raise FailedCommand(returncode, command)
-    return returncode
+    returncode = subprocess.check_output(command, shell=True)
+    return 0
 
 def safe_rm(fname):
     if os.path.exists(fname):
@@ -66,6 +64,61 @@ def make_index_page(docset, formats):
     # TODO: generate index.md based on current and new docs
     # command = "Rscript -e \"bookdown::render_book(\'index.md\', output_format=\'bookdown::html_page\')\""
     return
+
+def make_stan_functions(sfpath):
+    path = os.getcwd()
+    rmdpath = os.path.join(path, "src", "functions-reference/")
+    command = "grep --no-filename 'hyperpage' " + rmdpath + "*.Rmd > " + sfpath
+    shexec(command)
+    f = open(sfpath, "r+")
+    text = f.read()
+    text = text.replace('\\index{{\\tt \\bfseries ', '')
+    text = text.replace('}!{\\tt ', '')
+    text = text.replace('}|hyperpage}', '')
+    text = text.replace('\\_', '_')
+    text = text.replace(':', ';')
+    text = text.replace('  (', ';(')
+    text = text.replace(' (', ';(')
+    text = text.replace('\\textbar\\', ',')
+    text = text.replace(' }!sampling statement|hyperpage}', ';~; real')
+    text = text.replace('~|~/|', '')
+    text = text.replace('operator_compound_add', 'operator+=')
+    text = text.replace('operator_compound_subtract', 'operator-=')
+    text = text.replace('operator_compound_multiply', 'operator*=')
+    text = text.replace('operator_compound_divide', 'operator/=')
+    text = text.replace('operator_compound_elt_multiply', 'operator.*=')
+    text = text.replace('operator_compound_elt_divide', 'operator./=')
+    text = text.replace('operator_subtract', 'operator-')
+    text = text.replace('operator_add', 'operator+')
+    text = text.replace('operator_multiply', 'operator*')
+    text = text.replace('operator_divide', 'operator\\')
+    text = text.replace('operator_elt_divide', 'operator.\\')
+    text = text.replace('operator_elt_multiply', 'operator.*')
+    text = text.replace('operator_left_div', 'operator\\')
+    text = text.replace('operator_logical_and', 'operator&&')
+    text = text.replace('operator_logical_or', 'operator||')
+    text = text.replace('operator_logical_greater_than_equal', 'operator>=')
+    text = text.replace('operator_logical_less_than_equal', 'operator<=')
+    text = text.replace('operator_logical_greater_than', 'operator>')
+    text = text.replace('operator_logical_less_than', 'operator<')
+    text = text.replace('operator_logical_not_equal', 'operator!=')
+    text = text.replace('operator_logical_equal', 'operator==')
+    text = text.replace('operator_mod', 'operator%')
+    text = text.replace('operator_negation', 'operator!')
+    text = text.replace('operator_pow', 'operator^')
+    text = text.replace('operator_transpose', "operator'")
+    f.write(text)
+    f.close()
+    command = "sort " + sfpath + " | uniq > " + sfpath + ".bak"
+    shexec(command)
+    command = "echo '# This file is semicolon delimited\nStanFunction;Arguments;ReturnType' > " + sfpath
+    shexec(command)
+    command = "grep --invert-match 'bfseries' " + sfpath + ".bak >> " + sfpath
+    shexec(command)
+    command = "rm " + sfpath + ".bak"
+    shexec(command)
+    return
+
 
 def main():
     global all_docs
@@ -110,6 +163,8 @@ def main():
     make_index_page(docset, formats)
     for doc in docset:
         make_docs(docspath, stan_version, doc, formats)
+
+    make_stan_functions(docspath + "/stan-functions.txt")
 
 
 if __name__ == "__main__":

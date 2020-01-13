@@ -27,10 +27,10 @@ stan_site = "https://mc-stan.org"
 
 def main():
     if (len(sys.argv) > 3):
-        stan_major = long(sys.argv[1])
-        stan_minor = long(sys.argv[2])
+        stan_major = int(sys.argv[1])
+        stan_minor = int(sys.argv[2])
     else:
-        print "Expecting 3 arguments <MAJOR> <MINOR> version numbers, <docset name>"
+        print("Expecting 3 arguments <MAJOR> <MINOR> version numbers, <docset name>")
         sys.exit(1)
     stan_version = '_'.join([str(stan_major), str(stan_minor)])
     base_dir = (sys.argv[3])
@@ -41,10 +41,14 @@ def main():
     files = [x.split("/")[-1] for x in glob.glob(version_dir + "/*.html")]
     for file in files:
         # create redirect file in no_version_dir
-        filename = "/".join([no_version_dir, file])
-        print filename
-        r_to = "/".join([stan_site,version_dir, file])
-        print r_to
+        # WSL # 
+        filename = "/".join([no_version_dir, file.replace("functions-reference\\","").replace("reference-manual\\","").replace("stan-users-guide\\","")])
+        #filename = "/".join([no_version_dir, file])
+        print(filename)
+        # WSL # 
+        r_to = "/".join([stan_site,version_dir, file.replace("functions-reference\\","").replace("reference-manual\\","").replace("stan-users-guide\\","")])
+        #r_to = "/".join([stan_site,version_dir, file])
+        print(r_to)
         r_contents = contents.replace("REDIRECTTO",r_to)
         with open(filename, "w") as f:
             f.write(r_contents)

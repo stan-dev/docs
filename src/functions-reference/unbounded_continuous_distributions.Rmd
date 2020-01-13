@@ -30,8 +30,9 @@ If $\mu \in \mathbb{R}$ and $\sigma \in \mathbb{R}^+$, then for $y \in
 
 `y ~ ` **`normal`**`(mu, sigma)`
 
-Increment target log probability density with `normal_lpdf( y | mu, sigma)`
+Increment target log probability density with `normal_lpdf(y | mu, sigma)`
 dropping constant additive terms.
+<!-- real; normal ~; -->
 \index{{\tt \bfseries normal }!sampling statement|hyperpage}
 
 ### Stan Functions
@@ -59,8 +60,9 @@ be scaled and translated for anything other than a standard normal.
 The log of the cumulative normal distribution of y given location mu
 and scale sigma; normal_lcdf will underflow to $-\infty$ for
 $\frac{{y}-{\mu}}{{\sigma}}$ below -37.5 and overflow to 0 for
-$\frac{{y}-{\mu}}{{\sigma}}$ above 8.25; see above for discussion of
-`Phi_approx` as an alternative.
+$\frac{{y}-{\mu}}{{\sigma}}$ above 8.25; `log(Phi_approx(...))` is more
+robust in the tails, but must be scaled and translated for anything other
+than a standard normal.
 
 <!-- real; normal_lccdf; (reals y | reals mu, reals sigma); -->
 \index{{\tt \bfseries normal\_lccdf }!{\tt (reals y \textbar\ reals mu, reals sigma): real}|hyperpage}
@@ -69,23 +71,25 @@ $\frac{{y}-{\mu}}{{\sigma}}$ above 8.25; see above for discussion of
 The log of the complementary cumulative normal distribution of y given
 location mu and scale sigma; normal_lccdf will overflow to 0 for
 $\frac{{y}-{\mu}}{{\sigma}}$ below -37.5 and underflow to $-\infty$
-for $\frac{{y}-{\mu}}{{\sigma}}$ above 8.25; see above for discussion
-of `Phi_approx` as an alternative.
+for $\frac{{y}-{\mu}}{{\sigma}}$ above 8.25; `log1m(Phi_approx(...))` is
+more robust in the tails, but must be scaled and translated for anything
+other than a standard normal.
 
 <!-- R; normal_rng; (reals mu, reals sigma); -->
 \index{{\tt \bfseries normal\_rng }!{\tt (reals mu, reals sigma): R}|hyperpage}
 
 `R` **`normal_rng`**`(reals mu, reals sigma)`<br>\newline
 Generate a normal variate with location mu and scale sigma; may only
-be used in generated quantities block. For a description of argument
-and return types, see section [vectorized PRNG functions](#prng-vectorization).
+be used in transformed data and generated quantities blocks.
+For a description of argument and return types, see section
+[vectorized PRNG functions](#prng-vectorization).
 
 ### Standard Normal Distribution
 
 The standard normal distribution is so-called because its parameters
 are the units for their respective operations---the location (mean) is
 zero and the scale (standard deviation) one.  The standard normal is
-parameter free and the unit parameters allow considerable
+parameter-free, and the unit parameters allow considerable
 simplification of the expression for the density. \[
 \text{StdNormal}(y) \ = \ \text{Normal}(y \mid 0, 1) \ = \
 \frac{1}{\sqrt{2 \pi}} \, \exp \left( \frac{-y^2}{2} \right)\!. \] Up
@@ -95,11 +99,16 @@ With no logarithm, no subtraction, and no division by a parameter, the
 standard normal log density is much more efficient to compute than the
 normal log density with constant location $0$ and scale $1$.
 
-### Stan Functions
+### Sampling Statement
 
-Only the log probabilty density function is available for the standard
-normal distribution; for other functions, use the `normal_` versions
-with parameters $\mu = 0$ and $\sigma = 1$.
+`y ~ ` **`std_normal`**`()`
+
+Increment target log probability density with `std_normal_lpdf(y)`
+dropping constant additive terms.
+<!-- real; std_normal ~; -->
+\index{{\tt \bfseries std\_normal }!sampling statement|hyperpage}
+
+### Stan Functions
 
 <!-- real; std_normal_lpdf; (reals y); -->
 \index{{\tt \bfseries std\_normal\_lpdf }!{\tt (reals y): real}|hyperpage}
@@ -108,13 +117,38 @@ with parameters $\mu = 0$ and $\sigma = 1$.
 The standard normal (location zero, scale one) log probability density
 of y.
 
-### Sampling Statement
+<!-- real; std_normal_cdf; (reals y); -->
+\index{{\tt \bfseries std\_normal\_cdf }!{\tt (reals y): real}|hyperpage}
 
-`y ~ ` **`std_normal`**`(\pitemTwo{y)`
+`real` **`std_normal_cdf`**`(reals y)`<br>\newline
+The cumulative standard normal distribution of y; std_normal_cdf will
+underflow to 0 for $y$ below -37.5 and overflow to 1 for $y$ above 8.25;
+the function `Phi_approx` is more robust in the tails.
 
-Increment target log probability density with `std_normal_lpdf( y | \pitemTwo{y)`
-dropping constant additive terms.
-\index{{\tt \bfseries std\_normal }!sampling statement|hyperpage}
+<!-- real; std_normal_lcdf; (reals y); -->
+\index{{\tt \bfseries std\_normal\_lcdf }!{\tt (reals y): real}|hyperpage}
+
+`real` **`std_normal_lcdf`**`(reals y)`<br>\newline
+The log of the cumulative standard normal distribution of y; std_normal_lcdf
+will underflow to $-\infty$ for $y$ below -37.5 and overflow to 0 for $y$
+above 8.25; `log(Phi_approx(...))` is more robust in the tails.
+
+<!-- real; std_normal_lccdf; (reals y); -->
+\index{{\tt \bfseries std\_normal\_lccdf }!{\tt (reals y): real}|hyperpage}
+
+`real` **`std_normal_lccdf`**`(reals y)`<br>\newline
+The log of the complementary cumulative standard normal distribution of y;
+std_normal_lccdf will overflow to 0 for $y$ below -37.5 and underflow to
+$-\infty$ for $y$ above 8.25; `log1m(Phi_approx(...))` is more robust in the
+tails.
+
+<!-- real; std_normal_rng; (); -->
+\index{{\tt \bfseries std\_normal\_rng }!{\tt (): real}|hyperpage}
+
+`real` **`std_normal_rng`**`()`<br>\newline
+Generate a normal variate with location zero and scale one; may only
+be used in transformed data and generated quantities blocks.
+
 
 ## Normal-Id Generalised Linear Model (Linear Regression) {#normal-id-glm}
 
@@ -124,7 +158,7 @@ for a linear regression. This should provide a more efficient
 implementation of linear regression than a manually written regression
 in terms of a normal likelihood and matrix multiplication.
 
-### Probability Mass Function
+### Probability Distribution Function
 
 If $x\in \mathbb{R}^{n\cdot m}, \alpha \in \mathbb{R}^n, \beta\in
 \mathbb{R}^m, \sigma\in \mathbb{R}^+$, then for $y \in \mathbb{R}^n$,
@@ -135,16 +169,17 @@ If $x\in \mathbb{R}^{n\cdot m}, \alpha \in \mathbb{R}^n, \beta\in
 
 `y ~ ` **`normal_id_glm`**`(x, alpha, beta, sigma)`
 
-Increment target log probability density with `normal_id_glm_lpmf( y | x, alpha, beta, sigma)`
+Increment target log probability density with `normal_id_glm_lpdf(y | x, alpha, beta, sigma)`
 dropping constant additive terms.
+<!-- real; normal_id_glm ~; -->
 \index{{\tt \bfseries normal\_id\_glm }!sampling statement|hyperpage}
 
 ### Stan Functions
 
-<!-- real; normal_id_glm_lpmf; (vector y | matrix x, real alpha, vector beta, real sigma); -->
-\index{{\tt \bfseries normal\_id\_glm\_lpmf }!{\tt (vector y \textbar\ matrix x, real alpha, vector beta, real sigma): real}|hyperpage}
+<!-- real; normal_id_glm_lpdf; (vector y | matrix x, real alpha, vector beta, real sigma); -->
+\index{{\tt \bfseries normal\_id\_glm\_lpdf }!{\tt (vector y \textbar\ matrix x, real alpha, vector beta, real sigma): real}|hyperpage}
 
-`real` **`normal_id_glm_lpmf`**`(vector y | matrix x, real alpha, vector beta, real sigma)`<br>\newline
+`real` **`normal_id_glm_lpdf`**`(vector y | matrix x, real alpha, vector beta, real sigma)`<br>\newline
 The log normal probability density of y given location `alpha+x*beta`
 and scale `sigma`, where a constant intercept `alpha` and `sigma` is
 used for all observations. The number of rows of the independent
@@ -152,10 +187,10 @@ variable matrix `x` needs to match the length of the dependent
 variable vector `y` and the number of columns of `x` needs to match
 the length of the weight vector `beta`.
 
-<!-- real; normal_id_glm_lpmf; (vector y | matrix x, vector alpha, vector beta, real sigma); -->
-\index{{\tt \bfseries normal\_id\_glm\_lpmf }!{\tt (vector y \textbar\ matrix x, vector alpha, vector beta, real sigma): real}|hyperpage}
+<!-- real; normal_id_glm_lpdf; (vector y | matrix x, vector alpha, vector beta, real sigma); -->
+\index{{\tt \bfseries normal\_id\_glm\_lpdf }!{\tt (vector y \textbar\ matrix x, vector alpha, vector beta, real sigma): real}|hyperpage}
 
-`real` **`normal_id_glm_lpmf`**`(vector y | matrix x, vector alpha, vector beta, real sigma)`<br>\newline
+`real` **`normal_id_glm_lpdf`**`(vector y | matrix x, vector alpha, vector beta, real sigma)`<br>\newline
 The log normal probability density of y given location `alpha+x*beta`
 and scale `sigma`, where a constant `sigma` is used for all
 observations and an intercept `alpha` is used that is allowed to vary
@@ -179,8 +214,9 @@ y}{\sqrt{2}\sigma}\right) . \]
 
 `y ~ ` **`exp_mod_normal`**`(mu, sigma, lambda)`
 
-Increment target log probability density with `exp_mod_normal_lpdf( y | mu, sigma, lambda)`
+Increment target log probability density with `exp_mod_normal_lpdf(y | mu, sigma, lambda)`
 dropping constant additive terms.
+<!-- real; exp_mod_normal ~; -->
 \index{{\tt \bfseries exp\_mod\_normal }!sampling statement|hyperpage}
 
 ### Stan Functions
@@ -219,8 +255,8 @@ lambda
 
 `R` **`exp_mod_normal_rng`**`(reals mu, reals sigma, reals lambda)`<br>\newline
 Generate a exponentially modified normal variate with location mu,
-scale sigma, and shape lambda; may only be used in generated
-quantities block. For a description of argument and return types, see
+scale sigma, and shape lambda; may only be used in transformed data and generated
+quantities blocks. For a description of argument and return types, see
 section [vectorized PRNG functions](#prng-vectorization).
 
 ## Skew Normal Distribution
@@ -238,8 +274,9 @@ If $\xi \in \mathbb{R}$, $\omega \in \mathbb{R}^+$, and $\alpha \in
 
 `y ~ ` **`skew_normal`**`(xi, omega, alpha)`
 
-Increment target log probability density with `skew_normal_lpdf( y | xi, omega, alpha)`
+Increment target log probability density with `skew_normal_lpdf(y | xi, omega, alpha)`
 dropping constant additive terms.
+<!-- real; skew_normal ~; -->
 \index{{\tt \bfseries skew\_normal }!sampling statement|hyperpage}
 
 ### Stan Functions
@@ -277,8 +314,8 @@ function of y given location xi, scale omega, and shape alpha
 
 `R` **`skew_normal_rng`**`(reals xi, reals omega, real alpha)`<br>\newline
 Generate a skew normal variate with location xi, scale omega, and
-shape alpha; may only be used in generated quantities block. For a
-description of argument and return types, see section
+shape alpha; may only be used in transformed data and generated quantities blocks.
+For a description of argument and return types, see section
 [vectorized PRNG functions](#prng-vectorization).
 
 ## Student-T Distribution
@@ -296,8 +333,9 @@ If $\nu \in \mathbb{R}^+$, $\mu \in \mathbb{R}$, and $\sigma \in
 
 `y ~ ` **`student_t`**`(nu, mu, sigma)`
 
-Increment target log probability density with `student_t_lpdf( y | nu, mu, sigma)`
+Increment target log probability density with `student_t_lpdf(y | nu, mu, sigma)`
 dropping constant additive terms.
+<!-- real; student_t ~; -->
 \index{{\tt \bfseries student\_t }!sampling statement|hyperpage}
 
 ### Stan Functions
@@ -336,8 +374,8 @@ sigma
 
 `R` **`student_t_rng`**`(reals nu, reals mu, reals sigma)`<br>\newline
 Generate a Student-$t$ variate with degrees of freedom nu, location
-mu, and scale sigma; may only be used in generated quantities block.
-For a description of argument and return types, see section
+mu, and scale sigma; may only be used in transformed data and generated
+quantities blocks. For a description of argument and return types, see section
 [vectorized PRNG functions](#prng-vectorization).
 
 ## Cauchy Distribution
@@ -352,8 +390,9 @@ If $\mu \in \mathbb{R}$ and $\sigma \in \mathbb{R}^+$, then for $y \in
 
 `y ~ ` **`cauchy`**`(mu, sigma)`
 
-Increment target log probability density with `cauchy_lpdf( y | mu, sigma)`
+Increment target log probability density with `cauchy_lpdf(y | mu, sigma)`
 dropping constant additive terms.
+<!-- real; cauchy ~; -->
 \index{{\tt \bfseries cauchy }!sampling statement|hyperpage}
 
 ### Stan Functions
@@ -390,8 +429,9 @@ of y given location mu and scale sigma
 
 `R` **`cauchy_rng`**`(reals mu, reals sigma)`<br>\newline
 Generate a Cauchy variate with location mu and scale sigma; may only
-be used in generated quantities block. For a description of argument
-and return types, see section [vectorized PRNG functions](#prng-vectorization).
+be used in transformed data and generated quantities blocks.
+For a description of argument and return types, see section
+[vectorized PRNG functions](#prng-vectorization).
 
 ## Double Exponential (Laplace) Distribution
 
@@ -418,8 +458,9 @@ a non-centered parameterization by taking \[ \beta^{\text{raw}} \sim
 
 `y ~ ` **`double_exponential`**`(mu, sigma)`
 
-Increment target log probability density with `double_exponential_lpdf( y | mu, sigma)`
+Increment target log probability density with `double_exponential_lpdf(y | mu, sigma)`
 dropping constant additive terms.
+<!-- real; double_exponential ~; -->
 \index{{\tt \bfseries double\_exponential }!sampling statement|hyperpage}
 
 ### Stan Functions
@@ -457,7 +498,7 @@ distribution function of y given location mu and scale sigma
 
 `R` **`double_exponential_rng`**`(reals mu, reals sigma)`<br>\newline
 Generate a double exponential variate with location mu and scale
-sigma; may only be used in generated quantities block. For a
+sigma; may only be used in transformed data and generated quantities blocks. For a
 description of argument and return types, see section
 [vectorized PRNG functions](#prng-vectorization).
 
@@ -474,8 +515,9 @@ If $\mu \in \mathbb{R}$ and $\sigma \in \mathbb{R}^+$, then for $y \in
 
 `y ~ ` **`logistic`**`(mu, sigma)`
 
-Increment target log probability density with `logistic_lpdf( y | mu, sigma)`
+Increment target log probability density with `logistic_lpdf(y | mu, sigma)`
 dropping constant additive terms.
+<!-- real; logistic ~; -->
 \index{{\tt \bfseries logistic }!sampling statement|hyperpage}
 
 ### Stan Functions
@@ -512,8 +554,9 @@ of y given location mu and scale sigma
 
 `R` **`logistic_rng`**`(reals mu, reals sigma)`<br>\newline
 Generate a logistic variate with location mu and scale sigma; may only
-be used in generated quantities block. For a description of argument
-and return types, see section [vectorized PRNG functions](#prng-vectorization).
+be used in transformed data and generated quantities blocks.
+For a description of argument and return types, see section
+[vectorized PRNG functions](#prng-vectorization).
 
 ## Gumbel Distribution
 
@@ -528,8 +571,9 @@ If $\mu \in \mathbb{R}$ and $\beta \in \mathbb{R}^+$, then for $y \in
 
 `y ~ ` **`gumbel`**`(mu, beta)`
 
-Increment target log probability density with `gumbel_lpdf( y | mu, beta)`
+Increment target log probability density with `gumbel_lpdf(y | mu, beta)`
 dropping constant additive terms.
+<!-- real; gumbel ~; -->
 \index{{\tt \bfseries gumbel }!sampling statement|hyperpage}
 
 ### Stan Functions
@@ -566,6 +610,7 @@ of y given location mu and scale beta
 
 `R` **`gumbel_rng`**`(reals mu, reals beta)`<br>\newline
 Generate a gumbel variate with location mu and scale beta; may only be
-used in generated quantities block. For a description of argument and
-return types, see section [vectorized PRNG functions](#prng-vectorization).
+used in transformed data and generated quantities blocks. For a description
+of argument and return types, see section
+[vectorized PRNG functions](#prng-vectorization).
 

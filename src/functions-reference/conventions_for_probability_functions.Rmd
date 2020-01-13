@@ -41,7 +41,7 @@ Each probability function has a specific outcome value and a number of
 parameters.  Following conditional probability notation, probability
 density and mass functions use a vertical bar to separate the outcome
 from the parameters of the distribution.  For example, `normal_lpdf(y
-| mu, sigma)` returns the value of mathematical formula $log
+| mu, sigma)` returns the value of mathematical formula $\log
 \text{Normal}(y \, | \, \mu, \sigma)$. Cumulative distribution
 functions separate the outcome from the parameters in the same way
 (e.g., `normal_lcdf(y_low | mu, sigma)`
@@ -100,7 +100,7 @@ a time.
 ### Restricted to Transformed Data and Generated Quantities
 
 Unlike regular functions, the PRNG functions may only be used in the
-transformed data or generated quantities block.
+transformed data or generated quantities blocks.
 
 ### Limited Vectorization
 
@@ -116,9 +116,9 @@ function.
 
 For a univariate random variable $Y$ with probability function $p_Y(y
 \, | \, \theta)$, the cumulative distribution function (CDF) $F_Y$ is
-defined by \[ F_Y(y) \ = \ \text{Pr}[Y < y] \ = \ \int_{-\infty}^y p(y
+defined by \[ F_Y(y) \ = \ \text{Pr}[Y \le y] \ = \ \int_{-\infty}^y p(y
 \, | \, \theta) \ \text{d}y. \] The complementary cumulative
-distribution function (CCDF) is defined as \[ \text{Pr}[Y \geq y] \ =
+distribution function (CCDF) is defined as \[ \text{Pr}[Y > y] \ =
 \ 1 - F_Y(y). \] The reason to use CCDFs instead of CDFs in
 floating-point arithmetic is that it is possible to represent numbers
 very close to 0 (the closest you can get is roughly $10^{-300}$), but
@@ -149,7 +149,7 @@ faster than loops and vectorized log probability functions are faster
 than their equivalent form defined with loops.  This isn't because
 loops are slow in Stan, but because more efficient automatic
 differentiation can be used.  The efficiency comes from the fact that
-a vectorized log probably function only introduces one new node into
+a vectorized log probability function only introduces one new node into
 the expression graph, thus reducing the number of virtual function
 calls required to compute gradients in  C++, as well as from allowing
 caching of repeated computations.
@@ -239,8 +239,8 @@ has the same effect on the total log probability as
 Some PRNG functions accept sequences as well as scalars as arguments.
 Such functions are indicated by argument pseudotypes `reals` or
 `ints`.  In cases of sequence arguments, the output will also be a
-sequence.  For example, the following is allowed in the generated
-quantities block.
+sequence.  For example, the following is allowed in the transformed data and
+generated quantities blocks.
 
 ```
  vector[3] mu = ...;
@@ -282,4 +282,3 @@ arguments, as all non-scalar arguments must have matching size.
 Discrete distributions return `ints` and continuous distributions
 return `reals`, each of appropriate size.  The symbol `R` denotes such
 a return type.
-

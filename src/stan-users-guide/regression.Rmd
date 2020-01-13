@@ -9,20 +9,20 @@ The simplest linear regression model is the following, with a single
 predictor and a slope and intercept coefficient, and normally
 distributed noise.  This model can be written using standard
 regression notation as
-
 $$
 y_n = \alpha + \beta x_n + \epsilon_n
-\ \ \ \mbox{where} \ \ \
-\epsilon_n \sim \mathsf{normal}(0,\sigma).
+\quad\text{where}\quad
+\epsilon_n \sim \operatorname{normal}(0,\sigma).
 $$
+
 This is equivalent to the following sampling involving the
 residual,
 $$
-y_n - (\alpha + \beta X_n) \sim \mathsf{normal}(0,\sigma),
+y_n - (\alpha + \beta X_n) \sim \operatorname{normal}(0,\sigma),
 $$
 and reducing still further, to
 $$
-y_n \sim \mathsf{normal}(\alpha + \beta X_n, \, \sigma).
+y_n \sim \operatorname{normal}(\alpha + \beta X_n, \, \sigma).
 $$
 
 This latter form of the model is coded in Stan as follows.
@@ -54,14 +54,14 @@ improper priors for the two regression coefficients.
 The sampling statement in the previous model is vectorized, with
 
 ```
-  y ~ normal(alpha + beta * x, sigma);
+y ~ normal(alpha + beta * x, sigma);
 ```
 
 providing the same model as the unvectorized version,
 
 ```
-  for (n in 1:N)
-    y[n] ~ normal(alpha + beta * x[n], sigma);
+for (n in 1:N)
+  y[n] ~ normal(alpha + beta * x[n], sigma);
 ```
 
 In addition to being more concise, the vectorized form is much faster.^[Unlike in Python and R, which are interpreted, Stan is translated to C++ and compiled, so loops and assignment statements are fast.  Vectorized code is faster in Stan because (a) the expression tree used to compute derivatives can be simplified, leading to fewer virtual function calls, and (b) computations that would be repeated in the looping version, such as `log(sigma)` in the above model, will be computed once and reused.]
@@ -131,7 +131,7 @@ the product `x[n] * beta` is a scalar of type `real`.
 In the model formulation
 
 ```
-  y ~ normal(x * beta, sigma);
+y ~ normal(x * beta, sigma);
 ```
 
 there is no longer an intercept coefficient `alpha`.  Instead, we
@@ -149,14 +149,16 @@ be based on clarity.
 In the previous example, the linear predictor can be written as $\eta
 = x \beta$, where $\eta$ is a $N$-vector of predictions, $x$ is a $N
 \times K$ matrix, and $\beta$ is a $K$-vector of coefficients.
-Presuming $N \geq K$, we can exploit the fact that any design matrix,
+Presuming $N \geq K$, we can exploit the fact that any design matrix
 $x$ can be decomposed using the thin QR decomposition into an
 orthogonal matrix $Q$ and an upper-triangular matrix $R$, i.e. $x = Q
-R$.  See the reference manual for a definition of the QR-decoposition.
-The functions `qr_Q` and `qr_R` implement the fat QR decomposition so
-here we thin it by including only $K$ columns in $Q$ and $K$ rows in
-$R$ (see the reference manual for more information on the `qr_Q` and
-`qr_R` functions). Also, in practice, it is best to write $x = Q^\ast
+R$.
+
+The functions `qr_thin_Q` and `qr_thin_R` implement the thin QR decomposition,
+which is to be preferred to the fat QR decomposition that would be obtained
+by using `qr_Q` and `qr_R`, as the latter would more easily run out of memory
+(see the Stan Functions Reference for more information on the `qr_thin_Q`
+and `qr_thin_R` functions). In practice, it is best to write $x = Q^\ast
 R^\ast$ where $Q^\ast = Q * \sqrt{n - 1}$ and $R^\ast =
 \frac{1}{\sqrt{n - 1}} R$. Thus, we can equivalently write $\eta = x
 \beta = Q R \beta = Q^\ast R^\ast \beta$. If we let $\theta = R^\ast
@@ -175,8 +177,8 @@ transformed data {
   matrix[K, K] R_ast;
   matrix[K, K] R_ast_inverse;
   // thin and scale the QR decomposition
-  Q_ast = qr_Q(x)[, 1:K] * sqrt(N - 1);
-  R_ast = qr_R(x)[1:K, ] / sqrt(N - 1);
+  Q_ast = qr_thin_Q(x) * sqrt(N - 1);
+  R_ast = qr_thin_R(x) / sqrt(N - 1);
   R_ast_inverse = inverse(R_ast);
 }
 parameters {
@@ -209,7 +211,7 @@ reasoning is threefold:
   can move around the parameter space with a smaller number of larger
   steps
 
-1. Since the covariance matrix for the columns of $Q\ast$ is an
+1. Since the covariance matrix for the columns of $Q^\ast$ is an
   identity matrix, $\theta$ typically has a reasonable scale if the
   units of $y$ are also reasonable. This also helps HMC move
   efficiently without compromising numerical accuracy.
@@ -226,7 +228,8 @@ model.
 
 ## Priors for Coefficients and Scales {#regression-priors.section}
 
-See our [general discussion of priors](#general-priors.section) for tips on priors for parameters in regression models.
+See our [general discussion of priors](https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations)
+for tips on priors for parameters in regression models.
 
 Later sections discuss [univariate
 hierarchical priors](#hierarchical-priors.section) and [multivariate
@@ -275,7 +278,7 @@ regression models may be used.  These generalized linear models vary
 only in the link function they use to map linear predictions in
 $(-\infty,\infty)$ to probability values in $(0,1)$.  Their respective
 link functions, the logistic function and the standard normal cumulative distribution
-function, are both sigmoid functions (i.e., they are both S-shaped).
+function, are both sigmoid functions (i.e., they are both \textit{S}-shaped).
 
 A logistic regression model with one predictor and an intercept is coded as
 follows.
@@ -301,25 +304,21 @@ rather than specified directly.
 
 Logistic regression is a kind of generalized linear model with binary
 outcomes and the log odds (logit) link function, defined by
-
 $$
-\mbox{logit}(v) = \log \left( \frac{v}{1-v} \right).
-$$
-
-The inverse of the link function appears in the model.
-
-$$
-\mbox{logit}^{-1}(u) = \frac{1}{1 + \exp(-u)}.
+\operatorname{logit}(v) = \log \left( \frac{v}{1-v} \right).
 $$
 
+The inverse of the link function appears in the model:
+$$
+\operatorname{logit}^{-1}(u) = \texttt{inv}\mathtt{\_}\texttt{logit}(u) = \frac{1}{1 + \exp(-u)}.
+$$
 
 The model formulation above uses the logit-parameterized version of
 the Bernoulli distribution, which is defined by
-
 $$
-\mathsf{BernoulliLogit}(y|\alpha)
+\texttt{bernoulli}\mathtt{\_}\texttt{logit}\left(y \mid \alpha \right)
 =
-\mathsf{Bernoulli}(y \mid \mbox{logit}^{-1}(\alpha)).
+\texttt{bernoulli}\left(y \mid \operatorname{logit}^{-1}(\alpha)\right).
 $$
 
 The formulation is also vectorized in the sense that `alpha` and
@@ -347,7 +346,7 @@ regression uses the cumulative normal distribution function, which is
 typically written as
 
 $$
-\Phi(x) = \int_{-\infty}^x \mathsf{normal}(y|0,1) \, dy.
+\Phi(x) = \int_{-\infty}^x \textsf{normal}\left(y \mid 0,1 \right) \,\textrm{d}y.
 $$
 
 The cumulative standard normal distribution function $\Phi$ is implemented
@@ -357,7 +356,7 @@ statement with the following.
 
 
 ```
-        y[n] ~ bernoulli(Phi(alpha + beta * x[n]));
+y[n] ~ bernoulli(Phi(alpha + beta * x[n]));
 ```
 
 A fast approximation to the cumulative standard normal distribution
@@ -366,9 +365,8 @@ function $\Phi$ is implemented in Stan as the function
 The approximate probit regression model may
 be coded with the following.
 
-
 ```
-        y[n] ~ bernoulli(Phi_approx(alpha + beta * x[n]));
+y[n] ~ bernoulli(Phi_approx(alpha + beta * x[n]));
 ```
 
 ## Multi-Logit Regression {#multi-logit.section}
@@ -377,7 +375,7 @@ Multiple outcome forms of logistic regression can be coded directly in
 Stan.  For instance, suppose there are $K$ possible outcomes for each
 output variable $y_n$.  Also suppose that there is a $D$-dimensional
 vector $x_n$ of predictors for $y_n$.  The multi-logit model with
-$\mathsf{normal}(0,5)$ priors on the coefficients is coded as follows.
+$\textsf{normal}(0,5)$ priors on the coefficients is coded as follows.
 
 
 ```
@@ -408,25 +406,21 @@ pulled out to define a local variable for all of the predictors for
 efficiency.  Like the Bernoulli-logit, the categorical-logit
 distribution applies softmax internally to convert an arbitrary vector
 to a simplex,
-
 $$
-\mathsf{CategoricalLogit}(y \mid \alpha)
-\ = \
-\mathsf{Categorical}(y \mid \mathsf{softmax}(\alpha)),
+\texttt{categorical}\mathtt{\_}\texttt{logit}\left(y \mid \alpha\right)
+=
+\texttt{categorical}\left(y \mid \texttt{softmax}(\alpha)\right),
 $$
-
 where
-
-
 $$
-\mathrm{softmax}(u) = \mathrm{exp}(u) / \mathrm{sum}(\mathrm{exp}(u)).
+\texttt{softmax}(u) = \exp(u) / \operatorname{sum}\left(\exp(u)\right).
 $$
 
 The categorical distribution with log-odds (logit) scaled parameters
 used above is equivalent to writing
 
 ```
-    y[n] ~ categorical(softmax(x[n] * beta));
+y[n] ~ categorical(softmax(x[n] * beta));
 ```
 
 
@@ -443,10 +437,10 @@ readability.  The above model's declarations could be tightened to
 
 
 ```
-  int<lower = 2> K;
-  int<lower = 0> N;
-  int<lower = 1> D;
-  int<lower = 1, upper = K> y[N];
+int<lower = 2> K;
+int<lower = 0> N;
+int<lower = 1> D;
+int<lower = 1, upper = K> y[N];
 ```
 
 These constraints arise because the number of categories, `K`,
@@ -522,7 +516,6 @@ centered around zero, as is typical for regression coefficients.
 
 It is often convenient to define a parameter vector $\beta$ that is
 centered in the sense of satisfying the sum-to-zero constraint,
-
 $$
 \sum_{k=1}^K \beta_k = 0.
 $$
@@ -556,7 +549,7 @@ on `beta` in the original parameterization without the
 sum-to-zero constraint.  Most notably, a simple prior on each
 component of `beta_raw` produces different results than putting
 the same prior on each component of an unconstrained $K$-vector
-`beta`.  For example, providing a $\mathsf{normal}(0,5)$ prior
+`beta`.  For example, providing a $\textsf{normal}(0,5)$ prior
 on `beta` will produce a different posterior mode than placing
 the same prior on `beta_raw`.
 
@@ -626,7 +619,7 @@ transformed parameters {
   ...
 ```
 
-Here `inv(K)` is just a short way to write `1.0~/~K`.  Given
+Here `inv(K)` is just a short way to write `1.0 / K`.  Given
 that `beta_raw` sums to 1 because it is a simplex, the
 elementwise subtraction of `inv(K)` is guaranteed to sum to zero.
 Because the magnitude of the elements of the simplex is bounded, a
@@ -640,7 +633,7 @@ With this parameterization, a Dirichlet prior can be placed on
 
 ### Soft Centering {-}
 
-Adding a prior such as $\beta \sim \mathsf{normal}(0,\sigma)$ will provide a kind
+Adding a prior such as $\beta \sim \textsf{normal}(0,\sigma)$ will provide a kind
 of soft centering of a parameter vector $\beta$ by preferring, all
 else being equal, that $\sum_{k=1}^K \beta_k = 0$.  This approach is only
 guaranteed to roughly center  if $\beta$ and the elementwise addition $\beta + c$
@@ -651,7 +644,7 @@ IRT models).  This is another way of achieving a symmetric prior.
 
 ## Ordered Logistic and Probit Regression {#ordered-logistic.section}
 
-Ordered regression for an outcome $y_n \in \{ 1,\ldots, k \}$ with
+Ordered regression for an outcome $y_n \in \{ 1, \dotsc, k \}$ with
 predictors $x_n \in \mathbb{R}^D$ is determined by a single coefficient
 vector $\beta \in \mathbb{R}^D$ along with a sequence of cutpoints $c \in
 \mathbb{R}^{K-1}$ sorted so that $c_d < c_{d+1}$.  The discrete output is
@@ -748,7 +741,7 @@ the degree of pooling is determined by the data and a prior on the
 amount of pooling.
 
 Suppose each binary outcome $y_n \in \{ 0, 1 \}$ has an associated
-level, $ll_n \in \{ 1,\ldots,L \}$.  Each outcome will also have
+level, $ll_n \in \{ 1, \dotsc, L \}$.  Each outcome will also have
 an associated predictor vector $x_n \in \mathbb{R}^D$.  Each level $l$
 gets its own coefficient vector $\beta_l \in \mathbb{R}^D$.  The
 hierarchical structure involves drawing the coefficients $\beta_{l,d}
@@ -808,9 +801,9 @@ The first optimization vectorizes the for-loop over `D` as
 
 
 ```
-  mu ~ normal(0, 100);
-  for (l in 1:L)
-    beta[l] ~ normal(mu, sigma);
+mu ~ normal(0, 100);
+for (l in 1:L)
+  beta[l] ~ normal(mu, sigma);
 ```
 
 The declaration of `beta` as an array of vectors means that the
@@ -823,12 +816,12 @@ on the efficiency tradeoffs among arrays, vectors, and matrices.
 This model can be further sped up and at the same time made more
 arithmetically stable by replacing the application of inverse-logit
 inside the Bernoulli distribution with the logit-parameterized
-Bernoulli,^[The Bernoulli-logit distribution builds in the log link function, taking $$\mathsf{BernoulliLogit}(y \mid \alpha) = \mathsf{Bernoulli}(y \mid \mathrm{logit}^{-1}(\alpha)).$$]
+Bernoulli,^[The Bernoulli-logit distribution builds in the log link function, taking $$\texttt{bernoulli}\mathtt{\_}\texttt{logit}\left(y \mid \alpha\right) = \texttt{bernoulli}\left(y \mid \operatorname{logit}^{-1}(\alpha)\right).$$]
 
 
 ```
-  for (n in 1:N)
-    y[n] ~ bernoulli_logit(x[n] * beta[ll[n]]);
+for (n in 1:N)
+  y[n] ~ bernoulli_logit(x[n] * beta[ll[n]]);
 ```
 
 Unlike in R or BUGS, loops, array access and assignments are fast in
@@ -840,12 +833,12 @@ the original formulation as a loop over a sampling statement.
 
 
 ```
-  {
-    vector[N] x_beta_ll;
-    for (n in 1:N)
-      x_beta_ll[n] = x[n] * beta[ll[n]];
-    y ~ bernoulli_logit(x_beta_ll);
-  }
+{
+  vector[N] x_beta_ll;
+  for (n in 1:N)
+    x_beta_ll[n] = x[n] * beta[ll[n]];
+  y ~ bernoulli_logit(x_beta_ll);
+}
 ```
 
 The brackets introduce a new scope for the local variable
@@ -877,32 +870,25 @@ drops and the values cluster around the hierarchical mean, the overall
 density grows without bound.  As an illustration, consider a simple
 hierarchical linear regression (with fixed prior mean) of $y_n \in
 \mathbb{R}$ on $x_n \in \mathbb{R}^K$, formulated as
-
-$$
-\begin{array}{rcl}
-y_n & \sim & \mathsf{normal}(x_n \beta, \sigma)
-\\[3pt]
-\beta_k & \sim & \mathsf{normal}(0,\tau)
-\\[3pt]
-\tau & \sim & \mathsf{Cauchy}(0,2.5)
-\end{array}
-$$
+\begin{align*}
+y_n     & \sim \textsf{normal}(x_n \beta, \sigma) \\
+\beta_k & \sim \textsf{normal}(0,\tau) \\
+\tau    & \sim \textsf{Cauchy}(0,2.5) \\
+\end{align*}
 
 In this case, as $\tau \rightarrow 0$ and $\beta_k \rightarrow 0$, the
-posterior density $$ p(\beta,\tau,\sigma|y,x) \propto
-p(y|x,\beta,\tau,\sigma) $$ grows without bound.  See the [plot of
-Neal's funnel density](#funnel.figure), which has similar behavior.
+posterior density
+$$ p(\beta,\tau,\sigma|y,x) \propto p(y|x,\beta,\tau,\sigma) $$
+grows without bound.  See the [plot of Neal's funnel density](#funnel.figure), which has similar behavior.
 
 There is obviously no MLE estimate for $\beta,\tau,\sigma$ in such a
 case, and therefore the model must be modified if posterior modes are
 to be used for inference.  The approach recommended by
 @ChungEtAl:2013 is to use a gamma distribution as a prior, such
 as
-
 $$
-\sigma \sim \mathsf{Gamma}(2, 1/A),
+\sigma \sim \textsf{Gamma}(2, 1/A),
 $$
-
 for a reasonably large value of $A$, such as $A = 10$.
 
 
@@ -983,18 +969,17 @@ model {
 ```
 
 This model uses the logit-parameterized Bernoulli distribution, where
-
 $$
-\mathsf{BernoulliLogit}(y \mid \alpha)
-\ = \
-\mathsf{Bernoulli}(y \mid \mbox{logit}^{-1}(\alpha)).
+\texttt{bernoulli}\mathtt{\_}\texttt{logit}\left(y \mid \alpha\right)
+=
+\texttt{bernoulli}\left(y \mid \operatorname{logit}^{-1}(\alpha)\right).
 $$
 
 The key to understanding it is the term inside the
 `bernoulli_logit` distribution, from which it follows that
 $$
-\mbox{Pr}[y_n = 1] = \mbox{logit}^{-1}(\alpha_{jj[n]} - \beta_{kk[n]}
-+ \delta).
+\textsf{Pr}[y_n = 1] = \operatorname{logit}^{-1}\left(\alpha_{jj[n]} - \beta_{kk[n]}
++ \delta\right).
 $$
 
 The model suffers from additive identifiability issues without the
@@ -1051,11 +1036,10 @@ model {
 ```
 
 The `std_normal` function is used here, defined by
-
 $$
-\mathsf{Stdnormalal}(y)
-\ = \
-\mathsf{normal}(y \mid 0, 1).
+\texttt{std}\mathtt{\_}\texttt{normal}(y)
+=
+\textsf{normal}\left(y \mid 0, 1\right).
 $$
 
 The sampling statement is also vectorized using elementwise
@@ -1088,8 +1072,8 @@ model.  They could also be given weakly informative non-hierarchical
 priors, such as
 
 ```
-  beta ~ normal(0, 5);
-  gamma ~ lognormal(0, 2);
+beta ~ normal(0, 5);
+gamma ~ lognormal(0, 2);
 ```
 
 The point is that the `alpha` determines the scale and location
@@ -1100,13 +1084,13 @@ parameterization, with parameter `mu_beta` serving as the mean
 `beta` location. An alternative would've been to take:
 
 ```
-  beta ~ normal(mu_beta, sigma_beta);
+beta ~ normal(mu_beta, sigma_beta);
 ```
 
 and
 
 ```
-  y[n] ~ bernoulli_logit(gamma[kk[n]] * (alpha[jj[n]] - beta[kk[n]]));
+y[n] ~ bernoulli_logit(gamma[kk[n]] * (alpha[jj[n]] - beta[kk[n]]));
 ```
 
 Non-centered parameterizations tend to be more efficient in
@@ -1116,7 +1100,7 @@ non-centered reparameterizations.
 
 The intercept term `mu_beta` can't itself be modeled
 hierarchically, so it is given a weakly informative
-$\mathsf{Cauchy}(0,5)$ prior.  Similarly, the scale terms,
+$\textsf{Cauchy}(0,5)$ prior.  Similarly, the scale terms,
 `sigma_beta`, and `sigma_gamma`, are given half-Cauchy
 priors.  As mentioned earlier, the scale and location for `alpha`
 are fixed to ensure identifiability.  The truncation in the
@@ -1140,7 +1124,7 @@ section](#collinearity.section) for a simple example of the problems
 this poses for estimation.
 
 The non-identifiability is resolved by providing a standard normal (i.e.,
-$\mathsf{normal}(0,1)$) prior on one group of coefficients, such as
+$\textsf{normal}(0,1)$) prior on one group of coefficients, such as
 the student abilities.  With a standard normal prior on the student
 abilities, the IRT model is identified in that the posterior will
 produce a group of estimates for student ability parameters that have
@@ -1199,7 +1183,7 @@ hierarchical model with $N$ individuals organized into $J$ groups.
 Each individual has a predictor row vector $x_n$ of size $K$; to unify
 the notation, they assume that $x_{n,1} = 1$ is a fixed "intercept"
 predictor.  To encode group membership, they assume individual $n$
-belongs to group $jj[n] \in 1{:}J$.  Each individual $n$ also has an
+belongs to group $jj[n] \in \{ 1, \dotsc, J \}$.  Each individual $n$ also has an
 observed outcome $y_n$ taking on real values.
 
 #### Likelihood {-}
@@ -1207,10 +1191,9 @@ observed outcome $y_n$ taking on real values.
 The model is a linear regression with slope and intercept coefficients
 varying by group, so that $\beta_j$ is the coefficient $K$-vector for
 group $j$.  The likelihood function for individual $n$ is then just
-
 $$
-y_n \sim \mathsf{normal}(x_n \, \beta_{jj[n]}, \, \sigma)
-\mbox{ for } n \in 1{:}N.
+y_n \sim \textsf{normal}(x_n \, \beta_{jj[n]}, \, \sigma)
+\quad\text{for}\quad n \in \{ 1, \dotsc, N \}.
 $$
 
 
@@ -1219,10 +1202,9 @@ $$
 Gelman and Hill model the coefficient vectors $\beta_j$ as being drawn
 from a multivariate distribution with mean vector $\mu$ and
 covariance matrix $\Sigma$,
-
 $$
-\beta_j \sim \mathsf{multivariate\ normal}(\mu, \, \Sigma)
-\mbox{ for } j \in 1{:}J.
+\beta_j \sim \textsf{multivariate normal}(\mu, \, \Sigma)
+\quad\text{for}\quad j \in \{ 1, \dotsc, J \}.
 $$
 
 Below, we discuss the full model of Gelman and Hill, which uses
@@ -1235,9 +1217,8 @@ For hierarchical modeling, the group-level mean vector $\mu$ and
 covariance matrix $\Sigma$ must themselves be given priors.  The
 group-level mean vector can be given a reasonable weakly-informative
 prior for independent coefficients, such as
-
 $$
-\mu_j \sim \mathsf{normal}(0,5).
+\mu_j \sim \textsf{normal}(0,5).
 $$
 If more is known about the expected coefficient values
 $\beta_{j, k}$, this information can be incorporated into the prior for
@@ -1254,16 +1235,14 @@ and Hill, we decompose our prior into a scale and a matrix, but are
 able to do so in a more natural way based on the actual variable
 scales and a correlation matrix.  Specifically, we define
 $$
-\Sigma = \mbox{diag\_matrix}(\tau) \ \Omega \ \mbox{diag\_matrix}(\tau),
+\Sigma = \texttt{diag}\mathtt{\_}\texttt{matrix}(\tau) \times \Omega \times \texttt{diag}\mathtt{\_}\texttt{matrix}(\tau),
 $$
 where $\Omega$ is a correlation matrix and $\tau$ is the vector of
 coefficient scales.   This mapping from scale vector $\tau$ and
 correlation matrix $\Omega$ can be inverted, using
 $$
-\tau_k = \sqrt{\, \Sigma_{k,k}}
-$$
-and
-$$
+\tau_k = \sqrt{\Sigma_{k,k}}
+\quad\textsf{and}\quad 
 \Omega_{i, j} = \frac{\Sigma_{i, j}}{\tau_i \, \tau_j}.
 $$
 
@@ -1271,8 +1250,9 @@ The components of the scale vector $\tau$ can be given any reasonable
 prior for scales, but we recommend something weakly informative like a
 half-Cauchy distribution with a small scale, such as
 $$
-\tau_k \sim \mathsf{Cauchy}(0, 2.5)
-\mbox{ for } k \in 1{:}K \mbox{ constrained by } \tau_k > 0.
+\tau_k \sim \textsf{Cauchy}(0, 2.5)
+\quad\text{for}\quad k \in \{ 1, \dotsc, K \}
+\quad\text{constrained\ by}\quad \tau_k > 0.
 $$
 As for the prior means, if there is information about the scale of
 variation of coefficients across groups, it should be incorporated
@@ -1284,15 +1264,14 @@ Our final recommendation is to give the correlation matrix $\Omega$ an
 LKJ prior with shape $\eta \geq 1$,^[The prior is named for Lewandowski, Kurowicka, and Joe, as it was derived by inverting the random correlation matrix generation strategy of @LewandowskiKurowickaJoe:2009.]
 
 $$
-\Omega \sim \mathsf{LKJCorr}(\eta).
+\Omega \sim \textsf{LKJCorr}(\eta).
 $$
 
 The LKJ correlation distribution is defined by
-
 $$
-\mathsf{LkjCorr}(\Sigma \mid \eta)
-\ \propto \
-\mathsf{det}(\Sigma)^{\eta - 1}.
+\textsf{LKJCorr}\left(\Sigma \mid \eta\right)
+\propto
+\operatorname{det}\left(\Sigma\right)^{\eta - 1}.
 $$
 
 The basic behavior of the LKJ correlation distribution is similar to
@@ -1315,19 +1294,19 @@ and an independent prior on scales, see @barnard-mcculloch-meng:2000.
 
 #### Group-Level Predictors for Prior Mean {-}
 
-To complete Gelman and Hill's model, suppose each group $j \in 1{:}J$
+To complete Gelman and Hill's model, suppose each group $j \in \{ 1, \dotsc, J \}$
 is supplied with an $L$-dimensional row-vector of group-level
 predictors $u_j$.  The prior mean for the $\beta_j$ can then itself be
 modeled as a regression, using an $L$-dimensional coefficient vector
 $\gamma$.  The prior for the group-level coefficients then becomes
 $$
-\beta_j \sim \mathsf{multivariate\ normal}(u_j \, \gamma, \Sigma)
+\beta_j \sim \textsf{multivariate normal}(u_j \, \gamma, \Sigma)
 $$
 
 The group-level coefficients $\gamma$ may themselves be given
 independent weakly informative priors, such as
 $$
-\gamma_l \sim \mathsf{normal}(0,5).
+\gamma_l \sim \textsf{normal}(0,5).
 $$
 As usual, information about the group-level means should be
 incorporated into this prior.
@@ -1346,14 +1325,14 @@ data {
   int<lower=1> J;              // num groups
   int<lower=1> L;              // num group predictors
   int<lower=1,upper=J> jj[N];  // group for individual
-  matrix[N, K] x;               // individual predictors
+  matrix[N, K] x;              // individual predictors
   row_vector[L] u[J];          // group predictors
   vector[N] y;                 // outcomes
 }
 parameters {
   corr_matrix[K] Omega;        // prior correlation
   vector<lower=0>[K] tau;      // prior scale
-  matrix[L, K] gamma;           // group coeffs
+  matrix[L, K] gamma;          // group coeffs
   vector[K] beta[J];           // indiv coeffs by group
   real<lower=0> sigma;         // prediction error scale
 }
@@ -1380,7 +1359,7 @@ output `Sigma`, define it as a transformed parameter.  The function
 equivalent to `diag_matrix(tau) * Sigma * diag_matrix(tau)`, where
 `diag_matrix(tau)` returns the matrix with `tau` on the diagonal and
 zeroes off diagonal; the version using `quad_form_diag` should be
-faster.  For details on these and other matrix arithmtic operators and
+faster.  For details on these and other matrix arithmetic operators and
 functions, see the function reference manual.
 
 #### Optimization through Vectorization {-}
@@ -1388,19 +1367,19 @@ functions, see the function reference manual.
 The code in the Stan program above can be sped up dramatically by replacing:
 
 ```
-  for (n in 1:N)
-    y[n] ~ normal(x[n] * beta[jj[n]], sigma);
+for (n in 1:N)
+  y[n] ~ normal(x[n] * beta[jj[n]], sigma);
 ```
 
 with the vectorized form:
 
 ```
-  {
-    vector[N] x_beta_jj;
-    for (n in 1:N)
-      x_beta_jj[n] = x[n] * beta[jj[n]];
-    y ~ normal(x_beta_jj, sigma);
-  }
+{
+  vector[N] x_beta_jj;
+  for (n in 1:N)
+    x_beta_jj[n] = x[n] * beta[jj[n]];
+  y ~ normal(x_beta_jj, sigma);
+}
 ```
 
 The outer brackets create a local scope in which to define the
@@ -1426,7 +1405,7 @@ this fails because it breaks the vectorization of sampling for
 `beta`,^[Thanks to Mike Lawrence for pointing this out in the GitHub issue for the manual.]
 
 ```
-  beta ~ multi_normal(...);
+beta ~ multi_normal(...);
 ```
 
 which requires `beta` to be an array of vectors.  Both
@@ -1440,12 +1419,12 @@ major speedup by reducing the number of linear systems that
 need to be solved and differentiated.
 
 ```
-  {
-    matrix[K, K] Sigma_beta;
-    Sigma_beta = quad_form_diag(Omega, tau);
-    for (j in 1:J)
-      beta[j] ~ multi_normal((u[j] * gamma)', Sigma_beta);
-  }
+{
+  matrix[K, K] Sigma_beta;
+  Sigma_beta = quad_form_diag(Omega, tau);
+  for (j in 1:J)
+    beta[j] ~ multi_normal((u[j] * gamma)', Sigma_beta);
+}
 ```
 
 In this example, the covariance matrix `Sigma_beta` is defined
@@ -1498,7 +1477,7 @@ Pre-multiplying the Cholesky factor by the scale produces the Cholesky
 factor of the final covariance matrix,
 
 ```
-  Sigma_beta
+Sigma_beta
   = quad_form_diag(Omega, tau)
   = diag_pre_multiply(tau, L_Omega) * diag_pre_multiply(tau, L_Omega)'
 ```
@@ -1514,7 +1493,7 @@ which are given independent standard normal priors; the `to_vector`
 operation turns the matrix into a vector so that it can be used as a
 vectorized argument to the univariate normal density.  Multiplying the
 Cholesky factor of the covariance matrix by `z` and adding the
-mean `(u\,*\,gamma)'` produces a `beta` distributed as in
+mean `(u * gamma)'` produces a `beta` distributed as in
 the original model.
 
 Omitting the data declarations, which are the same as before, the
@@ -1542,13 +1521,13 @@ model {
 }
 ```
 
-This model also reparameterizes the prior scale `tau` to avoid potential problems with the heavy tails of the Cauchy distribution. The statement `tau_unif ~ uniform(0,pi()/2)` can be omitted from the model block because stan increments the log posterior for parameters with uniform priors without it.
+This model also reparameterizes the prior scale `tau` to avoid potential problems with the heavy tails of the Cauchy distribution. The statement `tau_unif ~ uniform(0,pi()/2)` can be omitted from the model block because Stan increments the log posterior for parameters with uniform priors without it.
 
 ## Prediction, Forecasting, and Backcasting
 
 Stan models can be used for "predicting" the values of arbitrary
 model unknowns.  When predictions are about the future, they're called
-``forecasts;" when they are predictions about the past, as in climate
+"forecasts;" when they are predictions about the past, as in climate
 reconstruction or cosmology, they are sometimes called "backcasts"
 (or "aftcasts" or "hindcasts" or "antecasts," depending on the
 author's feelings about the opposite of "fore").
@@ -1656,14 +1635,10 @@ predictors and use a covariance error structure rather than
 independent errors [@Zellner:1962; @Greene:2011].
 
 The model is easy to write down as a regression,
-
-$$
-\begin{array}{rcl}
- y_n & = & x_n \, \beta + \epsilon_n
-\\[4pt]
- \epsilon_n & \sim & \mathsf{multivariate\ normal}(0, \Sigma)
-\end{array}
-$$
+\begin{align*}
+y_n        &=  x_n \, \beta + \epsilon_n \\
+\epsilon_n &\sim \textsf{multivariate normal}(0, \Sigma)
+\end{align*}
 
 where $x_n$ is a $J$-row-vector of predictors ($x$ is an $(N \times
 J)$ matrix), $y_n$ is a $K$-vector of observations, $\beta$ is a $(K
@@ -1749,21 +1724,17 @@ The observations $y_n$ are $D$-vectors of boolean values (coded 0 for
 false, 1 for true).  The values for the observations $y_n$ are based
 on latent values $z_n$ drawn from a seemingly unrelated regression
 model (see the previous section),
-
-$$
-\begin{array}{rcl}
- z_n & = & x_n \, \beta + \epsilon_n
-\\[4pt]
- \epsilon_n & \sim & \mathsf{multivariate\ normal}(0, \Sigma)
-\end{array}
-$$
+\begin{align*}
+z_n        &=     x_n \, \beta + \epsilon_n \\
+\epsilon_n &\sim  \textsf{multivariate normal}(0, \Sigma)
+\end{align*}
 
 These are then put through the step function to produce a $K$-vector $z_n$
 of boolean values with elements defined by
 $$
-y_{n, k} = \mathrm{I}(z_{n, k} > 0),
+y_{n, k} = \operatorname{I}\left(z_{n, k} > 0\right),
 $$
-where $\mathrm{I}()$ is the indicator function taking the value 1 if its
+where $\operatorname{I}()$ is the indicator function taking the value 1 if its
 argument is true and 0 otherwise.
 
 Unlike in the seemingly unrelated regressions case, here the
@@ -1935,30 +1906,28 @@ pseudorandom number generators.
 ### Prediction {-}
 
 Consider predicting unobserved outcomes using linear
-regression.  Given predictors $x_1, \ldots, x_N$ and observed outcomes
-$y_1,\ldots,y_N$, and assuming a standard linear regression with
+regression.  Given predictors $x_1, \dotsc, x_N$ and observed outcomes
+$y_1, \dotsc, y_N$, and assuming a standard linear regression with
 intercept $\alpha$, slope $\beta$, and error scale $\sigma$, along with
 improper uniform priors, the posterior over the parameters given $x$
 and $y$ is
-
 $$
-p(\alpha, \beta, \sigma \, | \, x, y)
+p\left(\alpha, \beta, \sigma \mid x, y \right)
 \propto
 \prod_{n=1}^N
-  \mathsf{normal}(y_n \, | \, \alpha + \beta x_n, \sigma).
+  \textsf{normal}\left(y_n \mid \alpha + \beta x_n, \sigma\right).
 $$
 
 For this model, the posterior predictive inference for a new outcome
 $\tilde{y}_m$ given a predictor $\tilde{x}_m$, conditioned on the
 observed data $x$ and $y$, is
 $$
-p(\tilde{y}_n \, | \, \tilde{x}_n, x, y)
+p\left(\tilde{y}_n \mid \tilde{x}_n, x, y\right)
 = \int_{(\alpha,\beta,\sigma)}
-  \mathsf{normal}(\tilde{y}_n \, | \, \alpha + \beta \tilde{x}_n, \sigma)
-  *
-  p(\alpha, \beta, \sigma \, | \, x, y)
-  \
-  \mathrm{d}(\alpha,\beta,\sigma).
+  \textsf{normal}\left(\tilde{y}_n \mid \alpha + \beta \tilde{x}_n, \sigma\right)
+  \times
+  p\left(\alpha, \beta, \sigma \mid x, y\right)
+  \,\textrm{d}(\alpha,\beta,\sigma).
 $$
 
 To code the posterior predictive inference in Stan, a standard linear
@@ -1989,7 +1958,7 @@ generated quantities {
 ```
 
 Given observed predictors $x$ and outcomes $y$, `y_tilde` will
-be drawn according to $p(\tilde{y} \, | \, \tilde{x}, y, x)$.  This
+be drawn according to $p\left(\tilde{y} \mid \tilde{x}, y, x\right)$.  This
 means that, for example, the posterior mean for `y_tilde` is the
 estimate of the outcome that minimizes expected square error
 (conditioned on the data and model).
@@ -2017,7 +1986,7 @@ generated quantities {
 ```
 
 @GelmanEtAl:2013 recommend choosing several posterior draws
-$\tilde{y}^{(1)}, \ldots, \tilde{y}^{(M)}$ and plotting each of them
+$\tilde{y}^{(1)}, \dotsc, \tilde{y}^{(M)}$ and plotting each of them
 alongside the data $y$ that was actually observed.  If the model fits
 well, the simulated $\tilde{y}$ will look like the actual data $y$.
 

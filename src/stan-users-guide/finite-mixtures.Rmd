@@ -30,17 +30,16 @@ $\mu_k \in \mathbb{R}$ and scales $\sigma_k \in (0,\infty)$.  Now consider
 mixing them in proportion $\lambda$, where $\lambda_k \geq 0$ and
 $\sum_{k=1}^K \lambda_k = 1$ (i.e., $\lambda$ lies in the unit $K$-simplex).
 For each outcome $y_n$ there is a latent variable $z_n$ in
-$\{ 1,\ldots,K \}$ with a categorical distribution parameterized
+$\{ 1,\dotsc,K \}$ with a categorical distribution parameterized
 by $\lambda$,
-
 $$
-z_n \sim \mathsf{Categorical}(\lambda).
+z_n \sim \textsf{categorical}(\lambda).
 $$
 
 The variable $y_n$ is distributed according to the parameters
 of the mixture component $z_n$,
 $$
-y_n \sim \mathsf{normal}(\mu_{z[n]},\sigma_{z[n]}).
+y_n \sim \textsf{normal}(\mu_{z[n]},\sigma_{z[n]}).
 $$
 
 This model is not directly supported by Stan because it involves
@@ -56,9 +55,9 @@ model. If $Y$ is a mixture of $K$ normal distributions with
 locations $\mu_k$ and scales $\sigma_k$ with mixing proportions
 $\lambda$ in the unit $K$-simplex, then
 $$
-p_Y(y | \lambda, \mu, \sigma)
-\ = \
-\sum_{k=1}^K \lambda_k \, \mathsf{normal}(y \, | \, \mu_k, \sigma_k).
+p_Y\left(y \mid \lambda, \mu, \sigma \right)
+=
+\sum_{k=1}^K \lambda_k \, \textsf{normal}\left(y \mid \mu_k, \sigma_k\right).
 $$
 
 
@@ -66,9 +65,8 @@ $$
 
 The log sum of exponentials function is used to define mixtures on the
 log scale.  It is defined for two inputs by
-
 $$
-\mbox{log\_sum\_exp}(a, b) = \log (\exp(a) + \exp(b)).
+\texttt{log}\mathtt{\_}\texttt{sum}\mathtt{\_}\texttt{exp}(a, b) = \log \left(\exp(a) + \exp(b)\right).
 $$
 
 If $a$ and $b$ are probabilities on the log scale, then $\exp(a) +
@@ -77,21 +75,18 @@ the result back to the log scale; to summarize, log_sum_exp does
 linear addition on the log scale.   The reason to use Stan's built-in
 `log_sum_exp`  function is that it can prevent underflow and overflow
 in the exponentiation, by calculating the result as
-
 $$
-\log\left( \exp(a) + \exp(b)\right)
-= c
-  + \log \left( \exp(a - c) + \exp(b - c) \right),
+\log \left( \exp(a) + \exp(b)\right)
+= c + \log \left( \exp(a - c) + \exp(b - c) \right),
 $$
-
 where $c = \max(a, b)$.  In this evaluation, one of the terms, $a - c$
 or $b - c$, is zero and the other is negative, thus eliminating the
 possibility of overflow or underflow in the leading term while
 extracting the most arithmetic precision possible by pulling the
-`max(a, b)` out of the log-exp round trip.
+$\max(a, b)$ out of the log-exp round trip.
 
-For example, the mixture of $\mathsf{normal}(-1, 2)$ with
-$\mathsf{normal}(3, 1)$, with mixing proportion $\lambda =
+For example, the mixture of $\textsf{normal}(-1, 2)$ with
+$\textsf{normal}(3, 1)$, with mixing proportion $\lambda =
 [0.3,0.7]^{\top}$, can be implemented in Stan as follows.
 
 ```
@@ -105,20 +100,16 @@ model {
 ```
 
 The log probability term is derived by taking
-
-$$
-\log p(y | \lambda,\mu,\sigma)  = \log\!\left( 0.3 * \mathsf{normal}(y|-1,2) \, + \,
-  0.7 *
-  \mathsf{normal}(y|3,1) \, \right)
-\\
- = \log(
-                 \exp(\log(0.3 * \mathsf{normal}(y|-1,2))) 
-                 + \exp(\log(0.7 * \mathsf{normal}(y|3,1))) )
-\\
- = \mbox{log\_sum\_exp}(
-                         \log(0.3) + \log \mathsf{normal}(y|-1,2),
-                         \log(0.7) + \log \mathsf{normal}(y|3,1) ).
-$$
+\begin{align*}
+\log\, &p\left(y \mid \lambda,\mu,\sigma \right) \\
+ &= \log\big( 0.3 \times \textsf{normal}\left(y \mid -1,2 \right)
+            + 0.7 \times \textsf{normal}\left(y \mid 3,1 \right) \big) \\
+ &= \log\bigg( \exp\Big(\log\big(0.3 \times \textsf{normal}\left(y \mid -1,2 \right)\big)\Big) 
+             + \exp\Big(\log\big(0.7 \times \textsf{normal}\left(y \mid 3,1 \right)\big)\Big) \bigg) \\
+ &= \texttt{log}\mathtt{\_}\texttt{sum}\mathtt{\_}\texttt{exp}\big(
+                         \log(0.3) + \log \textsf{normal}\left(y \mid -1,2 \right),
+                         \log(0.7) + \log \textsf{normal}\left(y \mid 3,1 \right) \big).
+\end{align*}
 
 
 ### Dropping uniform mixture ratios {-}
@@ -146,19 +137,16 @@ for (n in 1:N)
 
 The same result holds if there are $K$ components and the mixing
 simplex $\lambda$ is symmetric, i.e.,
-
 $$
-\lambda = \left( \frac{1}{K},   \ldots, \frac{1}{K} \right).
+\lambda = \left( \frac{1}{K}, \dotsc, \frac{1}{K} \right).
 $$
 
 The result follows from the identity
-
 $$
-\mbox{log\_sum\_exp}(c + a, c + b)
-\ = \
-c + \mbox{log\_sum\_exp(a, b)}
+\texttt{log}\mathtt{\_}\texttt{sum}\mathtt{\_}\texttt{exp}(c + a, c + b)
+=
+c + \texttt{log}\mathtt{\_}\texttt{sum}\mathtt{\_}\texttt{exp}(a, b)
 $$
-
 and the fact that adding a constant $c$ to the log density accumulator
 has no effect because the log density is only specified up to an
 additive constant in the first place.  There is nothing specific to
@@ -172,39 +160,29 @@ The posterior $p(z_n \mid y_n, \mu, \sigma)$ over the mixture indicator $z_n
 \in 1:K$ is often of interest as $p(z_n = k \mid y, \mu, \sigma)$ is the
 posterior probability that that observation $y_n$ was generated by
 mixture component $k$.  The posterior can be computed via Bayes's rule,
-$$
-\begin{array}{rcl}
-\mbox{Pr}(z_n = k \mid y_n, \mu, \sigma, \lambda)
-& \propto &
-p(y_n \mid z_n = k, \mu, \sigma) p(z_n = k \mid \lambda)
-\\
-& = & \mathsf{normal}(y_n \mid \mu_k, \sigma_k) \cdot \lambda_k.
-\end{array}
-$$
+\begin{align*}
+\operatorname{Pr}\left(z_n = k \mid y_n, \mu, \sigma, \lambda \right)
+  &\propto p\left(y_n \mid z_n = k, \mu, \sigma\right)\, p\left(z_n = k \mid \lambda\right) \\
+  &= \textsf{normal}\left(y_n \mid \mu_k, \sigma_k\right) \cdot \lambda_k.
+\end{align*}
 
 
 The normalization can be done via summation, because $z_n \in 1{:}K$ only
 takes on finitely many values.  In detail,
 $$
-p(z_n = k \mid y_n, \mu, \sigma, \lambda)
-\ = \
-\frac{p(y_n \mid z_n = k, \mu, \sigma) \cdot p(z_n = k \mid \lambda)}
-     {\sum_{k' = 1}^K p(y_n \mid z_n = k', \mu, \sigma)
-                    \cdot p(z_n = k' \mid \lambda)}.
+p\left(z_n = k \mid y_n, \mu, \sigma, \lambda \right) =
+\frac{p\left(y_n \mid z_n = k, \mu, \sigma \right) \cdot p\left(z_n = k \mid \lambda \right)}
+     {\sum_{k' = 1}^K p\left(y_n \mid z_n = k', \mu, \sigma \right)
+                    \cdot p\left(z_n = k' \mid \lambda \right)}.
 $$
 
 On the log scale, the normalized probability is computed as
-$$
-\begin{array}{l}
-\log \mbox{Pr}(z_n = k \mid y_n, \mu, \sigma, \lambda)
-\\
-\mbox { } \ \ \ = \log p(y_n \mid z_n = k, \mu, \sigma)
-  + \log \mbox{Pr}(z_n = k \mid \lambda)
-  - \mathrm{log\_sum\_exp}_{k' = 1}^K
-      \log p(y_n \mid z_n = k', \mu, \sigma)
-      + \log p(z_n = k' \mid \lambda).
-\end{array}
-$$
+\begin{align*}
+\log\,&\operatorname{Pr}\left(z_n = k \mid y_n, \mu, \sigma, \lambda\right) \\
+ &= \log p\left(y_n \mid z_n = k, \mu, \sigma\right) + \log \operatorname{Pr}\left(z_n = k \mid \lambda\right) \\
+ &\quad  - \texttt{log}\mathtt{\_}\texttt{sum}\mathtt{\_}\texttt{exp}_{k' = 1}^K \big(\log p\left(y_n \mid z_n = k', \mu, \sigma\right)
+                                                 + \log p\left(z_n = k' \mid \lambda\right)\big).
+\end{align*}
 This can be coded up directly in Stan; the change-point model in the
 [change point section](#change-point.section) provides an example.
 
@@ -249,7 +227,7 @@ The location parameter `mu` is declared to be an ordered vector
 in order to identify the model.  This will not affect inferences that
 do not depend on the ordering of the components as long as the prior
 for the components `mu[k]` is symmetric, as it is here (each
-component has an independent $\mathsf{normal}(0, 10)$ prior).  It
+component has an independent $\textsf{normal}(0, 10)$ prior).  It
 would even be possible to include a hierarchical prior for the components.
 
 The values in the scale array `sigma` are constrained to be
@@ -259,8 +237,8 @@ chosen to avoid zero values and thus collapsing components.
 The model declares a local array variable `lps` to be size
 `K` and uses it to accumulate the log contributions from the
 mixture components.  The main action is in the loop over data points
-`n`.  For each such point, the log of $\theta_k *
-\mathsf{normal}(y_n \, | \, \mu_k,\sigma_k)$ is calculated and added to the
+`n`.  For each such point, the log of $\theta_k \times
+\textsf{normal}\left(y_n \mid \mu_k,\sigma_k\right)$ is calculated and added to the
 array `lpps`.  Then the log probability is incremented with the log
 sum of exponentials of those values.
 
@@ -294,9 +272,9 @@ for (n in 1:N)
 This definition assumes that each observation $y_n$ may have arisen
 from either of the mixture components. The density is
 $$
-p(y \, | \, \lambda, \mu, \sigma)
-= \prod_{n=1}^N (\lambda * \mathsf{normal}(y_n \, | \, \mu_1, \sigma_1)
-                 + (1 - \lambda) * \mathsf{normal}(y_n \, | \, \mu_2, \sigma_2).
+p\left(y \mid \lambda, \mu, \sigma\right)
+= \prod_{n=1}^N \big(\lambda \times \textsf{normal}\left(y_n \mid \mu_1, \sigma_1 \right)
+                 + (1 - \lambda) \times \textsf{normal}\left(y_n \mid \mu_2, \sigma_2 \right)\big).
 $$
 
 Contrast the previous model with the following (erroneous) attempt to
@@ -317,13 +295,13 @@ target += log_mix(lambda,
                   normal_lpdf(y | mu[2], sigma[2]));
 ```
 
-This second definition implies that the entire sequence $y_1, \ldots, y_n$ of
+This second definition implies that the entire sequence $y_1, \dotsc, y_n$ of
 observations comes form one component or the other, defining a
 different density,
 $$
-p(y \, | \, \lambda, \mu, \sigma)
-= \lambda * \prod_{n=1}^N \mbox{normal}(y_n \, | \, \mu_1, \sigma_1)
-+ (1 - \lambda) * \prod_{n=1}^N \mbox{normal}(y_n \, | \, \mu_2, \sigma_2).
+p\left(y \mid \lambda, \mu, \sigma \right)
+= \lambda \times \prod_{n=1}^N \textsf{normal}\left(y_n \mid \mu_1, \sigma_1\right)
++ (1 - \lambda) \times \prod_{n=1}^N \textsf{normal}\left(y_n \mid \mu_2, \sigma_2\right).
 $$
 
 
@@ -350,29 +328,21 @@ in posterior predictions for new observations.
 As an example, consider the normal mixture from the previous section,
 which provides an exchangeable prior on the pairs of parameters
 $(\mu_1, \sigma_1)$ and $(\mu_2, \sigma_2)$,
-
-$$
-\begin{array}{rcl}
-\mu_1, \mu_2 & \sim & \mathsf{normal}(0, 10)
-\\[8pt]
-\sigma_1, \sigma_2 & \sim & \mathsf{Halfnormal}(0, 10)
-\end{array}
-$$
+\begin{align*}
+\mu_1, \mu_2       &\sim \textsf{normal}(0, 10) \\
+\sigma_1, \sigma_2 &\sim \textsf{halfnormal}(0, 10) \\
+\end{align*}
 
 The prior on the mixture ratio is uniform,
-
 $$
-\lambda \sim \mathsf{Uniform}(0, 1),
+\lambda \sim \textsf{uniform}(0, 1),
 $$
-
 so that with the likelihood
-
 $$
-p(y_n \, | \, \mu, \sigma)
-= \lambda \, \mathsf{normal}(y_n \, | \, \mu_1, \sigma_1)
-+ (1 - \lambda) \, \mathsf{normal}(y_n \, | \, \mu_2, \sigma_2),
+p\left(y_n \mid \mu, \sigma\right)
+= \lambda \times \textsf{normal}\left(y_n \mid \mu_1, \sigma_1\right)
++ (1 - \lambda) \times \textsf{normal}\left(y_n \mid \mu_2, \sigma_2\right),
 $$
-
 the joint distribution $p(y, \mu, \sigma, \lambda)$ is exchangeable
 in the parameters $(\mu_1, \sigma_1)$ and $(\mu_2, \sigma_2)$ with
 $\lambda$ flipping to $1 - \lambda$.^[Imposing a constraint such as $\theta < 0.5$ will resolve the symmetry, but fundamentally changes the model and its posterior inferences.]
@@ -391,21 +361,20 @@ subsection considers a pair of examples.
 
 Predictive likelihood for a new observation $\tilde{y}$ given the
 complete parameter vector $\theta$ will be
-
 $$
-p(\tilde{y} \, | \, y)
+p(\tilde{y} \mid y)
 =
 \int_{\theta}
-p(\tilde{y} \, | \, \theta)
-\, p(\theta | y)
-\, \mbox{d}\theta.
+p(\tilde{y} \mid \theta)
+\, p(\theta \mid y)
+\, \textsf{d}\theta.
 $$
 
 The normal mixture example from the previous section, with $\theta =
 (\mu, \sigma, \lambda)$, shows that the likelihood returns the same
 density under label switching and thus the predictive inference is
 sound.  In Stan, that predictive inference can be done either by
-computing $p(\tilde{y} \, | \, y)$, which is more efficient
+computing $p(\tilde{y} \mid y)$, which is more efficient
 statistically in terms of effective sample size, or simulating draws
 of $\tilde{y}$, which is easier to plug into other inferences.  Both
 approaches can be coded directly in the generated quantities block of
@@ -442,18 +411,16 @@ question of whether they arose from the same mixture component.  If we
 take $z_i$ and $z_j$ to be the component responsibility discrete
 variables, then the quantity of interest is $z_i = z_j$, which can be
 summarized as an event probability
-
 $$
-\mbox{Pr}[z_i = z_j \, | \, y]
+\operatorname{Pr}[z_i = z_j \mid y]
 =
 \int_{\theta}
-\frac{\sum_{k=0}^1 p(z_i=k, z_j = k, y_i, y_j \, | \, \theta)}
-     {\sum_{k=0}^1 \sum_{m=0}^1 p(z_i = k, z_j = m, y_i, y_j \, | \,
-       \theta)}
-\
-p(\theta \, | \, y)
-\
-\mbox{d}\theta.
+\frac{\sum_{k=0}^1 p(z_i=k, z_j = k, y_i, y_j \mid \theta)}
+     {\sum_{k=0}^1 \sum_{m=0}^1 p(z_i = k, z_j = m, y_i, y_j \mid \theta)}
+\,
+p(\theta \mid y)
+\,
+\textsf{d}\theta.
 $$
 
 As with other event probabilities, this can be calculated in the
@@ -485,20 +452,17 @@ regression coefficient prior.
 Consider the following example for zero-inflated Poisson
 distributions.  It uses a parameter `theta` here there is a
 probability $\theta$ of drawing a zero, and a probability $1 - \theta$
-of drawing from $\mathsf{Poisson}(\lambda)$ (now $\theta$ is being
+of drawing from $\textsf{Poisson}(\lambda)$ (now $\theta$ is being
 used for mixing proportions because $\lambda$ is the traditional
 notation for a Poisson mean parameter).  The probability function is
 thus
 $$
-p(y_n|\theta,\lambda)
+p(y_n \mid \theta,\lambda)
 =
-\left\{
-\begin{array}{ll}
-\theta + (1 - \theta) * \mathsf{Poisson}(0|\lambda) & \mbox{ if } y_n = 0, \mbox{ and}
-\\[3pt]
-(1-\theta) * \mathsf{Poisson}(y_n|\lambda) & \mbox{ if } y_n > 0.
-\end{array}
-\right.
+\begin{cases}
+\theta + (1 - \theta) \times \textsf{Poisson}(0 \mid \lambda) & \quad\text{if } y_n = 0, \text{ and}\\
+(1-\theta) \times \textsf{Poisson}(y_n \mid \lambda) &\quad\text{if } y_n > 0.
+\end{cases}
 $$
 
 The log probability function can be implemented directly in Stan as follows.
@@ -526,14 +490,13 @@ model {
 ```
 
 The `log_sum_exp(lp1,lp2)` function adds the log probabilities
-on the linear scale; it is defined to be equal to `log(exp(lp1) +
-  exp(lp2))`, but is more arithmetically stable and faster.
+on the linear scale; it is defined to be equal to `log(exp(lp1) + exp(lp2))`, but is more arithmetically stable and faster.
 
 #### Optimizing the zero-inflated Poisson model {-}
 
 The code given above to compute the zero-inflated Poisson
 redundantly calculates all of the Bernoulli terms and also
-`poisson_lpmf(0 | lambda)` every time the first condition
+`poisson_lpmf(0 \mid lambda)` every time the first condition
 body executes.  The use of the redundant terms is conditioned on
 `y`, which is known when the data are read in.  This allows
 the transformed data block to be used to compute some more convenient
@@ -589,62 +552,59 @@ The hurdle model is similar to the zero-inflated model, but more
 flexible in that the zero outcomes can be deflated as well as
 inflated.  The probability mass function for the hurdle likelihood is
 defined by
-
 $$
-p(y|\theta,\lambda)
+p(y\mid\theta,\lambda)
 =
 \begin{cases}
-\ \theta & \mbox{if } y = 0, \mbox{ and}
-\\
-\ (1 - \theta)
-  \
-   \frac{\displaystyle \mathsf{Poisson}(y | \lambda)}
-        {\displaystyle  1 - \mathsf{PoissonCDF}(0 | \lambda)}
-& \mbox{if } y > 0,
+\theta &\quad\text{if } y = 0, \text{ and}\\
+(1 - \theta)
+   \frac{\displaystyle \textsf{Poisson}(y \mid \lambda)}
+        {\displaystyle  1 - \textsf{PoissonCDF}(0 \mid \lambda)}
+&\quad\text{if } y > 0,
 \end{cases}
 $$
 
 
-where $\mathsf{PoissonCDF}$ is the cumulative distribution function for
+where $\textsf{PoissonCDF}$ is the cumulative distribution function for
 the Poisson distribution.  The hurdle model is even more straightforward to
 program in Stan, as it does not require an explicit mixture.
 
 ```
-   if (y[n] == 0)
-      1 ~ bernoulli(theta);
-    else {
-      0 ~ bernoulli(theta);
-      y[n] ~ poisson(lambda) T[1, ];
-    }
+if (y[n] == 0)
+  1 ~ bernoulli(theta);
+else {
+  0 ~ bernoulli(theta);
+  y[n] ~ poisson(lambda) T[1, ];
+}
 ```
 
 The Bernoulli statements are just shorthand for adding $\log \theta$
 and $\log (1 - \theta)$ to the log density.  The `T[1,]` after the
 Poisson indicates that it is truncated below at 1; see the [truncation
 section](#truncation.section) for more about truncation and the
-[Poisson regresison section](#poisson.section) for the specifics of
+[Poisson regression section](#poisson.section) for the specifics of
 the Poisson CDF.  The net effect is equivalent to the direct
 definition of the log likelihood.
 
 ```
-   if (y[n] == 0)
-      target += log(theta);
-    else
-      target += log1m(theta) + poisson_lpmf(y[n] | lambda)
-                - poisson_lccdf(0 | lambda));
+if (y[n] == 0)
+  target += log(theta);
+else
+  target += log1m(theta) + poisson_lpmf(y[n] | lambda)
+            - poisson_lccdf(0 | lambda));
 ```
 
 Julian King pointed out that because
-$$
-\log \left( 1 - \mathsf{PoissonCDF}(0 | \lambda) \right)
-\ = \ \log \left( 1 - \mathsf{Poisson}(0 | \lambda) \right)
-\ = \ \log(1 - \exp(-\lambda))
-$$
+\begin{align*}
+\log \left( 1 - \textsf{PoissonCDF}(0 \mid \lambda) \right)
+  &= \log \left( 1 - \textsf{Poisson}(0 \mid \lambda) \right) \\
+  &= \log(1 - \exp(-\lambda))
+\end{align*}
 the CCDF in the else clause can be replaced with a simpler expression.
 
 ```
-      target += log1m(theta) + poisson_lpmf(y[n] | lambda)
-                - log1m_exp(-lambda));
+target += log1m(theta) + poisson_lpmf(y[n] | lambda)
+          - log1m_exp(-lambda));
 ```
 
 The resulting code is about 15% faster than the code with the CCDF.

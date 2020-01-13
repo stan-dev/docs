@@ -24,7 +24,7 @@ reducing is so common it has its own name, _map-reduce_.
 ## Map Function
 
 In order to generalize the form of functions and results that are
-possible and accomodate both parameters (which need derivatives) and
+possible and accommodate both parameters (which need derivatives) and
 data values (which don't), Stan's map function operates on more than
 just a sequence of inputs.
 
@@ -38,7 +38,7 @@ vector map_rect((vector, vector, real[], int[]):vector f,
                 data real[ , ] x_rs, data int[ , ] x_is);
 ```
 
-The arrays `thetas` of parametrs, `x_rs` of real data, and
+The arrays `thetas` of parameters, `x_rs` of real data, and
 `x_is` of integer data have the suffix "`s`" to indicate they
 are arrays.  These arrays must all be the same size, as they will be
 mapped in parallel by the function `f`.  The value of `phi`
@@ -46,7 +46,7 @@ is reused in each mapped operation.
 
 The `_rect` suffix in the name arises because the data
 structures it takes as arguments are rectangular.  In order to deal
-with ragged inputs, ragged inputs must be padded out to recangular
+with ragged inputs, ragged inputs must be padded out to rectangular
 form.
 
 The last two arguments are two dimensional arrays of real and integer
@@ -65,7 +65,7 @@ vector f(vector phi, vector theta,
 ```
 
 Although `f` will often return a vector of size one, the built-in
-flexiblity allows general multivariate functions to be mapped, even
+flexibility allows general multivariate functions to be mapped, even
 raggedly.
 
 ### Map Function Semantics {-}
@@ -133,7 +133,8 @@ functionality as follows.
 ```
 functions {
   vector lr(vector beta, vector theta, real[] x, int[] y) {
-    real lp = bernoulli_logit_lpmf(y | beta[1] + to_vector(x) * beta[2]);
+    real lp = bernoulli_logit_lpmf(y | beta[1]
+                                       + to_vector(x) * beta[2]);
     return [lp]';
   }
 }
@@ -199,28 +200,25 @@ vectors.
 
 Consider a hierarchical model of American presidential voting behavior
 based on state of residence.^[This example is a simplified form of the model
-  described in [@GelmanHill:2007, Section 14.2]]
+described in [@GelmanHill:2007, Section 14.2]]
 
-Each of the fifty states $k \in 1{:}50$ will have its own slope
+Each of the fifty states $k \in \{1,\dotsc,50\}$ will have its own slope
 $\beta_k$ and intercept $\alpha_k$ to model the log odds of voting for
 the Republican candidate as a function of income.  Suppose there are
 $N$ voters and with voter $n \in 1{:}N$ being in state $s[n]$ with
 income $x_n$.  The likelihood for the vote $y_n \in \{ 0, 1 \}$ is
-
 $$
-y_n \sim \mathsf{Bernoulli}
-\left(
-  \mathrm{logit}^{-1}\left( \alpha_{s[n]} +  \beta_{s[n]} \, x_n \right)
-\right).
+y_n \sim \textsf{Bernoulli}
+\Big(
+  \operatorname{logit}^{-1}\left( \alpha_{s[n]} + \beta_{s[n]} \, x_n \right)
+\Big).
 $$
 
 The slopes and intercepts get hierarchical priors,
-
-$$
-\alpha_k \sim \mathsf{normal}(\mu_{\alpha}, \sigma_{\alpha})
-\\
-\beta_k \sim \mathsf{normal}(\mu_{\beta}, \sigma_{\beta})
-$$
+\begin{align*}
+\alpha_k &\sim \textsf{normal}(\mu_{\alpha}, \sigma_{\alpha}) \\
+\beta_k  &\sim \textsf{normal}(\mu_{\beta}, \sigma_{\beta})
+\end{align*}
 
 ### Unmapped Implementation {-}
 
@@ -355,6 +353,7 @@ model {
   mu ~ normal(0, 2);
   sigma ~ normal(0, 2);
   target += sum(map_rect(bl_glm, append_row(mu, sigma), beta, x_r, x_i));
+                         
 }
 ```
 

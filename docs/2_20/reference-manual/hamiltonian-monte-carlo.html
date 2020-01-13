@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>15.1 Hamiltonian Monte Carlo | Stan Reference Manual</title>
+  <meta name="description" content="Stan reference manual specifying the syntax and semantics of the Stan programming language." />
+  <meta name="generator" content="bookdown 0.16 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="15.1 Hamiltonian Monte Carlo | Stan Reference Manual" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:image" content="img/logo_tm.png" />
+  <meta property="og:description" content="Stan reference manual specifying the syntax and semantics of the Stan programming language." />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="15.1 Hamiltonian Monte Carlo | Stan Reference Manual" />
+  
+  <meta name="twitter:description" content="Stan reference manual specifying the syntax and semantics of the Stan programming language." />
+  <meta name="twitter:image" content="img/logo_tm.png" />
+
+<meta name="author" content="Stan Development Team" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="hmc-chapter.html"/>
+<link rel="next" href="hmc-algorithm-parameters.html"/>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="../stan-manual.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li style="font-size:110%; font-weight:400; font-family: Verdana, Helvetica, sans; line-height:1.4; margin: 0.5em 0 0 1em"><a href="https://mc-stan.org/docs/reference-manual/index.html" style="color:#4183C4">Stan Reference Manual</a></li>
+
+<li class="divider"></li>
+<li><a href="index.html#overview"><i style="font-size: 110%; padding:1.5em 0 0 0; color:#990017;">Overview</i></a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Web resources</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#copyright-and-trademark"><i class="fa fa-check"></i>Copyright and Trademark</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#licensing"><i class="fa fa-check"></i>Licensing</a></li>
+</ul></li>
+<li><a href="language.html#language"><i style="font-size: 110%; color:#990017;">Language</i></a></li>
+<li class="chapter" data-level="1" data-path="character-encoding.html"><a href="character-encoding.html"><i class="fa fa-check"></i><b>1</b> Character Encoding</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="content-characters.html"><a href="content-characters.html"><i class="fa fa-check"></i><b>1.1</b> Content Characters</a>
+<ul>
+<li class="chapter" data-level="" data-path="content-characters.html"><a href="content-characters.html#compatibility-with-latin-1-and-utf-8"><i class="fa fa-check"></i>Compatibility with Latin-1 and UTF-8</a></li>
+</ul></li>
+<li class="chapter" data-level="1.2" data-path="comment-characters.html"><a href="comment-characters.html"><i class="fa fa-check"></i><b>1.2</b> Comment Characters</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="includes-section.html"><a href="includes-section.html"><i class="fa fa-check"></i><b>2</b> Includes</a>
+<ul>
+<li class="chapter" data-level="2.0.1" data-path="includes-section.html"><a href="includes-section.html#space-before-includes"><i class="fa fa-check"></i><b>2.0.1</b> Space before includes</a></li>
+<li class="chapter" data-level="2.0.2" data-path="includes-section.html"><a href="includes-section.html#comments-after-includes"><i class="fa fa-check"></i><b>2.0.2</b> Comments after includes</a></li>
+<li class="chapter" data-level="2.1" data-path="recursive-includes.html"><a href="recursive-includes.html"><i class="fa fa-check"></i><b>2.1</b> Recursive Includes</a></li>
+<li class="chapter" data-level="2.2" data-path="include-paths.html"><a href="include-paths.html"><i class="fa fa-check"></i><b>2.2</b> Include Paths</a>
+<ul>
+<li class="chapter" data-level="2.2.1" data-path="include-paths.html"><a href="include-paths.html#slashes-in-include-paths"><i class="fa fa-check"></i><b>2.2.1</b> Slashes in include paths</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="comments.html"><a href="comments.html"><i class="fa fa-check"></i><b>3</b> Comments</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="line-based-comments.html"><a href="line-based-comments.html"><i class="fa fa-check"></i><b>3.1</b> Line-Based Comments</a></li>
+<li class="chapter" data-level="3.2" data-path="bracketed-comments.html"><a href="bracketed-comments.html"><i class="fa fa-check"></i><b>3.2</b> Bracketed Comments</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="whitespace.html"><a href="whitespace.html"><i class="fa fa-check"></i><b>4</b> Whitespace</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="whitespace-characters.html"><a href="whitespace-characters.html"><i class="fa fa-check"></i><b>4.1</b> Whitespace Characters</a></li>
+<li class="chapter" data-level="4.2" data-path="whitespace-neutrality.html"><a href="whitespace-neutrality.html"><i class="fa fa-check"></i><b>4.2</b> Whitespace Neutrality</a></li>
+<li class="chapter" data-level="4.3" data-path="whitespace-location.html"><a href="whitespace-location.html"><i class="fa fa-check"></i><b>4.3</b> Whitespace Location</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="data-types-chapter.html"><a href="data-types-chapter.html"><i class="fa fa-check"></i><b>5</b> Data Types and Declarations</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="overview-of-data-types.html"><a href="overview-of-data-types.html"><i class="fa fa-check"></i><b>5.1</b> Overview of Data Types</a>
+<ul>
+<li class="chapter" data-level="" data-path="overview-of-data-types.html"><a href="overview-of-data-types.html#primitive-types"><i class="fa fa-check"></i>Primitive Types</a></li>
+<li class="chapter" data-level="" data-path="overview-of-data-types.html"><a href="overview-of-data-types.html#vector-and-matrix-types"><i class="fa fa-check"></i>Vector and Matrix Types</a></li>
+<li class="chapter" data-level="" data-path="overview-of-data-types.html"><a href="overview-of-data-types.html#array-types"><i class="fa fa-check"></i>Array Types</a></li>
+<li class="chapter" data-level="" data-path="overview-of-data-types.html"><a href="overview-of-data-types.html#constrained-data-types"><i class="fa fa-check"></i>Constrained Data Types</a></li>
+</ul></li>
+<li class="chapter" data-level="5.2" data-path="numerical-data-types.html"><a href="numerical-data-types.html"><i class="fa fa-check"></i><b>5.2</b> Primitive Numerical Data Types</a>
+<ul>
+<li class="chapter" data-level="" data-path="numerical-data-types.html"><a href="numerical-data-types.html#integers"><i class="fa fa-check"></i>Integers</a></li>
+<li class="chapter" data-level="" data-path="numerical-data-types.html"><a href="numerical-data-types.html#reals"><i class="fa fa-check"></i>Reals</a></li>
+<li class="chapter" data-level="" data-path="numerical-data-types.html"><a href="numerical-data-types.html#promoting-integers-to-reals"><i class="fa fa-check"></i>Promoting Integers to Reals</a></li>
+</ul></li>
+<li class="chapter" data-level="5.3" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html"><i class="fa fa-check"></i><b>5.3</b> Univariate Data Types and Variable Declarations</a>
+<ul>
+<li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#unconstrained-integer"><i class="fa fa-check"></i>Unconstrained Integer</a></li>
+<li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#constrained-integer"><i class="fa fa-check"></i>Constrained Integer</a></li>
+<li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#unconstrained-real"><i class="fa fa-check"></i>Unconstrained Real</a></li>
+<li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#constrained-real"><i class="fa fa-check"></i>Constrained Real</a></li>
+<li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#affinely-transformed-real"><i class="fa fa-check"></i>Affinely Transformed Real</a></li>
+<li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#expressions-as-bounds-and-offsetmultiplier"><i class="fa fa-check"></i>Expressions as Bounds and Offset/Multiplier</a></li>
+<li class="chapter" data-level="" data-path="univariate-data-types-and-variable-declarations.html"><a href="univariate-data-types-and-variable-declarations.html#declaring-optional-variables"><i class="fa fa-check"></i>Declaring Optional Variables</a></li>
+</ul></li>
+<li class="chapter" data-level="5.4" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html"><i class="fa fa-check"></i><b>5.4</b> Vector and Matrix Data Types</a>
+<ul>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#indexing-from-1"><i class="fa fa-check"></i>Indexing from 1</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#vectors"><i class="fa fa-check"></i>Vectors</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#unit-simplexes"><i class="fa fa-check"></i>Unit Simplexes</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#unit-vectors"><i class="fa fa-check"></i>Unit Vectors</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#ordered-vectors"><i class="fa fa-check"></i>Ordered Vectors</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#positive-ordered-vectors"><i class="fa fa-check"></i>Positive, Ordered Vectors</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#row-vectors"><i class="fa fa-check"></i>Row Vectors</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#matrices"><i class="fa fa-check"></i>Matrices</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#covariance-matrices"><i class="fa fa-check"></i>Covariance Matrices</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#correlation-matrices"><i class="fa fa-check"></i>Correlation Matrices</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#cholesky-factors-of-covariance-matrices"><i class="fa fa-check"></i>Cholesky Factors of Covariance Matrices</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#cholesky-factors-of-correlation-matrices"><i class="fa fa-check"></i>Cholesky Factors of Correlation Matrices</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#assigning-constrained-variables"><i class="fa fa-check"></i>Assigning Constrained Variables</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#expressions-as-size-declarations"><i class="fa fa-check"></i>Expressions as Size Declarations</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#accessing-vector-and-matrix-elements"><i class="fa fa-check"></i>Accessing Vector and Matrix Elements</a></li>
+<li class="chapter" data-level="" data-path="vector-and-matrix-data-types.html"><a href="vector-and-matrix-data-types.html#size-declaration-restrictions"><i class="fa fa-check"></i>Size Declaration Restrictions</a></li>
+</ul></li>
+<li class="chapter" data-level="5.5" data-path="array-data-types-section.html"><a href="array-data-types-section.html"><i class="fa fa-check"></i><b>5.5</b> Array Data Types</a>
+<ul>
+<li class="chapter" data-level="" data-path="array-data-types-section.html"><a href="array-data-types-section.html#declaring-array-variables"><i class="fa fa-check"></i>Declaring Array Variables</a></li>
+<li class="chapter" data-level="" data-path="array-data-types-section.html"><a href="array-data-types-section.html#accessing-array-elements-and-subarrays"><i class="fa fa-check"></i>Accessing Array Elements and Subarrays</a></li>
+<li class="chapter" data-level="" data-path="array-data-types-section.html"><a href="array-data-types-section.html#assigning"><i class="fa fa-check"></i>Assigning</a></li>
+<li class="chapter" data-level="" data-path="array-data-types-section.html"><a href="array-data-types-section.html#arrays-of-matrices-and-vectors"><i class="fa fa-check"></i>Arrays of Matrices and Vectors</a></li>
+<li class="chapter" data-level="" data-path="array-data-types-section.html"><a href="array-data-types-section.html#partial-array-assignment"><i class="fa fa-check"></i>Partial Array Assignment</a></li>
+<li class="chapter" data-level="" data-path="array-data-types-section.html"><a href="array-data-types-section.html#mixing-array-vector-and-matrix-types"><i class="fa fa-check"></i>Mixing Array, Vector, and Matrix Types</a></li>
+<li class="chapter" data-level="" data-path="array-data-types-section.html"><a href="array-data-types-section.html#size-declaration-restrictions-1"><i class="fa fa-check"></i>Size Declaration Restrictions</a></li>
+<li class="chapter" data-level="" data-path="array-data-types-section.html"><a href="array-data-types-section.html#size-zero-arrays"><i class="fa fa-check"></i>Size Zero Arrays</a></li>
+</ul></li>
+<li class="chapter" data-level="5.6" data-path="variable-types-vs-constraints-and-sizes.html"><a href="variable-types-vs-constraints-and-sizes.html"><i class="fa fa-check"></i><b>5.6</b> Variable Types vs.Constraints and Sizes</a>
+<ul>
+<li class="chapter" data-level="" data-path="variable-types-vs-constraints-and-sizes.html"><a href="variable-types-vs-constraints-and-sizes.html#type-information-excludes-sizes"><i class="fa fa-check"></i>Type Information Excludes Sizes</a></li>
+<li class="chapter" data-level="" data-path="variable-types-vs-constraints-and-sizes.html"><a href="variable-types-vs-constraints-and-sizes.html#type-information-excludes-constraints"><i class="fa fa-check"></i>Type Information Excludes Constraints</a></li>
+<li class="chapter" data-level="" data-path="variable-types-vs-constraints-and-sizes.html"><a href="variable-types-vs-constraints-and-sizes.html#type-naming-notation"><i class="fa fa-check"></i>Type Naming Notation</a></li>
+</ul></li>
+<li class="chapter" data-level="5.7" data-path="compound-variable-declaration-and-definition.html"><a href="compound-variable-declaration-and-definition.html"><i class="fa fa-check"></i><b>5.7</b> Compound Variable Declaration and Definition</a>
+<ul>
+<li class="chapter" data-level="" data-path="compound-variable-declaration-and-definition.html"><a href="compound-variable-declaration-and-definition.html#assignment-typing"><i class="fa fa-check"></i>Assignment Typing</a></li>
+<li class="chapter" data-level="" data-path="compound-variable-declaration-and-definition.html"><a href="compound-variable-declaration-and-definition.html#right-hand-side-expressions"><i class="fa fa-check"></i>Right-Hand Side Expressions</a></li>
+<li class="chapter" data-level="" data-path="compound-variable-declaration-and-definition.html"><a href="compound-variable-declaration-and-definition.html#scope-within-expressions"><i class="fa fa-check"></i>Scope within Expressions</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="expressions.html"><a href="expressions.html"><i class="fa fa-check"></i><b>6</b> Expressions</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="numeric-literals.html"><a href="numeric-literals.html"><i class="fa fa-check"></i><b>6.1</b> Numeric Literals</a>
+<ul>
+<li class="chapter" data-level="" data-path="numeric-literals.html"><a href="numeric-literals.html#integer-literals"><i class="fa fa-check"></i>Integer Literals</a></li>
+<li class="chapter" data-level="" data-path="numeric-literals.html"><a href="numeric-literals.html#real-literals"><i class="fa fa-check"></i>Real Literals</a></li>
+</ul></li>
+<li class="chapter" data-level="6.2" data-path="variables-section.html"><a href="variables-section.html"><i class="fa fa-check"></i><b>6.2</b> Variables</a>
+<ul>
+<li class="chapter" data-level="" data-path="variables-section.html"><a href="variables-section.html#reserved-names"><i class="fa fa-check"></i>Reserved Names</a></li>
+<li class="chapter" data-level="" data-path="variables-section.html"><a href="variables-section.html#legal-characters"><i class="fa fa-check"></i>Legal Characters</a></li>
+</ul></li>
+<li class="chapter" data-level="6.3" data-path="vector-matrix-and-array-expressions.html"><a href="vector-matrix-and-array-expressions.html"><i class="fa fa-check"></i><b>6.3</b> Vector, Matrix, and Array Expressions</a>
+<ul>
+<li class="chapter" data-level="" data-path="vector-matrix-and-array-expressions.html"><a href="vector-matrix-and-array-expressions.html#vector-expressions"><i class="fa fa-check"></i>Vector Expressions</a></li>
+<li class="chapter" data-level="" data-path="vector-matrix-and-array-expressions.html"><a href="vector-matrix-and-array-expressions.html#matrix-expressions"><i class="fa fa-check"></i>Matrix Expressions</a></li>
+<li class="chapter" data-level="" data-path="vector-matrix-and-array-expressions.html"><a href="vector-matrix-and-array-expressions.html#array-expressions"><i class="fa fa-check"></i>Array Expressions</a></li>
+<li class="chapter" data-level="" data-path="vector-matrix-and-array-expressions.html"><a href="vector-matrix-and-array-expressions.html#array-expression-types"><i class="fa fa-check"></i>Array Expression Types</a></li>
+<li class="chapter" data-level="" data-path="vector-matrix-and-array-expressions.html"><a href="vector-matrix-and-array-expressions.html#restrictions-on-values"><i class="fa fa-check"></i>Restrictions on Values</a></li>
+</ul></li>
+<li class="chapter" data-level="6.4" data-path="parentheses-for-grouping.html"><a href="parentheses-for-grouping.html"><i class="fa fa-check"></i><b>6.4</b> Parentheses for Grouping</a></li>
+<li class="chapter" data-level="6.5" data-path="arithmetic-expressions-section.html"><a href="arithmetic-expressions-section.html"><i class="fa fa-check"></i><b>6.5</b> Arithmetic and Matrix Operations on Expressions</a>
+<ul>
+<li class="chapter" data-level="" data-path="arithmetic-expressions-section.html"><a href="arithmetic-expressions-section.html#operator-precedence-and-associativity"><i class="fa fa-check"></i>Operator Precedence and Associativity</a></li>
+</ul></li>
+<li class="chapter" data-level="6.6" data-path="conditional-operator-section.html"><a href="conditional-operator-section.html"><i class="fa fa-check"></i><b>6.6</b> Conditional Operator</a>
+<ul>
+<li class="chapter" data-level="" data-path="conditional-operator-section.html"><a href="conditional-operator-section.html#conditional-operator-syntax"><i class="fa fa-check"></i>Conditional Operator Syntax</a></li>
+<li class="chapter" data-level="" data-path="conditional-operator-section.html"><a href="conditional-operator-section.html#conditional-operator-semantics"><i class="fa fa-check"></i>Conditional Operator Semantics</a></li>
+</ul></li>
+<li class="chapter" data-level="6.7" data-path="language-indexing-section.html"><a href="language-indexing-section.html"><i class="fa fa-check"></i><b>6.7</b> Indexing</a>
+<ul>
+<li class="chapter" data-level="" data-path="language-indexing-section.html"><a href="language-indexing-section.html#accessing-subarrays"><i class="fa fa-check"></i>Accessing Subarrays</a></li>
+<li class="chapter" data-level="" data-path="language-indexing-section.html"><a href="language-indexing-section.html#accessing-matrix-rows"><i class="fa fa-check"></i>Accessing Matrix Rows</a></li>
+<li class="chapter" data-level="" data-path="language-indexing-section.html"><a href="language-indexing-section.html#mixing-array-and-vectormatrix-indexes"><i class="fa fa-check"></i>Mixing Array and Vector/Matrix Indexes</a></li>
+</ul></li>
+<li class="chapter" data-level="6.8" data-path="language-multi-indexing-section.html"><a href="language-multi-indexing-section.html"><i class="fa fa-check"></i><b>6.8</b> Multiple Indexing and Range Indexing</a>
+<ul>
+<li class="chapter" data-level="" data-path="language-multi-indexing-section.html"><a href="language-multi-indexing-section.html#multiple-index-semantics"><i class="fa fa-check"></i>Multiple Index Semantics</a></li>
+</ul></li>
+<li class="chapter" data-level="6.9" data-path="function-application-section.html"><a href="function-application-section.html"><i class="fa fa-check"></i><b>6.9</b> Function Application</a>
+<ul>
+<li class="chapter" data-level="" data-path="function-application-section.html"><a href="function-application-section.html#type-signatures-and-result-type-inference"><i class="fa fa-check"></i>Type Signatures and Result Type Inference</a></li>
+<li class="chapter" data-level="" data-path="function-application-section.html"><a href="function-application-section.html#constants"><i class="fa fa-check"></i>Constants</a></li>
+<li class="chapter" data-level="" data-path="function-application-section.html"><a href="function-application-section.html#type-promotion-and-function-resolution"><i class="fa fa-check"></i>Type Promotion and Function Resolution</a></li>
+<li class="chapter" data-level="" data-path="function-application-section.html"><a href="function-application-section.html#random-number-generating-functions"><i class="fa fa-check"></i>Random-Number Generating Functions</a></li>
+</ul></li>
+<li class="chapter" data-level="6.10" data-path="type-inference.html"><a href="type-inference.html"><i class="fa fa-check"></i><b>6.10</b> Type Inference</a>
+<ul>
+<li class="chapter" data-level="" data-path="type-inference.html"><a href="type-inference.html#implementation-types"><i class="fa fa-check"></i>Implementation Types</a></li>
+<li class="chapter" data-level="" data-path="type-inference.html"><a href="type-inference.html#type-inference-rules"><i class="fa fa-check"></i>Type Inference Rules</a></li>
+</ul></li>
+<li class="chapter" data-level="6.11" data-path="higher-order-functions.html"><a href="higher-order-functions.html"><i class="fa fa-check"></i><b>6.11</b> Higher-Order Functions</a>
+<ul>
+<li class="chapter" data-level="" data-path="higher-order-functions.html"><a href="higher-order-functions.html#functions-passed-by-reference"><i class="fa fa-check"></i>Functions Passed by Reference</a></li>
+<li class="chapter" data-level="" data-path="higher-order-functions.html"><a href="higher-order-functions.html#data-restricted-arguments"><i class="fa fa-check"></i>Data-Restricted Arguments</a></li>
+</ul></li>
+<li class="chapter" data-level="6.12" data-path="chain-rule-and-derivatives.html"><a href="chain-rule-and-derivatives.html"><i class="fa fa-check"></i><b>6.12</b> Chain Rule and Derivatives</a>
+<ul>
+<li class="chapter" data-level="" data-path="chain-rule-and-derivatives.html"><a href="chain-rule-and-derivatives.html#errors-due-to-chain-rule"><i class="fa fa-check"></i>Errors Due to Chain Rule</a></li>
+<li class="chapter" data-level="" data-path="chain-rule-and-derivatives.html"><a href="chain-rule-and-derivatives.html#diagnosing-problems-with-derivatives"><i class="fa fa-check"></i>Diagnosing Problems with Derivatives</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="statements.html"><a href="statements.html"><i class="fa fa-check"></i><b>7</b> Statements</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="statement-block-contexts.html"><a href="statement-block-contexts.html"><i class="fa fa-check"></i><b>7.1</b> Statement Block Contexts</a></li>
+<li class="chapter" data-level="7.2" data-path="assignment-statement-section.html"><a href="assignment-statement-section.html"><i class="fa fa-check"></i><b>7.2</b> Assignment Statement</a>
+<ul>
+<li class="chapter" data-level="" data-path="assignment-statement-section.html"><a href="assignment-statement-section.html#lvalue-summary"><i class="fa fa-check"></i>Lvalue Summary</a></li>
+<li class="chapter" data-level="" data-path="assignment-statement-section.html"><a href="assignment-statement-section.html#multiple-indexes"><i class="fa fa-check"></i>Multiple Indexes</a></li>
+<li class="chapter" data-level="" data-path="assignment-statement-section.html"><a href="assignment-statement-section.html#compound-arithmetic-and-assignment-statement"><i class="fa fa-check"></i>Compound Arithmetic and Assignment Statement</a></li>
+</ul></li>
+<li class="chapter" data-level="7.3" data-path="increment-log-prob-section.html"><a href="increment-log-prob-section.html"><i class="fa fa-check"></i><b>7.3</b> Increment Log Density</a>
+<ul>
+<li class="chapter" data-level="" data-path="increment-log-prob-section.html"><a href="increment-log-prob-section.html#relation-to-compound-addition-and-assignment"><i class="fa fa-check"></i>Relation to compound addition and assignment</a></li>
+<li class="chapter" data-level="" data-path="increment-log-prob-section.html"><a href="increment-log-prob-section.html#vectorization"><i class="fa fa-check"></i>Vectorization</a></li>
+<li class="chapter" data-level="" data-path="increment-log-prob-section.html"><a href="increment-log-prob-section.html#accessing-the-log-density"><i class="fa fa-check"></i>Accessing the Log Density</a></li>
+</ul></li>
+<li class="chapter" data-level="7.4" data-path="sampling-statements-section.html"><a href="sampling-statements-section.html"><i class="fa fa-check"></i><b>7.4</b> Sampling Statements</a>
+<ul>
+<li class="chapter" data-level="" data-path="sampling-statements-section.html"><a href="sampling-statements-section.html#log-probability-increment-vs.sampling-statement"><i class="fa fa-check"></i>Log Probability Increment vs.Sampling Statement</a></li>
+<li class="chapter" data-level="" data-path="sampling-statements-section.html"><a href="sampling-statements-section.html#user-transformed-variables"><i class="fa fa-check"></i>User-Transformed Variables</a></li>
+<li class="chapter" data-level="" data-path="sampling-statements-section.html"><a href="sampling-statements-section.html#truncated-distributions"><i class="fa fa-check"></i>Truncated Distributions</a></li>
+</ul></li>
+<li class="chapter" data-level="7.5" data-path="for-loops.html"><a href="for-loops.html"><i class="fa fa-check"></i><b>7.5</b> For Loops</a>
+<ul>
+<li class="chapter" data-level="" data-path="for-loops.html"><a href="for-loops.html#loop-variable-typing-and-scope"><i class="fa fa-check"></i>Loop Variable Typing and Scope</a></li>
+<li class="chapter" data-level="" data-path="for-loops.html"><a href="for-loops.html#order-sensitivity-and-repeated-variables"><i class="fa fa-check"></i>Order Sensitivity and Repeated Variables</a></li>
+</ul></li>
+<li class="chapter" data-level="7.6" data-path="foreach-loops.html"><a href="foreach-loops.html"><i class="fa fa-check"></i><b>7.6</b> Foreach Loops</a></li>
+<li class="chapter" data-level="7.7" data-path="conditional-statements.html"><a href="conditional-statements.html"><i class="fa fa-check"></i><b>7.7</b> Conditional Statements</a></li>
+<li class="chapter" data-level="7.8" data-path="while-statements.html"><a href="while-statements.html"><i class="fa fa-check"></i><b>7.8</b> While Statements</a></li>
+<li class="chapter" data-level="7.9" data-path="statement-blocks-and-local-variable-declarations.html"><a href="statement-blocks-and-local-variable-declarations.html"><i class="fa fa-check"></i><b>7.9</b> Statement Blocks and Local Variable Declarations</a>
+<ul>
+<li class="chapter" data-level="" data-path="statement-blocks-and-local-variable-declarations.html"><a href="statement-blocks-and-local-variable-declarations.html#blocks-in-for-loops"><i class="fa fa-check"></i>Blocks in For Loops</a></li>
+<li class="chapter" data-level="" data-path="statement-blocks-and-local-variable-declarations.html"><a href="statement-blocks-and-local-variable-declarations.html#local-variable-declarations"><i class="fa fa-check"></i>Local Variable Declarations</a></li>
+<li class="chapter" data-level="" data-path="statement-blocks-and-local-variable-declarations.html"><a href="statement-blocks-and-local-variable-declarations.html#no-constraints-on-local-variables"><i class="fa fa-check"></i>No Constraints on Local Variables</a></li>
+<li class="chapter" data-level="" data-path="statement-blocks-and-local-variable-declarations.html"><a href="statement-blocks-and-local-variable-declarations.html#blocks-within-blocks"><i class="fa fa-check"></i>Blocks within Blocks</a></li>
+</ul></li>
+<li class="chapter" data-level="7.10" data-path="break-and-continue-statements.html"><a href="break-and-continue-statements.html"><i class="fa fa-check"></i><b>7.10</b> Break and Continue Statements <a id="break-continue-statements"></a></a>
+<ul>
+<li class="chapter" data-level="" data-path="break-and-continue-statements.html"><a href="break-and-continue-statements.html#break-statements"><i class="fa fa-check"></i>Break Statements</a></li>
+<li class="chapter" data-level="" data-path="break-and-continue-statements.html"><a href="break-and-continue-statements.html#continue-statements"><i class="fa fa-check"></i>Continue Statements</a></li>
+<li class="chapter" data-level="" data-path="break-and-continue-statements.html"><a href="break-and-continue-statements.html#breaking-and-continuing-nested-loops"><i class="fa fa-check"></i>Breaking and Continuing Nested Loops</a></li>
+</ul></li>
+<li class="chapter" data-level="7.11" data-path="print-statements-section.html"><a href="print-statements-section.html"><i class="fa fa-check"></i><b>7.11</b> Print Statements</a>
+<ul>
+<li class="chapter" data-level="" data-path="print-statements-section.html"><a href="print-statements-section.html#print-content"><i class="fa fa-check"></i>Print Content</a></li>
+<li class="chapter" data-level="" data-path="print-statements-section.html"><a href="print-statements-section.html#non-void-input"><i class="fa fa-check"></i>Non-void Input</a></li>
+<li class="chapter" data-level="" data-path="print-statements-section.html"><a href="print-statements-section.html#print-frequency"><i class="fa fa-check"></i>Print Frequency</a></li>
+<li class="chapter" data-level="" data-path="print-statements-section.html"><a href="print-statements-section.html#string-literals"><i class="fa fa-check"></i>String Literals</a></li>
+<li><a href="print-statements-section.html#debug-by-print">Debug by <code>print</code></a></li>
+</ul></li>
+<li class="chapter" data-level="7.12" data-path="reject-statements-section.html"><a href="reject-statements-section.html"><i class="fa fa-check"></i><b>7.12</b> Reject Statements</a>
+<ul>
+<li class="chapter" data-level="" data-path="reject-statements-section.html"><a href="reject-statements-section.html#behavior-of-reject-statements"><i class="fa fa-check"></i>Behavior of Reject Statements</a></li>
+<li class="chapter" data-level="" data-path="reject-statements-section.html"><a href="reject-statements-section.html#rejection-is-not-for-constraints"><i class="fa fa-check"></i>Rejection is not for Constraints</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="blocks-chapter.html"><a href="blocks-chapter.html"><i class="fa fa-check"></i><b>8</b> Program Blocks</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="overview-of-stans-program-blocks.html"><a href="overview-of-stans-program-blocks.html"><i class="fa fa-check"></i><b>8.1</b> Overview of Stan’s Program Blocks</a>
+<ul>
+<li class="chapter" data-level="" data-path="overview-of-stans-program-blocks.html"><a href="overview-of-stans-program-blocks.html#optionality-and-ordering"><i class="fa fa-check"></i>Optionality and Ordering</a></li>
+<li class="chapter" data-level="" data-path="overview-of-stans-program-blocks.html"><a href="overview-of-stans-program-blocks.html#variable-scope"><i class="fa fa-check"></i>Variable Scope</a></li>
+<li class="chapter" data-level="" data-path="overview-of-stans-program-blocks.html"><a href="overview-of-stans-program-blocks.html#function-scope"><i class="fa fa-check"></i>Function Scope</a></li>
+<li class="chapter" data-level="" data-path="overview-of-stans-program-blocks.html"><a href="overview-of-stans-program-blocks.html#automatic-variable-definitions"><i class="fa fa-check"></i>Automatic Variable Definitions</a></li>
+<li class="chapter" data-level="" data-path="overview-of-stans-program-blocks.html"><a href="overview-of-stans-program-blocks.html#transformed-variables"><i class="fa fa-check"></i>Transformed Variables</a></li>
+<li class="chapter" data-level="" data-path="overview-of-stans-program-blocks.html"><a href="overview-of-stans-program-blocks.html#generated-quantities"><i class="fa fa-check"></i>Generated Quantities</a></li>
+<li class="chapter" data-level="" data-path="overview-of-stans-program-blocks.html"><a href="overview-of-stans-program-blocks.html#variable-read-write-and-definition-summary"><i class="fa fa-check"></i>Variable Read, Write, and Definition Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="8.2" data-path="statistical-variable-taxonomy.html"><a href="statistical-variable-taxonomy.html"><i class="fa fa-check"></i><b>8.2</b> Statistical Variable Taxonomy</a></li>
+<li class="chapter" data-level="8.3" data-path="program-block-data.html"><a href="program-block-data.html"><i class="fa fa-check"></i><b>8.3</b> Program Block: <code>data</code></a>
+<ul>
+<li class="chapter" data-level="" data-path="program-block-data.html"><a href="program-block-data.html#variable-reads-and-transformations"><i class="fa fa-check"></i>Variable Reads and Transformations</a></li>
+<li class="chapter" data-level="" data-path="program-block-data.html"><a href="program-block-data.html#statements-1"><i class="fa fa-check"></i>Statements</a></li>
+<li class="chapter" data-level="" data-path="program-block-data.html"><a href="program-block-data.html#variable-constraint-checking"><i class="fa fa-check"></i>Variable Constraint Checking</a></li>
+</ul></li>
+<li class="chapter" data-level="8.4" data-path="program-block-transformed-data.html"><a href="program-block-transformed-data.html"><i class="fa fa-check"></i><b>8.4</b> Program Block: <code>transformed data</code></a>
+<ul>
+<li class="chapter" data-level="" data-path="program-block-transformed-data.html"><a href="program-block-transformed-data.html#variable-reads-and-transformations-1"><i class="fa fa-check"></i>Variable Reads and Transformations</a></li>
+<li class="chapter" data-level="" data-path="program-block-transformed-data.html"><a href="program-block-transformed-data.html#statements-2"><i class="fa fa-check"></i>Statements</a></li>
+<li class="chapter" data-level="" data-path="program-block-transformed-data.html"><a href="program-block-transformed-data.html#variable-constraint-checking-1"><i class="fa fa-check"></i>Variable Constraint Checking</a></li>
+</ul></li>
+<li class="chapter" data-level="8.5" data-path="program-block-parameters.html"><a href="program-block-parameters.html"><i class="fa fa-check"></i><b>8.5</b> Program Block: <code>parameters</code></a>
+<ul>
+<li class="chapter" data-level="" data-path="program-block-parameters.html"><a href="program-block-parameters.html#constraining-inverse-transform"><i class="fa fa-check"></i>Constraining Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="program-block-parameters.html"><a href="program-block-parameters.html#gradient-calculation"><i class="fa fa-check"></i>Gradient Calculation</a></li>
+<li class="chapter" data-level="" data-path="program-block-parameters.html"><a href="program-block-parameters.html#writing-draws"><i class="fa fa-check"></i>Writing Draws</a></li>
+</ul></li>
+<li class="chapter" data-level="8.6" data-path="program-block-transformed-parameters.html"><a href="program-block-transformed-parameters.html"><i class="fa fa-check"></i><b>8.6</b> Program Block: <code>transformed parameters</code></a>
+<ul>
+<li class="chapter" data-level="" data-path="program-block-transformed-parameters.html"><a href="program-block-transformed-parameters.html#constraints-are-for-error-checking"><i class="fa fa-check"></i>Constraints are for Error Checking</a></li>
+</ul></li>
+<li class="chapter" data-level="8.7" data-path="program-block-model.html"><a href="program-block-model.html"><i class="fa fa-check"></i><b>8.7</b> Program Block: <code>model</code></a></li>
+<li class="chapter" data-level="8.8" data-path="program-block-generated-quantities.html"><a href="program-block-generated-quantities.html"><i class="fa fa-check"></i><b>8.8</b> Program Block: <code>generated quantities</code></a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="functions-chapter.html"><a href="functions-chapter.html"><i class="fa fa-check"></i><b>9</b> User-Defined Functions</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="function-definition-block.html"><a href="function-definition-block.html"><i class="fa fa-check"></i><b>9.1</b> Function-Definition Block</a></li>
+<li class="chapter" data-level="9.2" data-path="function-names.html"><a href="function-names.html"><i class="fa fa-check"></i><b>9.2</b> Function Names</a></li>
+<li class="chapter" data-level="9.3" data-path="calling-functions.html"><a href="calling-functions.html"><i class="fa fa-check"></i><b>9.3</b> Calling Functions</a>
+<ul>
+<li class="chapter" data-level="" data-path="calling-functions.html"><a href="calling-functions.html#functions-as-expressions"><i class="fa fa-check"></i>Functions as Expressions</a></li>
+<li class="chapter" data-level="" data-path="calling-functions.html"><a href="calling-functions.html#functions-as-statements"><i class="fa fa-check"></i>Functions as Statements</a></li>
+<li class="chapter" data-level="" data-path="calling-functions.html"><a href="calling-functions.html#probability-functions-in-sampling-statements"><i class="fa fa-check"></i>Probability Functions in Sampling Statements</a></li>
+<li class="chapter" data-level="" data-path="calling-functions.html"><a href="calling-functions.html#restrictions-on-placement"><i class="fa fa-check"></i>Restrictions on Placement</a></li>
+</ul></li>
+<li class="chapter" data-level="9.4" data-path="argument-types-and-qualifiers.html"><a href="argument-types-and-qualifiers.html"><i class="fa fa-check"></i><b>9.4</b> Argument Types and Qualifiers</a>
+<ul>
+<li class="chapter" data-level="" data-path="argument-types-and-qualifiers.html"><a href="argument-types-and-qualifiers.html#base-variable-type-declaration"><i class="fa fa-check"></i>Base Variable Type Declaration</a></li>
+<li class="chapter" data-level="" data-path="argument-types-and-qualifiers.html"><a href="argument-types-and-qualifiers.html#dimensionality-declaration"><i class="fa fa-check"></i>Dimensionality Declaration</a></li>
+<li class="chapter" data-level="" data-path="argument-types-and-qualifiers.html"><a href="argument-types-and-qualifiers.html#dimensionality-checks-and-exceptions"><i class="fa fa-check"></i>Dimensionality Checks and Exceptions</a></li>
+<li class="chapter" data-level="" data-path="argument-types-and-qualifiers.html"><a href="argument-types-and-qualifiers.html#data-only-qualifiers"><i class="fa fa-check"></i>Data-only Qualifiers</a></li>
+</ul></li>
+<li class="chapter" data-level="9.5" data-path="function-bodies-section.html"><a href="function-bodies-section.html"><i class="fa fa-check"></i><b>9.5</b> Function Bodies</a>
+<ul>
+<li class="chapter" data-level="" data-path="function-bodies-section.html"><a href="function-bodies-section.html#random-number-generating-functions-1"><i class="fa fa-check"></i>Random Number Generating Functions</a></li>
+<li class="chapter" data-level="" data-path="function-bodies-section.html"><a href="function-bodies-section.html#log-probability-access-in-functions"><i class="fa fa-check"></i>Log Probability Access in Functions</a></li>
+<li class="chapter" data-level="" data-path="function-bodies-section.html"><a href="function-bodies-section.html#defining-probability-functions-for-sampling-statements"><i class="fa fa-check"></i>Defining Probability Functions for Sampling Statements</a></li>
+</ul></li>
+<li class="chapter" data-level="9.6" data-path="parameters-are-constant.html"><a href="parameters-are-constant.html"><i class="fa fa-check"></i><b>9.6</b> Parameters are Constant</a></li>
+<li class="chapter" data-level="9.7" data-path="return-value.html"><a href="return-value.html"><i class="fa fa-check"></i><b>9.7</b> Return Value</a>
+<ul>
+<li class="chapter" data-level="" data-path="return-value.html"><a href="return-value.html#return-guarantee-required"><i class="fa fa-check"></i>Return Guarantee Required</a></li>
+</ul></li>
+<li class="chapter" data-level="9.8" data-path="void-functions-as-statements.html"><a href="void-functions-as-statements.html"><i class="fa fa-check"></i><b>9.8</b> Void Functions as Statements</a>
+<ul>
+<li class="chapter" data-level="" data-path="void-functions-as-statements.html"><a href="void-functions-as-statements.html#void-functions"><i class="fa fa-check"></i>Void Functions</a></li>
+<li class="chapter" data-level="" data-path="void-functions-as-statements.html"><a href="void-functions-as-statements.html#usage-as-statement"><i class="fa fa-check"></i>Usage as Statement</a></li>
+<li class="chapter" data-level="" data-path="void-functions-as-statements.html"><a href="void-functions-as-statements.html#special-return-statements"><i class="fa fa-check"></i>Special Return Statements</a></li>
+</ul></li>
+<li class="chapter" data-level="9.9" data-path="forward-declarations-section.html"><a href="forward-declarations-section.html"><i class="fa fa-check"></i><b>9.9</b> Declarations</a>
+<ul>
+<li class="chapter" data-level="" data-path="forward-declarations-section.html"><a href="forward-declarations-section.html#recursive-functions"><i class="fa fa-check"></i>Recursive Functions</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="variable-transforms-chapter.html"><a href="variable-transforms-chapter.html"><i class="fa fa-check"></i><b>10</b> Constraint Transforms</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="change-of-variables-section.html"><a href="change-of-variables-section.html"><i class="fa fa-check"></i><b>10.1</b> Changes of Variables</a>
+<ul>
+<li class="chapter" data-level="" data-path="change-of-variables-section.html"><a href="change-of-variables-section.html#univariate-changes-of-variables"><i class="fa fa-check"></i>Univariate Changes of Variables</a></li>
+<li class="chapter" data-level="" data-path="change-of-variables-section.html"><a href="change-of-variables-section.html#multivariate-changes-of-variables"><i class="fa fa-check"></i>Multivariate Changes of Variables</a></li>
+</ul></li>
+<li class="chapter" data-level="10.2" data-path="lower-bound-transform-section.html"><a href="lower-bound-transform-section.html"><i class="fa fa-check"></i><b>10.2</b> Lower Bounded Scalar</a>
+<ul>
+<li class="chapter" data-level="" data-path="lower-bound-transform-section.html"><a href="lower-bound-transform-section.html#lower-bound-transform"><i class="fa fa-check"></i>Lower Bound Transform</a></li>
+<li class="chapter" data-level="" data-path="lower-bound-transform-section.html"><a href="lower-bound-transform-section.html#lower-bound-inverse-transform"><i class="fa fa-check"></i>Lower Bound Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="lower-bound-transform-section.html"><a href="lower-bound-transform-section.html#absolute-derivative-of-the-lower-bound-inverse-transform"><i class="fa fa-check"></i>Absolute Derivative of the Lower Bound Inverse Transform</a></li>
+</ul></li>
+<li class="chapter" data-level="10.3" data-path="upper-bounded-scalar.html"><a href="upper-bounded-scalar.html"><i class="fa fa-check"></i><b>10.3</b> Upper Bounded Scalar</a>
+<ul>
+<li class="chapter" data-level="" data-path="upper-bounded-scalar.html"><a href="upper-bounded-scalar.html#upper-bound-transform"><i class="fa fa-check"></i>Upper Bound Transform</a></li>
+<li class="chapter" data-level="" data-path="upper-bounded-scalar.html"><a href="upper-bounded-scalar.html#upper-bound-inverse-transform"><i class="fa fa-check"></i>Upper Bound Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="upper-bounded-scalar.html"><a href="upper-bounded-scalar.html#absolute-derivative-of-the-upper-bound-inverse-transform"><i class="fa fa-check"></i>Absolute Derivative of the Upper Bound Inverse Transform</a></li>
+</ul></li>
+<li class="chapter" data-level="10.4" data-path="logit-transform-jacobian-section.html"><a href="logit-transform-jacobian-section.html"><i class="fa fa-check"></i><b>10.4</b> Lower and Upper Bounded Scalar</a>
+<ul>
+<li class="chapter" data-level="" data-path="logit-transform-jacobian-section.html"><a href="logit-transform-jacobian-section.html#log-odds-and-the-logistic-sigmoid"><i class="fa fa-check"></i>Log Odds and the Logistic Sigmoid</a></li>
+<li class="chapter" data-level="" data-path="logit-transform-jacobian-section.html"><a href="logit-transform-jacobian-section.html#lower-and-upper-bounds-transform"><i class="fa fa-check"></i>Lower and Upper Bounds Transform</a></li>
+<li class="chapter" data-level="" data-path="logit-transform-jacobian-section.html"><a href="logit-transform-jacobian-section.html#lower-and-upper-bounds-inverse-transform"><i class="fa fa-check"></i>Lower and Upper Bounds Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="logit-transform-jacobian-section.html"><a href="logit-transform-jacobian-section.html#absolute-derivative-of-the-lower-and-upper-bounds-inverse-transform"><i class="fa fa-check"></i>Absolute Derivative of the Lower and Upper Bounds Inverse Transform</a></li>
+</ul></li>
+<li class="chapter" data-level="10.5" data-path="affinely-transformed-scalar.html"><a href="affinely-transformed-scalar.html"><i class="fa fa-check"></i><b>10.5</b> Affinely Transformed Scalar</a>
+<ul>
+<li class="chapter" data-level="" data-path="affinely-transformed-scalar.html"><a href="affinely-transformed-scalar.html#affine-transform"><i class="fa fa-check"></i>Affine Transform</a></li>
+<li class="chapter" data-level="" data-path="affinely-transformed-scalar.html"><a href="affinely-transformed-scalar.html#affine-inverse-transform"><i class="fa fa-check"></i>Affine Inverse Transform</a></li>
+<li class="chapter" data-level="10.5.1" data-path="affinely-transformed-scalar.html"><a href="affinely-transformed-scalar.html#absolute-derivative-of-the-affine-inverse-transform"><i class="fa fa-check"></i><b>10.5.1</b> Absolute Derivative of the Affine Inverse Transform</a></li>
+</ul></li>
+<li class="chapter" data-level="10.6" data-path="ordered-vector.html"><a href="ordered-vector.html"><i class="fa fa-check"></i><b>10.6</b> Ordered Vector</a>
+<ul>
+<li class="chapter" data-level="" data-path="ordered-vector.html"><a href="ordered-vector.html#ordered-transform"><i class="fa fa-check"></i>Ordered Transform</a></li>
+<li class="chapter" data-level="" data-path="ordered-vector.html"><a href="ordered-vector.html#ordered-inverse-transform"><i class="fa fa-check"></i>Ordered Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="ordered-vector.html"><a href="ordered-vector.html#absolute-jacobian-determinant-of-the-ordered-inverse-transform"><i class="fa fa-check"></i>Absolute Jacobian Determinant of the Ordered Inverse Transform</a></li>
+</ul></li>
+<li class="chapter" data-level="10.7" data-path="simplex-transform-section.html"><a href="simplex-transform-section.html"><i class="fa fa-check"></i><b>10.7</b> Unit Simplex</a>
+<ul>
+<li class="chapter" data-level="" data-path="simplex-transform-section.html"><a href="simplex-transform-section.html#unit-simplex-inverse-transform"><i class="fa fa-check"></i>Unit Simplex Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="simplex-transform-section.html"><a href="simplex-transform-section.html#absolute-jacobian-determinant-of-the-unit-simplex-inverse-transform"><i class="fa fa-check"></i>Absolute Jacobian Determinant of the Unit-Simplex Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="simplex-transform-section.html"><a href="simplex-transform-section.html#unit-simplex-transform"><i class="fa fa-check"></i>Unit Simplex Transform</a></li>
+</ul></li>
+<li class="chapter" data-level="10.8" data-path="unit-vector-section.html"><a href="unit-vector-section.html"><i class="fa fa-check"></i><b>10.8</b> Unit Vector</a>
+<ul>
+<li class="chapter" data-level="" data-path="unit-vector-section.html"><a href="unit-vector-section.html#unit-vector-inverse-transform"><i class="fa fa-check"></i>Unit Vector Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="unit-vector-section.html"><a href="unit-vector-section.html#absolute-jacobian-determinant-of-the-unit-vector-inverse-transform"><i class="fa fa-check"></i>Absolute Jacobian Determinant of the Unit Vector Inverse Transform</a></li>
+</ul></li>
+<li class="chapter" data-level="10.9" data-path="correlation-matrix-transform-section.html"><a href="correlation-matrix-transform-section.html"><i class="fa fa-check"></i><b>10.9</b> Correlation Matrices</a>
+<ul>
+<li class="chapter" data-level="" data-path="correlation-matrix-transform-section.html"><a href="correlation-matrix-transform-section.html#correlation-matrix-inverse-transform"><i class="fa fa-check"></i>Correlation Matrix Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="correlation-matrix-transform-section.html"><a href="correlation-matrix-transform-section.html#absolute-jacobian-determinant-of-the-correlation-matrix-inverse-transform"><i class="fa fa-check"></i>Absolute Jacobian Determinant of the Correlation Matrix Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="correlation-matrix-transform-section.html"><a href="correlation-matrix-transform-section.html#correlation-matrix-transform"><i class="fa fa-check"></i>Correlation Matrix Transform</a></li>
+</ul></li>
+<li class="chapter" data-level="10.10" data-path="covariance-matrices-1.html"><a href="covariance-matrices-1.html"><i class="fa fa-check"></i><b>10.10</b> Covariance Matrices</a>
+<ul>
+<li class="chapter" data-level="" data-path="covariance-matrices-1.html"><a href="covariance-matrices-1.html#covariance-matrix-transform"><i class="fa fa-check"></i>Covariance Matrix Transform</a></li>
+<li class="chapter" data-level="" data-path="covariance-matrices-1.html"><a href="covariance-matrices-1.html#covariance-matrix-inverse-transform"><i class="fa fa-check"></i>Covariance Matrix Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="covariance-matrices-1.html"><a href="covariance-matrices-1.html#absolute-jacobian-determinant-of-the-covariance-matrix-inverse-transform"><i class="fa fa-check"></i>Absolute Jacobian Determinant of the Covariance Matrix Inverse Transform</a></li>
+</ul></li>
+<li class="chapter" data-level="10.11" data-path="cholesky-factors-of-covariance-matrices-1.html"><a href="cholesky-factors-of-covariance-matrices-1.html"><i class="fa fa-check"></i><b>10.11</b> Cholesky Factors of Covariance Matrices</a>
+<ul>
+<li class="chapter" data-level="" data-path="cholesky-factors-of-covariance-matrices-1.html"><a href="cholesky-factors-of-covariance-matrices-1.html#cholesky-factor-of-covariance-matrix-transform"><i class="fa fa-check"></i>Cholesky Factor of Covariance Matrix Transform</a></li>
+<li class="chapter" data-level="" data-path="cholesky-factors-of-covariance-matrices-1.html"><a href="cholesky-factors-of-covariance-matrices-1.html#cholesky-factor-of-covariance-matrix-inverse-transform"><i class="fa fa-check"></i>Cholesky Factor of Covariance Matrix Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="cholesky-factors-of-covariance-matrices-1.html"><a href="cholesky-factors-of-covariance-matrices-1.html#absolute-jacobian-determinant-of-cholesky-factor-inverse-transform"><i class="fa fa-check"></i>Absolute Jacobian Determinant of Cholesky Factor Inverse Transform</a></li>
+</ul></li>
+<li class="chapter" data-level="10.12" data-path="cholesky-factors-of-correlation-matrices-1.html"><a href="cholesky-factors-of-correlation-matrices-1.html"><i class="fa fa-check"></i><b>10.12</b> Cholesky Factors of Correlation Matrices</a>
+<ul>
+<li class="chapter" data-level="" data-path="cholesky-factors-of-correlation-matrices-1.html"><a href="cholesky-factors-of-correlation-matrices-1.html#cholesky-factor-of-correlation-matrix-inverse-transform"><i class="fa fa-check"></i>Cholesky Factor of Correlation Matrix Inverse Transform</a></li>
+<li class="chapter" data-level="" data-path="cholesky-factors-of-correlation-matrices-1.html"><a href="cholesky-factors-of-correlation-matrices-1.html#cholesky-factor-of-correlation-matrix-transform"><i class="fa fa-check"></i>Cholesky Factor of Correlation Matrix Transform</a></li>
+<li class="chapter" data-level="" data-path="cholesky-factors-of-correlation-matrices-1.html"><a href="cholesky-factors-of-correlation-matrices-1.html#absolute-jacobian-determinant-of-inverse-transform"><i class="fa fa-check"></i>Absolute Jacobian Determinant of Inverse Transform</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="language-syntax.html"><a href="language-syntax.html"><i class="fa fa-check"></i><b>11</b> Language Syntax</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="bnf-grammars.html"><a href="bnf-grammars.html"><i class="fa fa-check"></i><b>11.1</b> BNF Grammars</a>
+<ul>
+<li class="chapter" data-level="" data-path="bnf-grammars.html"><a href="bnf-grammars.html#syntactic-conventions"><i class="fa fa-check"></i>Syntactic conventions</a></li>
+<li class="chapter" data-level="" data-path="bnf-grammars.html"><a href="bnf-grammars.html#programs"><i class="fa fa-check"></i>Programs</a></li>
+<li class="chapter" data-level="" data-path="bnf-grammars.html"><a href="bnf-grammars.html#function-declarations-and-definitions"><i class="fa fa-check"></i>Function declarations and definitions</a></li>
+<li class="chapter" data-level="" data-path="bnf-grammars.html"><a href="bnf-grammars.html#variable-declarations-and-compound-definitions"><i class="fa fa-check"></i>Variable declarations and compound definitions</a></li>
+<li class="chapter" data-level="" data-path="bnf-grammars.html"><a href="bnf-grammars.html#expressions-1"><i class="fa fa-check"></i>Expressions</a></li>
+<li class="chapter" data-level="" data-path="bnf-grammars.html"><a href="bnf-grammars.html#statements-3"><i class="fa fa-check"></i>Statements</a></li>
+</ul></li>
+<li class="chapter" data-level="11.2" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html"><i class="fa fa-check"></i><b>11.2</b> Extra-Grammatical Constraints</a>
+<ul>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#type-constraints"><i class="fa fa-check"></i>Type constraints</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#operator-precedence-and-associativity-1"><i class="fa fa-check"></i>Operator precedence and associativity</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#typing-of-compound-declaration-and-definition"><i class="fa fa-check"></i>Typing of compound declaration and definition</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#typing-of-array-expressions"><i class="fa fa-check"></i>Typing of array expressions</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#forms-of-numbers"><i class="fa fa-check"></i>Forms of numbers</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#conditional-arguments"><i class="fa fa-check"></i>Conditional arguments</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#for-loop-containers"><i class="fa fa-check"></i>For loop containers</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#print-arguments"><i class="fa fa-check"></i>Print arguments</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#only-break-and-continue-in-loops"><i class="fa fa-check"></i>Only break and continue in loops</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#prng-function-locations"><i class="fa fa-check"></i>PRNG function locations</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#probability-function-naming"><i class="fa fa-check"></i>Probability function naming</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#algebraic-solver-argument-types-and-origins"><i class="fa fa-check"></i>Algebraic solver argument types and origins</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#integrate-1d-argument-types-and-origins"><i class="fa fa-check"></i>Integrate 1D argument types and origins</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#ode-solver-argument-types-and-origins"><i class="fa fa-check"></i>ODE solver argument types and origins</a></li>
+<li class="chapter" data-level="" data-path="extra-grammatical-constraints.html"><a href="extra-grammatical-constraints.html#indexes"><i class="fa fa-check"></i>Indexes</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="program-execution.html"><a href="program-execution.html"><i class="fa fa-check"></i><b>12</b> Program Execution</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="reading-and-transforming-data.html"><a href="reading-and-transforming-data.html"><i class="fa fa-check"></i><b>12.1</b> Reading and Transforming Data</a>
+<ul>
+<li class="chapter" data-level="" data-path="reading-and-transforming-data.html"><a href="reading-and-transforming-data.html#read-data"><i class="fa fa-check"></i>Read Data</a></li>
+<li class="chapter" data-level="" data-path="reading-and-transforming-data.html"><a href="reading-and-transforming-data.html#define-transformed-data"><i class="fa fa-check"></i>Define Transformed Data</a></li>
+</ul></li>
+<li class="chapter" data-level="12.2" data-path="initialization.html"><a href="initialization.html"><i class="fa fa-check"></i><b>12.2</b> Initialization</a>
+<ul>
+<li class="chapter" data-level="" data-path="initialization.html"><a href="initialization.html#user-supplied-initial-values"><i class="fa fa-check"></i>User-Supplied Initial Values</a></li>
+<li class="chapter" data-level="" data-path="initialization.html"><a href="initialization.html#random-initial-values"><i class="fa fa-check"></i>Random Initial Values</a></li>
+<li class="chapter" data-level="" data-path="initialization.html"><a href="initialization.html#zero-initial-values"><i class="fa fa-check"></i>Zero Initial Values</a></li>
+</ul></li>
+<li class="chapter" data-level="12.3" data-path="sampling.html"><a href="sampling.html"><i class="fa fa-check"></i><b>12.3</b> Sampling</a>
+<ul>
+<li class="chapter" data-level="" data-path="sampling.html"><a href="sampling.html#leapfrog-steps"><i class="fa fa-check"></i>Leapfrog Steps</a></li>
+<li class="chapter" data-level="" data-path="sampling.html"><a href="sampling.html#log-probability-and-gradient-calculation"><i class="fa fa-check"></i>Log Probability and Gradient Calculation</a></li>
+<li class="chapter" data-level="" data-path="sampling.html"><a href="sampling.html#metropolis-acceptreject"><i class="fa fa-check"></i>Metropolis Accept/Reject</a></li>
+</ul></li>
+<li class="chapter" data-level="12.4" data-path="optimization.html"><a href="optimization.html"><i class="fa fa-check"></i><b>12.4</b> Optimization</a></li>
+<li class="chapter" data-level="12.5" data-path="variational-inference.html"><a href="variational-inference.html"><i class="fa fa-check"></i><b>12.5</b> Variational Inference</a></li>
+<li class="chapter" data-level="12.6" data-path="model-diagnostics.html"><a href="model-diagnostics.html"><i class="fa fa-check"></i><b>12.6</b> Model Diagnostics</a></li>
+<li class="chapter" data-level="12.7" data-path="output.html"><a href="output.html"><i class="fa fa-check"></i><b>12.7</b> Output</a>
+<ul>
+<li class="chapter" data-level="" data-path="output.html"><a href="output.html#generated-quantities-1"><i class="fa fa-check"></i>Generated Quantities</a></li>
+<li class="chapter" data-level="" data-path="output.html"><a href="output.html#write"><i class="fa fa-check"></i>Write</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="deprecated-features-appendix.html"><a href="deprecated-features-appendix.html"><i class="fa fa-check"></i><b>13</b> Deprecated Features</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="assignment-with-.html"><a href="assignment-with-.html"><i class="fa fa-check"></i><b>13.1</b> Assignment with <code>&lt;-</code></a></li>
+<li class="chapter" data-level="13.2" data-path="increment-log-prob-statement.html"><a href="increment-log-prob-statement.html"><i class="fa fa-check"></i><b>13.2</b> <code>increment_log_prob</code> Statement</a></li>
+<li class="chapter" data-level="13.3" data-path="get-lp-function.html"><a href="get-lp-function.html"><i class="fa fa-check"></i><b>13.3</b> <code>get_lp()</code> Function</a></li>
+<li class="chapter" data-level="13.4" data-path="log-density-and-mass-functions.html"><a href="log-density-and-mass-functions.html"><i class="fa fa-check"></i><b>13.4</b> <code>_log</code> Density and Mass Functions</a></li>
+<li class="chapter" data-level="13.5" data-path="cdf-log-and-ccdf-log-cumulative-distribution-functions.html"><a href="cdf-log-and-ccdf-log-cumulative-distribution-functions.html"><i class="fa fa-check"></i><b>13.5</b> <code>cdf_log</code> and <code>ccdf_log</code> Cumulative Distribution Functions</a></li>
+<li class="chapter" data-level="13.6" data-path="multiply-log-and-binomial-coefficient-log-functions.html"><a href="multiply-log-and-binomial-coefficient-log-functions.html"><i class="fa fa-check"></i><b>13.6</b> <code>multiply_log</code> and <code>binomial_coefficient_log</code> Functions</a></li>
+<li class="chapter" data-level="13.7" data-path="user-defined-function-with-log-suffix.html"><a href="user-defined-function-with-log-suffix.html"><i class="fa fa-check"></i><b>13.7</b> User-Defined Function with <code>_log</code> Suffix</a></li>
+<li class="chapter" data-level="13.8" data-path="lkj-cov-distribution.html"><a href="lkj-cov-distribution.html"><i class="fa fa-check"></i><b>13.8</b> <code>lkj_cov</code> Distribution</a></li>
+<li class="chapter" data-level="13.9" data-path="if-else-function.html"><a href="if-else-function.html"><i class="fa fa-check"></i><b>13.9</b> <code>if_else</code> Function</a></li>
+<li class="chapter" data-level="13.10" data-path="absreal-x-function.html"><a href="absreal-x-function.html"><i class="fa fa-check"></i><b>13.10</b> <code>abs(real x)</code> Function</a></li>
+<li class="chapter" data-level="13.11" data-path="comments-1.html"><a href="comments-1.html"><i class="fa fa-check"></i><b>13.11</b> <code>#</code> Comments</a></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="removed-features.html"><a href="removed-features.html"><i class="fa fa-check"></i><b>14</b> Removed Features</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="lp-variable.html"><a href="lp-variable.html"><i class="fa fa-check"></i><b>14.1</b> <code>lp__</code> Variable</a></li>
+</ul></li>
+<li><a href="algorithms.html#algorithms"><i style="font-size: 110%; color:#990017;">Algorithms</i></a></li>
+<li class="chapter" data-level="15" data-path="hmc-chapter.html"><a href="hmc-chapter.html"><i class="fa fa-check"></i><b>15</b> MCMC Sampling</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="hamiltonian-monte-carlo.html"><a href="hamiltonian-monte-carlo.html"><i class="fa fa-check"></i><b>15.1</b> Hamiltonian Monte Carlo</a>
+<ul>
+<li class="chapter" data-level="" data-path="hamiltonian-monte-carlo.html"><a href="hamiltonian-monte-carlo.html#target-density"><i class="fa fa-check"></i>Target Density</a></li>
+<li class="chapter" data-level="" data-path="hamiltonian-monte-carlo.html"><a href="hamiltonian-monte-carlo.html#auxiliary-momentum-variable"><i class="fa fa-check"></i>Auxiliary Momentum Variable</a></li>
+<li class="chapter" data-level="" data-path="hamiltonian-monte-carlo.html"><a href="hamiltonian-monte-carlo.html#the-hamiltonian"><i class="fa fa-check"></i>The Hamiltonian</a></li>
+<li class="chapter" data-level="" data-path="hamiltonian-monte-carlo.html"><a href="hamiltonian-monte-carlo.html#generating-transitions"><i class="fa fa-check"></i>Generating Transitions</a></li>
+<li class="chapter" data-level="" data-path="hamiltonian-monte-carlo.html"><a href="hamiltonian-monte-carlo.html#leapfrog-integrator"><i class="fa fa-check"></i>Leapfrog Integrator</a></li>
+<li class="chapter" data-level="" data-path="hamiltonian-monte-carlo.html"><a href="hamiltonian-monte-carlo.html#metropolis-accept-step"><i class="fa fa-check"></i>Metropolis Accept Step</a></li>
+<li class="chapter" data-level="" data-path="hamiltonian-monte-carlo.html"><a href="hamiltonian-monte-carlo.html#algorithm-summary"><i class="fa fa-check"></i>Algorithm Summary</a></li>
+</ul></li>
+<li class="chapter" data-level="15.2" data-path="hmc-algorithm-parameters.html"><a href="hmc-algorithm-parameters.html"><i class="fa fa-check"></i><b>15.2</b> HMC Algorithm Parameters</a>
+<ul>
+<li class="chapter" data-level="" data-path="hmc-algorithm-parameters.html"><a href="hmc-algorithm-parameters.html#integration-time"><i class="fa fa-check"></i>Integration Time</a></li>
+<li class="chapter" data-level="" data-path="hmc-algorithm-parameters.html"><a href="hmc-algorithm-parameters.html#automatic-parameter-tuning"><i class="fa fa-check"></i>Automatic Parameter Tuning</a></li>
+<li class="chapter" data-level="" data-path="hmc-algorithm-parameters.html"><a href="hmc-algorithm-parameters.html#discretization-interval-adaptation-parameters"><i class="fa fa-check"></i>Discretization-Interval Adaptation Parameters</a></li>
+<li class="chapter" data-level="" data-path="hmc-algorithm-parameters.html"><a href="hmc-algorithm-parameters.html#step-size-jitter"><i class="fa fa-check"></i>Step-Size Jitter</a></li>
+<li class="chapter" data-level="" data-path="hmc-algorithm-parameters.html"><a href="hmc-algorithm-parameters.html#euclidean-metric"><i class="fa fa-check"></i>Euclidean Metric</a></li>
+<li class="chapter" data-level="" data-path="hmc-algorithm-parameters.html"><a href="hmc-algorithm-parameters.html#nuts-and-its-configuration"><i class="fa fa-check"></i>NUTS and its Configuration</a></li>
+</ul></li>
+<li class="chapter" data-level="15.3" data-path="sampling-without-parameters.html"><a href="sampling-without-parameters.html"><i class="fa fa-check"></i><b>15.3</b> Sampling without Parameters</a></li>
+<li class="chapter" data-level="15.4" data-path="general-config-section.html"><a href="general-config-section.html"><i class="fa fa-check"></i><b>15.4</b> General Configuration Options</a>
+<ul>
+<li class="chapter" data-level="" data-path="general-config-section.html"><a href="general-config-section.html#random-number-generator"><i class="fa fa-check"></i>Random Number Generator</a></li>
+<li class="chapter" data-level="" data-path="general-config-section.html"><a href="general-config-section.html#initialization-1"><i class="fa fa-check"></i>Initialization</a></li>
+</ul></li>
+<li class="chapter" data-level="15.5" data-path="divergent-transitions.html"><a href="divergent-transitions.html"><i class="fa fa-check"></i><b>15.5</b> Divergent Transitions</a>
+<ul>
+<li class="chapter" data-level="" data-path="divergent-transitions.html"><a href="divergent-transitions.html#diagnosing-and-eliminating-divergences"><i class="fa fa-check"></i>Diagnosing and Eliminating Divergences</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="16" data-path="analysis-chapter.html"><a href="analysis-chapter.html"><i class="fa fa-check"></i><b>16</b> Posterior Analysis</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="markov-chains.html"><a href="markov-chains.html"><i class="fa fa-check"></i><b>16.1</b> Markov Chains</a></li>
+<li class="chapter" data-level="16.2" data-path="convergence.html"><a href="convergence.html"><i class="fa fa-check"></i><b>16.2</b> Convergence</a></li>
+<li class="chapter" data-level="16.3" data-path="notation-for-samples-chains-and-draws.html"><a href="notation-for-samples-chains-and-draws.html"><i class="fa fa-check"></i><b>16.3</b> Notation for samples, chains, and draws</a>
+<ul>
+<li class="chapter" data-level="16.3.1" data-path="notation-for-samples-chains-and-draws.html"><a href="notation-for-samples-chains-and-draws.html#potential-scale-reduction"><i class="fa fa-check"></i><b>16.3.1</b> Potential Scale Reduction</a></li>
+<li class="chapter" data-level="16.3.2" data-path="notation-for-samples-chains-and-draws.html"><a href="notation-for-samples-chains-and-draws.html#split-r-hat-for-detecting-non-stationarity"><i class="fa fa-check"></i><b>16.3.2</b> Split R-hat for Detecting Non-Stationarity</a></li>
+<li class="chapter" data-level="16.3.3" data-path="notation-for-samples-chains-and-draws.html"><a href="notation-for-samples-chains-and-draws.html#convergence-is-global"><i class="fa fa-check"></i><b>16.3.3</b> Convergence is Global</a></li>
+</ul></li>
+<li class="chapter" data-level="16.4" data-path="effective-sample-size-section.html"><a href="effective-sample-size-section.html"><i class="fa fa-check"></i><b>16.4</b> Effective Sample Size</a>
+<ul>
+<li class="chapter" data-level="16.4.1" data-path="effective-sample-size-section.html"><a href="effective-sample-size-section.html#definition-of-effective-sample-size"><i class="fa fa-check"></i><b>16.4.1</b> Definition of Effective Sample Size</a></li>
+<li class="chapter" data-level="16.4.2" data-path="effective-sample-size-section.html"><a href="effective-sample-size-section.html#estimation-of-effective-sample-size"><i class="fa fa-check"></i><b>16.4.2</b> Estimation of Effective Sample Size</a></li>
+<li class="chapter" data-level="16.4.3" data-path="effective-sample-size-section.html"><a href="effective-sample-size-section.html#estimation-of-mcmc-standard-error"><i class="fa fa-check"></i><b>16.4.3</b> Estimation of MCMC Standard Error</a></li>
+<li class="chapter" data-level="16.4.4" data-path="effective-sample-size-section.html"><a href="effective-sample-size-section.html#thinning-samples"><i class="fa fa-check"></i><b>16.4.4</b> Thinning Samples</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="17" data-path="optimization-algorithms-chapter.html"><a href="optimization-algorithms-chapter.html"><i class="fa fa-check"></i><b>17</b> Optimization</a>
+<ul>
+<li class="chapter" data-level="17.1" data-path="general-configuration.html"><a href="general-configuration.html"><i class="fa fa-check"></i><b>17.1</b> General Configuration</a></li>
+<li class="chapter" data-level="17.2" data-path="bfgs-and-l-bfgs-configuration.html"><a href="bfgs-and-l-bfgs-configuration.html"><i class="fa fa-check"></i><b>17.2</b> BFGS and L-BFGS Configuration</a>
+<ul>
+<li class="chapter" data-level="" data-path="bfgs-and-l-bfgs-configuration.html"><a href="bfgs-and-l-bfgs-configuration.html#convergence-monitoring"><i class="fa fa-check"></i>Convergence Monitoring</a></li>
+<li class="chapter" data-level="" data-path="bfgs-and-l-bfgs-configuration.html"><a href="bfgs-and-l-bfgs-configuration.html#initial-step-size"><i class="fa fa-check"></i>Initial Step Size</a></li>
+<li class="chapter" data-level="" data-path="bfgs-and-l-bfgs-configuration.html"><a href="bfgs-and-l-bfgs-configuration.html#l-bfgs-history-size"><i class="fa fa-check"></i>L-BFGS History Size</a></li>
+</ul></li>
+<li class="chapter" data-level="17.3" data-path="general-configuration-options.html"><a href="general-configuration-options.html"><i class="fa fa-check"></i><b>17.3</b> General Configuration Options</a></li>
+<li class="chapter" data-level="17.4" data-path="writing-models-for-optimization.html"><a href="writing-models-for-optimization.html"><i class="fa fa-check"></i><b>17.4</b> Writing Models for Optimization</a>
+<ul>
+<li class="chapter" data-level="" data-path="writing-models-for-optimization.html"><a href="writing-models-for-optimization.html#constrained-vs.-unconstrained-parameters"><i class="fa fa-check"></i>Constrained vs. Unconstrained Parameters</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="18" data-path="vi-algorithms-chapter.html"><a href="vi-algorithms-chapter.html"><i class="fa fa-check"></i><b>18</b> Variational Inference</a>
+<ul>
+<li class="chapter" data-level="18.1" data-path="stochastic-gradient-ascent.html"><a href="stochastic-gradient-ascent.html"><i class="fa fa-check"></i><b>18.1</b> Stochastic Gradient Ascent</a>
+<ul>
+<li class="chapter" data-level="" data-path="stochastic-gradient-ascent.html"><a href="stochastic-gradient-ascent.html#monte-carlo-approximation-of-the-elbo"><i class="fa fa-check"></i>Monte Carlo Approximation of the ELBO</a></li>
+<li class="chapter" data-level="" data-path="stochastic-gradient-ascent.html"><a href="stochastic-gradient-ascent.html#monte-carlo-approximation-of-the-gradients"><i class="fa fa-check"></i>Monte Carlo Approximation of the Gradients</a></li>
+<li class="chapter" data-level="" data-path="stochastic-gradient-ascent.html"><a href="stochastic-gradient-ascent.html#adaptive-stepsize-sequence"><i class="fa fa-check"></i>Adaptive Stepsize Sequence</a></li>
+<li class="chapter" data-level="" data-path="stochastic-gradient-ascent.html"><a href="stochastic-gradient-ascent.html#assessing-convergence"><i class="fa fa-check"></i>Assessing Convergence</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="19" data-path="diagnostic-algorithms-chapter.html"><a href="diagnostic-algorithms-chapter.html"><i class="fa fa-check"></i><b>19</b> Diagnostic Mode</a>
+<ul>
+<li class="chapter" data-level="19.1" data-path="output-1.html"><a href="output-1.html"><i class="fa fa-check"></i><b>19.1</b> Output</a>
+<ul>
+<li class="chapter" data-level="" data-path="output-1.html"><a href="output-1.html#unconstrained-scale"><i class="fa fa-check"></i>Unconstrained Scale</a></li>
+<li class="chapter" data-level="" data-path="output-1.html"><a href="output-1.html#includes-jacobian"><i class="fa fa-check"></i>Includes Jacobian</a></li>
+</ul></li>
+<li class="chapter" data-level="19.2" data-path="configuration-options.html"><a href="configuration-options.html"><i class="fa fa-check"></i><b>19.2</b> Configuration Options</a></li>
+<li class="chapter" data-level="19.3" data-path="speed-warning-and-data-trimming.html"><a href="speed-warning-and-data-trimming.html"><i class="fa fa-check"></i><b>19.3</b> Speed Warning and Data Trimming</a></li>
+</ul></li>
+<li><a href="usage.html#usage"><i style="font-size: 110%; color:#990017;">Usage</i></a></li>
+<li class="chapter" data-level="20" data-path="reproducibility-chapter.html"><a href="reproducibility-chapter.html"><i class="fa fa-check"></i><b>20</b> Reproducibility</a></li>
+<li class="chapter" data-level="21" data-path="licensing-appendix.html"><a href="licensing-appendix.html"><i class="fa fa-check"></i><b>21</b> Licenses and Dependencies</a>
+<ul>
+<li class="chapter" data-level="21.1" data-path="stan-license.html"><a href="stan-license.html"><i class="fa fa-check"></i><b>21.1</b> Stan License</a></li>
+<li class="chapter" data-level="21.2" data-path="boost-license.html"><a href="boost-license.html"><i class="fa fa-check"></i><b>21.2</b> Boost License</a></li>
+<li class="chapter" data-level="21.3" data-path="eigen-license.html"><a href="eigen-license.html"><i class="fa fa-check"></i><b>21.3</b> Eigen License</a></li>
+<li class="chapter" data-level="21.4" data-path="sundials-license.html"><a href="sundials-license.html"><i class="fa fa-check"></i><b>21.4</b> SUNDIALS License</a></li>
+<li class="chapter" data-level="21.5" data-path="google-test-license.html"><a href="google-test-license.html"><i class="fa fa-check"></i><b>21.5</b> Google Test License</a></li>
+</ul></li>
+<li><a href="references.html#references"><i style="font-size: 110%; color:#990017;">References</i></a></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Stan Reference Manual</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+
+<div>
+This is an old version, <a href="https://mc-stan.org/docs/reference-manual/hamiltonian-monte-carlo.html">view current version</a>.
+</div>
+<div id="hamiltonian-monte-carlo" class="section level2">
+<h2 number="15.1"><span class="header-section-number">15.1</span> Hamiltonian Monte Carlo</h2>
+<p>Hamiltonian Monte Carlo (HMC) is a Markov chain Monte Carlo (MCMC)
+method that uses the derivatives of the density function being sampled
+to generate efficient transitions spanning the posterior (see, e.g.,
+<span class="citation">Betancourt and Girolami (<a href="references.html#ref-Betancourt-Girolami:2013" role="doc-biblioref">2013</a>)</span>, <span class="citation">Neal (<a href="references.html#ref-Neal:2011" role="doc-biblioref">2011</a>)</span> for more details). It uses an
+approximate Hamiltonian dynamics simulation based on numerical
+integration which is then corrected by performing a Metropolis
+acceptance step.</p>
+<p>This section translates the presentation of HMC by
+<span class="citation">Betancourt and Girolami (<a href="references.html#ref-Betancourt-Girolami:2013" role="doc-biblioref">2013</a>)</span> into the notation of <span class="citation">Gelman et al. (<a href="references.html#ref-GelmanEtAl:2013" role="doc-biblioref">2013</a>)</span>.</p>
+<div id="target-density" class="section level3">
+<h3 class="unnumbered" number="">Target Density</h3>
+<p>The goal of sampling is to draw from a density <span class="math inline">\(p(\theta)\)</span> for
+parameters <span class="math inline">\(\theta\)</span>. This is typically a Bayesian posterior
+<span class="math inline">\(p(\theta|y)\)</span> given data <span class="math inline">\(y\)</span>, and in particular, a Bayesian posterior
+coded as a Stan program.</p>
+</div>
+<div id="auxiliary-momentum-variable" class="section level3">
+<h3 class="unnumbered" number="">Auxiliary Momentum Variable</h3>
+<p>HMC introduces auxiliary momentum variables <span class="math inline">\(\rho\)</span> and draws from a
+joint density</p>
+<p><span class="math display">\[
+p(\rho, \theta) = p(\rho | \theta) p(\theta).
+\]</span></p>
+<p>In most applications of HMC, including Stan, the auxiliary density is
+a multivariate normal that does not depend on the parameters <span class="math inline">\(\theta\)</span>,</p>
+<p><span class="math display">\[
+\rho \sim \mathsf{MultiNormal}(0, M).
+\]</span></p>
+<p><span class="math inline">\(M\)</span> is the Euclidean metric. It can be seen as a transform of parameter space
+that makes sampling more efficient; see <span class="citation">Betancourt (<a href="references.html#ref-Betancourt:2017" role="doc-biblioref">2017</a>)</span> for details.</p>
+<p>By default Stan sets <span class="math inline">\(M^{-1}\)</span> equal to a diagonal estimate of the
+covariance computed during warmup.</p>
+</div>
+<div id="the-hamiltonian" class="section level3">
+<h3 class="unnumbered" number="">The Hamiltonian</h3>
+<p>The joint density <span class="math inline">\(p(\rho, \theta)\)</span> defines a Hamiltonian</p>
+<p><span class="math display">\[
+\begin{array}{rcl}
+H(\rho, \theta) &amp; = &amp; - \log p(\rho, \theta)
+\\[3pt]
+&amp; = &amp; - \log p(\rho | \theta) - \log p(\theta).
+\\[3pt]
+&amp; = &amp; T(\rho | \theta) + V(\theta),
+\end{array}
+\]</span></p>
+<p>where the term</p>
+<p><span class="math display">\[
+T(\rho | \theta) = - \log p(\rho | \theta)
+\]</span></p>
+<p>is called the “kinetic energy” and the term</p>
+<p><span class="math display">\[
+V(\theta) = - \log p(\theta)
+\]</span></p>
+<p>is called the “potential energy.” The potential energy is specified
+by the Stan program through its definition of a log density.</p>
+</div>
+<div id="generating-transitions" class="section level3">
+<h3 class="unnumbered" number="">Generating Transitions</h3>
+<p>Starting from the current value of the parameters <span class="math inline">\(\theta\)</span>, a
+transition to a new state is generated in two stages before being
+subjected to a Metropolis accept step.</p>
+<p>First, a value for the momentum is drawn independently of the current
+parameter values,</p>
+<p><span class="math display">\[
+\rho \sim \mathsf{MultiNormal}(0, M).
+\]</span></p>
+<p>Thus momentum does not persist across iterations.</p>
+<p>Next, the joint system <span class="math inline">\((\theta,\rho)\)</span> made up of the current
+parameter values <span class="math inline">\(\theta\)</span> and new momentum <span class="math inline">\(\rho\)</span> is evolved via
+Hamilton’s equations,</p>
+<p><span class="math display">\[
+\begin{array}{rcccl}
+\displaystyle
+\frac{d\theta}{dt}
+&amp; = &amp;
+\displaystyle
++ \frac{\partial H}{\partial \rho}
+&amp; = &amp;
+\displaystyle
++ \frac{\partial T}{\partial \rho}
+\\[12pt]
+\displaystyle
+\frac{d\rho}{dt}
+&amp; = &amp;
+\displaystyle
+- \frac{\partial H}{\partial \theta }
+&amp; = &amp;
+\displaystyle
+- \frac{\partial T}{\partial \theta}
+- \frac{\partial V}{\partial \theta}.
+\end{array}
+\]</span></p>
+<p>With the momentum density being independent of the target density,
+i.e., <span class="math inline">\(p(\rho | \theta) = p(\rho)\)</span>, the first term in the
+momentum time derivative, <span class="math inline">\({\partial T} / {\partial \theta}\)</span> is
+zero, yielding the pair time derivatives</p>
+<p><span class="math display">\[
+\begin{array}{rcl}
+\frac{d \theta}{d t} &amp; = &amp; +\frac{\partial T}{\partial \rho}
+\\[2pt]
+\frac{d \rho}{d t} &amp; = &amp; -\frac{\partial V}{\partial \theta}.
+\end{array}
+\]</span></p>
+</div>
+<div id="leapfrog-integrator" class="section level3">
+<h3 class="unnumbered" number="">Leapfrog Integrator</h3>
+<p>The last section leaves a two-state differential equation to solve.
+Stan, like most other HMC implementations, uses the leapfrog
+integrator, which is a numerical integration algorithm that’s
+specifically adapted to provide stable results for Hamiltonian systems
+of equations.</p>
+<p>Like most numerical integrators, the leapfrog algorithm takes discrete
+steps of some small time interval <span class="math inline">\(\epsilon\)</span>. The leapfrog algorithm
+begins by drawing a fresh momentum term independently of the parameter
+values <span class="math inline">\(\theta\)</span> or previous momentum value.</p>
+<p><span class="math display">\[
+\rho \sim \mathsf{MultiNormal}(0, M).
+\]</span>
+It then alternates half-step updates of the momentum and full-step
+updates of the position.</p>
+<p><span class="math display">\[
+\begin{array}{rcl}
+\rho &amp; \leftarrow
+     &amp; \rho \, - \, \frac{\epsilon}{2} \frac{\partial V}{\partial \theta}
+\\[6pt]
+\theta &amp; \leftarrow
+       &amp; \theta \, + \, \epsilon \, M^{-1} \, \rho
+\\[6pt]
+\rho &amp; \leftarrow
+     &amp; \rho \, - \, \frac{\epsilon}{2} \frac{\partial V}{\partial \theta}.
+\end{array}
+\]</span></p>
+<p>By applying <span class="math inline">\(L\)</span> leapfrog steps, a total of <span class="math inline">\(L \, \epsilon\)</span> time is
+simulated. The resulting state at the end of the simulation (<span class="math inline">\(L\)</span>
+repetitions of the above three steps) will be denoted
+<span class="math inline">\((\rho^{*}, \theta^{*})\)</span>.</p>
+<p>The leapfrog integrator’s error is on the order of <span class="math inline">\(\epsilon^3\)</span> per
+step and <span class="math inline">\(\epsilon^2\)</span> globally, where <span class="math inline">\(\epsilon\)</span> is the time interval
+(also known as the step size); <span class="citation">Leimkuhler and Reich (<a href="references.html#ref-LeimkuhlerReich:2004" role="doc-biblioref">2004</a>)</span> provide a
+detailed analysis of numerical integration for Hamiltonian systems,
+including a derivation of the error bound for the leapfrog
+integrator.</p>
+</div>
+<div id="metropolis-accept-step" class="section level3">
+<h3 class="unnumbered" number="">Metropolis Accept Step</h3>
+<p>If the leapfrog integrator were perfect numerically, there would no
+need to do any more randomization per transition than generating a
+random momentum vector. Instead, what is done in practice to account
+for numerical errors during integration is to apply a Metropolis
+acceptance step, where the probability of keeping the proposal
+<span class="math inline">\((\rho^{*}, \theta^{*})\)</span> generated by transitioning from
+<span class="math inline">\((\rho, \theta)\)</span> is</p>
+<p><span class="math display">\[
+\min \!
+\left(
+1,
+\ \exp \! \left( H(\rho, \theta) - H(\rho^{*}, \theta^{*}) \right)
+\right).
+\]</span></p>
+<p>If the proposal is not accepted, the previous parameter value is
+returned for the next draw and used to initialize the next iteration.</p>
+</div>
+<div id="algorithm-summary" class="section level3">
+<h3 class="unnumbered" number="">Algorithm Summary</h3>
+<p>The Hamiltonian Monte Carlo algorithm starts at a specified initial
+set of parameters <span class="math inline">\(\theta\)</span>; in Stan, this value is either
+user-specified or generated randomly. Then, for a given number of
+iterations, a new momentum vector is sampled and the current value of
+the parameter <span class="math inline">\(\theta\)</span> is updated using the leapfrog integrator with
+discretization time <span class="math inline">\(\epsilon\)</span> and number of steps <span class="math inline">\(L\)</span> according to
+the Hamiltonian dynamics. Then a Metropolis acceptance step is
+applied, and a decision is made whether to update to the new state
+<span class="math inline">\((\theta^{*}, \rho^{*})\)</span> or keep the existing state.</p>
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="hmc-chapter.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="hmc-algorithm-parameters.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": null,
+"fontsettings": {
+"theme": "white",
+"family": "serif",
+"size": 2
+},
+"edit": null,
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": null,
+"toc": {
+"collapse": "section",
+"scroll_highlight": true
+},
+"search": true,
+"toolbar": {
+"position": "static"
+}
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

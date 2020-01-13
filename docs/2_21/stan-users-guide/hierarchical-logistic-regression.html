@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>1.9 Hierarchical Logistic Regression | Stan User’s Guide</title>
+  <meta name="description" content="Stan user’s guide with examples and programming techniques." />
+  <meta name="generator" content="bookdown 0.16 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="1.9 Hierarchical Logistic Regression | Stan User’s Guide" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:image" content="img/logo-tm.pdf" />
+  <meta property="og:description" content="Stan user’s guide with examples and programming techniques." />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="1.9 Hierarchical Logistic Regression | Stan User’s Guide" />
+  
+  <meta name="twitter:description" content="Stan user’s guide with examples and programming techniques." />
+  <meta name="twitter:image" content="img/logo-tm.pdf" />
+
+<meta name="author" content="Stan Development Team" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="ordered-logistic-section.html"/>
+<link rel="next" href="hierarchical-priors-section.html"/>
+<script src="libs/jquery/jquery.min.js"></script>
+<link href="libs/gitbook/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+<script src="libs/kePrint/kePrint.js"></script>
+
+
+
+<link rel="stylesheet" href="stan-manual.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li style="font-size:110%; font-weight:400; font-family: Verdana, Helvetica, sans; line-height:1.4; margin: 0.5em 0 0 1em"><a href="https://mc-stan.org/docs/stan-users-guide/index.html" style="color:#4183C4">Stan User's Guide</a></li>
+
+<li class="divider"></li>
+<li><a href="index.html#overview"><i style="font-size: 110%; padding:1.5em 0 0 0; color:#990017;">Overview</i></a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>About this user’s guide</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#web-resources"><i class="fa fa-check"></i>Web resources</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#acknowledgements"><i class="fa fa-check"></i>Acknowledgements</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#copyright-trademark-and-licensing"><i class="fa fa-check"></i>Copyright, Trademark, and Licensing</a></li>
+</ul></li>
+<li><a href="example-models-part.html#example-models.part"><i style="font-size: 110%; color:#990017;">Part 1. Example Models</i></a></li>
+<li class="chapter" data-level="1" data-path="regression-models.html"><a href="regression-models.html"><i class="fa fa-check"></i><b>1</b> Regression Models</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="linear-regression.html"><a href="linear-regression.html"><i class="fa fa-check"></i><b>1.1</b> Linear Regression</a>
+<ul>
+<li class="chapter" data-level="" data-path="linear-regression.html"><a href="linear-regression.html#vectorization.section"><i class="fa fa-check"></i>Matrix Notation and Vectorization</a></li>
+</ul></li>
+<li class="chapter" data-level="1.2" data-path="QR-reparameterization-section.html"><a href="QR-reparameterization-section.html"><i class="fa fa-check"></i><b>1.2</b> The QR Reparameterization</a></li>
+<li class="chapter" data-level="1.3" data-path="regression-priors-section.html"><a href="regression-priors-section.html"><i class="fa fa-check"></i><b>1.3</b> Priors for Coefficients and Scales</a></li>
+<li class="chapter" data-level="1.4" data-path="robust-noise-models.html"><a href="robust-noise-models.html"><i class="fa fa-check"></i><b>1.4</b> Robust Noise Models</a></li>
+<li class="chapter" data-level="1.5" data-path="logistic-probit-regression-section.html"><a href="logistic-probit-regression-section.html"><i class="fa fa-check"></i><b>1.5</b> Logistic and Probit Regression</a></li>
+<li class="chapter" data-level="1.6" data-path="multi-logit-section.html"><a href="multi-logit-section.html"><i class="fa fa-check"></i><b>1.6</b> Multi-Logit Regression</a>
+<ul>
+<li class="chapter" data-level="" data-path="multi-logit-section.html"><a href="multi-logit-section.html#constraints-on-data-declarations"><i class="fa fa-check"></i>Constraints on Data Declarations</a></li>
+<li class="chapter" data-level="" data-path="multi-logit-section.html"><a href="multi-logit-section.html#identifiability"><i class="fa fa-check"></i>Identifiability</a></li>
+</ul></li>
+<li class="chapter" data-level="1.7" data-path="parameterizing-centered-vectors.html"><a href="parameterizing-centered-vectors.html"><i class="fa fa-check"></i><b>1.7</b> Parameterizing Centered Vectors</a>
+<ul>
+<li><a href="parameterizing-centered-vectors.html#k-1-degrees-of-freedom"><span class="math inline">\(K-1\)</span> Degrees of Freedom</a></li>
+<li class="chapter" data-level="" data-path="parameterizing-centered-vectors.html"><a href="parameterizing-centered-vectors.html#qr-decomposition"><i class="fa fa-check"></i>QR Decomposition</a></li>
+<li class="chapter" data-level="" data-path="parameterizing-centered-vectors.html"><a href="parameterizing-centered-vectors.html#translated-and-scaled-simplex"><i class="fa fa-check"></i>Translated and Scaled Simplex</a></li>
+<li class="chapter" data-level="" data-path="parameterizing-centered-vectors.html"><a href="parameterizing-centered-vectors.html#soft-centering"><i class="fa fa-check"></i>Soft Centering</a></li>
+</ul></li>
+<li class="chapter" data-level="1.8" data-path="ordered-logistic-section.html"><a href="ordered-logistic-section.html"><i class="fa fa-check"></i><b>1.8</b> Ordered Logistic and Probit Regression</a>
+<ul>
+<li class="chapter" data-level="" data-path="ordered-logistic-section.html"><a href="ordered-logistic-section.html#ordered-logistic-regression"><i class="fa fa-check"></i>Ordered Logistic Regression</a></li>
+</ul></li>
+<li class="chapter" data-level="1.9" data-path="hierarchical-logistic-regression.html"><a href="hierarchical-logistic-regression.html"><i class="fa fa-check"></i><b>1.9</b> Hierarchical Logistic Regression</a>
+<ul>
+<li class="chapter" data-level="" data-path="hierarchical-logistic-regression.html"><a href="hierarchical-logistic-regression.html#optimizing-the-model"><i class="fa fa-check"></i>Optimizing the Model</a></li>
+</ul></li>
+<li class="chapter" data-level="1.10" data-path="hierarchical-priors-section.html"><a href="hierarchical-priors-section.html"><i class="fa fa-check"></i><b>1.10</b> Hierarchical Priors</a>
+<ul>
+<li class="chapter" data-level="" data-path="hierarchical-priors-section.html"><a href="hierarchical-priors-section.html#boundary-avoiding-priors-for-mle-in-hierarchical-models"><i class="fa fa-check"></i>Boundary-Avoiding Priors for MLE in Hierarchical Models</a></li>
+</ul></li>
+<li class="chapter" data-level="1.11" data-path="item-response-models-section.html"><a href="item-response-models-section.html"><i class="fa fa-check"></i><b>1.11</b> Item-Response Theory Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="item-response-models-section.html"><a href="item-response-models-section.html#data-declaration-with-missingness"><i class="fa fa-check"></i>Data Declaration with Missingness</a></li>
+<li class="chapter" data-level="" data-path="item-response-models-section.html"><a href="item-response-models-section.html#pl-rasch-model"><i class="fa fa-check"></i>1PL (Rasch) Model</a></li>
+<li class="chapter" data-level="" data-path="item-response-models-section.html"><a href="item-response-models-section.html#multilevel-2pl-model"><i class="fa fa-check"></i>Multilevel 2PL Model</a></li>
+</ul></li>
+<li class="chapter" data-level="1.12" data-path="priors-for-identification-section.html"><a href="priors-for-identification-section.html"><i class="fa fa-check"></i><b>1.12</b> Priors for Identifiability</a>
+<ul>
+<li class="chapter" data-level="" data-path="priors-for-identification-section.html"><a href="priors-for-identification-section.html#location-and-scale-invariance"><i class="fa fa-check"></i>Location and Scale Invariance</a></li>
+<li class="chapter" data-level="" data-path="priors-for-identification-section.html"><a href="priors-for-identification-section.html#collinearity"><i class="fa fa-check"></i>Collinearity</a></li>
+<li class="chapter" data-level="" data-path="priors-for-identification-section.html"><a href="priors-for-identification-section.html#separability"><i class="fa fa-check"></i>Separability</a></li>
+</ul></li>
+<li class="chapter" data-level="1.13" data-path="multivariate-hierarchical-priors-section.html"><a href="multivariate-hierarchical-priors-section.html"><i class="fa fa-check"></i><b>1.13</b> Multivariate Priors for Hierarchical Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="multivariate-hierarchical-priors-section.html"><a href="multivariate-hierarchical-priors-section.html#multivariate-regression-example"><i class="fa fa-check"></i>Multivariate Regression Example</a></li>
+</ul></li>
+<li class="chapter" data-level="1.14" data-path="prediction-forecasting-and-backcasting.html"><a href="prediction-forecasting-and-backcasting.html"><i class="fa fa-check"></i><b>1.14</b> Prediction, Forecasting, and Backcasting</a>
+<ul>
+<li class="chapter" data-level="" data-path="prediction-forecasting-and-backcasting.html"><a href="prediction-forecasting-and-backcasting.html#programming-predictions"><i class="fa fa-check"></i>Programming Predictions</a></li>
+<li class="chapter" data-level="" data-path="prediction-forecasting-and-backcasting.html"><a href="prediction-forecasting-and-backcasting.html#predictions-as-generated-quantities"><i class="fa fa-check"></i>Predictions as Generated Quantities</a></li>
+</ul></li>
+<li class="chapter" data-level="1.15" data-path="multivariate-outcomes.html"><a href="multivariate-outcomes.html"><i class="fa fa-check"></i><b>1.15</b> Multivariate Outcomes</a>
+<ul>
+<li class="chapter" data-level="" data-path="multivariate-outcomes.html"><a href="multivariate-outcomes.html#seemingly-unrelated-regressions"><i class="fa fa-check"></i>Seemingly Unrelated Regressions</a></li>
+<li class="chapter" data-level="" data-path="multivariate-outcomes.html"><a href="multivariate-outcomes.html#multivariate-probit-regression"><i class="fa fa-check"></i>Multivariate Probit Regression</a></li>
+</ul></li>
+<li class="chapter" data-level="1.16" data-path="applications-of-pseudorandom-number-generation.html"><a href="applications-of-pseudorandom-number-generation.html"><i class="fa fa-check"></i><b>1.16</b> Applications of Pseudorandom Number Generation</a>
+<ul>
+<li class="chapter" data-level="" data-path="applications-of-pseudorandom-number-generation.html"><a href="applications-of-pseudorandom-number-generation.html#prediction"><i class="fa fa-check"></i>Prediction</a></li>
+<li class="chapter" data-level="" data-path="applications-of-pseudorandom-number-generation.html"><a href="applications-of-pseudorandom-number-generation.html#posterior-predictive-checks"><i class="fa fa-check"></i>Posterior Predictive Checks</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="time-series-chapter.html"><a href="time-series-chapter.html"><i class="fa fa-check"></i><b>2</b> Time-Series Models</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="autoregressive-section.html"><a href="autoregressive-section.html"><i class="fa fa-check"></i><b>2.1</b> Autoregressive Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="autoregressive-section.html"><a href="autoregressive-section.html#ar1-models"><i class="fa fa-check"></i>AR(1) Models</a></li>
+<li class="chapter" data-level="" data-path="autoregressive-section.html"><a href="autoregressive-section.html#extensions-to-the-ar1-model"><i class="fa fa-check"></i>Extensions to the AR(1) Model</a></li>
+<li class="chapter" data-level="" data-path="autoregressive-section.html"><a href="autoregressive-section.html#ar2-models"><i class="fa fa-check"></i>AR(2) Models</a></li>
+<li><a href="autoregressive-section.html#ark-models">AR(<span class="math inline">\(K\)</span>) Models</a></li>
+<li class="chapter" data-level="" data-path="autoregressive-section.html"><a href="autoregressive-section.html#arch1-models"><i class="fa fa-check"></i>ARCH(1) Models</a></li>
+</ul></li>
+<li class="chapter" data-level="2.2" data-path="modeling-temporal-heteroscedasticity.html"><a href="modeling-temporal-heteroscedasticity.html"><i class="fa fa-check"></i><b>2.2</b> Modeling Temporal Heteroscedasticity</a>
+<ul>
+<li class="chapter" data-level="" data-path="modeling-temporal-heteroscedasticity.html"><a href="modeling-temporal-heteroscedasticity.html#garch11-models"><i class="fa fa-check"></i>GARCH(1,1) Models</a></li>
+</ul></li>
+<li class="chapter" data-level="2.3" data-path="moving-average-models.html"><a href="moving-average-models.html"><i class="fa fa-check"></i><b>2.3</b> Moving Average Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="moving-average-models.html"><a href="moving-average-models.html#ma2-example"><i class="fa fa-check"></i>MA(2) Example</a></li>
+<li class="chapter" data-level="" data-path="moving-average-models.html"><a href="moving-average-models.html#vectorized-maq-model"><i class="fa fa-check"></i>Vectorized MA(Q) Model</a></li>
+</ul></li>
+<li class="chapter" data-level="2.4" data-path="autoregressive-moving-average-models.html"><a href="autoregressive-moving-average-models.html"><i class="fa fa-check"></i><b>2.4</b> Autoregressive Moving Average Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="autoregressive-moving-average-models.html"><a href="autoregressive-moving-average-models.html#identifiability-and-stationarity"><i class="fa fa-check"></i>Identifiability and Stationarity</a></li>
+</ul></li>
+<li class="chapter" data-level="2.5" data-path="stochastic-volatility-models.html"><a href="stochastic-volatility-models.html"><i class="fa fa-check"></i><b>2.5</b> Stochastic Volatility Models</a></li>
+<li class="chapter" data-level="2.6" data-path="hmms-section.html"><a href="hmms-section.html"><i class="fa fa-check"></i><b>2.6</b> Hidden Markov Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="hmms-section.html"><a href="hmms-section.html#supervised-parameter-estimation"><i class="fa fa-check"></i>Supervised Parameter Estimation</a></li>
+<li class="chapter" data-level="" data-path="hmms-section.html"><a href="hmms-section.html#start-state-and-end-state-probabilities"><i class="fa fa-check"></i>Start-State and End-State Probabilities</a></li>
+<li class="chapter" data-level="" data-path="hmms-section.html"><a href="hmms-section.html#calculating-sufficient-statistics"><i class="fa fa-check"></i>Calculating Sufficient Statistics</a></li>
+<li class="chapter" data-level="" data-path="hmms-section.html"><a href="hmms-section.html#analytic-posterior"><i class="fa fa-check"></i>Analytic Posterior</a></li>
+<li class="chapter" data-level="" data-path="hmms-section.html"><a href="hmms-section.html#semisupervised-estimation"><i class="fa fa-check"></i>Semisupervised Estimation</a></li>
+<li class="chapter" data-level="" data-path="hmms-section.html"><a href="hmms-section.html#predictive-inference"><i class="fa fa-check"></i>Predictive Inference</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="missing-data-and-partially-known-parameters.html"><a href="missing-data-and-partially-known-parameters.html"><i class="fa fa-check"></i><b>3</b> Missing Data and Partially Known Parameters</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="missing-data.html"><a href="missing-data.html"><i class="fa fa-check"></i><b>3.1</b> Missing Data</a></li>
+<li class="chapter" data-level="3.2" data-path="partially-known-parameters-section.html"><a href="partially-known-parameters-section.html"><i class="fa fa-check"></i><b>3.2</b> Partially Known Parameters</a></li>
+<li class="chapter" data-level="3.3" data-path="sliced-missing-data.html"><a href="sliced-missing-data.html"><i class="fa fa-check"></i><b>3.3</b> Sliced Missing Data</a></li>
+<li class="chapter" data-level="3.4" data-path="loading-matrix-for-factor-analysis.html"><a href="loading-matrix-for-factor-analysis.html"><i class="fa fa-check"></i><b>3.4</b> Loading matrix for factor analysis</a></li>
+<li class="chapter" data-level="3.5" data-path="missing-multivariate-data.html"><a href="missing-multivariate-data.html"><i class="fa fa-check"></i><b>3.5</b> Missing Multivariate Data</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="truncated-or-censored-data.html"><a href="truncated-or-censored-data.html"><i class="fa fa-check"></i><b>4</b> Truncated or Censored Data</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="truncation-section.html"><a href="truncation-section.html"><i class="fa fa-check"></i><b>4.1</b> Truncated Distributions</a></li>
+<li class="chapter" data-level="4.2" data-path="truncated-data-section.html"><a href="truncated-data-section.html"><i class="fa fa-check"></i><b>4.2</b> Truncated Data</a>
+<ul>
+<li class="chapter" data-level="" data-path="truncated-data-section.html"><a href="truncated-data-section.html#constraints-and-out-of-bounds-returns"><i class="fa fa-check"></i>Constraints and Out-of-Bounds Returns</a></li>
+<li class="chapter" data-level="" data-path="truncated-data-section.html"><a href="truncated-data-section.html#unknown-truncation-points"><i class="fa fa-check"></i>Unknown Truncation Points</a></li>
+</ul></li>
+<li class="chapter" data-level="4.3" data-path="censored-data.html"><a href="censored-data.html"><i class="fa fa-check"></i><b>4.3</b> Censored Data</a>
+<ul>
+<li class="chapter" data-level="" data-path="censored-data.html"><a href="censored-data.html#estimating-censored-values"><i class="fa fa-check"></i>Estimating Censored Values</a></li>
+<li class="chapter" data-level="" data-path="censored-data.html"><a href="censored-data.html#integrating-out-censored-values"><i class="fa fa-check"></i>Integrating out Censored Values</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="mixture-modeling-chapter.html"><a href="mixture-modeling-chapter.html"><i class="fa fa-check"></i><b>5</b> Finite Mixtures</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="clustering-mixture-section.html"><a href="clustering-mixture-section.html"><i class="fa fa-check"></i><b>5.1</b> Relation to Clustering</a></li>
+<li class="chapter" data-level="5.2" data-path="latent-discrete-parameterization.html"><a href="latent-discrete-parameterization.html"><i class="fa fa-check"></i><b>5.2</b> Latent Discrete Parameterization</a></li>
+<li class="chapter" data-level="5.3" data-path="summing-out-the-responsibility-parameter.html"><a href="summing-out-the-responsibility-parameter.html"><i class="fa fa-check"></i><b>5.3</b> Summing out the Responsibility Parameter</a>
+<ul>
+<li class="chapter" data-level="" data-path="summing-out-the-responsibility-parameter.html"><a href="summing-out-the-responsibility-parameter.html#log-sum-of-exponentials-linear-sums-on-the-log-scale"><i class="fa fa-check"></i>Log Sum of Exponentials: Linear Sums on the Log Scale</a></li>
+<li class="chapter" data-level="" data-path="summing-out-the-responsibility-parameter.html"><a href="summing-out-the-responsibility-parameter.html#dropping-uniform-mixture-ratios"><i class="fa fa-check"></i>Dropping uniform mixture ratios</a></li>
+<li class="chapter" data-level="" data-path="summing-out-the-responsibility-parameter.html"><a href="summing-out-the-responsibility-parameter.html#recovering-posterior-mixture-proportions"><i class="fa fa-check"></i>Recovering posterior mixture proportions</a></li>
+<li class="chapter" data-level="" data-path="summing-out-the-responsibility-parameter.html"><a href="summing-out-the-responsibility-parameter.html#estimating-parameters-of-a-mixture"><i class="fa fa-check"></i>Estimating Parameters of a Mixture</a></li>
+</ul></li>
+<li class="chapter" data-level="5.4" data-path="vectorizing-mixtures.html"><a href="vectorizing-mixtures.html"><i class="fa fa-check"></i><b>5.4</b> Vectorizing Mixtures</a></li>
+<li class="chapter" data-level="5.5" data-path="mixture-inference-section.html"><a href="mixture-inference-section.html"><i class="fa fa-check"></i><b>5.5</b> Inferences Supported by Mixtures</a>
+<ul>
+<li class="chapter" data-level="" data-path="mixture-inference-section.html"><a href="mixture-inference-section.html#mixtures-with-unidentifiable-components"><i class="fa fa-check"></i>Mixtures with Unidentifiable Components</a></li>
+<li class="chapter" data-level="" data-path="mixture-inference-section.html"><a href="mixture-inference-section.html#inference-under-label-switching"><i class="fa fa-check"></i>Inference under Label Switching</a></li>
+</ul></li>
+<li class="chapter" data-level="5.6" data-path="zero-inflated-section.html"><a href="zero-inflated-section.html"><i class="fa fa-check"></i><b>5.6</b> Zero-Inflated and Hurdle Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="zero-inflated-section.html"><a href="zero-inflated-section.html#zero-inflation"><i class="fa fa-check"></i>Zero Inflation</a></li>
+<li class="chapter" data-level="" data-path="zero-inflated-section.html"><a href="zero-inflated-section.html#hurdle-models"><i class="fa fa-check"></i>Hurdle Models</a></li>
+</ul></li>
+<li class="chapter" data-level="5.7" data-path="priors-and-effective-data-size-in-mixture-models.html"><a href="priors-and-effective-data-size-in-mixture-models.html"><i class="fa fa-check"></i><b>5.7</b> Priors and Effective Data Size in Mixture Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="priors-and-effective-data-size-in-mixture-models.html"><a href="priors-and-effective-data-size-in-mixture-models.html#comparison-to-model-averaging"><i class="fa fa-check"></i>Comparison to Model Averaging</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="measurement-error-and-meta-analysis.html"><a href="measurement-error-and-meta-analysis.html"><i class="fa fa-check"></i><b>6</b> Measurement Error and Meta-Analysis</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="bayesian-measurement-error-model.html"><a href="bayesian-measurement-error-model.html"><i class="fa fa-check"></i><b>6.1</b> Bayesian Measurement Error Model</a>
+<ul>
+<li class="chapter" data-level="" data-path="bayesian-measurement-error-model.html"><a href="bayesian-measurement-error-model.html#regression-with-measurement-error"><i class="fa fa-check"></i>Regression with Measurement Error</a></li>
+<li class="chapter" data-level="" data-path="bayesian-measurement-error-model.html"><a href="bayesian-measurement-error-model.html#rounding"><i class="fa fa-check"></i>Rounding</a></li>
+</ul></li>
+<li class="chapter" data-level="6.2" data-path="meta-analysis.html"><a href="meta-analysis.html"><i class="fa fa-check"></i><b>6.2</b> Meta-Analysis</a>
+<ul>
+<li class="chapter" data-level="" data-path="meta-analysis.html"><a href="meta-analysis.html#treatment-effects-in-controlled-studies"><i class="fa fa-check"></i>Treatment Effects in Controlled Studies</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="latent-discrete-chapter.html"><a href="latent-discrete-chapter.html"><i class="fa fa-check"></i><b>7</b> Latent Discrete Parameters</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="rao-blackwell-section.html"><a href="rao-blackwell-section.html"><i class="fa fa-check"></i><b>7.1</b> The Benefits of Marginalization</a></li>
+<li class="chapter" data-level="7.2" data-path="change-point-section.html"><a href="change-point-section.html"><i class="fa fa-check"></i><b>7.2</b> Change Point Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="change-point-section.html"><a href="change-point-section.html#model-with-latent-discrete-parameter"><i class="fa fa-check"></i>Model with Latent Discrete Parameter</a></li>
+<li class="chapter" data-level="" data-path="change-point-section.html"><a href="change-point-section.html#marginalizing-out-the-discrete-parameter"><i class="fa fa-check"></i>Marginalizing out the Discrete Parameter</a></li>
+<li class="chapter" data-level="" data-path="change-point-section.html"><a href="change-point-section.html#coding-the-model-in-stan-1"><i class="fa fa-check"></i>Coding the Model in Stan</a></li>
+<li class="chapter" data-level="" data-path="change-point-section.html"><a href="change-point-section.html#fitting-the-model-with-mcmc"><i class="fa fa-check"></i>Fitting the Model with MCMC</a></li>
+<li class="chapter" data-level="" data-path="change-point-section.html"><a href="change-point-section.html#posterior-distribution-of-the-discrete-change-point"><i class="fa fa-check"></i>Posterior Distribution of the Discrete Change Point</a></li>
+<li class="chapter" data-level="" data-path="change-point-section.html"><a href="change-point-section.html#discrete-sampling"><i class="fa fa-check"></i>Discrete Sampling</a></li>
+<li class="chapter" data-level="" data-path="change-point-section.html"><a href="change-point-section.html#posterior-covariance"><i class="fa fa-check"></i>Posterior Covariance</a></li>
+<li class="chapter" data-level="" data-path="change-point-section.html"><a href="change-point-section.html#multiple-change-points"><i class="fa fa-check"></i>Multiple Change Points</a></li>
+</ul></li>
+<li class="chapter" data-level="7.3" data-path="mark-recapture-models.html"><a href="mark-recapture-models.html"><i class="fa fa-check"></i><b>7.3</b> Mark-Recapture Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="mark-recapture-models.html"><a href="mark-recapture-models.html#simple-mark-recapture-model"><i class="fa fa-check"></i>Simple Mark-Recapture Model</a></li>
+<li class="chapter" data-level="" data-path="mark-recapture-models.html"><a href="mark-recapture-models.html#cormack-jolly-seber-with-discrete-parameter"><i class="fa fa-check"></i>Cormack-Jolly-Seber with Discrete Parameter</a></li>
+<li class="chapter" data-level="" data-path="mark-recapture-models.html"><a href="mark-recapture-models.html#collective-cormack-jolly-seber-model"><i class="fa fa-check"></i>Collective Cormack-Jolly-Seber Model</a></li>
+<li class="chapter" data-level="" data-path="mark-recapture-models.html"><a href="mark-recapture-models.html#individual-cormack-jolly-seber-model"><i class="fa fa-check"></i>Individual Cormack-Jolly-Seber Model</a></li>
+</ul></li>
+<li class="chapter" data-level="7.4" data-path="data-coding-and-diagnostic-accuracy-models.html"><a href="data-coding-and-diagnostic-accuracy-models.html"><i class="fa fa-check"></i><b>7.4</b> Data Coding and Diagnostic Accuracy Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="data-coding-and-diagnostic-accuracy-models.html"><a href="data-coding-and-diagnostic-accuracy-models.html#diagnostic-accuracy"><i class="fa fa-check"></i>Diagnostic Accuracy</a></li>
+<li class="chapter" data-level="" data-path="data-coding-and-diagnostic-accuracy-models.html"><a href="data-coding-and-diagnostic-accuracy-models.html#data-coding"><i class="fa fa-check"></i>Data Coding</a></li>
+<li class="chapter" data-level="" data-path="data-coding-and-diagnostic-accuracy-models.html"><a href="data-coding-and-diagnostic-accuracy-models.html#noisy-categorical-measurement-model"><i class="fa fa-check"></i>Noisy Categorical Measurement Model</a></li>
+<li class="chapter" data-level="" data-path="data-coding-and-diagnostic-accuracy-models.html"><a href="data-coding-and-diagnostic-accuracy-models.html#model-parameters"><i class="fa fa-check"></i>Model Parameters</a></li>
+<li class="chapter" data-level="" data-path="data-coding-and-diagnostic-accuracy-models.html"><a href="data-coding-and-diagnostic-accuracy-models.html#noisy-measurement-model"><i class="fa fa-check"></i>Noisy Measurement Model</a></li>
+<li class="chapter" data-level="" data-path="data-coding-and-diagnostic-accuracy-models.html"><a href="data-coding-and-diagnostic-accuracy-models.html#stan-implementation"><i class="fa fa-check"></i>Stan Implementation</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="sparse-ragged-chapter.html"><a href="sparse-ragged-chapter.html"><i class="fa fa-check"></i><b>8</b> Sparse and Ragged Data Structures</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="sparse-data-structures.html"><a href="sparse-data-structures.html"><i class="fa fa-check"></i><b>8.1</b> Sparse Data Structures</a></li>
+<li class="chapter" data-level="8.2" data-path="ragged-data-structs-section.html"><a href="ragged-data-structs-section.html"><i class="fa fa-check"></i><b>8.2</b> Ragged Data Structures</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="clustering-chapter.html"><a href="clustering-chapter.html"><i class="fa fa-check"></i><b>9</b> Clustering Models</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="relation-to-finite-mixture-models.html"><a href="relation-to-finite-mixture-models.html"><i class="fa fa-check"></i><b>9.1</b> Relation to Finite Mixture Models</a></li>
+<li class="chapter" data-level="9.2" data-path="soft-k-means.html"><a href="soft-k-means.html"><i class="fa fa-check"></i><b>9.2</b> Soft <span class="math inline">\(K\)</span>-Means</a>
+<ul>
+<li class="chapter" data-level="9.2.1" data-path="soft-k-means.html"><a href="soft-k-means.html#geometric-hard-k-means-clustering"><i class="fa fa-check"></i><b>9.2.1</b> Geometric Hard <span class="math inline">\(K\)</span>-Means Clustering</a></li>
+<li class="chapter" data-level="9.2.2" data-path="soft-k-means.html"><a href="soft-k-means.html#soft-k-means-clustering"><i class="fa fa-check"></i><b>9.2.2</b> Soft <span class="math inline">\(K\)</span>-Means Clustering</a></li>
+<li><a href="soft-k-means.html#stan-implementation-of-soft-k-means">Stan Implementation of Soft <span class="math inline">\(K\)</span>-Means</a></li>
+<li><a href="soft-k-means.html#generalizing-soft-k-means">Generalizing Soft <span class="math inline">\(K\)</span>-Means</a></li>
+</ul></li>
+<li class="chapter" data-level="9.3" data-path="the-difficulty-of-bayesian-inference-for-clustering.html"><a href="the-difficulty-of-bayesian-inference-for-clustering.html"><i class="fa fa-check"></i><b>9.3</b> The Difficulty of Bayesian Inference for Clustering</a>
+<ul>
+<li class="chapter" data-level="" data-path="the-difficulty-of-bayesian-inference-for-clustering.html"><a href="the-difficulty-of-bayesian-inference-for-clustering.html#non-identifiability"><i class="fa fa-check"></i>Non-Identifiability</a></li>
+<li class="chapter" data-level="" data-path="the-difficulty-of-bayesian-inference-for-clustering.html"><a href="the-difficulty-of-bayesian-inference-for-clustering.html#multimodality"><i class="fa fa-check"></i>Multimodality</a></li>
+</ul></li>
+<li class="chapter" data-level="9.4" data-path="naive-bayes-classification-and-clustering.html"><a href="naive-bayes-classification-and-clustering.html"><i class="fa fa-check"></i><b>9.4</b> Naive Bayes Classification and Clustering</a>
+<ul>
+<li class="chapter" data-level="" data-path="naive-bayes-classification-and-clustering.html"><a href="naive-bayes-classification-and-clustering.html#coding-ragged-arrays"><i class="fa fa-check"></i>Coding Ragged Arrays</a></li>
+<li class="chapter" data-level="" data-path="naive-bayes-classification-and-clustering.html"><a href="naive-bayes-classification-and-clustering.html#estimation-with-category-labeled-training-data"><i class="fa fa-check"></i>Estimation with Category-Labeled Training Data</a></li>
+<li class="chapter" data-level="" data-path="naive-bayes-classification-and-clustering.html"><a href="naive-bayes-classification-and-clustering.html#estimation-without-category-labeled-training-data"><i class="fa fa-check"></i>Estimation without Category-Labeled Training Data</a></li>
+<li class="chapter" data-level="" data-path="naive-bayes-classification-and-clustering.html"><a href="naive-bayes-classification-and-clustering.html#full-bayesian-inference-for-naive-bayes"><i class="fa fa-check"></i>Full Bayesian Inference for Naive Bayes</a></li>
+<li class="chapter" data-level="" data-path="naive-bayes-classification-and-clustering.html"><a href="naive-bayes-classification-and-clustering.html#prediction-without-model-updates"><i class="fa fa-check"></i>Prediction without Model Updates</a></li>
+</ul></li>
+<li class="chapter" data-level="9.5" data-path="latent-dirichlet-allocation.html"><a href="latent-dirichlet-allocation.html"><i class="fa fa-check"></i><b>9.5</b> Latent Dirichlet Allocation</a>
+<ul>
+<li class="chapter" data-level="" data-path="latent-dirichlet-allocation.html"><a href="latent-dirichlet-allocation.html#the-lda-model"><i class="fa fa-check"></i>The LDA Model</a></li>
+<li class="chapter" data-level="" data-path="latent-dirichlet-allocation.html"><a href="latent-dirichlet-allocation.html#summing-out-the-discrete-parameters"><i class="fa fa-check"></i>Summing out the Discrete Parameters</a></li>
+<li class="chapter" data-level="" data-path="latent-dirichlet-allocation.html"><a href="latent-dirichlet-allocation.html#implementation-of-lda"><i class="fa fa-check"></i>Implementation of LDA</a></li>
+<li class="chapter" data-level="" data-path="latent-dirichlet-allocation.html"><a href="latent-dirichlet-allocation.html#correlated-topic-model"><i class="fa fa-check"></i>Correlated Topic Model</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="gaussian-processes-chapter.html"><a href="gaussian-processes-chapter.html"><i class="fa fa-check"></i><b>10</b> Gaussian Processes</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="gaussian-process-regression.html"><a href="gaussian-process-regression.html"><i class="fa fa-check"></i><b>10.1</b> Gaussian Process Regression</a></li>
+<li class="chapter" data-level="10.2" data-path="simulating-from-a-gaussian-process.html"><a href="simulating-from-a-gaussian-process.html"><i class="fa fa-check"></i><b>10.2</b> Simulating from a Gaussian Process</a>
+<ul>
+<li class="chapter" data-level="" data-path="simulating-from-a-gaussian-process.html"><a href="simulating-from-a-gaussian-process.html#multivariate-inputs"><i class="fa fa-check"></i>Multivariate Inputs</a></li>
+<li class="chapter" data-level="" data-path="simulating-from-a-gaussian-process.html"><a href="simulating-from-a-gaussian-process.html#cholesky-factored-and-transformed-implementation"><i class="fa fa-check"></i>Cholesky Factored and Transformed Implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="10.3" data-path="fit-gp-section.html"><a href="fit-gp-section.html"><i class="fa fa-check"></i><b>10.3</b> Fitting a Gaussian Process</a>
+<ul>
+<li class="chapter" data-level="" data-path="fit-gp-section.html"><a href="fit-gp-section.html#gp-with-a-normal-outcome"><i class="fa fa-check"></i>GP with a normal outcome</a></li>
+<li class="chapter" data-level="" data-path="fit-gp-section.html"><a href="fit-gp-section.html#discrete-outcomes-with-gaussian-processes"><i class="fa fa-check"></i>Discrete outcomes with Gaussian Processes</a></li>
+<li class="chapter" data-level="" data-path="fit-gp-section.html"><a href="fit-gp-section.html#automatic-relevance-determination"><i class="fa fa-check"></i>Automatic Relevance Determination</a></li>
+<li class="chapter" data-level="10.3.1" data-path="fit-gp-section.html"><a href="fit-gp-section.html#priors-gp.section"><i class="fa fa-check"></i><b>10.3.1</b> Priors for Gaussian Process Parameters</a></li>
+<li class="chapter" data-level="" data-path="fit-gp-section.html"><a href="fit-gp-section.html#predictive-inference-with-a-gaussian-process"><i class="fa fa-check"></i>Predictive Inference with a Gaussian Process</a></li>
+<li class="chapter" data-level="" data-path="fit-gp-section.html"><a href="fit-gp-section.html#multiple-output-gaussian-processes"><i class="fa fa-check"></i>Multiple-output Gaussian processes</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="directions-rotations-and-hyperspheres.html"><a href="directions-rotations-and-hyperspheres.html"><i class="fa fa-check"></i><b>11</b> Directions, Rotations, and Hyperspheres</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="unit-vectors.html"><a href="unit-vectors.html"><i class="fa fa-check"></i><b>11.1</b> Unit Vectors</a></li>
+<li class="chapter" data-level="11.2" data-path="circles-spheres-and-hyperspheres.html"><a href="circles-spheres-and-hyperspheres.html"><i class="fa fa-check"></i><b>11.2</b> Circles, Spheres, and Hyperspheres</a></li>
+<li class="chapter" data-level="11.3" data-path="transforming-to-unconstrained-parameters.html"><a href="transforming-to-unconstrained-parameters.html"><i class="fa fa-check"></i><b>11.3</b> Transforming to Unconstrained Parameters</a>
+<ul>
+<li class="chapter" data-level="" data-path="transforming-to-unconstrained-parameters.html"><a href="transforming-to-unconstrained-parameters.html#warning-undefined-at-zero"><i class="fa fa-check"></i>Warning: undefined at zero!</a></li>
+</ul></li>
+<li class="chapter" data-level="11.4" data-path="unit-vectors-and-rotations.html"><a href="unit-vectors-and-rotations.html"><i class="fa fa-check"></i><b>11.4</b> Unit Vectors and Rotations</a>
+<ul>
+<li class="chapter" data-level="" data-path="unit-vectors-and-rotations.html"><a href="unit-vectors-and-rotations.html#unit-vector-type"><i class="fa fa-check"></i>Unit vector type</a></li>
+<li class="chapter" data-level="" data-path="unit-vectors-and-rotations.html"><a href="unit-vectors-and-rotations.html#angles-from-unit-vectors"><i class="fa fa-check"></i>Angles from unit vectors</a></li>
+</ul></li>
+<li class="chapter" data-level="11.5" data-path="circular-representations-of-days-and-years.html"><a href="circular-representations-of-days-and-years.html"><i class="fa fa-check"></i><b>11.5</b> Circular Representations of Days and Years</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="algebra-solver-chapter.html"><a href="algebra-solver-chapter.html"><i class="fa fa-check"></i><b>12</b> Solving Algebraic Equations</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="example-system-of-nonlinear-algebraic-equations.html"><a href="example-system-of-nonlinear-algebraic-equations.html"><i class="fa fa-check"></i><b>12.1</b> Example: System of Nonlinear Algebraic Equations</a></li>
+<li class="chapter" data-level="12.2" data-path="coding-an-algebraic-system.html"><a href="coding-an-algebraic-system.html"><i class="fa fa-check"></i><b>12.2</b> Coding an Algebraic System</a>
+<ul>
+<li class="chapter" data-level="" data-path="coding-an-algebraic-system.html"><a href="coding-an-algebraic-system.html#strict-signature"><i class="fa fa-check"></i>Strict Signature</a></li>
+</ul></li>
+<li class="chapter" data-level="12.3" data-path="calling-the-algebraic-solver.html"><a href="calling-the-algebraic-solver.html"><i class="fa fa-check"></i><b>12.3</b> Calling the Algebraic Solver</a>
+<ul>
+<li class="chapter" data-level="" data-path="calling-the-algebraic-solver.html"><a href="calling-the-algebraic-solver.html#data-versus-parameters"><i class="fa fa-check"></i>Data versus Parameters</a></li>
+<li class="chapter" data-level="" data-path="calling-the-algebraic-solver.html"><a href="calling-the-algebraic-solver.html#length-of-the-algebraic-function-and-of-the-vector-of-unknowns"><i class="fa fa-check"></i>Length of the Algebraic Function and of the Vector of Unknowns</a></li>
+<li class="chapter" data-level="" data-path="calling-the-algebraic-solver.html"><a href="calling-the-algebraic-solver.html#pathological-solutions"><i class="fa fa-check"></i>Pathological Solutions</a></li>
+</ul></li>
+<li class="chapter" data-level="12.4" data-path="algebra-control-section.html"><a href="algebra-control-section.html"><i class="fa fa-check"></i><b>12.4</b> Control Parameters for the Algebraic Solver</a>
+<ul>
+<li class="chapter" data-level="" data-path="algebra-control-section.html"><a href="algebra-control-section.html#tolerance"><i class="fa fa-check"></i>Tolerance</a></li>
+<li class="chapter" data-level="" data-path="algebra-control-section.html"><a href="algebra-control-section.html#maximum-number-of-steps"><i class="fa fa-check"></i>Maximum Number of Steps</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="ode-solver-chapter.html"><a href="ode-solver-chapter.html"><i class="fa fa-check"></i><b>13</b> Ordinary Differential Equations</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="example-simple-harmonic-oscillator.html"><a href="example-simple-harmonic-oscillator.html"><i class="fa fa-check"></i><b>13.1</b> Example: Simple Harmonic Oscillator</a>
+<ul>
+<li class="chapter" data-level="" data-path="example-simple-harmonic-oscillator.html"><a href="example-simple-harmonic-oscillator.html#solutions-given-initial-conditions"><i class="fa fa-check"></i>Solutions Given Initial Conditions</a></li>
+</ul></li>
+<li class="chapter" data-level="13.2" data-path="coding-an-ode-system.html"><a href="coding-an-ode-system.html"><i class="fa fa-check"></i><b>13.2</b> Coding an ODE System</a>
+<ul>
+<li class="chapter" data-level="" data-path="coding-an-ode-system.html"><a href="coding-an-ode-system.html#strict-signature-1"><i class="fa fa-check"></i>Strict Signature</a></li>
+<li class="chapter" data-level="" data-path="coding-an-ode-system.html"><a href="coding-an-ode-system.html#discontinuous-ode-system-function"><i class="fa fa-check"></i>Discontinuous ODE System Function</a></li>
+</ul></li>
+<li class="chapter" data-level="13.3" data-path="solving-a-system-of-linear-odes-using-a-matrix-exponential.html"><a href="solving-a-system-of-linear-odes-using-a-matrix-exponential.html"><i class="fa fa-check"></i><b>13.3</b> Solving a System of Linear ODEs using a Matrix Exponential</a></li>
+<li class="chapter" data-level="13.4" data-path="measurement-error-models.html"><a href="measurement-error-models.html"><i class="fa fa-check"></i><b>13.4</b> Measurement Error Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="measurement-error-models.html"><a href="measurement-error-models.html#simulating-noisy-measurements"><i class="fa fa-check"></i>Simulating Noisy Measurements</a></li>
+<li class="chapter" data-level="" data-path="measurement-error-models.html"><a href="measurement-error-models.html#data-versus-parameters-1"><i class="fa fa-check"></i>Data versus Parameters</a></li>
+<li class="chapter" data-level="" data-path="measurement-error-models.html"><a href="measurement-error-models.html#estimating-system-parameters-and-initial-state"><i class="fa fa-check"></i>Estimating System Parameters and Initial State</a></li>
+</ul></li>
+<li class="chapter" data-level="13.5" data-path="stiff-ode-section.html"><a href="stiff-ode-section.html"><i class="fa fa-check"></i><b>13.5</b> Stiff ODEs</a></li>
+<li class="chapter" data-level="13.6" data-path="control-parameters-for-ode-solving.html"><a href="control-parameters-for-ode-solving.html"><i class="fa fa-check"></i><b>13.6</b> Control Parameters for ODE Solving</a>
+<ul>
+<li class="chapter" data-level="" data-path="control-parameters-for-ode-solving.html"><a href="control-parameters-for-ode-solving.html#data-only-for-control-parameters"><i class="fa fa-check"></i>Data only for control parameters</a></li>
+<li class="chapter" data-level="" data-path="control-parameters-for-ode-solving.html"><a href="control-parameters-for-ode-solving.html#tolerance-1"><i class="fa fa-check"></i>Tolerance</a></li>
+<li class="chapter" data-level="" data-path="control-parameters-for-ode-solving.html"><a href="control-parameters-for-ode-solving.html#maximum-number-of-steps-1"><i class="fa fa-check"></i>Maximum Number of Steps</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="integrate-1d.html"><a href="integrate-1d.html"><i class="fa fa-check"></i><b>14</b> Computing One Dimensional Integrals</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="calling-the-integrator.html"><a href="calling-the-integrator.html"><i class="fa fa-check"></i><b>14.1</b> Calling the Integrator</a>
+<ul>
+<li class="chapter" data-level="14.1.1" data-path="calling-the-integrator.html"><a href="calling-the-integrator.html#limits-of-integration"><i class="fa fa-check"></i><b>14.1.1</b> Limits of Integration</a></li>
+<li class="chapter" data-level="14.1.2" data-path="calling-the-integrator.html"><a href="calling-the-integrator.html#data-versus-parameters-2"><i class="fa fa-check"></i><b>14.1.2</b> Data Versus Parameters</a></li>
+</ul></li>
+<li class="chapter" data-level="14.2" data-path="integrator-convergence.html"><a href="integrator-convergence.html"><i class="fa fa-check"></i><b>14.2</b> Integrator Convergence</a>
+<ul>
+<li class="chapter" data-level="14.2.1" data-path="integrator-convergence.html"><a href="integrator-convergence.html#zero-crossing"><i class="fa fa-check"></i><b>14.2.1</b> Zero-crossing Integrals</a></li>
+<li class="chapter" data-level="14.2.2" data-path="integrator-convergence.html"><a href="integrator-convergence.html#integral-precision"><i class="fa fa-check"></i><b>14.2.2</b> Avoiding precision loss near limits of integration in definite integrals</a></li>
+</ul></li>
+</ul></li>
+<li><a href="part-2-programming-techniques.html#part-2.-programming-techniques"><i style="font-size: 110%; color:#990017;">Part 2. Programming Techniques</i></a></li>
+<li class="chapter" data-level="15" data-path="floating-point-arithmetic.html"><a href="floating-point-arithmetic.html"><i class="fa fa-check"></i><b>15</b> Floating Point Arithmetic</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="floating-point-representations.html"><a href="floating-point-representations.html"><i class="fa fa-check"></i><b>15.1</b> Floating-point representations</a>
+<ul>
+<li class="chapter" data-level="15.1.1" data-path="floating-point-representations.html"><a href="floating-point-representations.html#finite-values"><i class="fa fa-check"></i><b>15.1.1</b> Finite values</a></li>
+<li class="chapter" data-level="15.1.2" data-path="floating-point-representations.html"><a href="floating-point-representations.html#normality"><i class="fa fa-check"></i><b>15.1.2</b> Normality</a></li>
+<li class="chapter" data-level="15.1.3" data-path="floating-point-representations.html"><a href="floating-point-representations.html#ranges-and-extreme-values"><i class="fa fa-check"></i><b>15.1.3</b> Ranges and extreme values</a></li>
+<li class="chapter" data-level="15.1.4" data-path="floating-point-representations.html"><a href="floating-point-representations.html#signed-zero"><i class="fa fa-check"></i><b>15.1.4</b> Signed zero</a></li>
+<li class="chapter" data-level="15.1.5" data-path="floating-point-representations.html"><a href="floating-point-representations.html#not-a-number-values"><i class="fa fa-check"></i><b>15.1.5</b> Not-a-number values</a></li>
+<li class="chapter" data-level="15.1.6" data-path="floating-point-representations.html"><a href="floating-point-representations.html#positive-and-negative-infinity"><i class="fa fa-check"></i><b>15.1.6</b> Positive and negative infinity</a></li>
+</ul></li>
+<li class="chapter" data-level="15.2" data-path="literals-decimal-and-scientific-notation.html"><a href="literals-decimal-and-scientific-notation.html"><i class="fa fa-check"></i><b>15.2</b> Literals: decimal and scientific notation</a></li>
+<li class="chapter" data-level="15.3" data-path="arithmetic-precision.html"><a href="arithmetic-precision.html"><i class="fa fa-check"></i><b>15.3</b> Arithmetic Precision</a>
+<ul>
+<li class="chapter" data-level="15.3.1" data-path="arithmetic-precision.html"><a href="arithmetic-precision.html#rounding-and-probabilities"><i class="fa fa-check"></i><b>15.3.1</b> Rounding and probabilities</a></li>
+<li class="chapter" data-level="15.3.2" data-path="arithmetic-precision.html"><a href="arithmetic-precision.html#machine-precision-and-the-asymmetry-of-0-and-1"><i class="fa fa-check"></i><b>15.3.2</b> Machine precision and the asymmetry of 0 and 1</a></li>
+<li class="chapter" data-level="15.3.3" data-path="arithmetic-precision.html"><a href="arithmetic-precision.html#complementary-and-epsilon-functions"><i class="fa fa-check"></i><b>15.3.3</b> Complementary and epsilon functions</a></li>
+<li class="chapter" data-level="15.3.4" data-path="arithmetic-precision.html"><a href="arithmetic-precision.html#catastrophic-cancellation"><i class="fa fa-check"></i><b>15.3.4</b> Catastrophic cancellation</a></li>
+<li class="chapter" data-level="15.3.5" data-path="arithmetic-precision.html"><a href="arithmetic-precision.html#overflow"><i class="fa fa-check"></i><b>15.3.5</b> Overflow</a></li>
+<li class="chapter" data-level="15.3.6" data-path="arithmetic-precision.html"><a href="arithmetic-precision.html#underflow-and-the-log-scale"><i class="fa fa-check"></i><b>15.3.6</b> Underflow and the log scale</a></li>
+<li class="chapter" data-level="15.3.7" data-path="arithmetic-precision.html"><a href="arithmetic-precision.html#adding-on-the-log-scale"><i class="fa fa-check"></i><b>15.3.7</b> Adding on the log scale</a></li>
+</ul></li>
+<li class="chapter" data-level="15.4" data-path="comparing-floating-point-numbers.html"><a href="comparing-floating-point-numbers.html"><i class="fa fa-check"></i><b>15.4</b> Comparing floating-point numbers</a></li>
+</ul></li>
+<li class="chapter" data-level="16" data-path="matrices-vectors-and-arrays.html"><a href="matrices-vectors-and-arrays.html"><i class="fa fa-check"></i><b>16</b> Matrices, Vectors, and Arrays</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="basic-motivation.html"><a href="basic-motivation.html"><i class="fa fa-check"></i><b>16.1</b> Basic Motivation</a></li>
+<li class="chapter" data-level="16.2" data-path="fixed-sizes-and-indexing-out-of-bounds.html"><a href="fixed-sizes-and-indexing-out-of-bounds.html"><i class="fa fa-check"></i><b>16.2</b> Fixed Sizes and Indexing out of Bounds</a></li>
+<li class="chapter" data-level="16.3" data-path="indexing-efficiency-section.html"><a href="indexing-efficiency-section.html"><i class="fa fa-check"></i><b>16.3</b> Data Type and Indexing Efficiency</a>
+<ul>
+<li class="chapter" data-level="" data-path="indexing-efficiency-section.html"><a href="indexing-efficiency-section.html#matrices-vs.-two-dimensional-arrays"><i class="fa fa-check"></i>Matrices vs. Two-Dimensional Arrays</a></li>
+<li class="chapter" data-level="" data-path="indexing-efficiency-section.html"><a href="indexing-efficiency-section.html#row-vectors-vs.-one-dimensional-arrays"><i class="fa fa-check"></i>(Row) Vectors vs. One-Dimensional Arrays</a></li>
+</ul></li>
+<li class="chapter" data-level="16.4" data-path="memory-locality.html"><a href="memory-locality.html"><i class="fa fa-check"></i><b>16.4</b> Memory Locality</a>
+<ul>
+<li class="chapter" data-level="" data-path="memory-locality.html"><a href="memory-locality.html#memory-locality-1"><i class="fa fa-check"></i>Memory Locality</a></li>
+<li class="chapter" data-level="" data-path="memory-locality.html"><a href="memory-locality.html#matrices"><i class="fa fa-check"></i>Matrices</a></li>
+<li class="chapter" data-level="" data-path="memory-locality.html"><a href="memory-locality.html#arrays"><i class="fa fa-check"></i>Arrays</a></li>
+</ul></li>
+<li class="chapter" data-level="16.5" data-path="converting-among-matrix-vector-and-array-types.html"><a href="converting-among-matrix-vector-and-array-types.html"><i class="fa fa-check"></i><b>16.5</b> Converting among Matrix, Vector, and Array Types</a></li>
+<li class="chapter" data-level="16.6" data-path="aliasing-in-stan-containers.html"><a href="aliasing-in-stan-containers.html"><i class="fa fa-check"></i><b>16.6</b> Aliasing in Stan Containers</a></li>
+</ul></li>
+<li class="chapter" data-level="17" data-path="multi-indexing-chapter.html"><a href="multi-indexing-chapter.html"><i class="fa fa-check"></i><b>17</b> Multiple Indexing and Range Indexing</a>
+<ul>
+<li class="chapter" data-level="17.1" data-path="multiple-indexing.html"><a href="multiple-indexing.html"><i class="fa fa-check"></i><b>17.1</b> Multiple Indexing</a></li>
+<li class="chapter" data-level="17.2" data-path="slicing-with-range-indexes.html"><a href="slicing-with-range-indexes.html"><i class="fa fa-check"></i><b>17.2</b> Slicing with Range Indexes</a>
+<ul>
+<li class="chapter" data-level="" data-path="slicing-with-range-indexes.html"><a href="slicing-with-range-indexes.html#lower-and-upper-bound-indexes"><i class="fa fa-check"></i>Lower and Upper Bound Indexes</a></li>
+<li class="chapter" data-level="" data-path="slicing-with-range-indexes.html"><a href="slicing-with-range-indexes.html#lower-or-upper-bound-indexes"><i class="fa fa-check"></i>Lower or Upper Bound Indexes</a></li>
+<li class="chapter" data-level="" data-path="slicing-with-range-indexes.html"><a href="slicing-with-range-indexes.html#full-range-indexes"><i class="fa fa-check"></i>Full Range Indexes</a></li>
+</ul></li>
+<li class="chapter" data-level="17.3" data-path="multiple-indexing-on-the-left-of-assignments.html"><a href="multiple-indexing-on-the-left-of-assignments.html"><i class="fa fa-check"></i><b>17.3</b> Multiple Indexing on the Left of Assignments</a>
+<ul>
+<li class="chapter" data-level="" data-path="multiple-indexing-on-the-left-of-assignments.html"><a href="multiple-indexing-on-the-left-of-assignments.html#assign-by-value-and-aliasing"><i class="fa fa-check"></i>Assign-by-Value and Aliasing</a></li>
+</ul></li>
+<li class="chapter" data-level="17.4" data-path="multiple-indexes-with-vectors-and-matrices.html"><a href="multiple-indexes-with-vectors-and-matrices.html"><i class="fa fa-check"></i><b>17.4</b> Multiple Indexes with Vectors and Matrices</a>
+<ul>
+<li class="chapter" data-level="" data-path="multiple-indexes-with-vectors-and-matrices.html"><a href="multiple-indexes-with-vectors-and-matrices.html#vectors"><i class="fa fa-check"></i>Vectors</a></li>
+<li class="chapter" data-level="" data-path="multiple-indexes-with-vectors-and-matrices.html"><a href="multiple-indexes-with-vectors-and-matrices.html#matrices-1"><i class="fa fa-check"></i>Matrices</a></li>
+<li class="chapter" data-level="" data-path="multiple-indexes-with-vectors-and-matrices.html"><a href="multiple-indexes-with-vectors-and-matrices.html#matrices-with-one-multiple-index"><i class="fa fa-check"></i>Matrices with One Multiple Index</a></li>
+<li class="chapter" data-level="" data-path="multiple-indexes-with-vectors-and-matrices.html"><a href="multiple-indexes-with-vectors-and-matrices.html#arrays-of-vectors-or-matrices"><i class="fa fa-check"></i>Arrays of Vectors or Matrices</a></li>
+</ul></li>
+<li class="chapter" data-level="17.5" data-path="matrices-with-parameters-and-constants.html"><a href="matrices-with-parameters-and-constants.html"><i class="fa fa-check"></i><b>17.5</b> Matrices with Parameters and Constants</a></li>
+</ul></li>
+<li class="chapter" data-level="18" data-path="functions-programming-chapter.html"><a href="functions-programming-chapter.html"><i class="fa fa-check"></i><b>18</b> User-Defined Functions</a>
+<ul>
+<li class="chapter" data-level="18.1" data-path="basic-functions-section.html"><a href="basic-functions-section.html"><i class="fa fa-check"></i><b>18.1</b> Basic Functions</a>
+<ul>
+<li class="chapter" data-level="" data-path="basic-functions-section.html"><a href="basic-functions-section.html#user-defined-functions-block"><i class="fa fa-check"></i>User-Defined Functions Block</a></li>
+<li class="chapter" data-level="" data-path="basic-functions-section.html"><a href="basic-functions-section.html#function-bodies"><i class="fa fa-check"></i>Function Bodies</a></li>
+<li class="chapter" data-level="" data-path="basic-functions-section.html"><a href="basic-functions-section.html#return-statements"><i class="fa fa-check"></i>Return Statements</a></li>
+<li class="chapter" data-level="" data-path="basic-functions-section.html"><a href="basic-functions-section.html#reject-statements"><i class="fa fa-check"></i>Reject Statements</a></li>
+<li class="chapter" data-level="" data-path="basic-functions-section.html"><a href="basic-functions-section.html#type-declarations-for-functions"><i class="fa fa-check"></i>Type Declarations for Functions</a></li>
+<li class="chapter" data-level="" data-path="basic-functions-section.html"><a href="basic-functions-section.html#array-types-for-function-declarations"><i class="fa fa-check"></i>Array Types for Function Declarations</a></li>
+<li class="chapter" data-level="" data-path="basic-functions-section.html"><a href="basic-functions-section.html#data-only-function-arguments"><i class="fa fa-check"></i>Data-only Function Arguments</a></li>
+</ul></li>
+<li class="chapter" data-level="18.2" data-path="functions-as-statements.html"><a href="functions-as-statements.html"><i class="fa fa-check"></i><b>18.2</b> Functions as Statements</a></li>
+<li class="chapter" data-level="18.3" data-path="functions-accessing-the-log-probability-accumulator.html"><a href="functions-accessing-the-log-probability-accumulator.html"><i class="fa fa-check"></i><b>18.3</b> Functions Accessing the Log Probability Accumulator</a></li>
+<li class="chapter" data-level="18.4" data-path="functions-acting-as-random-number-generators.html"><a href="functions-acting-as-random-number-generators.html"><i class="fa fa-check"></i><b>18.4</b> Functions Acting as Random Number Generators</a></li>
+<li class="chapter" data-level="18.5" data-path="user-defined-probability-functions.html"><a href="user-defined-probability-functions.html"><i class="fa fa-check"></i><b>18.5</b> User-Defined Probability Functions</a></li>
+<li class="chapter" data-level="18.6" data-path="overloading-functions.html"><a href="overloading-functions.html"><i class="fa fa-check"></i><b>18.6</b> Overloading Functions</a></li>
+<li class="chapter" data-level="18.7" data-path="documenting-functions-section.html"><a href="documenting-functions-section.html"><i class="fa fa-check"></i><b>18.7</b> Documenting Functions</a></li>
+<li class="chapter" data-level="18.8" data-path="summary-of-function-types.html"><a href="summary-of-function-types.html"><i class="fa fa-check"></i><b>18.8</b> Summary of Function Types</a>
+<ul>
+<li class="chapter" data-level="" data-path="summary-of-function-types.html"><a href="summary-of-function-types.html#void-vs.-non-void-return"><i class="fa fa-check"></i>Void vs. Non-Void Return</a></li>
+<li class="chapter" data-level="" data-path="summary-of-function-types.html"><a href="summary-of-function-types.html#suffixed-or-non-suffixed"><i class="fa fa-check"></i>Suffixed or Non-Suffixed</a></li>
+</ul></li>
+<li class="chapter" data-level="18.9" data-path="recursive-functions.html"><a href="recursive-functions.html"><i class="fa fa-check"></i><b>18.9</b> Recursive Functions</a></li>
+<li class="chapter" data-level="18.10" data-path="truncated-random-number-generation.html"><a href="truncated-random-number-generation.html"><i class="fa fa-check"></i><b>18.10</b> Truncated Random Number Generation</a>
+<ul>
+<li class="chapter" data-level="" data-path="truncated-random-number-generation.html"><a href="truncated-random-number-generation.html#generation-with-inverse-cdfs"><i class="fa fa-check"></i>Generation with Inverse CDFs</a></li>
+<li class="chapter" data-level="" data-path="truncated-random-number-generation.html"><a href="truncated-random-number-generation.html#truncated-variate-generation"><i class="fa fa-check"></i>Truncated variate generation</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="19" data-path="custom-probability-functions-chapter.html"><a href="custom-probability-functions-chapter.html"><i class="fa fa-check"></i><b>19</b> Custom Probability Functions</a>
+<ul>
+<li class="chapter" data-level="19.1" data-path="examples.html"><a href="examples.html"><i class="fa fa-check"></i><b>19.1</b> Examples</a>
+<ul>
+<li class="chapter" data-level="" data-path="examples.html"><a href="examples.html#triangle-distribution"><i class="fa fa-check"></i>Triangle distribution</a></li>
+<li class="chapter" data-level="" data-path="examples.html"><a href="examples.html#exponential-distribution"><i class="fa fa-check"></i>Exponential distribution</a></li>
+<li class="chapter" data-level="" data-path="examples.html"><a href="examples.html#bivariate-normal-cumulative-distribution-function"><i class="fa fa-check"></i>Bivariate normal cumulative distribution function</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="20" data-path="problematic-posteriors-chapter.html"><a href="problematic-posteriors-chapter.html"><i class="fa fa-check"></i><b>20</b> Problematic Posteriors</a>
+<ul>
+<li class="chapter" data-level="20.1" data-path="collinearity-section.html"><a href="collinearity-section.html"><i class="fa fa-check"></i><b>20.1</b> Collinearity of Predictors in Regressions</a>
+<ul>
+<li class="chapter" data-level="" data-path="collinearity-section.html"><a href="collinearity-section.html#examples-of-collinearity"><i class="fa fa-check"></i>Examples of Collinearity</a></li>
+<li class="chapter" data-level="" data-path="collinearity-section.html"><a href="collinearity-section.html#mitigating-the-invariances"><i class="fa fa-check"></i>Mitigating the Invariances</a></li>
+</ul></li>
+<li class="chapter" data-level="20.2" data-path="label-switching-problematic-section.html"><a href="label-switching-problematic-section.html"><i class="fa fa-check"></i><b>20.2</b> Label Switching in Mixture Models</a>
+<ul>
+<li class="chapter" data-level="" data-path="label-switching-problematic-section.html"><a href="label-switching-problematic-section.html#mixture-models"><i class="fa fa-check"></i>Mixture Models</a></li>
+<li class="chapter" data-level="" data-path="label-switching-problematic-section.html"><a href="label-switching-problematic-section.html#convergence-monitoring-and-effective-sample-size"><i class="fa fa-check"></i>Convergence Monitoring and Effective Sample Size</a></li>
+<li class="chapter" data-level="" data-path="label-switching-problematic-section.html"><a href="label-switching-problematic-section.html#some-inferences-are-invariant"><i class="fa fa-check"></i>Some Inferences are Invariant</a></li>
+<li class="chapter" data-level="" data-path="label-switching-problematic-section.html"><a href="label-switching-problematic-section.html#highly-multimodal-posteriors"><i class="fa fa-check"></i>Highly Multimodal Posteriors</a></li>
+<li class="chapter" data-level="" data-path="label-switching-problematic-section.html"><a href="label-switching-problematic-section.html#hacks-as-fixes"><i class="fa fa-check"></i>Hacks as Fixes</a></li>
+</ul></li>
+<li class="chapter" data-level="20.3" data-path="component-collapsing-in-mixture-models.html"><a href="component-collapsing-in-mixture-models.html"><i class="fa fa-check"></i><b>20.3</b> Component Collapsing in Mixture Models</a></li>
+<li class="chapter" data-level="20.4" data-path="posteriors-with-unbounded-densities.html"><a href="posteriors-with-unbounded-densities.html"><i class="fa fa-check"></i><b>20.4</b> Posteriors with Unbounded Densities</a>
+<ul>
+<li class="chapter" data-level="" data-path="posteriors-with-unbounded-densities.html"><a href="posteriors-with-unbounded-densities.html#mixture-models-with-varying-scales"><i class="fa fa-check"></i>Mixture Models with Varying Scales</a></li>
+<li class="chapter" data-level="" data-path="posteriors-with-unbounded-densities.html"><a href="posteriors-with-unbounded-densities.html#beta-binomial-models-with-skewed-data-and-weak-priors"><i class="fa fa-check"></i>Beta-Binomial Models with Skewed Data and Weak Priors</a></li>
+</ul></li>
+<li class="chapter" data-level="20.5" data-path="posteriors-with-unbounded-parameters.html"><a href="posteriors-with-unbounded-parameters.html"><i class="fa fa-check"></i><b>20.5</b> Posteriors with Unbounded Parameters</a>
+<ul>
+<li class="chapter" data-level="" data-path="posteriors-with-unbounded-parameters.html"><a href="posteriors-with-unbounded-parameters.html#separability-in-logistic-regression"><i class="fa fa-check"></i>Separability in Logistic Regression</a></li>
+</ul></li>
+<li class="chapter" data-level="20.6" data-path="uniform-posteriors.html"><a href="uniform-posteriors.html"><i class="fa fa-check"></i><b>20.6</b> Uniform Posteriors</a></li>
+<li class="chapter" data-level="20.7" data-path="sampling-difficulties-with-problematic-priors.html"><a href="sampling-difficulties-with-problematic-priors.html"><i class="fa fa-check"></i><b>20.7</b> Sampling Difficulties with Problematic Priors</a>
+<ul>
+<li class="chapter" data-level="" data-path="sampling-difficulties-with-problematic-priors.html"><a href="sampling-difficulties-with-problematic-priors.html#gibbs-sampling"><i class="fa fa-check"></i>Gibbs Sampling</a></li>
+<li class="chapter" data-level="" data-path="sampling-difficulties-with-problematic-priors.html"><a href="sampling-difficulties-with-problematic-priors.html#hamiltonian-monte-carlo-sampling"><i class="fa fa-check"></i>Hamiltonian Monte Carlo Sampling</a></li>
+<li class="chapter" data-level="" data-path="sampling-difficulties-with-problematic-priors.html"><a href="sampling-difficulties-with-problematic-priors.html#no-u-turn-sampling"><i class="fa fa-check"></i>No-U-Turn Sampling</a></li>
+<li class="chapter" data-level="" data-path="sampling-difficulties-with-problematic-priors.html"><a href="sampling-difficulties-with-problematic-priors.html#examples-fits-in-stan"><i class="fa fa-check"></i>Examples: Fits in Stan</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="21" data-path="change-of-variables-chapter.html"><a href="change-of-variables-chapter.html"><i class="fa fa-check"></i><b>21</b> Reparameterization and Change of Variables</a>
+<ul>
+<li class="chapter" data-level="21.1" data-path="theoretical-and-practical-background.html"><a href="theoretical-and-practical-background.html"><i class="fa fa-check"></i><b>21.1</b> Theoretical and Practical Background</a></li>
+<li class="chapter" data-level="21.2" data-path="reparameterizations.html"><a href="reparameterizations.html"><i class="fa fa-check"></i><b>21.2</b> Reparameterizations</a>
+<ul>
+<li class="chapter" data-level="" data-path="reparameterizations.html"><a href="reparameterizations.html#beta-and-dirichlet-priors"><i class="fa fa-check"></i>Beta and Dirichlet Priors</a></li>
+<li class="chapter" data-level="" data-path="reparameterizations.html"><a href="reparameterizations.html#transforming-unconstrained-priors-probit-and-logit"><i class="fa fa-check"></i>Transforming Unconstrained Priors: Probit and Logit</a></li>
+</ul></li>
+<li class="chapter" data-level="21.3" data-path="changes-of-variables.html"><a href="changes-of-variables.html"><i class="fa fa-check"></i><b>21.3</b> Changes of Variables</a>
+<ul>
+<li class="chapter" data-level="" data-path="changes-of-variables.html"><a href="changes-of-variables.html#change-of-variables-vs.-transformations"><i class="fa fa-check"></i>Change of Variables vs. Transformations</a></li>
+<li class="chapter" data-level="" data-path="changes-of-variables.html"><a href="changes-of-variables.html#multivariate-changes-of-variables"><i class="fa fa-check"></i>Multivariate Changes of Variables</a></li>
+</ul></li>
+<li class="chapter" data-level="21.4" data-path="vectors-with-varying-bounds.html"><a href="vectors-with-varying-bounds.html"><i class="fa fa-check"></i><b>21.4</b> Vectors with Varying Bounds</a>
+<ul>
+<li class="chapter" data-level="" data-path="vectors-with-varying-bounds.html"><a href="vectors-with-varying-bounds.html#varying-lower-bounds"><i class="fa fa-check"></i>Varying Lower Bounds</a></li>
+<li class="chapter" data-level="" data-path="vectors-with-varying-bounds.html"><a href="vectors-with-varying-bounds.html#varying-upper-and-lower-bounds"><i class="fa fa-check"></i>Varying Upper and Lower Bounds</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="22" data-path="optimization-chapter.html"><a href="optimization-chapter.html"><i class="fa fa-check"></i><b>22</b> Efficiency Tuning</a>
+<ul>
+<li class="chapter" data-level="22.1" data-path="what-is-efficiency.html"><a href="what-is-efficiency.html"><i class="fa fa-check"></i><b>22.1</b> What is Efficiency?</a></li>
+<li class="chapter" data-level="22.2" data-path="efficiency-for-probabilistic-models-and-algorithms.html"><a href="efficiency-for-probabilistic-models-and-algorithms.html"><i class="fa fa-check"></i><b>22.2</b> Efficiency for Probabilistic Models and Algorithms</a></li>
+<li class="chapter" data-level="22.3" data-path="statistical-vs-computational-efficiency.html"><a href="statistical-vs-computational-efficiency.html"><i class="fa fa-check"></i><b>22.3</b> Statistical vs.  Computational Efficiency</a></li>
+<li class="chapter" data-level="22.4" data-path="model-conditioning-and-curvature.html"><a href="model-conditioning-and-curvature.html"><i class="fa fa-check"></i><b>22.4</b> Model Conditioning and Curvature</a>
+<ul>
+<li class="chapter" data-level="" data-path="model-conditioning-and-curvature.html"><a href="model-conditioning-and-curvature.html#condition-number-and-adaptation"><i class="fa fa-check"></i>Condition Number and Adaptation</a></li>
+<li class="chapter" data-level="" data-path="model-conditioning-and-curvature.html"><a href="model-conditioning-and-curvature.html#unit-scales-without-correlation"><i class="fa fa-check"></i>Unit Scales without Correlation</a></li>
+<li class="chapter" data-level="" data-path="model-conditioning-and-curvature.html"><a href="model-conditioning-and-curvature.html#varying-curvature"><i class="fa fa-check"></i>Varying Curvature</a></li>
+<li class="chapter" data-level="" data-path="model-conditioning-and-curvature.html"><a href="model-conditioning-and-curvature.html#reparameterizing-with-a-change-of-variables"><i class="fa fa-check"></i>Reparameterizing with a Change of Variables</a></li>
+</ul></li>
+<li class="chapter" data-level="22.5" data-path="well-specified-models.html"><a href="well-specified-models.html"><i class="fa fa-check"></i><b>22.5</b> Well-Specified Models</a></li>
+<li class="chapter" data-level="22.6" data-path="avoiding-validation.html"><a href="avoiding-validation.html"><i class="fa fa-check"></i><b>22.6</b> Avoiding Validation</a></li>
+<li class="chapter" data-level="22.7" data-path="reparameterization-section.html"><a href="reparameterization-section.html"><i class="fa fa-check"></i><b>22.7</b> Reparameterization</a>
+<ul>
+<li class="chapter" data-level="" data-path="reparameterization-section.html"><a href="reparameterization-section.html#example-neals-funnel"><i class="fa fa-check"></i>Example: Neal’s Funnel</a></li>
+<li class="chapter" data-level="" data-path="reparameterization-section.html"><a href="reparameterization-section.html#reparameterizing-the-cauchy"><i class="fa fa-check"></i>Reparameterizing the Cauchy</a></li>
+<li class="chapter" data-level="" data-path="reparameterization-section.html"><a href="reparameterization-section.html#reparameterizing-a-student-t-distribution"><i class="fa fa-check"></i>Reparameterizing a Student-t Distribution</a></li>
+<li class="chapter" data-level="" data-path="reparameterization-section.html"><a href="reparameterization-section.html#hierarchical-models-and-the-non-centered-parameterization"><i class="fa fa-check"></i>Hierarchical Models and the Non-Centered Parameterization</a></li>
+<li class="chapter" data-level="" data-path="reparameterization-section.html"><a href="reparameterization-section.html#non-centered-parameterization"><i class="fa fa-check"></i>Non-Centered Parameterization</a></li>
+<li class="chapter" data-level="" data-path="reparameterization-section.html"><a href="reparameterization-section.html#multivariate-reparameterizations"><i class="fa fa-check"></i>Multivariate Reparameterizations</a></li>
+</ul></li>
+<li class="chapter" data-level="22.8" data-path="vectorization.html"><a href="vectorization.html"><i class="fa fa-check"></i><b>22.8</b> Vectorization</a>
+<ul>
+<li class="chapter" data-level="" data-path="vectorization.html"><a href="vectorization.html#gradient-bottleneck"><i class="fa fa-check"></i>Gradient Bottleneck</a></li>
+<li class="chapter" data-level="" data-path="vectorization.html"><a href="vectorization.html#vectorizing-summations"><i class="fa fa-check"></i>Vectorizing Summations</a></li>
+<li class="chapter" data-level="" data-path="vectorization.html"><a href="vectorization.html#vectorization-through-matrix-operations"><i class="fa fa-check"></i>Vectorization through Matrix Operations</a></li>
+<li class="chapter" data-level="" data-path="vectorization.html"><a href="vectorization.html#vectorized-probability-functions"><i class="fa fa-check"></i>Vectorized Probability Functions</a></li>
+<li class="chapter" data-level="" data-path="vectorization.html"><a href="vectorization.html#reshaping-data-for-vectorization"><i class="fa fa-check"></i>Reshaping Data for Vectorization</a></li>
+</ul></li>
+<li class="chapter" data-level="22.9" data-path="exploiting-sufficient-statistics.html"><a href="exploiting-sufficient-statistics.html"><i class="fa fa-check"></i><b>22.9</b> Exploiting Sufficient Statistics</a></li>
+<li class="chapter" data-level="22.10" data-path="aggregating-common-subexpressions.html"><a href="aggregating-common-subexpressions.html"><i class="fa fa-check"></i><b>22.10</b> Aggregating Common Subexpressions</a></li>
+<li class="chapter" data-level="22.11" data-path="exploiting-conjugacy.html"><a href="exploiting-conjugacy.html"><i class="fa fa-check"></i><b>22.11</b> Exploiting Conjugacy</a></li>
+<li class="chapter" data-level="22.12" data-path="standardizing-predictors-and-outputs.html"><a href="standardizing-predictors-and-outputs.html"><i class="fa fa-check"></i><b>22.12</b> Standardizing Predictors and Outputs</a>
+<ul>
+<li class="chapter" data-level="" data-path="standardizing-predictors-and-outputs.html"><a href="standardizing-predictors-and-outputs.html#standard-normal-distribution"><i class="fa fa-check"></i>Standard Normal Distribution</a></li>
+</ul></li>
+<li class="chapter" data-level="22.13" data-path="using-map-reduce.html"><a href="using-map-reduce.html"><i class="fa fa-check"></i><b>22.13</b> Using Map-Reduce</a></li>
+</ul></li>
+<li class="chapter" data-level="23" data-path="map-reduce-chapter.html"><a href="map-reduce-chapter.html"><i class="fa fa-check"></i><b>23</b> Map-Reduce</a>
+<ul>
+<li class="chapter" data-level="23.1" data-path="overview-of-map-reduce.html"><a href="overview-of-map-reduce.html"><i class="fa fa-check"></i><b>23.1</b> Overview of Map-Reduce</a></li>
+<li class="chapter" data-level="23.2" data-path="map-function.html"><a href="map-function.html"><i class="fa fa-check"></i><b>23.2</b> Map Function</a>
+<ul>
+<li class="chapter" data-level="" data-path="map-function.html"><a href="map-function.html#map-function-signature"><i class="fa fa-check"></i>Map Function Signature</a></li>
+<li class="chapter" data-level="" data-path="map-function.html"><a href="map-function.html#map-function-semantics"><i class="fa fa-check"></i>Map Function Semantics</a></li>
+</ul></li>
+<li class="chapter" data-level="23.3" data-path="example-mapping-logistic-regression.html"><a href="example-mapping-logistic-regression.html"><i class="fa fa-check"></i><b>23.3</b> Example: Mapping Logistic Regression</a>
+<ul>
+<li class="chapter" data-level="" data-path="example-mapping-logistic-regression.html"><a href="example-mapping-logistic-regression.html#unmapped-logistic-regression"><i class="fa fa-check"></i>Unmapped Logistic Regression</a></li>
+<li class="chapter" data-level="" data-path="example-mapping-logistic-regression.html"><a href="example-mapping-logistic-regression.html#mapped-logistic-regression"><i class="fa fa-check"></i>Mapped Logistic Regression</a></li>
+</ul></li>
+<li class="chapter" data-level="23.4" data-path="example-hierarchical-logistic-regression.html"><a href="example-hierarchical-logistic-regression.html"><i class="fa fa-check"></i><b>23.4</b> Example: Hierarchical Logistic Regression</a>
+<ul>
+<li class="chapter" data-level="" data-path="example-hierarchical-logistic-regression.html"><a href="example-hierarchical-logistic-regression.html#unmapped-implementation"><i class="fa fa-check"></i>Unmapped Implementation</a></li>
+<li class="chapter" data-level="" data-path="example-hierarchical-logistic-regression.html"><a href="example-hierarchical-logistic-regression.html#mapped-implementation"><i class="fa fa-check"></i>Mapped Implementation</a></li>
+</ul></li>
+<li class="chapter" data-level="23.5" data-path="ragged-inputs-and-outputs.html"><a href="ragged-inputs-and-outputs.html"><i class="fa fa-check"></i><b>23.5</b> Ragged Inputs and Outputs</a>
+<ul>
+<li class="chapter" data-level="" data-path="ragged-inputs-and-outputs.html"><a href="ragged-inputs-and-outputs.html#ragged-inputs"><i class="fa fa-check"></i>Ragged Inputs</a></li>
+<li class="chapter" data-level="" data-path="ragged-inputs-and-outputs.html"><a href="ragged-inputs-and-outputs.html#ragged-outputs"><i class="fa fa-check"></i>Ragged Outputs</a></li>
+</ul></li>
+</ul></li>
+<li><a href="appendices-part.html#appendices.part"><i style="font-size: 110%; color:#990017;">Appendices</i></a></li>
+<li class="chapter" data-level="24" data-path="stan-program-style-guide.html"><a href="stan-program-style-guide.html"><i class="fa fa-check"></i><b>24</b> Stan Program Style Guide</a>
+<ul>
+<li class="chapter" data-level="24.1" data-path="choose-a-consistent-style.html"><a href="choose-a-consistent-style.html"><i class="fa fa-check"></i><b>24.1</b> Choose a Consistent Style</a></li>
+<li class="chapter" data-level="24.2" data-path="line-length.html"><a href="line-length.html"><i class="fa fa-check"></i><b>24.2</b> Line Length</a></li>
+<li class="chapter" data-level="24.3" data-path="file-extensions.html"><a href="file-extensions.html"><i class="fa fa-check"></i><b>24.3</b> File Extensions</a></li>
+<li class="chapter" data-level="24.4" data-path="variable-naming.html"><a href="variable-naming.html"><i class="fa fa-check"></i><b>24.4</b> Variable Naming</a></li>
+<li class="chapter" data-level="24.5" data-path="local-variable-scope.html"><a href="local-variable-scope.html"><i class="fa fa-check"></i><b>24.5</b> Local Variable Scope</a>
+<ul>
+<li class="chapter" data-level="" data-path="local-variable-scope.html"><a href="local-variable-scope.html#scope-of-compound-structures-with-componentwise-assignment"><i class="fa fa-check"></i>Scope of Compound Structures with Componentwise Assignment</a></li>
+</ul></li>
+<li class="chapter" data-level="24.6" data-path="parentheses-and-brackets.html"><a href="parentheses-and-brackets.html"><i class="fa fa-check"></i><b>24.6</b> Parentheses and Brackets</a>
+<ul>
+<li class="chapter" data-level="" data-path="parentheses-and-brackets.html"><a href="parentheses-and-brackets.html#optional-parentheses-for-single-statement-blocks"><i class="fa fa-check"></i>Optional Parentheses for Single-Statement Blocks</a></li>
+<li class="chapter" data-level="" data-path="parentheses-and-brackets.html"><a href="parentheses-and-brackets.html#parentheses-in-nested-operator-expressions"><i class="fa fa-check"></i>Parentheses in Nested Operator Expressions</a></li>
+<li class="chapter" data-level="" data-path="parentheses-and-brackets.html"><a href="parentheses-and-brackets.html#no-open-brackets-on-own-line"><i class="fa fa-check"></i>No Open Brackets on Own Line</a></li>
+</ul></li>
+<li class="chapter" data-level="24.7" data-path="conditionals.html"><a href="conditionals.html"><i class="fa fa-check"></i><b>24.7</b> Conditionals</a>
+<ul>
+<li class="chapter" data-level="" data-path="conditionals.html"><a href="conditionals.html#explicit-comparisons-of-non-boolean-conditions"><i class="fa fa-check"></i>Explicit Comparisons of Non-Boolean Conditions</a></li>
+</ul></li>
+<li class="chapter" data-level="24.8" data-path="functions.html"><a href="functions.html"><i class="fa fa-check"></i><b>24.8</b> Functions</a></li>
+<li class="chapter" data-level="24.9" data-path="white-space.html"><a href="white-space.html"><i class="fa fa-check"></i><b>24.9</b> White Space</a>
+<ul>
+<li class="chapter" data-level="" data-path="white-space.html"><a href="white-space.html#line-breaks-between-statements-and-declarations"><i class="fa fa-check"></i>Line Breaks Between Statements and Declarations</a></li>
+<li class="chapter" data-level="" data-path="white-space.html"><a href="white-space.html#no-tabs"><i class="fa fa-check"></i>No Tabs</a></li>
+<li class="chapter" data-level="" data-path="white-space.html"><a href="white-space.html#two-character-indents"><i class="fa fa-check"></i>Two-Character Indents</a></li>
+<li class="chapter" data-level="24.9.1" data-path="white-space.html"><a href="white-space.html#space-between-if-and-condition"><i class="fa fa-check"></i><b>24.9.1</b> Space Between <code>if</code>, <code>{</code> and Condition</a></li>
+<li class="chapter" data-level="" data-path="white-space.html"><a href="white-space.html#no-space-for-function-calls"><i class="fa fa-check"></i>No Space For Function Calls</a></li>
+<li class="chapter" data-level="" data-path="white-space.html"><a href="white-space.html#spaces-around-operators"><i class="fa fa-check"></i>Spaces Around Operators</a></li>
+<li class="chapter" data-level="" data-path="white-space.html"><a href="white-space.html#breaking-expressions-across-lines"><i class="fa fa-check"></i>Breaking Expressions across Lines</a></li>
+<li class="chapter" data-level="" data-path="white-space.html"><a href="white-space.html#optional-spaces-after-commas"><i class="fa fa-check"></i>Optional Spaces after Commas</a></li>
+<li class="chapter" data-level="" data-path="white-space.html"><a href="white-space.html#unix-newlines"><i class="fa fa-check"></i>Unix Newlines</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="25" data-path="stan-for-bugs-appendix.html"><a href="stan-for-bugs-appendix.html"><i class="fa fa-check"></i><b>25</b> Transitioning from BUGS</a>
+<ul>
+<li class="chapter" data-level="25.1" data-path="some-differences-in-how-bugs-and-stan-work.html"><a href="some-differences-in-how-bugs-and-stan-work.html"><i class="fa fa-check"></i><b>25.1</b> Some Differences in How BUGS and Stan Work</a>
+<ul>
+<li class="chapter" data-level="" data-path="some-differences-in-how-bugs-and-stan-work.html"><a href="some-differences-in-how-bugs-and-stan-work.html#bugs-is-interpreted-stan-is-compiled"><i class="fa fa-check"></i>BUGS is interpreted, Stan is compiled</a></li>
+<li class="chapter" data-level="" data-path="some-differences-in-how-bugs-and-stan-work.html"><a href="some-differences-in-how-bugs-and-stan-work.html#bugs-performs-mcmc-updating-one-scalar-parameter-at-a-time-stan-uses-hmc-which-moves-in-the-entire-space-of-all-the-parameters-at-each-step"><i class="fa fa-check"></i>BUGS performs MCMC updating one scalar parameter at a time, Stan uses HMC which moves in the entire space of all the parameters at each step</a></li>
+<li class="chapter" data-level="" data-path="some-differences-in-how-bugs-and-stan-work.html"><a href="some-differences-in-how-bugs-and-stan-work.html#differences-in-tuning-during-warmup"><i class="fa fa-check"></i>Differences in tuning during warmup</a></li>
+<li class="chapter" data-level="" data-path="some-differences-in-how-bugs-and-stan-work.html"><a href="some-differences-in-how-bugs-and-stan-work.html#the-stan-language-is-directly-executable-the-bugs-modeling-language-is-not"><i class="fa fa-check"></i>The Stan language is directly executable, the BUGS modeling language is not</a></li>
+<li class="chapter" data-level="" data-path="some-differences-in-how-bugs-and-stan-work.html"><a href="some-differences-in-how-bugs-and-stan-work.html#differences-in-statement-order"><i class="fa fa-check"></i>Differences in statement order</a></li>
+<li class="chapter" data-level="" data-path="some-differences-in-how-bugs-and-stan-work.html"><a href="some-differences-in-how-bugs-and-stan-work.html#stan-computes-the-gradient-of-the-log-density-bugs-computes-the-log-density-but-not-its-gradient"><i class="fa fa-check"></i>Stan computes the gradient of the log density, BUGS computes the log density but not its gradient</a></li>
+<li class="chapter" data-level="" data-path="some-differences-in-how-bugs-and-stan-work.html"><a href="some-differences-in-how-bugs-and-stan-work.html#both-bugs-and-stan-are-semi-automatic"><i class="fa fa-check"></i>Both BUGS and Stan are semi-automatic</a></li>
+<li class="chapter" data-level="" data-path="some-differences-in-how-bugs-and-stan-work.html"><a href="some-differences-in-how-bugs-and-stan-work.html#licensing"><i class="fa fa-check"></i>Licensing</a></li>
+<li class="chapter" data-level="" data-path="some-differences-in-how-bugs-and-stan-work.html"><a href="some-differences-in-how-bugs-and-stan-work.html#interfaces"><i class="fa fa-check"></i>Interfaces</a></li>
+<li class="chapter" data-level="" data-path="some-differences-in-how-bugs-and-stan-work.html"><a href="some-differences-in-how-bugs-and-stan-work.html#platforms"><i class="fa fa-check"></i>Platforms</a></li>
+</ul></li>
+<li class="chapter" data-level="25.2" data-path="some-differences-in-the-modeling-languages.html"><a href="some-differences-in-the-modeling-languages.html"><i class="fa fa-check"></i><b>25.2</b> Some Differences in the Modeling Languages</a></li>
+<li class="chapter" data-level="25.3" data-path="some-differences-in-the-statistical-models-that-are-allowed.html"><a href="some-differences-in-the-statistical-models-that-are-allowed.html"><i class="fa fa-check"></i><b>25.3</b> Some Differences in the Statistical Models that are Allowed</a></li>
+<li class="chapter" data-level="25.4" data-path="some-differences-when-running-from-r.html"><a href="some-differences-when-running-from-r.html"><i class="fa fa-check"></i><b>25.4</b> Some Differences when Running from R</a></li>
+<li class="chapter" data-level="25.5" data-path="the-stan-community.html"><a href="the-stan-community.html"><i class="fa fa-check"></i><b>25.5</b> The Stan Community</a></li>
+</ul></li>
+<li><a href="references.html#references"><i style="font-size: 110%; color:#990017;">References</i></a></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Stan User’s Guide</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="hierarchical-logistic-regression" class="section level2">
+<h2 number="1.9"><span class="header-section-number">1.9</span> Hierarchical Logistic Regression</h2>
+<p>The simplest multilevel model is a hierarchical model in which the
+data are grouped into <span class="math inline">\(L\)</span> distinct categories (or levels). An extreme
+approach would be to completely pool all the data and estimate a
+common vector of regression coefficients <span class="math inline">\(\beta\)</span>. At the other
+extreme, an approach with no pooling assigns each level <span class="math inline">\(l\)</span> its own
+coefficient vector <span class="math inline">\(\beta_l\)</span> that is estimated separately from the
+other levels. A hierarchical model is an intermediate solution where
+the degree of pooling is determined by the data and a prior on the
+amount of pooling.</p>
+<p>Suppose each binary outcome <span class="math inline">\(y_n \in \{ 0, 1 \}\)</span> has an associated
+level, <span class="math inline">\(ll_n \in \{ 1,\ldots,L \}\)</span>. Each outcome will also have
+an associated predictor vector <span class="math inline">\(x_n \in \mathbb{R}^D\)</span>. Each level <span class="math inline">\(l\)</span>
+gets its own coefficient vector <span class="math inline">\(\beta_l \in \mathbb{R}^D\)</span>. The
+hierarchical structure involves drawing the coefficients <span class="math inline">\(\beta_{l,d} \in \mathbb{R}\)</span> from a prior that is also estimated with the data. This
+hierarchically estimated prior determines the amount of pooling. If
+the data in each level are similar, strong pooling will be
+reflected in low hierarchical variance. If the data in the levels are
+dissimilar, weaker pooling will be reflected in higher hierarchical variance.</p>
+<p>The following model encodes a hierarchical logistic regression model
+with a hierarchical prior on the regression coefficients.</p>
+<pre><code>data {
+  int&lt;lower=1&gt; D;
+  int&lt;lower=0&gt; N;
+  int&lt;lower=1&gt; L;
+  int&lt;lower=0,upper=1&gt; y[N];
+  int&lt;lower=1,upper=L&gt; ll[N];
+  row_vector[D] x[N];
+}
+parameters {
+  real mu[D];
+  real&lt;lower=0&gt; sigma[D];
+  vector[D] beta[L];
+}
+model {
+  for (d in 1:D) {
+    mu[d] ~ normal(0, 100);
+    for (l in 1:L)
+      beta[l,d] ~ normal(mu[d], sigma[d]);
+  }
+  for (n in 1:N)
+    y[n] ~ bernoulli(inv_logit(x[n] * beta[ll[n]]));
+}</code></pre>
+<p>The standard deviation parameter <code>sigma</code> gets an implicit uniform
+prior on <span class="math inline">\((0,\infty)\)</span> because of its declaration with a lower-bound
+constraint of zero. Stan allows improper priors as long as the
+posterior is proper. Nevertheless, it is usually helpful to have
+informative or at least weakly informative priors for all parameters;
+see the <a href="regression-priors-section.html#regression-priors.section">regression priors section</a> for
+recommendations on priors for regression coefficients and scales.</p>
+<div id="optimizing-the-model" class="section level4">
+<h4 class="unnumbered" number="">Optimizing the Model</h4>
+<p>Where possible, vectorizing sampling statements leads to faster log
+probability and derivative evaluations. The speed boost is not
+because loops are eliminated, but because vectorization allows sharing
+subcomputations in the log probability and gradient calculations and
+because it reduces the size of the expression tree required for
+gradient calculations.</p>
+<p>The first optimization vectorizes the for-loop over <code>D</code> as</p>
+<pre><code>  mu ~ normal(0, 100);
+  for (l in 1:L)
+    beta[l] ~ normal(mu, sigma);</code></pre>
+<p>The declaration of <code>beta</code> as an array of vectors means that the
+expression <code>beta[l]</code> denotes a vector. Although <code>beta</code> could have
+been declared as a matrix, an array of vectors (or a two-dimensional
+array) is more efficient for accessing rows; see the <a href="indexing-efficiency-section.html#indexing-efficiency.section">indexing
+efficiency section</a> for more information
+on the efficiency tradeoffs among arrays, vectors, and matrices.</p>
+<p>This model can be further sped up and at the same time made more
+arithmetically stable by replacing the application of inverse-logit
+inside the Bernoulli distribution with the logit-parameterized
+Bernoulli,<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a></p>
+<pre><code>  for (n in 1:N)
+    y[n] ~ bernoulli_logit(x[n] * beta[ll[n]]);</code></pre>
+<p>Unlike in R or BUGS, loops, array access and assignments are fast in
+Stan because they are translated directly to C++. In most cases, the
+cost of allocating and assigning to a container is more than made up
+for by the increased efficiency due to vectorizing the log probability
+and gradient calculations. Thus the following version is faster than
+the original formulation as a loop over a sampling statement.</p>
+<pre><code>  {
+    vector[N] x_beta_ll;
+    for (n in 1:N)
+      x_beta_ll[n] = x[n] * beta[ll[n]];
+    y ~ bernoulli_logit(x_beta_ll);
+  }</code></pre>
+<p>The brackets introduce a new scope for the local variable
+<code>x_beta_ll</code>; alternatively, the variable may be declared at the
+top of the model block.</p>
+<p>In some cases, such as the above, the local variable assignment leads
+to models that are less readable. The recommended practice in such
+cases is to first develop and debug the more transparent version of
+the model and only work on optimizations when the simpler formulation
+has been debugged.</p>
+</div>
+</div>
+<div class="footnotes">
+<hr />
+<ol start="3">
+<li id="fn3"><p>The Bernoulli-logit distribution builds in the log link function, taking <span class="math display">\[\mathsf{BernoulliLogit}(y \mid \alpha) = \mathsf{Bernoulli}(y \mid \mathrm{logit}^{-1}(\alpha)).\]</span><a href="hierarchical-logistic-regression.html#fnref3" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="ordered-logistic-section.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="hierarchical-priors-section.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook/js/app.min.js"></script>
+<script src="libs/gitbook/js/lunr.js"></script>
+<script src="libs/gitbook/js/clipboard.min.js"></script>
+<script src="libs/gitbook/js/plugin-search.js"></script>
+<script src="libs/gitbook/js/plugin-sharing.js"></script>
+<script src="libs/gitbook/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook/js/jquery.highlight.js"></script>
+<script src="libs/gitbook/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": null,
+"fontsettings": {
+"theme": "white",
+"family": "serif",
+"size": 2
+},
+"edit": null,
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": null,
+"toc": {
+"collapse": "section",
+"scroll_highlight": true
+},
+"search": true,
+"toolbar": {
+"position": "static"
+}
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

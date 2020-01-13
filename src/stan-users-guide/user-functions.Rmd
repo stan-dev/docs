@@ -88,9 +88,9 @@ real dbl_sqrt(real x) {
 
 The negation of the positive test is important, because it also
 catches the case where `x` is a not-a-number value.  If the
-condition had been coded as `(x~<~0)` it would not catch the
+condition had been coded as `(x < 0)` it would not catch the
 not-a-number case, though it could be written as
-`(x~<~0~||~is_nan(x))`.  The positive infinite case is allowed
+`(x < 0 || is_nan(x))`.  The positive infinite case is allowed
 through, but could also be checked with the `is_inf(x)` function.
 The square root function does not itself reject, but some downstream
 consumer of `dbl_sqrt(-2)` would be likely to raise an error, at
@@ -115,7 +115,7 @@ quantities block.
 ### Type Declarations for Functions {-}
 
 | Function Argument    | Local            | Block                                 |
-|:--------------------:|:-----------------|:-------------------------------------:|
+|:---------------------|:-----------------|:--------------------------------------|
 | (unsized)            | (unconstrained)  | (constrained)                         |
 | `int`                | `int`            | `int`                                 |
 |                      |                  | `int<lower = L>`                      |
@@ -146,7 +146,7 @@ quantities block.
 |                      | `matrix[K, K]`   | `cholesky_factor_corr[K]`             |
 |                      | `matrix[K, K]`   | `cholesky_factor_cov[K]`              |
 
-id:constrained-types.figure
+<a name="id:constrained-types.figure"></a>
 
 The leftmost column is a list of the unconstrained and undimensioned
 basic types; these are used as function return types and argument
@@ -155,8 +155,8 @@ these are used as local variable types. The variables `M` and `N` indicate
 number of columns and rows, respectively.  The variable `K` is used for
 square matrices, i.e., `K` denotes both the number of rows and columns.
 The rightmost column lists the corresponding constrained types.
-An expression of any righthand
-column type may be assigned to its corresponding lefthand column basic
+An expression of any right-hand
+column type may be assigned to its corresponding left-hand column basic
 type.  At runtime, dimensions are checked for consistency for all
 variables; containers of any sizes may be assigned to function
 arguments.  The constrained matrix types `cov_matrix[K]`,
@@ -172,7 +172,7 @@ are not declared with their sizes, unlike type declarations for variables.
 Function argument type declarations may not be
 declared with constraints, either lower or upper bounds or structured
 constraints like forming a simplex or correlation matrix, (as is also
-the case for local varaibles);  see the table of constrained types for
+the case for local variables);  see the table of constrained types for
 full details.
 
 For example, here's a function to compute the entropy of a categorical
@@ -201,9 +201,9 @@ declared as follows.
 real[] baz(real[,] x);
 ```
 
-The notation `[\,]` is used for one-dimensional arrays (as in the
-return above), `[\,,\,]` for two-dimensional arrays,
-`[\,,\,,\,]` for three-dimensional arrays, and so on.
+The notation `[ ]` is used for one-dimensional arrays (as in the
+return above), `[ , ]` for two-dimensional arrays,
+`[ , , ]` for three-dimensional arrays, and so on.
 
 Functions support arrays of any type, including matrix and vector
 types.  As with other types, no constraints are allowed.
@@ -548,24 +548,23 @@ $$
 A^n
 =
 \begin{cases}
-\ \mbox{I} & \mbox{if } n = 0, \mbox{ and}
-\\[3pt]
-\ A \, A^{n-1} & \mbox{if } n > 0.
+\textrm{I} & \quad\text{if } n = 0, \text{ and} \\
+A \, A^{n-1} & \quad\text{if } n > 0.
 \end{cases}
 $$
 
-where $\mbox{I}$ is the identity matrix.  This definition can be
+where $\textrm{I}$ is the identity matrix.  This definition can be
 directly translated to a recursive function definition.
 
 ```
-  matrix matrix_pow(matrix a, int n);
+matrix matrix_pow(matrix a, int n);
 
-  matrix matrix_pow(matrix a, int n) {
-    if (n == 0)
-      return diag_matrix(rep_vector(1, rows(a)));
-    else
-      return a *  matrix_pow(a, n - 1);
-  }
+matrix matrix_pow(matrix a, int n) {
+  if (n == 0)
+    return diag_matrix(rep_vector(1, rows(a)));
+  else
+    return a *  matrix_pow(a, n - 1);
+}
 ```
 
 The forward declaration of the function signature before it is defined
@@ -575,8 +574,8 @@ not allow the recursion to go all the way to the base case, adding the
 following conditional clause.
 
 ```
-    else if (n == 1)
-      return a;
+else if (n == 1)
+  return a;
 ```
 
 
@@ -588,8 +587,8 @@ To generate random numbers, it is often sufficient to invert their
 cumulative distribution functions.  This is built into many of the
 random number generators.  For example, to generate a standard
 logistic variate, first generate a uniform variate
-$u \sim \mathsf{Uniform}(0, 1)$, then run through the inverse
-cumulative distribution function, $y = \mathrm{logit}(u)$.  If this
+$u \sim \textsf{uniform}(0, 1)$, then run through the inverse
+cumulative distribution function, $y = \textrm{logit}(u)$.  If this
 were not already built in as `logistic_rng(0, 1)`, it could be
 coded in Stan directly as
 
@@ -607,26 +606,29 @@ Following the same pattern, a standard normal RNG could be coded as
 ```
 real standard_normal_rng() {
   real u = uniform_rng(0, 1);
-  real y = Phi(u);
+  real y = inv_Phi(u);
   return y;
 }
 ```
 
+that is, $y = \Phi^{-1}(u)$, where $\Phi^{-1}$ is the inverse cumulative
+distribution function for the standard normal distribution, implemented in
+the Stan function `inv_Phi`.
 
 In order to generate non-standard variates of the location-scale
 variety, the variate is scaled by the scale parameter and shifted by
 the location parameter.  For example, to generate
-$\mathsf{normal}(\mu, \sigma)$ variates, it is enough to generate a
-uniform variate $u \sim \mathsf{Uniform}(0, 1)$, then convert to a
+$\textsf{normal}(\mu, \sigma)$ variates, it is enough to generate a
+uniform variate $u \sim \textsf{uniform}(0, 1)$, then convert it to a
 standard normal variate, $z = \Phi(u)$, where
 $\Phi$ is the inverse cumulative distribution function for the
-standard normal, and then finally, scale and translate, $y = \mu +
-\sigma \cdot z$.  In code,
+standard normal, and then, finally, scale and translate it, $y = \mu +
+\sigma \times z$.  In code,
 
 ```
 real my_normal_rng(real mu, real sigma) {
   real u = uniform_rng(0, 1);
-  real z = Phi(u);
+  real z = inv_Phi(u);
   real y = mu + sigma * z;
   return y;
 }
@@ -655,7 +657,7 @@ back.
 
 #### Truncating below {-}
 
-For example, the following code generates a $\mathsf{Weibull}(\alpha, \sigma)$ variate truncated below at a time $t$,^[The original code and impetus for including this in the manual came from the Stan forums post \url{http://discourse.mc-stan.org/t/rng-for-truncated-distributions/3122/7}; by user `lcomm`, who also explained truncation above and below.]
+For example, the following code generates a $\textsf{Weibull}(\alpha, \sigma)$ variate truncated below at a time $t$,^[The original code and impetus for including this in the manual came from the Stan forums post \url{http://discourse.mc-stan.org/t/rng-for-truncated-distributions/3122/7}; by user `lcomm`, who also explained truncation above and below.]
 
 ```
 real weibull_lb_rng(real alpha, real sigma, real t) {
@@ -670,7 +672,7 @@ real weibull_lb_rng(real alpha, real sigma, real t) {
 
 If there is a lower bound and upper bound, then the CDF trick is used
 twice to find a lower and upper bound.  For example, to generate a
-$\mathsf{normal}(\mu, \sigma)$ truncated to a region $(a, b)$, the
+$\textsf{normal}(\mu, \sigma)$ truncated to a region $(a, b)$, the
 following code suffices,
 
 ```
@@ -678,12 +680,12 @@ real normal_lub_rng(real mu, real sigma, real lb, real ub) {
   real p_lb = normal_cdf(lb, mu, sigma);
   real p_ub = normal_cdf(ub, mu, sigma);
   real u = uniform_rng(p_lb, p_ub);
-  real y = mu + sigma * Phi(u);
+  real y = mu + sigma * inv_Phi(u);
   return y;
 }
 ```
 
-To make this more robust, all variables shold be tested for
+To make this more robust, all variables should be tested for
 finiteness, `sigma` should be tested for positiveness, and
 `lb` and `ub` should be tested to ensure the upper bound is
 greater than the lower bound.  While it may be tempting to compress
@@ -692,8 +694,8 @@ and naming for readability;  compare the multiple statement version
 above with the single statement
 
 ```
-  return mu + sigma * Phi(uniform_rng(normal_cdf(lb, mu, sigma),
-                                      normal_cdf(ub, mu, sigma)));
+  return mu + sigma * inv_Phi(uniform_rng(normal_cdf(lb, mu, sigma),
+                                          normal_cdf(ub, mu, sigma)));
 ```
 
 for readability.  The names like `p` indicate probabilities, and

@@ -41,18 +41,14 @@ In most applications of HMC, including Stan, the auxiliary density is
 a multivariate normal that does not depend on the parameters $\theta$,
 
 $$
-\rho \sim \mathsf{MultiNormal}(0, \Sigma).
+\rho \sim \mathsf{MultiNormal}(0, M).
 $$
 
-The covariance matrix $\Sigma$ acts as a Euclidean metric to rotate
-and scale the target distribution; see @Betancourt-Stein:2011 for
-details of the geometry.
+$M$ is the Euclidean metric. It can be seen as a transform of parameter space
+that makes sampling more efficient; see @Betancourt:2017 for details.
 
-In Stan, this matrix may be set to the identity matrix (i.e., unit
-diagonal) or estimated from warmup draws and optionally restricted to
-a diagonal matrix. The inverse $\Sigma^{-1}$ is known as the mass
-matrix, and will be a unit, diagonal, or dense if $\Sigma$ is.
-
+By default Stan sets $M^{-1}$ equal to a diagonal estimate of the
+covariance computed during warmup.
 
 ### The Hamiltonian {-}
 
@@ -94,7 +90,7 @@ First, a value for the momentum is drawn independently of the current
 parameter values,
 
 $$
-\rho \sim \mathsf{MultiNormal}(0, \Sigma).
+\rho \sim \mathsf{MultiNormal}(0, M).
 $$
 
 Thus momentum does not persist across iterations.
@@ -153,7 +149,7 @@ begins by drawing a fresh momentum term independently of the parameter
 values $\theta$ or previous momentum value.
 
 $$
-\rho \sim \mathsf{MultiNormal}(0, \Sigma).
+\rho \sim \mathsf{MultiNormal}(0, M).
 $$
 It then alternates half-step updates of the momentum and full-step
 updates of the position.
@@ -164,7 +160,7 @@ $$
      & \rho \, - \, \frac{\epsilon}{2} \frac{\partial V}{\partial \theta}
 \\[6pt]
 \theta & \leftarrow
-       & \theta \, + \, \epsilon \, \Sigma \, \rho
+       & \theta \, + \, \epsilon \, M^{-1} \, \rho
 \\[6pt]
 \rho & \leftarrow
      & \rho \, - \, \frac{\epsilon}{2} \frac{\partial V}{\partial \theta}.
@@ -225,7 +221,7 @@ The Hamiltonian Monte Carlo algorithm has three parameters which must
 be set,
 
 * discretization time $\epsilon$,
-* mass matrix $\Sigma^{-1}$, and
+* metric $M$, and
 * number of steps taken $L$.
 
 In practice, sampling efficiency, both in terms of iteration speed and
@@ -242,12 +238,9 @@ If $L$ is too small, the trajectory traced out in each iteration will
 be too short and sampling will devolve to a random walk.  If $L$ is
 too large, the algorithm will do too much work on each iteration.
 
-If the mass matrix $\Sigma$ is poorly suited to the covariance of the
-posterior, the step size $\epsilon$ will have to be decreased to
-maintain arithmetic precision while at the same time, the number of
-steps $L$ is increased in order to maintain simulation time to ensure
-statistical efficiency.
-
+If the inverse metric $M^{-1}$ is a poor estimate of the posterior covariance,
+the step size $\epsilon$ must be kept small to maintain arithmetic
+precision. This would lead to a large $L$ to compensate.
 
 ### Integration Time {-}
 
@@ -266,7 +259,7 @@ and the actual integration time will still be $L \, \epsilon$.
 ### Automatic Parameter Tuning {-}
 
 Stan is able to automatically optimize $\epsilon$ to match an
-acceptance-rate target, able to estimate $\Sigma$ based on warmup
+acceptance-rate target, able to estimate $M$ based on warmup
 sample iterations, and able to dynamically adapt $L$ on the fly during
 sampling (and during warmup) using the no-U-turn sampling (NUTS)
 algorithm @Hoffman-Gelman:2014.
@@ -283,7 +276,7 @@ left side of the figure and increases to the right.*
 ![](img/warmup-epochs.png)
 
 When adaptation is engaged (it may be turned off by fixing a step size
-and mass matrix), the warmup period is split into three stages, as
+and metric), the warmup period is split into three stages, as
 illustrated in the [warmup adaptation figure](#adaptation.figure),
 with two *fast* intervals surrounding a series of growing
 *slow* intervals. Here fast and slow refer to parameters that
@@ -383,7 +376,7 @@ discussion of step-size jittering.
 All HMC implementations in Stan utilize quadratic kinetic energy
 functions which are specified up to the choice of a symmetric,
 positive-definite matrix known as a *mass matrix* or, more
-formally, a *metric* @Betancourt-Stein:2011.
+formally, a *metric* @Betancourt:2017.
 
 If the metric is constant then the resulting implementation is known
 as *Euclidean* HMC. Stan allows a choice among three Euclidean HMC
@@ -395,7 +388,7 @@ implementations,
 
 to be configured by the user.
 
-If the mass matrix is specified to be diagonal, then regularized
+If the metric is specified to be diagonal, then regularized
 variances are estimated based on the iterations in each slow-stage
 block (labeled II in the [warmup adaptation stages
 figure](#adaptation.figure)).  Each of these estimates
@@ -403,7 +396,7 @@ is based only on the iterations in that block.  This allows early
 estimates to be used to help guide warmup and then be forgotten later
 so that they do not influence the final covariance estimate.
 
-If the mass matrix is specified to be dense, then regularized
+If the metric is specified to be dense, then regularized
 covariance estimates will be carried out, regularizing the estimate to
 a diagonal matrix, which is itself regularized toward a unit matrix.
 
@@ -411,14 +404,14 @@ Variances or covariances are estimated using Welford accumulators
 to avoid a loss of precision over many floating point operations.
 
 
-#### Warmup Times and Estimating the Mass Matrix {-}
+#### Warmup Times and Estimating the Metric {-}
 
-The mass matrix can compensate for linear (i.e. global) correlations
+The metric can compensate for linear (i.e. global) correlations
 in the posterior which can dramatically improve the performance of HMC
 in some problems. This requires knowing the global correlations.
 
 In complex models, the global correlations are usually difficult, if
-not impossible, to derivate analytically; for example, nonlinear model
+not impossible, to derive analytically; for example, nonlinear model
 components convolve the scales of the data, so standardizing the data
 does not always help.  Therefore, Stan estimates these correlations
 online with an adaptive warmup.  In models with strong nonlinear
@@ -430,27 +423,25 @@ substantial performance improvements.
 
 #### Nonlinearity {-}
 
-The mass matrix compensates for only linear (equivalently global or
+The metric compensates for only linear (equivalently global or
 position-independent) correlations in the posterior. The hierarchical
 parameterizations, on the other hand, affect some of the nasty
 nonlinear (equivalently local or position-dependent) correlations
-common in hierarchical models.^[Only in Riemannian HMC does the metric, which can be thought of as a position-dependent mass matrix, start compensating for nonlinear correlations.]
+common in hierarchical models.^[In Riemannian HMC the metric compensates for nonlinear correlations.]
 
-One of the biggest difficulties with dense mass matrices is the
-estimation of the mass matrix itself which introduces a bit of a
-chicken-and-egg scenario;  in order to estimate an appropriate mass
-matrix for sampling, convergence is required, and in order to
-converge, an appropriate mass matrix is required.
+One of the biggest difficulties with dense metrics is the
+estimation of the metric itself which introduces a bit of a
+chicken-and-egg scenario;  in order to estimate an appropriate metric
+for sampling, convergence is required, and in order to
+converge, an appropriate metric is required.
 
-
-#### Dense vs. Diagonal Mass Matrices {-}
+#### Dense vs. Diagonal Metrics {-}
 
 Statistical models for which sampling is problematic are not typically
-dominated by linear correlations for which a dense mass matrix can
+dominated by linear correlations for which a dense metric can
 adjust.  Rather, they are governed by more complex nonlinear
 correlations that are best tackled with better parameterizations or
 more advanced algorithms, such as Riemannian HMC.
-
 
 #### Warmup Times and Curvature {-}
 

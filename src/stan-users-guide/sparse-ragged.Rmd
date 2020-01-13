@@ -30,9 +30,12 @@ model {
   ...
 ```
 
-\begin{figure}
-\begin{center}
-\begin{minipage}[c]{0.45\textwidth}
+```{r results="asis"}
+cat(ifelse(knitr::is_html_output(), "<table><tr><td>",
+           "\\begin{figure}
+            \\begin{center}
+            \\begin{minipage}[c]{0.45\\textwidth}"))
+```
 $$
 y
 =
@@ -46,36 +49,41 @@ y
 \end{array}
 \right]
 $$
-\end{minipage}
-\ \ \
-\begin{minipage}[c]{0.45\textwidth}
-\begin{tabular}{ll|l}
-$jj$ & $kk$ & $y$
-\\ \hline
-1 & 1 & 0
-\\
-1 & 2 & 1
-\\
-1 & 4 & 1
-\\
-2 & 1 & 0
-\\
-2 & 4 & 1
-\\
-3 & 2 & 0
-\end{tabular}
-\end{minipage}
-\end{center}
+```{r results="asis"}
+cat(ifelse(knitr::is_html_output(), "</td><td>",
+           "\\end{minipage}
+            \\ \\ \\
+            \\begin{minipage}[c]{0.45\\textwidth}"))
+```
 
-\caption{\small\it  Example of coding sparse arrays in Stan.  On the left is a definition
-  of a sparse matrix $y$ using the NA notation from R (which is not
-  supported by Stan).  On the right is a database-like encoding of the
-  same sparse matrix $y$ that can be used directly in Stan.  The first
-  two columns, $jj$ and $kk$, denote the indexes and the final column,
-  $y$, the value.  For example, the fifth row of the database-like
-  data structure on the right indicates that $y_{2,4} = 1$.}
-\end{figure}
-id:sparse-data.figure
+```{r}
+df <- read.table(text=
+"$jj$ | $kk$ | $y$
+ 1    | 1    | 0
+ 1    | 2    | 1
+ 1    | 4    | 1
+ 2    | 1    | 0
+ 2    | 4    | 1
+ 3    | 2    | 0
+", sep="|", header=TRUE, check.names=FALSE)
+kable(df, booktabs=TRUE, escape=FALSE, linesep="") %>%
+  kable_styling(full_width=FALSE)
+```
+
+```{r results="asis"}
+cat(ifelse(knitr::is_html_output(), "</td></tr></table>",
+           "\\end{minipage}
+            \\end{center}
+            \\end{figure}"))
+```
+
+On the left is a definition of a sparse matrix $y$ using the NA notation from R
+(which is not supported by Stan).  On the right is a database-like encoding of
+the same sparse matrix $y$ that can be used directly in Stan.  The first two
+columns, $jj$ and $kk$, denote the indexes and the final column, $y$, the value.
+For example, the fifth row of the database-like data structure on the right
+indicates that $y_{2,4} = 1$.
+
 
 When not every student is given every question, the dense array coding
 will no longer work, because Stan does not support undefined values.
@@ -126,39 +134,46 @@ a linear array.
 For example, consider a data structure for three groups, each of which
 has a different number of observations.
 
-\begin{figure}
-\begin{center}
-\begin{minipage}[c]{0.35\textwidth}
+```{r results="asis"}
+cat(ifelse(knitr::is_html_output(), "<table><tr><td>",
+           "\\begin{center}
+            \\begin{minipage}[c]{0.35\\textwidth}"))
+```
 $y_1 =  \left[1.3 \ \ 2.4 \ \ 0.9\right]$
-\\[3pt]
+
 $y_2 = \left[-1.8 \ \ -0.1\right]$
-\\[3pt]
+
 $y_3 = \left[12.9 \ \ 18.7 \ \ 42.9 \ \ 4.7\right]$
-\end{minipage}
-\ \ \
-\begin{minipage}[c]{0.60\textwidth}
+
+```{r results="asis"}
+cat(ifelse(knitr::is_html_output(), "</td><td>",
+           "\\end{minipage}
+            \\ \\ \\
+            \\begin{minipage}[c]{0.60\\textwidth}"))
+```
+
 $z = [1.3 \ \ 2.4 \ \ 0.9 \ \ -1.8 \ \ -0.1 \ \ 12.9 \ \ 18.7 \ \ 42.9
 \ \ 4.7]$
-\\[3pt]
-$s  =  \{ 3 \ \ 2 \ \ 4 \}$
-\end{minipage}
-\end{center}
 
-\caption{\small\it Example of coding ragged arrays in Stan.  On the
-  left is the definition of a ragged data structure $y$ with three
-  rows of different sizes ($y_1$ is size 3, $y_2$ size 2, and $y_3$
-  size 4).  On the right is an example of how to code the data in Stan,
-  using a single vector $y$ to hold all the values and a separate
-  array of integers $s$ to hold the group row sizes.  In this
-  example, $y_1 = z_{1:3}$, $y_2 =
-  z_{4:5}$, and $y_3 = z_{6:9}$.}
-\end{figure}
-id:ragged-data.figure
+$s  =  \{ 3 \ \ 2 \ \ 4 \}$
+
+
+```{r results="asis"}
+cat(ifelse(knitr::is_html_output(), "</td></tr></table>",
+           "\\end{minipage}
+            \\end{center}"))
+```
+
+On the left is the definition of a ragged data structure $y$ with three rows of
+different sizes ($y_1$ is size 3, $y_2$ size 2, and $y_3$ size 4).  On the right
+is an example of how to code the data in Stan, using a single vector $y$ to hold
+all the values and a separate array of integers $s$ to hold the group row sizes.
+In this example, $y_1 = z_{1:3}$, $y_2 = z_{4:5}$, and $y_3 = z_{6:9}$.
 
 Suppose the model is a  simple varying intercept model, which,
-using vectorized notation, would yield a likelihood
+using vectorized notation, would yield a log-likelihood
 $$
-\prod_{n=1}^3 \log \mathsf{normal}(y_n | \mu_n, \sigma).
+\sum_{n=1}^3 \log \textsf{normal}(y_n \mid \mu_n, \sigma).
 $$
 There's no direct way to encode this in Stan.
 

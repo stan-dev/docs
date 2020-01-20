@@ -1,0 +1,297 @@
+# Posterior Predictive Checks {#ppcs.chapter}
+
+Posterior predictive checks are a way of measuring whether a model
+does a good job of capturing relvant aspects of the data, such as
+means, standard deviations, and quantiles.  Posterior predictertive
+checking works by simulating new replicated data sets based on the
+fitted model parameters and then comparing statistics applied to the
+replicated data set with the same statistic applied to the original
+data set.
+
+## Simulating from the posterior predictive distribution
+
+The posterior predictive distribution is the distribution over new
+observations given previous observations.  It's predictive in the
+sense that it's predicting behavior on new data that is not part of
+the training set.  It's posterior in that everything is conditioned on
+observed data $y$.
+
+The posterior predictive distribution for replications
+$y^{\textrm{rep}}$ of the original data set $y$ given model parameters
+$\theta$ is defined by
+$$
+p(y^{\textrm{rep}} \mid y)
+= \int p(y^{\textrm{rep}} \mid \theta)
+       \cdot p(\theta \mid y) \, \textrm{d}\theta.
+$$
+
+As with other posterior predictive quantities, generating a replicated
+data set $y^{\textrm{rep}}$ from the posterior predictive distribution is
+straightforward using the generated quantities block.  Consider a simple regression model with parameters $\theta = (\alpha, \beta, \sigma).$
+```
+data {
+  int<lower = 0> N;
+  vector[N] x;
+  vector[N] y;
+}
+parameters {
+  real alpha;
+  real beta;
+  real<lower = 0> sigma;
+}
+model {
+  alpha ~ normal(0, 2);
+  beta ~ normal(0, 1);
+  sigma ~ normal(0, 1);
+  y ~ normal(alpha + beta * x, sigma);
+}
+```
+To generate a replicated data set `x_rep` for this simple model, the
+following generated quantities block suffices.
+```
+generated quantities {
+  vector[N] y_rep = normal_rng(alpha + beta * x, sigma);
+}
+```
+The replicated data variable is declared to be the same shape and size
+as the original data `y`.  The vectorized form of the normal random
+number generator is used with the original predictors `x` and the
+model parameters `alpha, beta`, and `sigma.`
+
+## Plotting multiples
+
+A standard posterior predictive check would plot a histogram of each
+replicated data set along with the original data set and compare them
+by eye.  For this purpose, only a few replications are needed.  These
+should be taken by thinning a larger set of replications down to the
+size needed to ensure rough independence of the replications.
+
+Here's a complete example where the model is a simple Poisson with
+improper prior.
+
+```
+data {
+  int<lower = 0> N;
+  int<lower = 0> y[N];
+}
+transformed data {
+  real<lower = 0> mean_y = mean(to_vector(y));
+  real<lower = 0> sd_y = sd(to_vector(y));
+}
+parameters {
+  real<lower = 0> lambda;
+}
+model {
+  y ~ poisson(lambda);
+}
+generated quantities {
+  int<lower = 0> y_rep[N] = poisson_rng(rep_array(lambda, N));
+  real<lower = 0> mean_y_rep = mean(to_vector(y_rep));
+  real<lower = 0> sd_y_rep = sd(to_vector(y_rep));
+  int<lower = 0, upper = 1> mean_gte = (mean_y_rep >= mean_y);
+  int<lower = 0, upper = 1> sd_gte = (sd_y_rep >= sd_y);
+}
+```
+The generated quantities block creates a variable `y_rep` for the
+replicated data, variables `mean_y_rep` and `sd_y_rep` for the
+statistics of the replicated data, and indicator variables
+`mean_gte` and `sd_gte` for whether the replicated statistic
+is greater than or equal to the statistic applied to the original data.
+
+Now consider generating data $y \sim \textrm{Poisson}(5)$.  The
+resulting small multiples plot shows the original data plotted in the
+upper left and eight different posterior replications plotted in the
+remaining boxes.
+
+
+```{r include = TRUE, echo = FALSE, fig.align = "center", fig.cap = "Posterior predictive checks for Poisson data generating process and Poisson model."}
+knitr::include_graphics("./img/ppc-pois-pois.jpg", auto_pdf = TRUE)
+```
+
+With a Poisson data-generating process and Poisson model, the
+posterior replications look similar to the original data.  If it were
+easy to pick the original data out of the lineup, there would be a
+problem.
+
+Now consider generating overdispersed data $y \sim
+\textrm{negative_binomial2}(5, 1)$.  This has the same mean as
+$\textrm{Poisson}(5)$, namely $5$, but a standard deviation of
+$\sqrt{5 + 5^2 /1} \approx 5.5.$ There is no way to fit this data with
+the Poisson model, because a variable distributed as
+$\textrm{Poisson}(\lambda)$ has mean $\lambda$ and standard deviation
+$\sqrt{\lambda},$ which is $\sqrt{5}$ for $\textrm{Poisson}(5).$
+Here's the resulting small multiples plot, again with original data in
+the upper left.
+
+```{r include = TRUE, echo = FALSE, fig.align = "center", fig.cap = "Posterior predictive checks for negative binomial data generating process and Poisson model."}
+knitr::include_graphics("./img/ppc-nb-pois.jpg", auto_pdf = TRUE)
+```
+
+This time, the original data stands out in stark contrast to the
+replicated data sets, all of which have clearly lower variance than
+the original data.  That is, the model's not appropriately capturing
+the variance of the data.
+
+
+## Posterior p-values
+
+If a model captures the data well, summary statistics such as
+sample mean and standard deviation, should have similar values in
+the original and replicated data sets.  This can be tested
+by means of a p-value, which is technically just the probability the
+test statistic in a replicated data set exceeds that in the original data,
+$$
+\textrm{Pr}[s(y^{\textrm{rep}}) > s(y) \mid y]
+=
+\int
+\textrm{I}[s(y^{\textrm{rep}}) > s(y) \mid y]
+\cdot p(y^{\textrm{rep}} \mid y)
+\, \textrm{d}{y^{\textrm{rep}}}.
+$$
+Values of posterior p-values very close to 0 or very close to 1 are
+cause for concern that the model is not fitting the data well.
+
+To calculate event probabilities in Stan, it suffices to define
+indicator variables that take on value 1 if the event occurs and
+0 if it does not.  The posterior mean is then the event probability.
+For efficiency, indicator variables are defined in the
+generated quantities block.
+```
+generated quantities {
+  int<lower = 0, upper = 1> mean_gt;
+  int<lower = 0, upper = 1> sd_gt;
+  {
+    vector[N] y_rep = normal_rng(alpha + beta * x, sigma);
+    mean_gt = mean(y_rep) > mean(y);
+    sd_gt = sd(y_rep) > sd(y);
+  }
+}
+```
+The indicator variable `mean_gt` will have value 1 if the mean of the
+simulated data `y_rep` is greater than or equal to the mean of he
+original data `y`.  This program saves output space by usng a local
+variable for `x_rep`.  The actual variables are not needed for the
+posterior predictive checks.  The statistics `mean(x_rep)` and
+`sd(x_rep)` could also be saved---their equivalent is used in the
+following plots.
+
+For the example in the previous section above where overdispersed
+data generated by a negative binomial distribution was fit with a
+simple Poisson model, the following plot illustrates the posterior
+p-value calculation for the mean statistic.
+
+```{r include = TRUE, echo = FALSE, fig.align = "center", fig.cap = "Scatterplot of means of replicated data sets; vertical red line at mean of original data."}
+knitr::include_graphics("./img/ppc-pvalue-nb-pois-mean.jpg", auto_pdf = TRUE)
+```
+
+The p-value for the mean is just the percentage of replicated data
+sets whose statistic is greater than or equal that of the original
+data.  Using a Poisson model for negative binomial data still fits the
+mean well, with a posterior $p$-value of 0.49.  In Stan terms, it is
+extracted as the posterior mean of the indicator variable `mean_gt`.
+
+The standard deviation statistic tells a different story.
+
+```{r include = TRUE, echo = FALSE, fig.align = "center", fig.cap = "Scatterplot of standard deviations of replicated data sets; vertical red line at standard deviation of original data."}
+knitr::include_graphics("./img/ppc-pvalue-nb-pois-sd.jpg", auto_pdf = TRUE)
+```
+
+Here, the original data has much higher standard deviation than any of
+the replicated data sets.  The resulting $p$-value estimated by Stan
+after a large number of iterations is exactly 0.  In other words,
+there were no posterior draws in which the replicated data set had a
+standard deviation greater than or equal to that of the original data
+set.  Clearly, the model is not capturing the dispersion of the
+original data.  The point of this exercise isn't just to figure out
+that there's a problem with a model, but to isolate where it is.
+Seeing that the data is overdispersed compared to the Poisson model
+would be reason to fit a more general model like the negative binomial
+or a latent varying effects (aka random effects) model that can
+account for the overdispersion.
+
+### Which statistics to test?
+
+Any statistic may be used for the data, but these can be guided by the
+quantities of interest in the model itself.  A popular choice in
+addition to mean and standard deviation are quantiles, such as the
+median, 5% or 95% quantiles, or even the maximum or minimum value to
+test extremes.
+
+## Cross-validation predictive tests
+
+Rather than posterior predictive checks that generate replicate data
+conditioned on all of the data, $p(y_n^{\textrm{rep}} \mid y)$, the
+cross-validation predictive distribution can be used,
+$$
+p(y_n^{\textrm{rep}} \mid y_{-n}),
+$$
+where if $y$ is of size $N$, the notation $y_{-n}$ is all of $y$
+except $y_n,$
+$$
+y_{-n} = y_{1:n - 1, n + 1:N}.
+$$
+Thus the leave-one-out cross-validation predictive distribtuion
+replicates data item $y_n$ based on all of the data oher than $y_n$.
+
+Care must be taken that cross-validation one item at a time makes
+sense---sometimes these will have to be grouped because the
+$y_n^{\textrm{rep}}$ are not all conditionally independent.
+
+Cross-validation predictive tests can be expensive to run by brute
+force.  Rather than full leave-one-out cross-validation, mini-batched
+cross-validation can be used.  A traditional approach is to partition
+the data into ten groups and generate each batch based on the data
+in the other batches.  In the cross-validation literature, these
+mini-batches are called "folds" and using ten mini-batches is called
+"ten-fold cross-validation."  This can get tricky to implement with
+indexing if the data is not evenly divisible into ten groups.
+
+In Stan, $K$-fold cross-validation predictive checks can be
+implemented as follows for the simple linear regression model.
+
+```
+function {
+  int fold_size(int K, int k) {
+    return k < K ? K / k
+                 : K / k + K % k;  // last fold gets remainder
+  }
+  int start_fold(int K, k) {
+    return (k - 1) * fold_size(K, k) + 1;
+  }
+  int end_fold(int K, k) {
+    return k < K ? start_fold(K, k) + fold_size(K, k)
+                 : K;
+  }
+  vector test_fold(vector x, int K, int k)
+    return x[start_fold(K, k), end_fold(K, k)];
+  }
+  vector train_folds(vector x, int K, int k) {
+    return append_row(x[1:start_fold(K, k) - 1],
+                      x[end_fold(K, k), ]);
+  }
+}
+data {
+  int<lower = 1> K;
+  int<lower = 1, upper = K> k;
+  int<lower = 1> N;
+  vector[N] x;
+  vector[N] y;
+}
+transformed data {
+  int<lower = 1> N_k = N / K;  // rounds down
+}
+model {
+  train_folds(y, K, k) ~ normal(alpha + beta * train_folds(x, K, k), sigma);
+}
+generated quantities {
+  vector[fold_size(K, k)] y_rep
+    = normal_rng(alpha + beta * test_fold(x,  K, k), sigma);
+}
+```
+
+In the limit when `k = 1`, the result is leave-one-out
+cross-validation predictive inference.
+
+This is obviously going to be much more complicated to run from the
+outside with ten model fits whose `y_rep` values need to be
+reassembled to generate a predictive test set.

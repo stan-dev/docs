@@ -113,8 +113,7 @@ posterior replications look similar to the original data.  If it were
 easy to pick the original data out of the lineup, there would be a
 problem.
 
-Now consider generating overdispersed data $y \sim
-\textrm{negative_binomial2}(5, 1)$.  This has the same mean as
+Now consider generating overdispersed data $y \sim \textrm{negative-binomial2}(5, 1).$  This has the same mean as
 $\textrm{Poisson}(5)$, namely $5$, but a standard deviation of
 $\sqrt{5 + 5^2 /1} \approx 5.5.$ There is no way to fit this data with
 the Poisson model, because a variable distributed as
@@ -139,13 +138,14 @@ If a model captures the data well, summary statistics such as
 sample mean and standard deviation, should have similar values in
 the original and replicated data sets.  This can be tested
 by means of a p-value, which is technically just the probability the
-test statistic in a replicated data set exceeds that in the original data,
+test statistic $s(\cdot)$ in a replicated data set exceeds that in
+the original data,
 $$
-\textrm{Pr}[s(y^{\textrm{rep}}) > s(y) \mid y]
+\textrm{Pr}\left[ s(y^{\textrm{rep}}) \geq s(y) \mid y \right]
 =
 \int
-\textrm{I}[s(y^{\textrm{rep}}) > s(y) \mid y]
-\cdot p(y^{\textrm{rep}} \mid y)
+\textrm{I}\left[ s(y^{\textrm{rep}}) \geq s(y) \mid y \right]
+\cdot p\left( y^{\textrm{rep}} \mid y \right)
 \, \textrm{d}{y^{\textrm{rep}}}.
 $$
 Values of posterior p-values very close to 0 or very close to 1 are
@@ -216,82 +216,3 @@ quantities of interest in the model itself.  A popular choice in
 addition to mean and standard deviation are quantiles, such as the
 median, 5% or 95% quantiles, or even the maximum or minimum value to
 test extremes.
-
-## Cross-validation predictive tests
-
-Rather than posterior predictive checks that generate replicate data
-conditioned on all of the data, $p(y_n^{\textrm{rep}} \mid y)$, the
-cross-validation predictive distribution can be used,
-$$
-p(y_n^{\textrm{rep}} \mid y_{-n}),
-$$
-where if $y$ is of size $N$, the notation $y_{-n}$ is all of $y$
-except $y_n,$
-$$
-y_{-n} = y_{1:n - 1, n + 1:N}.
-$$
-Thus the leave-one-out cross-validation predictive distribtuion
-replicates data item $y_n$ based on all of the data oher than $y_n$.
-
-Care must be taken that cross-validation one item at a time makes
-sense---sometimes these will have to be grouped because the
-$y_n^{\textrm{rep}}$ are not all conditionally independent.
-
-Cross-validation predictive tests can be expensive to run by brute
-force.  Rather than full leave-one-out cross-validation, mini-batched
-cross-validation can be used.  A traditional approach is to partition
-the data into ten groups and generate each batch based on the data
-in the other batches.  In the cross-validation literature, these
-mini-batches are called "folds" and using ten mini-batches is called
-"ten-fold cross-validation."  This can get tricky to implement with
-indexing if the data is not evenly divisible into ten groups.
-
-In Stan, $K$-fold cross-validation predictive checks can be
-implemented as follows for the simple linear regression model.
-
-```
-function {
-  int fold_size(int K, int k) {
-    return k < K ? K / k
-                 : K / k + K % k;  // last fold gets remainder
-  }
-  int start_fold(int K, k) {
-    return (k - 1) * fold_size(K, k) + 1;
-  }
-  int end_fold(int K, k) {
-    return k < K ? start_fold(K, k) + fold_size(K, k)
-                 : K;
-  }
-  vector test_fold(vector x, int K, int k)
-    return x[start_fold(K, k), end_fold(K, k)];
-  }
-  vector train_folds(vector x, int K, int k) {
-    return append_row(x[1:start_fold(K, k) - 1],
-                      x[end_fold(K, k), ]);
-  }
-}
-data {
-  int<lower = 1> K;
-  int<lower = 1, upper = K> k;
-  int<lower = 1> N;
-  vector[N] x;
-  vector[N] y;
-}
-transformed data {
-  int<lower = 1> N_k = N / K;  // rounds down
-}
-model {
-  train_folds(y, K, k) ~ normal(alpha + beta * train_folds(x, K, k), sigma);
-}
-generated quantities {
-  vector[fold_size(K, k)] y_rep
-    = normal_rng(alpha + beta * test_fold(x,  K, k), sigma);
-}
-```
-
-In the limit when `k = 1`, the result is leave-one-out
-cross-validation predictive inference.
-
-This is obviously going to be much more complicated to run from the
-outside with ten model fits whose `y_rep` values need to be
-reassembled to generate a predictive test set.

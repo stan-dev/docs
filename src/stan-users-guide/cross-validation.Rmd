@@ -1,0 +1,332 @@
+# Held-Out Evaluation and Cross-Validation
+
+Held-out evaluation involves estimating a model based on a training
+data set, then evaluating it on a held-out testing data set that was
+not part of the training data set.  This is commonly done in
+predictive modeling competitions such as those run by Kaggle.
+
+Cross-validation involves dividing a single data set into several
+folds, testing on each after training on the other folds.  That is, it
+simulates held-out evaluation with subsets of the training data set.
+
+Evaluation can involve any kind of predictive statistics from log
+density (aka "log loss") to squared error in the estimation of
+parameters or event probabilities, to evaluation of accuracy in a
+classifcaiton task (aka "0/1 loss").
+
+## Predictions for new data
+
+With Bayesian inference, the posterior predictive distribution for new
+data $\tilde{y}$ given observed data $y$ in a model with parameters
+$\theta$ is given by
+\begin{align*}
+p(\tilde{y} \mid y)
+& = & \int p(\tilde{y} \mid \theta) \cdot p(y \mid \theta) \,
+\textrm{d}\theta
+\\[4pt]
+& \approx & \frac{1}{M} \sum_{m=1}^M p(\tilde{y} \mid \theta^{(m)}),
+\end{align*}
+where each $\theta^{(m)} \sim p(\theta \mid y)$ is distributed
+according to the posterior.
+
+Because the MCMC approach inolves evaluating a prediction on a
+draw-by-draw basis, it can be coded in a Stan model in the generated
+quantities block.  For example, suppose the model is a very simple
+Poisson with training data `y` consisting of a sequence of counts
+and test data `y_tilde` of the same form.  Then the following model
+performs prediction,
+```
+data {
+  int<lower = 0> N;
+  int<lower = 0> y[N];
+  int<lower = 0> N_tilde;
+}
+parameters {
+  real<lower = 0> lambda;
+}
+model {
+  y ~ poisson(lambda);
+}
+generated quantities {
+  int<lower = 0> y_tilde[N_tilde]
+    = poisson_rng(rep_vector(lambda, N));
+}
+```
+This model is particularly simple, but illustrates the general point.
+If we instead have a Poisson regression, there are predictors $x$ for
+the training data $y$ and $\tilde{x}$ for the test data $\tilde{y}.$
+The posterior predictive distribution is
+\begin{align}
+p(\tilde{y} \mid \tilde{x}, y, x)
+& = & \int p(\tilde{y} \mid x, \theta) \cdot p(\theta \mid y, x) \cdot
+\textrm{d}\theta
+\\[4pt]
+& = & \frac{1}{M} \sum_{m=1}^M p(\tilde{y} \mid x, \theta^{(m)})
+\end{align}
+The predictors are coded as data and the model uses the Poisson
+distribution that takes parameters on the log scale.
+```
+data {
+  int<lower = 0> N;
+  int<lower = 0> y[N];
+  vector[N] x;
+  int<lower = 0> N_tilde;
+  vector[N_tilde] x_tilde;
+}
+parameters {
+  real alpha;
+  real beta;
+}
+model {
+  y ~ poisson_log(alpha + beta * x);
+}
+generated quantities {
+  int<lower = 0> y_tilde[N_tilde]
+    = poisson_log_rng(alpha + beta * x_tilde);
+}
+```
+
+The result from running Stan is a predictive sample $\tilde{y}^{(1)},
+\ldots \tilde{y}^{(M)}$ where each $\tilde{y}^{(m)} \sim p(\tilde{y}
+\mid \tilde{x}, x, y).$
+
+The mean of the posterior predictive distribution is the expected value
+\begin{align}
+\mathbb{E}[\tilde{y} \mid \tilde{x}, x, y]
+& = &
+\int
+\tilde{y}
+\cdot p(\tilde{y} \mid \tilde{x}, \theta)
+\cdot p(\theta \mid x, y)
+\, \textrm{d}\theta
+\\[4pt]
+& \approx & \frac{1}{M} \sum_{m = 1}^M \tilde{y}^{(m)},
+\end{align}
+where the $\tilde{y}^{(m)} \sim p(\tilde{y} \mid \tilde{x}, x, y)$ are
+drawn from the posterior predictive distribution.  Thus the posterior
+mean of `y_tilde[n]` after running Stan is the expected value of
+$\tilde{y}_n$ conditioned on the te training data $x, y$ and predictor
+$\tilde{x}_n.$  The posterior draws can also be used to estimate
+quantiles for the median and any posterior intervals of interest.
+
+
+## Evaluating posterior predictive densities
+
+Suppose we want to measure square error between an actual observation
+$\tilde{y}$ and that predicted by a model based on training data $(x,
+y)$ and observed predictors $\tilde{x}.$   Here's an example using
+linear regression that provides the basis for computing
+$p(\tilde{y} \mid \tilde{x}, x, y)$ on the log scale.
+
+```
+data {
+  int<lower = 0> N;
+  vector[N] y;
+  vector[N] x;
+  int<lower = 0> N_tilde;
+  vector[N_tilde] x_tilde;
+  vector[N_tilde] y_tilde;
+}
+parameters {
+  real alpha;
+  real beta;
+  real<lower = 0> sigma;
+}
+model {
+  y ~ normal(alpha + beta * x, sigma);
+}
+generated quantities {
+  real log_p = normal_lpdf(y_tilde | alpha + beta * x_tilde, sigma);
+}
+```
+
+Only the training data `x` and `y` are used in the model block.  The
+test data `y_tilde` and test predictors `x_tilde` are only used in the
+generated quantities block.  Thus the program is not cheating by using
+the test data during training.^[It would be fair to use `x_tilde` in
+training the mode; in machine learning this is called "semi-supervised
+learning" and in statistics a "missing data problem."]
+
+The problem is now that the results are on the log scale as they
+pretty much have to be in order to avoid underflow with even
+small- to medium-sized data sets.  The desired quantity is
+$$
+p(\tilde{y} \mid \tilde{x}, x, y)
+\approx
+\frac{1}{M} \sum_{m = 1}^M
+p(\tilde{y}^{(m)} \mid \tilde{x}, \alpha,
+\beta, \sigma).
+$$
+Taking the logarithm of both sides yields
+$$
+\log p(\tilde{y} \mid \tilde{x}, x, y)
+\approx
+\log \frac{1}{M} \sum_{m = 1}^M
+p(\tilde{y}^{(m)} \mid \tilde{x}, \alpha, \beta, \sigma).
+$$
+But instead of $p(\tilde{y}^{(m)} \mid \tilde{x}, \alpha, \beta,
+\sigma),$ Stan is providing $\log p(\tilde{y}^{(m)} \mid \tilde{x}, \alpha, \beta,
+\sigma).$  The log density needs to be exponentiated to plug into the
+above, yielding the numerically friendly log-sum-exp formulation,
+$$
+\log p(\tilde{y} \mid \tilde{x}, x, y)
+\approx
+\log \frac{1}{M} \sum_{m = 1}^M
+\exp(\log(p(\tilde{y}^{(m)} \mid \tilde{x}, \alpha, \beta, \sigma))).
+$$
+That is, given the posterior draws `log_p[1], ..., log_p[M]` given by
+Stan's MCMC algorithms, the function `log_sum_exp(log_p)` returns the
+required value $\log p(\tilde{y} \mid \tilde{x}, x, y)$ with
+high arithmetic precision.  It can be implemented outside of Stan as
+```
+log_sum_exp(a) = max(a) + log(sum(exp(a - max(a))))
+```
+where the `exp` function is assumed to be vectorized, as is the
+subtraction of `max(a)`.  This form ensures that full precision is
+preserved in `max(a)` while not allowing any of the exponentiations to
+overflow (because the largest entry in `a - max(a)` is zero).
+
+## Estimation error
+
+There are two ways to compute predictions in a Bayesian setting,
+either as the error of an expectation or the expectation of an error.
+The first is the traditional approach, where a point estimate is
+defined as a posterior mean conditioned on the predictor $\tilde{x}$
+and training data $(x, y),$
+$$
+\hat{\tilde{y}}
+= \mathbb{E}[\tilde{y} \mid \tilde{x}, x, y].
+$$
+The MCMC calculation of $\hat{\tilde{y}}$ is
+$$
+\hat{\tilde{y}} = \frac{1}{M} \sum_{m=1}^M \tilde{y}^{(m)},
+$$
+where
+$$
+\tilde{y}^{(m)} \sim p(\tilde{y} \mid \tilde{x}, x, y).
+$$
+After the MCMC computation, the value $\hat{\tilde{y}}$ can be compared to
+the true $\tilde{y}$ to compute squared error,
+$$
+\textrm{se}
+= \left( \hat{\tilde{y}} - \tilde{y} \right)^2.
+$$
+There is no way to access $\hat{\tilde{y}}$ within a Stan program---it
+is computed by averaging over multiple executions.
+
+The second approach is to use the Bayesian posterior to compute
+expected square error.
+$$
+\textrm{expectedSe}
+= \mathbb{E}\left[\left( \tilde{y}^{\textrm{pred}}
+                    - \tilde{y} \right)^2
+		  \mid \tilde{x}, x, y \right].
+$$
+Because this is an expectation, the interior term can be carried out
+within Stan.  For instance, for the linear regression model, square
+error for a given iteration is given by
+```
+generated quantities {
+  double sq_err
+    = dot(tilde_y,
+          to_vector(normal_rng(alpha + x * x_tilde,
+	                       sigma)));
+  double mse = sq_err / N_tilde;
+  double rmse = sqrt(mse);
+}
+```
+
+The posterior mean of `sq_err` gives `expect_sq_err`.  Typically, this
+is reported as average square error per item, otherwise known as mean
+square error, or `mse` in the program.  Because mean square error does
+not have the same units as the item being predicted, its square root,
+known as root mean square error (`rmse` in the program) is often
+reported.  Here, the Stan program will be computing expected root mean
+square error, expected mean square error, and expected square error.
+The division by `N_tilde` distributes through the summation, but the
+square root is non-linear and doesn't.  That means that the square
+root of the expected mean square error is not the same as the expected
+value root mean square error.
+
+##
+
+
+
+## Cross-validation predictive tests
+
+Rather than posterior predictive checks that generate replicate data
+conditioned on all of the data, $p(y_n^{\textrm{rep}} \mid y)$, the
+cross-validation predictive distribution can be used,
+$$
+p(y_n^{\textrm{rep}} \mid y_{-n}),
+$$
+where if $y$ is of size $N$, the notation $y_{-n}$ is all of $y$
+except $y_n,$
+$$
+y_{-n} = y_{1:n - 1, n + 1:N}.
+$$
+Thus the leave-one-out cross-validation predictive distribtuion
+replicates data item $y_n$ based on all of the data oher than $y_n$.
+
+Care must be taken that cross-validation one item at a time makes
+sense---sometimes these will have to be grouped because the
+$y_n^{\textrm{rep}}$ are not all conditionally independent.
+
+Cross-validation predictive tests can be expensive to run by brute
+force.  Rather than full leave-one-out cross-validation, mini-batched
+cross-validation can be used.  A traditional approach is to partition
+the data into ten groups and generate each batch based on the data
+in the other batches.  In the cross-validation literature, these
+mini-batches are called "folds" and using ten mini-batches is called
+"ten-fold cross-validation."  This can get tricky to implement with
+indexing if the data is not evenly divisible into ten groups.
+
+In Stan, $K$-fold cross-validation predictive checks can be
+implemented as follows for the simple linear regression model.
+
+```
+function {
+  int fold_size(int K, int k) {
+    return k < K ? K / k
+                 : K / k + K % k;  // last fold gets remainder
+  }
+  int start_fold(int K, k) {
+    return (k - 1) * fold_size(K, k) + 1;
+  }
+  int end_fold(int K, k) {
+    return k < K ? start_fold(K, k) + fold_size(K, k)
+                 : K;
+  }
+  vector test_fold(vector x, int K, int k)
+    return x[start_fold(K, k), end_fold(K, k)];
+  }
+  vector train_folds(vector x, int K, int k) {
+    return append_row(x[1:start_fold(K, k) - 1],
+                      x[end_fold(K, k), ]);
+  }
+}
+data {
+  int<lower = 1> K;
+  int<lower = 1, upper = K> k;
+  int<lower = 1> N;
+  vector[N] x;
+  vector[N] y;
+}
+transformed data {
+  int<lower = 1> N_k = N / K;  // rounds down
+}
+model {
+  train_folds(y, K, k) ~ normal(alpha + beta * train_folds(x, K, k), sigma);
+}
+generated quantities {
+  vector[fold_size(K, k)] y_rep
+    = normal_rng(alpha + beta * test_fold(x,  K, k), sigma);
+}
+```
+
+In the limit when `k = 1`, the result is leave-one-out
+cross-validation predictive inference.
+
+This is obviously going to be much more complicated to run from the
+outside with ten model fits whose `y_rep` values need to be
+reassembled to generate a predictive test set.

@@ -1,21 +1,20 @@
 #!/usr/bin/env bash
 
 ### USAGE
-# add_links.sh major minor patch
+# add_links.sh major minor
 # Example:
-# add_links.sh 2 22 1
+# add_links.sh 2 22
 
 major="$1"
 minor="$2"
-patch="$3"
 
-if [ -z "$major" ] || [ -z "$minor" ] || [ -z "$patch" ]
+if [ -z "$major" ] || [ -z "$minor" ]
 then
-      echo "All major, minor and patch required."
+      echo "Major, minor required."
       exit 0
 fi
 
-directory="$major""_""$minor""_""$patch"
+directory="$major""_""$minor"
 
 mkdir docs/"$directory"_tmp
 

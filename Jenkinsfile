@@ -9,7 +9,6 @@ pipeline {
     parameters {
         string(defaultValue: '', name: 'major_version', description: "Major version of the docs to be built")
         string(defaultValue: '', name: 'minor_version', description: "Minor version of the docs to be built")
-        string(defaultValue: '', name: 'patch_version', description: "Patch version of the docs to be built")
     }
     environment {
         GITHUB_TOKEN = credentials('6e7c1e8f-ca2c-4b11-a70e-d934d3f6b681')
@@ -51,7 +50,7 @@ pipeline {
         }
         stage("Link docs to latest") {
             steps{
-                sh "add_links.sh $major_version $minor_version $patch_version"
+                sh "add_links.sh $major_version $minor_version"
             }
         }
         stage("Push PR for docs") {

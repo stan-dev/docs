@@ -146,7 +146,7 @@ quantities block.
 |                      | `matrix[K, K]`   | `cholesky_factor_corr[K]`             |
 |                      | `matrix[K, K]`   | `cholesky_factor_cov[K]`              |
 
-id:constrained-types.figure
+<a name="id:constrained-types.figure"></a>
 
 The leftmost column is a list of the unconstrained and undimensioned
 basic types; these are used as function return types and argument
@@ -548,24 +548,23 @@ $$
 A^n
 =
 \begin{cases}
-\ \mbox{I} & \mbox{if } n = 0, \mbox{ and}
-\\[3pt]
-\ A \, A^{n-1} & \mbox{if } n > 0.
+\textrm{I} & \quad\text{if } n = 0, \text{ and} \\
+A \, A^{n-1} & \quad\text{if } n > 0.
 \end{cases}
 $$
 
-where $\mbox{I}$ is the identity matrix.  This definition can be
+where $\textrm{I}$ is the identity matrix.  This definition can be
 directly translated to a recursive function definition.
 
 ```
-  matrix matrix_pow(matrix a, int n);
+matrix matrix_pow(matrix a, int n);
 
-  matrix matrix_pow(matrix a, int n) {
-    if (n == 0)
-      return diag_matrix(rep_vector(1, rows(a)));
-    else
-      return a *  matrix_pow(a, n - 1);
-  }
+matrix matrix_pow(matrix a, int n) {
+  if (n == 0)
+    return diag_matrix(rep_vector(1, rows(a)));
+  else
+    return a *  matrix_pow(a, n - 1);
+}
 ```
 
 The forward declaration of the function signature before it is defined
@@ -575,8 +574,8 @@ not allow the recursion to go all the way to the base case, adding the
 following conditional clause.
 
 ```
-    else if (n == 1)
-      return a;
+else if (n == 1)
+  return a;
 ```
 
 
@@ -588,8 +587,8 @@ To generate random numbers, it is often sufficient to invert their
 cumulative distribution functions.  This is built into many of the
 random number generators.  For example, to generate a standard
 logistic variate, first generate a uniform variate
-$u \sim \mathsf{Uniform}(0, 1)$, then run through the inverse
-cumulative distribution function, $y = \mathrm{logit}(u)$.  If this
+$u \sim \textsf{uniform}(0, 1)$, then run through the inverse
+cumulative distribution function, $y = \textrm{logit}(u)$.  If this
 were not already built in as `logistic_rng(0, 1)`, it could be
 coded in Stan directly as
 
@@ -619,10 +618,12 @@ the Stan function `inv_Phi`.
 In order to generate non-standard variates of the location-scale
 variety, the variate is scaled by the scale parameter and shifted by
 the location parameter.  For example, to generate
-$\mathsf{normal}(\mu, \sigma)$ variates, it is enough to generate a
-uniform variate $u \sim \mathsf{Uniform}(0, 1)$, convert it to a
-standard normal variate, $z = \Phi^{-1}(u)$, and then, finally, scale
-and translate it, $y = \mu + \sigma z$.  In code,
+$\textsf{normal}(\mu, \sigma)$ variates, it is enough to generate a
+uniform variate $u \sim \textsf{uniform}(0, 1)$, then convert it to a
+standard normal variate, $z = \Phi(u)$, where
+$\Phi$ is the inverse cumulative distribution function for the
+standard normal, and then, finally, scale and translate it, $y = \mu +
+\sigma \times z$.  In code,
 
 ```
 real my_normal_rng(real mu, real sigma) {
@@ -656,7 +657,7 @@ back.
 
 #### Truncating below {-}
 
-For example, the following code generates a $\mathsf{Weibull}(\alpha, \sigma)$ variate truncated below at a time $t$,^[The original code and impetus for including this in the manual came from the Stan forums post \url{http://discourse.mc-stan.org/t/rng-for-truncated-distributions/3122/7}; by user `lcomm`, who also explained truncation above and below.]
+For example, the following code generates a $\textsf{Weibull}(\alpha, \sigma)$ variate truncated below at a time $t$,^[The original code and impetus for including this in the manual came from the Stan forums post \url{http://discourse.mc-stan.org/t/rng-for-truncated-distributions/3122/7}; by user `lcomm`, who also explained truncation above and below.]
 
 ```
 real weibull_lb_rng(real alpha, real sigma, real t) {
@@ -671,7 +672,7 @@ real weibull_lb_rng(real alpha, real sigma, real t) {
 
 If there is a lower bound and upper bound, then the CDF trick is used
 twice to find a lower and upper bound.  For example, to generate a
-$\mathsf{normal}(\mu, \sigma)$ truncated to a region $(a, b)$, the
+$\textsf{normal}(\mu, \sigma)$ truncated to a region $(a, b)$, the
 following code suffices,
 
 ```

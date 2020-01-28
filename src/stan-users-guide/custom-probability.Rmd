@@ -15,7 +15,7 @@ density integrate to 1.  If $\alpha \in \mathbb{R}$ and $\beta \in \mathbb{R}$
 are the bounds, with $\alpha < \beta$, then $y \in (\alpha,\beta)$ has
 a density defined as follows.
 $$
-\mathsf{Triangle}(y | \alpha,\beta)
+\textsf{triangle}(y \mid \alpha,\beta)
 =
 \frac{2}{\beta - \alpha}
 \
@@ -29,10 +29,10 @@ $$
 
 If $\alpha = -1$, $\beta = 1$, and $y \in (-1,1)$, this reduces to
 $$
-\mathsf{Triangle}(y|-1,1) = 1 - |y|.
+\textsf{triangle}(y \mid -1,1) = 1 - |y|.
 $$
 Consider the following Stan implementation of
-$\mathsf{Triangle}(-1,1)$ for sampling.
+$\textsf{triangle}(-1,1)$ for sampling.
 
 
 ```
@@ -47,7 +47,7 @@ model {
 The single scalar parameter `y` is declared as lying in the
 interval `(-1,1)`.  The total log probability is
 incremented with the joint log probability of all parameters, i.e.,
-$\log \mathsf{Triangle}(y|-1,1)$.  This value is coded in Stan as
+$\log \mathsf{Triangle}(y \mid -1,1)$.  This value is coded in Stan as
 `log1m(fabs(y))`.  The function `log1m` is defined so
 that `log1m(x)` has the same value as $\log(1-x)$, but the
 computation is faster, more accurate, and more stable.
@@ -71,7 +71,7 @@ With the constraint on `y` in place, this is just a less
 efficient, slower, and less arithmetically stable version of the
 original program.  But if the constraint on `y` is removed,
 the model will compile and run without arithmetic errors, but will not
-sample properly.^[The problem is the (extremely!) light tails of the triangle distribution.  The standard HMC and NUTS samplers can't get into the corners of the triangle properly.  Because the Stan code declares `y` to be of type `real<lower=-1,upper=1>`, the inverse logit transform is applied to the unconstrained variable and its log absolute derivative added to the log probability.  The resulting distribution on the logit-transformed `y` is well behaved.]
+sample properly.^[The problem is the (extremely!) light tails of the triangle distribution.  The standard HMC and NUTS samplers can't get into the corners of the triangle properly.  Because the Stan code declares `y` to be of type `real<lower = -1, upper = 1>`, the inverse logit transform is applied to the unconstrained variable and its log absolute derivative added to the log probability.  The resulting distribution on the logit-transformed `y` is well behaved.]
 
 ### Exponential distribution {-}
 
@@ -115,11 +115,11 @@ definition of the bivariate normal cumulative distribution function
 (CDF) with location zero, unit variance, and correlation `rho`.
 That is, it computes
 $$
-\mbox{binormal\_cdf}(z_1, z_2, \rho) = \mbox{Pr}[Z_1 > z_1 \mbox{ and } Z_2 > z_2]
+\texttt{binormal}\mathtt{\_}\texttt{cdf}(z_1, z_2, \rho) = \textsf{Pr}[Z_1 > z_1 \text{ and } Z_2 > z_2]
 $$
 where the random 2-vector $Z$ has the distribution
 $$
-Z \sim \mathsf{multivariate\ normal}\left(
+Z \sim \textsf{multivariate normal}\left(
 \begin{bmatrix}
 0 \\
 0

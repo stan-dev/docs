@@ -1,20 +1,15 @@
 #!/usr/bin/env bash
 
 ### USAGE
-# add_links.sh major minor
-# Example:
-# add_links.sh 2 22
+# add_links.sh 
 
-major="$1"
-minor="$2"
-
-if [ -z "$major" ] || [ -z "$minor" ]
-then
-      echo "Major, minor required."
-      exit 0
-fi
-
-directory="$major""_""$minor"
+cd docs
+# Count number of dirs in /docs
+docsDirsCount=`find . -mindepth 1 -maxdepth 1 -type d | wc -l`
+# Get last docs version
+# Substract functions-reference, reference-manual, stan-users-guide, current version and remove trailing /
+directory=`ls -d -- */ | sed -n "$(($docsDirsCount-4))"p | sed 's/.$//'`
+cd ..
 
 mkdir docs/"$directory"_tmp
 

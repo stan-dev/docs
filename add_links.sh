@@ -6,7 +6,7 @@
 cd docs
 # Count number of dirs in /docs
 docsDirsCount=`find . -mindepth 1 -maxdepth 1 -type d | wc -l`
-# Get last docs version
+# Get [-1] docs version
 # Substract functions-reference, reference-manual, stan-users-guide, current version and remove trailing /
 directory=`ls -d -- */ | sed -n "$(($docsDirsCount-4))"p | sed 's/.$//'`
 cd ..

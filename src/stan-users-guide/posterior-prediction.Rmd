@@ -228,3 +228,40 @@ $$
 $$
 It's only when moving to cross-validation where multiple runs are
 required.
+
+## Calculating event probabilities
+
+Event probabilities involving either parameters or predictions or both
+may be coded in the generated quantities block.  For example, to
+evaluate $\textrm{Pr}[\lamba > 5 \mid y]$ in he simple Poisson
+example, it suffices to define a generated quantity
+```
+generated quantities {
+  int<lower = 0, upper = 1> lambda_gt_5 = lambda > 5;
+  ...
+```
+The posterior mean of this parameter is the event probability,
+\begin{eqnarray*}
+\mbox{Pr}[\lambda > 5 \mid y]
+& = &
+\int \textrm{I}[\lamba > 5] \cdot p(\lambda \mid y)
+\, \textrm{d}y
+\\[4pt]
+& \approx &
+\frac{1}{M} \sum_{m = 1}^M \textrm{I}[\lamba^{(m)} > 5],
+\end{eqnarray*}
+where $\lambda^{(m)} \sim p(\lambda \mid y).$  This is just the
+posterior mean of the parameter `lambda_gt_5`.
+
+Event probabilities involving predictions are the same.  For example,
+if $\tilde{y}_n$ is the prediction for the $n$-th unobserved variable,
+then
+\begin{eqnarray*}
+\mbox{Pr}[\tilde{y}_3 > \tilde{y}_7 \mid \tilde{x}, x, y]
+& = &
+\int
+\textrm{I}[\tilde{y}_n > 5] \cdot p(\tilde{y} \mid y)
+\, \textrm{d}\tilde{y}_{n}
+\\[4pt]
+& \approx & \frac{1}{M} \sum_{m = 1}^M \textrm{I}[\tilde{y}^{(m)}_n > 5]
+\end{eqnarray*}

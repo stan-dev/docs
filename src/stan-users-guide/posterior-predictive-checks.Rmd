@@ -1,4 +1,4 @@
-# Posterior Predictive Checks {#ppcs.chapter}
+# Posterior and Prior Predictive Checks {#ppcs.chapter}
 
 Posterior predictive checks are a way of measuring whether a model
 does a good job of capturing relevant aspects of the data, such as
@@ -217,3 +217,148 @@ quantities of interest in the model itself.  A popular choice in
 addition to mean and standard deviation are quantiles, such as the
 median, 5% or 95% quantiles, or even the maximum or minimum value to
 test extremes.
+
+## Prior predictive checks
+
+Prior predictive checks generate data according to the prior in order
+to asses whether a prior is appropriate [@GabryEtAl:2019].  A
+posterior predictive check generates replicated data according to the
+posterior predictive distribution.  In contrast, the prior predictive
+check generates data according to the prior predictive distribution,
+$$
+y^{\textrm{sim}} \sim p(y).
+$$
+The prior predictive distribution is just like the posterior
+predictive distribution with no observed data, so that a prior
+predictive check is nothing more than the limiting case of a posterior
+predictive check with no data..
+
+This is easy to carry out mechanically by simulating parameters
+$$
+\theta^{\textrm{sim}} \sim p(\theta)
+$$
+according to the priors, then simulating data
+$$
+y^{\textrm{sim}} \sim p(y \mid \theta^{\textrm{sim}}
+$$
+according to the sampling distribution given the simulated
+parameters.  The result is a simulation from the joint
+distribution,
+$$
+y^{\textrm{sim}}, \theta^{\textrm{sim}} \sim p(y, \theta)
+$$
+and thus
+$$
+y^{\textrm{sim}} \sim p(y)
+$$
+is a simulation from the prior predictive distribution.
+
+### Coding prior predictive checks in Stan
+
+A prior predictive check is coded just like a posterior predictive
+check.  If a posterior predictive check has already been coded and
+it's possible to set the data to be empty, then no additional coding
+is necessary.  The disadvantage to coding prior predictive checks as
+posterior predictive checks with no data is that Markov chain Monte
+Carlo will be used to sample the parameters, which is less efficient
+than taking independent draws using random number generation.
+
+Prior predictive checks can be coded entirely within the generated
+quantities block using random number generation.  The resulting draws
+will be independent.  Predictors must be read in from the actual data
+set---they do not have a generative model from which to be simulated.
+For a Poisson regression, prior predictive sampling can be
+encoded as the following complete Stan program.
+```
+data {
+  int<loer = 0> N;
+  vector[N] x;
+}
+generated quantities {
+  real alpha = normal_rng(0, 1);
+  real beta = normal_rng(0, 1);
+  real y_sim[n] = poisson_log_rng(alpha + beta * x);
+}
+```
+Running this program using Stan's fixed-parameter sampler
+yields draws from the prior.  These may be plotted to
+consider their appropriateness.
+
+Here's a complete example.  Suppose we have a model for a football
+(aka soccer) league where there are $J$ teams.  Each team has a
+scoring rate $\lambda_j$ and in each game will be assumed to
+score $\textrm{poisson}(\lambda_j)$ points.  Yes, this model completely
+ignores defense.  Suppose the modeler does not want to "put their
+thumb on the scale" and would rather "let the data speak for
+themselves" and so uses a prior with very wide tails, because it seems
+uninformative, such as the widely deployed
+$$
+\lambda_j \sim \textrm{gamma}(\epsilon_1, \epsilon_2).
+$$
+The BUGS book recommends setting $\epsilon = (0.5, 0.00001)$, which
+corresponds to a Jeffreys prior for a Poisson rate parameter prior
+[@LunnEtAl:2012, page 85].
+
+Suppose the league plays a round-robin tournament wherein every team
+plays every other team.  The following Stan model generates random team
+abilities and the results of such a round-robin tournament, which may
+be used to perform prior predictive checks.
+```
+data {
+  int<lower = 0> J;
+  real<lower = 0> epsilon[2];
+}
+generated quantities {
+  real<lower = 0> lambda[J];
+  int y[J, J];
+  for (j in 1:J) lambda[j] = gamma_rng(epsilon[1], epsilon[2]);
+  for (i in 1:J)
+    for (j in 1:J)
+      y[i, j] = poisson_rng(lambda[i]) - poisson_rng(lambda[j]);
+}
+```
+In this simulation, teams play each other twice and play themselves
+once.  This could be made more realistic by controlling the
+combinatorics to only generate a single result for each pair of teams,
+of which there are $\binom{J}{2} = \frac{J \cdot (J - 1)}{2}.$
+
+
+Using the $\textrm{gamma}(0.5, 0.00001)$ reference prior on team
+abilities, the following are the first 20 simulated point differences
+for the match between the first two teams, $y^{(1:20)}_{1, 2}$.
+```
+2597 -26000   5725  22496   1270   1072   4502  -2809   -302   4987
+7513   7527  -3268 -12374   3828   -158 -29889   2986  -1392     66
+```
+That's some pretty highly scoring football games being simulated; all
+but one has a score differential greater than 100!  In other words, this
+$\textrm{gamma}(0.5, 0.00001)$ prior is putting around 95% of its
+weight on score differentials above 100.  Given that two teams
+combined rarely score 10 points, this prior is way out of line with
+prior knowledge about football matches; it is not only consistent with
+outcomes that have never occurred in the history of the sport, it puts
+most of the prior probability mass there.
+
+The posterior predictive distribution can be strongly affected by the
+prior when there is not much observed data and substantial prior mass
+is concentrated around infeasible values [@Gelman:2006].
+
+Just as with posterior predictive distributions, any statistics of the
+generated data may be evaluated.  Here, the focus was on score
+difference between a single pair of teams, but it could've been on
+maximums, minimums, averages, variances, etc.
+
+In this textbook example, the prior is univariate and directly related
+to the expected number of points scored, and could thus be directly
+inspected for consistency with prior knowledge about scoring rates in
+football.  There will not be the same kind of direct connection when
+the prior and sampling distributions are multivariate.  In these more
+challenging situations, prior predictive checks are an easy way to get
+a handle on the implications of a prior in terms of what it says the
+data is going to look like.
+
+Prior predictive checks can also be compared with the data, but one
+should not expect them to be calibrated in the same way as posterior
+predictive checks.  That would require guessing the posterior and
+encoding it in the prior.  Neither should the prior be so wide
+that it pulls probability mass away from feasible values.

@@ -7,13 +7,13 @@ evaluation is commonly used to declare winners in predictive modeling
 competitions such as those run by Kaggle.
 
 Cross-validation involves partitioning a data set into several folds.
-For each fold, held-out evaluation is performed using that fold as a
-test data and the remaining folds as training data.
+Each fold is then used in turn as test data with the remaining
+folds serving as training data.
 
-Held-out evaluation and hence cross-validation may involve any kind of
-predictive statistics from log density (aka "log loss") to squared
-error in the estimation of parameters or event probabilities, to
-evaluation of accuracy in a classification task (aka "0/1 loss").
+Held-out evaluation, and hence cross-validation, may involve any kind
+of predictive statistics, with common choices being the predictive log
+density on test data, squared error of parameter estimates, or accuacy
+in a classification task.
 
 This chapter begins with coding posterior predictive inference for new
 data, which forms the basis for not only prediction, but also held-out
@@ -22,12 +22,77 @@ evaluation and cross-validation.
 
 ## Evaluating posterior predictive densities
 
-Suppose we want to measure square error between an actual observation
-$\tilde{y}$ and that predicted by a model based on training data $(x,
-y)$ and observed predictors $\tilde{x}.$   Here's an example using
-linear regression that provides the basis for computing
-$p(\tilde{y} \mid \tilde{x}, x, y)$ on the log scale.
+Given training data $(x, y)$ consisting of parallel sequences of
+predictors and observations and test data $(\tilde{x}, \tilde{y})$ of
+the same structure, the posterior predictive density is
+$$
+p(\tilde{y} \mid \tilde{x}, x, y)
+=
+\int
+  p(\tilde{y} \mid \tilde{x}, \theta)
+  \cdot p(\theta \mid x, y)
+\, \textrm{d}\theta,
+$$
+where $\theta$ is the vector of model parameters.
 
+This predictive density is the density of the test observations,
+conditioned on both the test predictors $\tilde{x}$ and the training
+data $(x, y).$  
+
+This integral may be calculated with Monte Carlo methods as usual,
+$$
+p(\tilde{y} \mid \tilde{x}, x, y)
+\approx
+\frac{1}{M} \sum_{m = 1}^M p(\tilde{y} \mid \tilde{x}, \theta^{(m)}),
+$$
+where the $\theta^{(m)} \sim p(\theta \mid x, y)$ are draws from the
+posterior given training data $(x, y).$ 
+
+For the usual numerical reasons, it will be more stable
+to compute densities on the log scale, where the calculation
+becomes
+\begin{eqnarray*}
+\log p(\tilde{y} \mid \tilde{x}, x, y)
+& \approx &
+\log \frac{1}{M} \sum_{m = 1}^M p(\tilde{y} \mid \tilde{x}, \theta^{(m)}),
+\\[4pt]
+& = & -\log M + \log \sum_{m = 1}^M p(\tilde{y} \mid \tilde{x}, \theta^{(m)}),
+\\[4pt]
+& = & -\log M + \log \sum_{m = 1}^M \exp(\log p(\tilde{y} \mid \tilde{x}, \theta^{(m)}))
+\\[4pt]
+& = & -\log M + \textrm{log-sum_exp}_{m = 1}^M \log p(\tilde{y} \mid \tilde{x}, \theta^{(m)})
+\end{eqnarray*}
+where the log sum of exponentials function is defined so as
+to make the above equation hold, 
+$$
+\textrm{log-sum-exp}(\mu_1, \ldots, \mu_M)
+= \log (\exp(\mu_1) + \cdot + \exp(\mu_M)).
+$$
+The log sum of exponentials function can be implemented so as to avoid
+underflow and maintain high arithmetic precision as
+$$
+\textrm{log-sum-exp}(\mu_1, \ldots, \mu_M)
+= \textrm{max}(\mu)
++ \log \left(\exp(\mu_1 - \textrm{max}(\mu))
+        + \cdots
+	+ \exp(\mu_M - \textrm{max}(\mu))\right).
+$$
+Pulling the maximum out preserves all of its precision, and by
+subtracting the maximum the exponentiations are guaranteed not to
+overflow;  if they underflow that is OK because the precision is
+maintained through the maximum.
+
+### Stan program
+
+To evaluate the log predictive density of a model, it suffices to
+implement the log predictive density in the generated quantities
+block.  The log sum of exponentials calculation must be done on the
+outside using the posterior draws of $\log p(\tilde{y} \mid \tilde{x},
+\theta^{(m)}).$
+
+Here is the code for evaluating the posterior predictive density of a
+simple linear regression given training data $(x, y)$ and test
+data $(\tilde{x}, \tilde{y}).$
 ```
 data {
   int<lower = 0> N;
@@ -49,57 +114,52 @@ generated quantities {
   real log_p = normal_lpdf(y_tilde | alpha + beta * x_tilde, sigma);
 }
 ```
-
 Only the training data `x` and `y` are used in the model block.  The
 test data `y_tilde` and test predictors `x_tilde` are only used in the
 generated quantities block.  Thus the program is not cheating by using
-the test data during training.^[It would be fair to use `x_tilde` in
-training the mode; in machine learning this is called "semi-supervised
-learning" and in statistics a "missing data problem."]
+the test data during training.  Although this model does not do so,
+it would be fair to use `x_tilde` in the model block---only the
+test observations `y_tilde` are unknown before they are predicted.
 
-The problem is now that the results are on the log scale as they
-pretty much have to be in order to avoid underflow with even
-small- to medium-sized data sets.  The desired quantity is
-$$
-p(\tilde{y} \mid \tilde{x}, x, y)
-\approx
-\frac{1}{M} \sum_{m = 1}^M
-p(\tilde{y}^{(m)} \mid \tilde{x}, \alpha,
-\beta, \sigma).
-$$
-Taking the logarithm of both sides yields
-$$
-\log p(\tilde{y} \mid \tilde{x}, x, y)
-\approx
-\log \frac{1}{M} \sum_{m = 1}^M
-p(\tilde{y}^{(m)} \mid \tilde{x}, \alpha, \beta, \sigma).
-$$
-But instead of $p(\tilde{y}^{(m)} \mid \tilde{x}, \alpha, \beta,
-\sigma),$ Stan is providing $\log p(\tilde{y}^{(m)} \mid \tilde{x}, \alpha, \beta,
-\sigma).$  The log density needs to be exponentiated to plug into the
-above, yielding the numerically friendly log-sum-exp formulation,
-$$
-\log p(\tilde{y} \mid \tilde{x}, x, y)
-\approx
-\log \frac{1}{M} \sum_{m = 1}^M
-\exp(\log(p(\tilde{y}^{(m)} \mid \tilde{x}, \alpha, \beta, \sigma))).
-$$
-That is, given the posterior draws `log_p[1], ..., log_p[M]` given by
-Stan's MCMC algorithms, the function `log_sum_exp(log_p)` returns the
-required value $\log p(\tilde{y} \mid \tilde{x}, x, y)$ with
-high arithmetic precision.  It can be implemented outside of Stan as
-```
-log_sum_exp(a) = max(a) + log(sum(exp(a - max(a))))
-```
-where the `exp` function is assumed to be vectorized, as is the
-subtraction of `max(a)`.  This form ensures that full precision is
-preserved in `max(a)` while not allowing any of the exponentiations to
-overflow (because the largest entry in `a - max(a)` is zero).
+After running Stan, the sequende `log_p[1:M]` will be available and
+all that is needed is to calculate the log posterior predictive
+density is `log_sum_exp(log_p[1], ..., log_p[M]) - log(M)`.
+
 
 ## Estimation error
 
-There are two ways to compute predictions in a Bayesian setting,
-either as the error of an expectation or the expectation of an error.
+Consider again the linear regression from the previous section.
+Given parameters $\alpha$ and $\beta$, a prediction for training data
+can be formulated as a posterior mean,
+$$
+\hat{\tilde{y}}_n
+= \alpha + \beta \cdot \tilde{x}_n.
+$$
+
+
+the estimated value of the held
+out data
+$\tilde{y}_n$ 
+
+
+each test item $n$, it is possible to predi
+
+An alternative evaluatto evaluating the log density on test data is
+estimating a result and then measuring square error on test data.
+
+
+
+
+Two Bayesian estimators are in wide use, the posterior mean and the
+posterior median.  The posterior mean minimizes expected squared error
+on new data, whereas the posterior median minimizes expected absolute
+error.  These are both reported in Stan interfaces or calculated
+directly from the posterior draws.
+
+For example, considering the linear regression from the last section,
+the parameters being estimated are 
+
+
 The first is the traditional approach, where a point estimate is
 defined as a posterior mean conditioned on the predictor $\tilde{x}$
 and training data $(x, y),$

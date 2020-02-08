@@ -1,13 +1,21 @@
 # Posterior Predictive Sampling
 
 The goal of inference is often posterior prediction, that is
-evaluating $p(\tilde{y} \mid y),$ where $y$ is observed data and
-$\tilde{y}$ is yet to be observed data.  Often there are unmodeled
-predictors $x$ and $\tilde{x}$ for the observed and unobserved data,
-in which case the posterior predictive density is $p(\tilde{y} \mid
-\tilde{x}, x, y).$ This chapter explains how to sample from the
-posterior predictive distribution in Stan, beginning with a simple
-case and then continuing to a regression with predictors.
+evaluating or sampling from the posterior predictive distribution
+$p(\tilde{y} \mid y),$ where $y$ is observed data and $\tilde{y}$ is
+yet to be observed data.  Often there are unmodeled predictors $x$ and
+$\tilde{x}$ for the observed data $y$ and unobserved data $\tilde{y}$.
+With predictors, the posterior predictive density is $p(\tilde{y} \mid
+\tilde{x}, x, y).$ All of these variables may represent multivariate
+quantities.
+
+This chapter explains how to sample from the posterior predictive
+distribution in Stan, including applications to posterior predictive
+simulation and calculating event probabilities.  These techniques can
+be coded in Stan using random number generation in the generated
+quantities block.  Further, a technique for fitting and performing
+inference in two stages is presented in a section on standalone
+generated quantities in Stan
 
 ## Posterior predictive distribution
 
@@ -20,8 +28,8 @@ p(\tilde{y} \mid \theta) \cdot p(\theta \mid y)
 \, \textrm{d}\theta.
 $$
 The product under the integral reduces to the joint posterior density
-$p(\tilde{y}, \theta \mid y),$ so that the integral simply
-marginalizes out the parameters $\theta,$ leaving a predictive
+$p(\tilde{y}, \theta \mid y),$ so that the integral is simply
+marginalizing out the parameters $\theta,$ leaving the predictive
 density $p(\tilde{y} \mid y)$ of future observations given past
 observations.
 
@@ -71,15 +79,16 @@ rate parameter $\lambda > 0$ following a gamma-distributed prior,
 $$
 \lambda \sim \textrm{gamma}(1, 1).
 $$
-The likelihood for $N$ observations $y_1, \ldots, y_N$ is Poisson,
+The likelihood for $N$ observations $y_1, \ldots, y_N$ is modeled as
+Poisson, 
 $$
 y_n \sim \textrm{poisson}(\lambda).
 $$
 
 ### Stan code
 
-The following Stan program includes a variable from $\tilde{y}$
-defined by random number generation in the generated quantities
+The following Stan program defines a variable for $\tilde{y}$
+by random number generation in the generated quantities
 block.
 ```
 data {
@@ -115,8 +124,8 @@ $$
 \approx \frac{1}{M} \sum_{m=1}^M f(\tilde{y}^{(m)}, \theta^{(m)}),
 $$
 which is just the posterior mean of $f(\tilde{y}, \theta).$  This
-quantity is computed by Stan if the function is defined in the
-generated quantities block.
+quantity is computed by Stan if the $f(\tilde{y}, \theta)$ is assigned
+to a variable in the generated quantities block.
 
 ### Analytic posterior and posterior predictive
 
@@ -126,11 +135,15 @@ will also follow a gamma distribution.
 
 Because the posterior follows a gamma distribution and the sampling
 distribution is Poisson, the posterior predictive $p(\tilde{y} \mid
-y)$ will follow a negative binomial distribution.  The negative
-binomial may be defined as a compound gamma-Poisson.  Rather than
-marginalizing out the rate analytically as in the negative binomial,
-it is sampled from the posterior and then used to generate a draw of
-$\tilde{y}.$
+y)$ will follow a negative binomial distribution, because the negative
+binomial is defined as a compound gamma-Poisson.  That is, $y \sim
+\textrm{negative-binomial}(\alpha, \beta)$ if $\lambda \sim
+\textrm{gamma}(\alpha, \beta)$ and $y \sim \textrm{poisson}(\lambda).$
+Rather than marginalizing out the rate parameter $\lambda$
+analytically as can be done to define the negative binomial probability
+mass function, the rate $\lambda^{(m)} \sim p(\lambda \mid y)$ is
+sampled from the posterior and then used to generate a draw of
+$\tilde{y}^{(m)} \sim p(y \mid \lambda^{(m)}).$
 
 ## Posterior prediction for regressions
 
@@ -142,12 +155,13 @@ Without considering the parametric form of any of the distributions,
 the posterior predictive distribution for a general regression in
 \begin{align}
 p(\tilde{y} \mid \tilde{x}, y, x)
-& = & \int p(\tilde{y} \mid x, \theta) \cdot p(\theta \mid y, x) \cdot
+& = & \int p(\tilde{y} \mid x, \theta) \cdot p(\theta \mid y, x) \,
 \textrm{d}\theta
 \\[4pt]
-& \approx & \frac{1}{M} \sum_{m=1}^M p(\tilde{y} \mid x, \theta^{(m)}),
+& \approx &
+\frac{1}{M} \sum_{m=1}^M \, p(\tilde{y} \mid \tilde{x}, \theta^{(m)}),
 \end{align}
-where $\theta^{(m)} \sim p(y \mid x, \theta^{(m)}).$
+where $\theta^{(m)} \sim p(\theta \mid x, y).$
 
 ### Stan program
 
@@ -161,8 +175,8 @@ generation.
 ```
 data {
   int<lower = 0> N;
-  int<lower = 0> y[N];
   vector[N] x;
+  int<lower = 0> y[N];
   int<lower = 0> N_tilde;
   vector[N_tilde] x_tilde;
 }
@@ -172,7 +186,7 @@ parameters {
 }
 model {
   y ~ poisson_log(alpha + beta * x);
-  { alpha, beta }  ~ normal(0, 1);
+  { alpha, beta } ~ normal(0, 1);
 }
 generated quantities {
   int<lower = 0> y_tilde[N_tilde]
@@ -216,7 +230,8 @@ with minimum expected squared error.  The posterior draws can also be
 used to estimate quantiles for the median and any posterior intervals
 of interest for $\tilde{y}$, as well as covariance of the $\tilde{y_n}.$
 The posterior draws $\tilde{y}^{(m)}$ may also be used to estimate
-predictive event probabilities, such as $\mbox{Pr}[\prod_{n =
+predictive event probabilities, such as $\mbox{Pr}[\tilde{y}_1 > 0]$ or
+$\mbox{Pr}[\prod_{n =
 1}^{\tilde{N}}(\tilde{y_n}) > 1],$ as expectations of indicator
 functions.
 
@@ -229,39 +244,142 @@ $$
 It's only when moving to cross-validation where multiple runs are
 required.
 
-## Calculating event probabilities
+## Estimating event probabilities
 
 Event probabilities involving either parameters or predictions or both
 may be coded in the generated quantities block.  For example, to
-evaluate $\textrm{Pr}[\lamba > 5 \mid y]$ in he simple Poisson
-example, it suffices to define a generated quantity
+evaluate $\textrm{Pr}[\lambda > 5 \mid y]$ in the simple Poisson
+example from the previous section, it suffices to define a generated
+quantity 
 ```
 generated quantities {
   int<lower = 0, upper = 1> lambda_gt_5 = lambda > 5;
   ...
 ```
-The posterior mean of this parameter is the event probability,
+The value of the expression `lambda > 5` is one if the condition is
+true and 0 otherwise.  The posterior mean of this parameter is the
+event probability
 \begin{eqnarray*}
 \mbox{Pr}[\lambda > 5 \mid y]
 & = &
-\int \textrm{I}[\lamba > 5] \cdot p(\lambda \mid y)
-\, \textrm{d}y
+\int \textrm{I}(\lambda > 5) \cdot p(\lambda \mid y)
+\, \textrm{d}\lambda
 \\[4pt]
 & \approx &
-\frac{1}{M} \sum_{m = 1}^M \textrm{I}[\lamba^{(m)} > 5],
+\frac{1}{M} \sum_{m = 1}^M \textrm{I}[\lambda^{(m)} > 5],
 \end{eqnarray*}
-where $\lambda^{(m)} \sim p(\lambda \mid y).$  This is just the
-posterior mean of the parameter `lambda_gt_5`.
+where each $\lambda^{(m)} \sim p(\lambda \mid y)$ is distributed
+according to the posterior.  In Stan, this is recovered as
+the posterior mean of the parameter `lambda_gt_5`.  
 
-Event probabilities involving predictions are the same.  For example,
-if $\tilde{y}_n$ is the prediction for the $n$-th unobserved variable,
-then
+In general, event probabilities may be expressed as expectations of
+indicator functions.  For example,
+\begin{eqnarray*}
+\textrm{Pr}[\lambda > 5 \mid y]
+& = & \mathbb{E}[\textrm{I}[\lambda > 5] \mid y]
+\\[4pt]
+& = &
+\int
+\textrm{I}(\lambda > 5) \cdot p(\lambda \mid y)
+\, \textrm{d}\lambda
+\\[4pt]
+& \approx & \frac{1}{M} \sum_{m = 1}^M \textrm{I}(\lambda^{(m)} > 5).
+\end{eqnarray*}
+The last line above is the posterior mean of the indicator function
+as coded in Stan.
+
+Event probabilities involving posterior predictive quantities
+$\tilde{y}$ work exactly the same way as those for parameters.  For
+example, if $\tilde{y}_n$ is the prediction for the $n$-th unobserved
+outcome (such as the score of a team in a game or a level of
+expression of a protein in a cell), then
 \begin{eqnarray*}
 \mbox{Pr}[\tilde{y}_3 > \tilde{y}_7 \mid \tilde{x}, x, y]
 & = &
-\int
-\textrm{I}[\tilde{y}_n > 5] \cdot p(\tilde{y} \mid y)
-\, \textrm{d}\tilde{y}_{n}
+\mathbb{E}\!\left[I[\tilde{y}_3 > \tilde{y}_7] \mid \tilde{x}, x, y\right]
 \\[4pt]
-& \approx & \frac{1}{M} \sum_{m = 1}^M \textrm{I}[\tilde{y}^{(m)}_n > 5]
+& = &
+\int
+\textrm{I}(\tilde{y}_3 > \tilde{y}_7)
+\cdot p(\tilde{y} \mid \tilde{x}, x, y)
+\, \textrm{d}\tilde{y}
+\\[4pt]
+& \approx &
+\frac{1}{M} \sum_{m = 1}^M
+\textrm{I}(\tilde{y}^{(m)}_3 > \tilde{y}^{(m)}_7),
 \end{eqnarray*}
+where $\tilde{y}^{(m)} \sim p(tilde{y} \mid \tilde{x}, x, y).$
+
+## Standalone generated quantities and ongoing prediction
+
+Stan's sampling algorithms take a Stan program representing a
+posterior $p(\theta \mid y, x)$ and a data set and produce a set of draws
+$\theta^{(1)}, \ldots, \theta^{(M)}$ from the posterior.
+Posterior predictive draws $\tilde{y}^{(m)} \sim p(\tilde{y} \mid
+\tilde{x}, x, y)$ can be generated by drawing
+$$
+\tilde{y}^{(m)} \sim p(y \mid \tilde{x}, \theta^{(m)})
+$$
+from the sampling distribution.  Note that drawing $\tilde{y}^{(m)}$
+only depends on the new predictors $\tilde{x}$ and the posterior draws
+$\theta^{(m)}$.  Most importantly, neither the original data or the
+model density is required. 
+
+By saving the posterior draws, predictions for new data items
+$\tilde{x}$ may be generated whenever needed.  In Stan's interfaces,
+this is done by writing a second Stan program that inputs the original
+program's parameters and the new predictors.  For example, for the
+linear regression case, the program to take posterior draws declares
+the data and parmeters, and defines the model.
+```
+data {
+  int<lower = 0> N;
+  vector[N] x;
+  vector[N] y;
+}
+parameters {
+  real alpha;
+  real beta;
+  real<lower = 0> sigma;
+}
+model {
+  y ~ normal(alpha + beta * x, sigma);
+  alpha ~ normal(0, 5);
+  beta ~ normal(0, 1);
+  sigma ~ lognormal(0, 0.5);
+}  
+```
+
+A second program can be used to generate new observations.  This
+follow-on program need only declare the parameters as they were
+originally defined.  This may require defining constants in the data
+block such as sizes and hyperparameters that are involved in parameter
+size or constraint declarations.  Then additional data is read in
+corresponding to predictors for new outcomes that have yet to be
+observed.  There is no need to repeat the model or unneeded
+transformed parameters or generated quantities.  The complete follow-on
+program for prediction just declares the predictors in the data, the
+original parameters, and then the predictions in the generated
+quantities block.
+```
+data {
+  int<lower = 0> N_tilde;
+  vector[N_tilde] x_tilde;
+}
+parameters {
+  real alpha;
+  real beta;
+  real<lower = 0> sigma;
+}
+generated quantities {
+  vector[N_tilde] y_tilde
+    = normal_rng(alpha + beta * x_tilde, sigma);
+}
+```
+When run as standalone generated quantities, the draws output from the
+original program plus the data for the follow-in program must be
+input.  Then running sampling produces draws for $\tilde{y}.$
+
+Any posterior predictive quantities desired may be generated this way.
+For example, event probabilities are estimated in the usual way by
+defining indicator variables in the generated quantities block.

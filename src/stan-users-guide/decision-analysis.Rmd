@@ -1,0 +1,206 @@
+# Decision Analysis
+
+As the name implies, statistical decision analysis is concerned with
+making decisions under uncertainty.  In order to make decisions,
+outcomes must have some notion of "utility" associated with them.  The
+so-called "Bayes optimal" decision is the one that maximizes expected
+utility (or equivalently, minimizes expected loss).  The statistical
+aspect of the problem comes in through the expectation, which is
+exactly what Stan is set up to calculate.
+
+## Maximizing expected utility
+
+Following [@GelmanEtAl:2013], the four steps of
+Bayesian decision theory are
+
+1. Define a set $X$ of possible outcomes and $D$ of possible
+decisions.
+
+2.  Define a probability distribution of outcomes conditional on
+decisions through a density function $p(x \mid d)$.
+
+3.  Define a utility function $U : X \rightarrow \mathbb{R}$ mapping
+outcomes to their utility.
+
+4.  Choose action $d^*$ with highest expected utility,
+$$
+d^* = \textrm{arg max}_d \ \mathbb{E}[U(x) \mid d].
+$$
+
+The model of possible outcomes should include as much information as
+possible that is relevant to utility.  There is a large literature in
+psychology and economics related to defining utility functions.  For
+example, the utility of money is usually assumed to be strictly
+concave rather than linear (i.e., the marginal utility of getting
+more money decreases as the amount increases).
+
+In statistical applications, the densities in step (2) must be
+estimated based on previously observed data, as illustrated in the
+example in the next section.
+
+## Example decision analysis
+
+This section will consider a highly simplified example of a commuter
+who does not own a car or bicycle faced with the choice of how to get
+to work in a modern city: walk, bike share, public transportion, or
+cab.  As another simplification, suppose our commuter has been taking
+the same commute for a year and that transportation times and costs
+haven't changed during that time.  Over the year, they have
+accumulated roughly 200 estimates of the time it takes to get to work
+with various choices.
+
+The rest of this section breaks this decision analysis problem down
+according to the steps outlined in the previous section.
+
+### Step 1. Define decisions and outcomes {-}
+
+A decision consists of the choice of commute mode and the outcome is a
+time and cost.  More formally,
+
+* the set of decisions is $D = 1:4$, corresponding to the commute
+  types walking, bicyclicing, public transportion, and cab,
+  respectively, and
+
+* the set of outcomes $X = \mathbb{R} \times \mathbb{R}_+$ contains
+  pairs of numbers $x = (c, t)$ consisting of a cost $c$ and
+  time $t \geq 0$.
+
+
+Here the decisions are the $D = 1:4$ choices of commute mode.  An
+outcome consists of a pair $x_n = (c_n, t_n)$ made up of a
+a cost $c_n \geq 0$ in dollars and time $t_n \geq 0$ in hours.
+
+Step (2) is to formulate the probability density function
+$p(x_n \mid z_n)$ for outcomes given choice of commute modality.
+
+### Step 2. Define density of outcome conditioned on decision {-}
+
+The density required is $p(x \mid d),$ where $d$ is a decision and $x
+= (c, t)$ is an outcome.  Being a statistical decision problem, this
+density will be estimated from data.
+
+The observed data for a year of $N = 200$ commutes consists
+of choice of the chosen commute mode $z_{1:N} \in 1:4$ and outcomes
+$x_{1:N}$ where each outcome $x_n = (c_n, t_n).$
+
+For simplicity, commute time will be modeled as lognormal
+$$
+t_n \sim \textrm{lognormal}(\mu_n, \sigma_n).
+$$
+with fixed priors,
+\begin{eqnarray*}
+\mu_n & \sim & \textrm{normal}(0, 5)
+\\[2pt]
+\sigma_n & \sim & \textrm{lognormal}(0, 1).
+\end{eqnarray*}
+
+Time is a constant function (delta function in probability theory
+terms) for all but the cab.  The cab's cost will also be modeled as
+lognormal,
+$$
+c_4 \sim \textrm{lognormal}(\nu, \tau),
+$$
+with fixed priors
+\begin{eqnarray*}
+\nu & \sim & \textrm{normal}(0, 5)
+\\[2pt]
+\tau & \sim & \textrm{lognormal}(0, 1).
+\end{eqnarray*}
+
+Given the observed data $x$ and $d$, the Bayesian approach to
+estimating $p(\tilde{x} \mid \tilde{d})$ for future commutes is to use
+the posterior predictive density,
+$$
+p(\tilde{x} \mid \tilde{d}, x, d)
+=
+\int p(\tilde{x} \mid \tilde{d}, \theta)
+     \cdot p(\theta \mid x, d)
+     \, \textrm{d} \theta,
+$$
+where the parameters are
+$$
+\theta = (\mu_{1:4}, \sigma_{1:4}, \nu, \tau).
+$$
+
+### Step 3. Define the utility function {-}
+
+For the sake of concreteness, the utility function will be assumed to
+be a simple function of cost and time.  Further suppose the commuter
+values their commute time at $25/hour and has a utility function that is
+linear in the commute cost and time.
+$$
+U(c, t) = -(c + 25 \cdot t)
+$$
+The sign is negative because high cost is undesirable.  A more nuanced
+utility function would not be linear, might have a step function in
+cost for being late, might weight the time
+differently on different commute modes (walking is pleasant, subway
+commutes can be productive, biking is exercise, etc) and might add
+penalties for carbon emissions, and so on.
+
+### Step 4.  Make decision to maximize expected utility
+
+At this point, all that is left is to calculate expected utility for
+each decision and choose the optimal decision.  If the decisions
+consist of a small set of discrete choices, expected utility can be
+easily coded in Stan.
+
+```
+functions {
+real U(real c, real t) {
+  return -(c + 25 * t);
+}
+data {
+  int<lower = 0> N;
+  int<lower = 1, upper = 4> d[N];
+  real c[N];
+  real<lower = 0> t[N];
+}
+parameters {
+  vector[4] mu;
+  vector<lower = 0>[4] sigma;
+  real[4] nu;
+  real<lower = 0> tau[4];
+}
+model {
+  mu ~ normal(0, 1);
+  sigma ~ lognormal(0, 0.25);
+  t ~ lognormal(mu, sigma);
+
+  nu ~ normal(0, 20);
+  tau ~ lognormal(0, 0.25);
+  c ~ lognormal(nu, tau);
+}
+generated quantities {
+   real outcome[4];
+   for (k in 1:4)
+     outcome[k] = U(lognormal_rng(mu[k], sigma[k]),
+                    lognormal_rng(nu[k], tau[k]));
+}
+```
+
+For simplicity in this initial formulation, all four commute options
+have their costs estimated, even though cost is fixed for three of the
+options.  To deal with the fact that some costs ae fixed, the costs
+would have to be hardcoded or read in as data, `nu` and
+`tau` would be declared as univariate, and the RNG for cost would only
+be employed when `k == 4`.
+
+Defining the utility function for pairs of vectors would allow the
+random number generation in the generated quantities block to be
+vectorized.
+
+All that is left is to run Stan. The posterior mean for `outcome[k]`
+is the expected utility $\mathbb{E}[U(\tilde{x}) \mid d = k, x]$,
+where $\tilde{x} = (\tilde{c}, \tilde{t})$ is the cost and time of the
+next commute, and $x_{1:N}$ is the observed commute data from the
+previous year.  It only remains to select the `k` with highest mean
+for `outcome[k]`.
+
+## Continuous choices
+
+Many choices, such as how much to invest for retirement or how long to
+go to spend at the gym are not discrete, but continuous.  In these
+cases, the continuous choice can be coded as data in the Stan
+program.  Then an external optimizer can be run, where each function
+evaluation is the expected utility for the specified continuous values.

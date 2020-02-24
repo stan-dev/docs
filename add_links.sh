@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
 ### USAGE
-# add_links.sh 
+# add_links.sh last_docs_version_dir
+# add_links.sh 2_21
 
+last_docs_version_dir="$1"
+
+echo $last_docs_version_dir
+
+exit 0
 cd docs
 # Count number of dirs in /docs
 docsDirsCount=`find . -mindepth 1 -maxdepth 1 -type d | wc -l`

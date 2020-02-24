@@ -4,18 +4,7 @@
 # add_links.sh last_docs_version_dir
 # add_links.sh 2_21
 
-last_docs_version_dir="$1"
-
-echo $last_docs_version_dir
-
-exit 0
-cd docs
-# Count number of dirs in /docs
-docsDirsCount=`find . -mindepth 1 -maxdepth 1 -type d | wc -l`
-# Get [-1] docs version
-# Substract functions-reference, reference-manual, stan-users-guide, current version and remove trailing /
-directory=`ls -d -- */ | sed -n "$(($docsDirsCount-4))"p | sed 's/.$//'`
-cd ..
+directory="$1"
 
 mkdir docs/"$directory"_tmp
 

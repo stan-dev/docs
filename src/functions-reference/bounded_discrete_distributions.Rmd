@@ -307,12 +307,14 @@ implementation of softmax regression than a manually written
 regression in terms of a Categorical likelihood and matrix
 multiplication.
 
+Note that the implementation does not put any restrictions on the coefficient matrix $\beta$. It is up to the user to use a reference category, a suitable prior or some other means of avoiding non-identifiability. See Multi-logit in the [Stan User's Guide](https://mc-stan.org/docs/2_21/stan-users-guide/multi-logit-section.html).
+
 ### Probability Mass Functions
 
 If $N,M,K \in \mathbb{N}$, $N,M,K > 0$, and if $x\in \mathbb{R}^{M\cdot K}, \alpha \in \mathbb{R}^N, \beta\in \mathbb{R}^{K\cdot N}$, then for $y \in \{1,\ldots,N\}^M$, 
 \[ \text{CategoricalLogitGLM}(y~|~x,\alpha,\beta) = \\[5pt]
-\prod_{1\leq i \leq M}\text{CategoricalLogit}(y_i~|~\alpha+\beta_i\cdot x_i) = \\[15pt] 
-\prod_{1\leq i \leq M}\text{Categorical}(y_i~|~softmax(\alpha+\beta_i\cdot x_i)). \] 
+\prod_{1\leq i \leq M}\text{CategoricalLogit}(y_i~|~\alpha+x_i\cdot\beta) = \\[15pt] 
+\prod_{1\leq i \leq M}\text{Categorical}(y_i~|~softmax(\alpha+x_i\cdot\beta)). \] 
 See section [softmax](#softmax) for the definition of the softmax function.
 
 ### Sampling Statement
@@ -333,7 +335,7 @@ dropping constant additive terms.
 `real` **`categorical_logit_glm_lpmf`**`(int y | row_vector x, vector alpha, matrix beta)`<br>\newline
 The log categorical probability mass function with outcome `y` in
 $1:N$ given $N$-vector of log-odds of outcomes `alpha + x * beta`.
-The size of independant variable row vector `x` needs to match the number of rows of the
+The size of independent variable row vector `x` needs to match the number of rows of the
 weight matrix `beta`. The size of intercept vector `alpha` must match number 
 of columns of the weight matrix `beta`.
 
@@ -344,7 +346,7 @@ of columns of the weight matrix `beta`.
 The log categorical probability mass function with outcomes `y` in
 $1:N$ given $N$-vector of log-odds of outcomes `alpha + x * beta`.
 Same vector of intercepts `alpha` and same dependant variable value `y` are used for all instances.
-The number of columns of independant variable `x` needs to match the number of rows of the
+The number of columns of independent variable `x` needs to match the number of rows of the
 weight matrix `beta`. The size of intercept vector `alpha` must match number 
 of columns of the weight matrix `beta`. If `x` and `y` are data (not parameters) this function can be executed on a GPU.
 
@@ -354,8 +356,8 @@ of columns of the weight matrix `beta`. If `x` and `y` are data (not parameters)
 `real` **`categorical_logit_glm_lpmf`**`(int[] y | row_vector x, vector alpha, matrix beta)`<br>\newline
 The log categorical probability mass function with outcomes `y` in
 $1:N$ given $N$-vector of log-odds of outcomes `alpha + x * beta`.
-Same vector of intercepts `alpha` and same row vector of independant variables `x` are used for all instances.
-The size of independant variable matrix `x` needs to match the number of rows of the
+Same vector of intercepts `alpha` and same row vector of independent variables `x` are used for all instances.
+The size of independent variable matrix `x` needs to match the number of rows of the
 weight vector `beta`. The size of intercept vector `alpha` must match number 
 of columns of the weight vector `beta`.
 
@@ -368,7 +370,7 @@ $1:N$ given $N$-vector of log-odds of outcomes `alpha + x * beta`.
 Same vector of intercepts `alpha` is used for all instances.
 The number of rows of the independent variable
 matrix `x` needs to match the length of the dependent variable vector
-`y`. The number of columns of independant variable `x` needs to match the number of rows of the
+`y`. The number of columns of independnt variable `x` needs to match the number of rows of the
 weight matrix `beta`. The size of intercept vector `alpha` must match number 
 of columns of the weight matrix `beta`. If `x` and `y` are data (not parameters) this function can be executed on a GPU.
 
@@ -451,7 +453,7 @@ dropping constant additive terms.
 
 `real` **`ordered_logistic_glm_lpmf`**`(int y | row_vector x, vector beta, vector c)`<br>\newline
 The log ordered logistic probability mass of y, given linear predictors `x * beta`, and cutpoints c. 
-The size of independant variable row vector `x` needs to match the size of the weight vector `beta`. 
+The size of independent variable row vector `x` needs to match the size of the weight vector `beta`. 
 Cutpoints `c` must be ordered.
 
 <!-- real; ordered_logistic_glm_lpmf; (int y | matrix x, vector beta, vector c); -->
@@ -459,8 +461,8 @@ Cutpoints `c` must be ordered.
 
 `real` **`ordered_logistic_glm_lpmf`**`(int y | matrix x, vector beta, vector c)`<br>\newline
 The log ordered logistic probability mass of y, given linear predictors `x * beta`, and cutpoints c. 
-Same value of independant variable `y` is used for all instances.
-The number of columns of independant variable row vector `x` needs to match the size of the weight vector `beta`.
+Same value of independent variable `y` is used for all instances.
+The number of columns of independent variable row vector `x` needs to match the size of the weight vector `beta`.
 Cutpoints `c` must be ordered. If `x` and `y` are data (not parameters) this function can be executed on a GPU.
 
 <!-- real; ordered_logistic_glm_lpmf; (int[] y | row_vector x, vector beta, vector c); -->
@@ -468,8 +470,8 @@ Cutpoints `c` must be ordered. If `x` and `y` are data (not parameters) this fun
 
 `real` **`ordered_logistic_glm_lpmf`**`(int[] y | row_vector x, vector beta, vector c)`<br>\newline
 The log ordered logistic probability mass of y, given linear predictors `x * beta`, and cutpoints c. 
-Same row vector of independant variables `x` is used for all instances.
-The size of independant variable row vector `x` needs to match the size of the weight vector `beta`. 
+Same row vector of independent variables `x` is used for all instances.
+The size of independent variable row vector `x` needs to match the size of the weight vector `beta`. 
 Cutpoints `c` must be ordered.
 
 <!-- real; ordered_logistic_glm_lpmf; (int[] y | matrix x, vector beta, vector c); -->
@@ -479,7 +481,7 @@ Cutpoints `c` must be ordered.
 The log ordered logistic probability mass of y, given linear predictors
 `x * beta`, and cutpoints c. 
 The number of rows of the independent variable matrix `x` needs to match the length of the dependent variable vector `y`.
-The number of columns of independant variable row vector `x` needs to match the size of the weight vector `beta`.
+The number of columns of independent variable row vector `x` needs to match the size of the weight vector `beta`.
 Cutpoints `c` must be ordered. If `x` and `y` are data (not parameters) this function can be executed on a GPU.
 
 

@@ -10,8 +10,7 @@ plug-and-play, allowing great flexibility in both model choice and
 estimator.
 
 Bagging is a technique for combining bootstrapped estimators for model
-criticism and more robust inference [@Breiman:1996,
-@HugginsMiller:2019].
+criticism and more robust inference [@Breiman:1996; @HugginsMiller:2019].
 
 ## The bootstrap
 
@@ -33,11 +32,11 @@ the mean is the maximum likelihood estimator,
 $$
 \textrm{mean}(y) = \textrm{arg max}_{\mu} \ p(y \mid \mu, 1)
 $$
-A Bayesian approach would be to add a prior and use the posterior mean
-or median as an estimator.  Alternatively, a penalty function could be
-added to the likelihood so that optimization produces a penalized
-maximum likelihood estimate.  With any of these approaches, the
-estimator is just a function from data to a number.
+A Bayesian approach to point estimation would be to add a prior and
+use the posterior mean or median as an estimator.  Alternatively, a
+penalty function could be added to the likelihood so that optimization
+produces a penalized maximum likelihood estimate.  With any of these
+approaches, the estimator is just a function from data to a number.
 
 In analyzing estimators, the data set is being modeled as a random
 variable.  It is assumed that the observed data is just one of many
@@ -57,18 +56,20 @@ standard errors and confidence intervals.
 
 The following pseudocode estimates 95% confidence intervals and
 standard errors for a generic estimate $\hat{\theta}$ that is a
-function of data.
+function of data $y$.
 ```
 for (m in 1:M) {
-  y_rep[m] <- sample_uniform_w_replacement(y)
+  y_rep[m] <- sample_uniform(y)
   theta_hat[m] <- estimate_theta(y_rep[m])
 }
 std_error = sd(theta_hat)
 conf_95pct = [ quantile(theta_hat, 0.025),
                quantile(theta_hat, 0.975) ]
 ```
-The sample-with-replacement function works by independently assigning
-each element of `y_rep` an element of `y` drawn uniformly at random.
+The `sample_uniform` function works by independently assigning each
+element of `y_rep` an element of `y` drawn uniformly at random.  This
+produces a sample *with replacement.* That is, some elements of `y`
+may show up more than once in `y_rep` and some may not appear at all.
 
 ## Coding the bootstrap in Stan
 
@@ -123,12 +124,15 @@ size-$N$ vector whose entries are defined by `x[boot_idx][n] =
 x[boot_idx[n]]` and similarly for `y`.  For example, if $N = 4$ and
 `boot_idxs = {2, 1, 1, 3}`, then `x[boot_idxs] = [x[2], x[1], x[1],
 x[3]]'` and `y[boot_idxs] = [y[2], y[1], y[1], y[3]]'`.  The predictor
-and outcome vectors remain aligned, with both the pair
+and outcome vectors remain aligned, with both elements of the pair
 `x[1]` and `y[1]` repeated twice.
 
 With the model defined this way, if `resample` is 1, the model is fit
 to a bootstrap subsample of the data.  If `resample` is 0, the model
-is fit to the original data as given.
+is fit to the original data as given.  By running the bootstrap fit
+multiple times, confidence intervals can be generated from quantiles
+of the results. 
+
 
 ## Error statistics from the bootstrap
 
@@ -189,8 +193,9 @@ using quantiles of the draws.  That is, if there are $M = 1000$
 estimates of $\hat{\alpha}$ in different subsamples, the 2.5% quantile
 and 97.5% quantile pick out the boundaries of the 95% confidence
 interval around the estimate for the actual data set $y$.  To get
-accurate 97.5% quantile estimates requires a large number of Monte
-Carlo simulations.
+accurate 97.5% quantile estimates requires a much larger number of
+Monte Carlo simulations (roughly twenty times as large as needed for
+the median).
 
 ## Bagging
 
@@ -214,6 +219,9 @@ $$
 $$
 For discrete parameters, voting is used to select the outcome.
 
+One way of viewing bagging is as a classical attempt to get something
+like averaging over parameter estimation uncertainty.
+
 ## Bayesian bootstrap and bagging
 
 A Bayesian estimator may be analyzed with the bootstrap in exactly the
@@ -229,4 +237,4 @@ posteriors will typically have wider posterior intervals than those
 fit with just the original data, showing that the method is not a pure
 Bayesian approach to updating, and indicating it would not be
 calibrated if the model were well specified.  The hope is that it
-can guard against overcertainty in a poorly specified model.
+can guard against over-certainty in a poorly specified model.

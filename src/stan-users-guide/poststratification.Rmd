@@ -8,10 +8,10 @@ whole, this can reduce variance in the estimate of a quantity of
 interest at the population level.
 
 Poststratification is a technique for adjusting a non-representative
-sample (i.e., convenience sample, observational data) for which there
-are demographic predictors characterizing the strata.  It is carried
-out after a model is fit to the observed data, hence the name
-*post*stratification [@Little:1993].  Poststratification can be
+sample (i.e., a convenience sample or other observational data) for
+which there are demographic predictors characterizing the strata.  It
+is carried out after a model is fit to the observed data, hence the
+name *post*stratification [@Little:1993].  Poststratification can be
 fruitfully combined with regression modeling (or more general
 parametric modeling), which provides estimates based on combinations
 of predictors (or general parameters) rather than raw counts in each
@@ -26,15 +26,15 @@ of the combination of multilevel regression and poststratification
 
 Stratification and poststratification can be applied to many
 applications beyond survey sampling [@Kennedy:2019].  For example,
-large-scale whole-earth soil-carbon models are fit wit parametric
+large-scale whole-earth soil-carbon models are fit with parametric
 models of how soil-carbon depends on features of an area such as soil
 composition, flora, fauna, temperature, humidity, etc.  Given a model
 that predicts soil-carbon concentration given these features, a
 whole-earth model can be created by stratifying the earth into a grid
-of say 10km by 10km "squares" (they're not quite square because the
+of say 10km by 10km "squares" (they can't literally be square because the
 earth's surface is topologically a sphere).  Each grid area has an
 estimated makeup of soil type, forestation, climate, etc.  The global
-model of soil carbon is then estimated using poststratification by
+level of soil carbon is then estimated using poststratification by
 simply summing the expected soil carbon estimated for each square in
 the grid [@Paustian:1997].  Dynamic models can then be constructed by
 layering a time-series component, varying the poststratification
@@ -49,11 +49,11 @@ out in which 490 respondents are undergraduates, 112 are graduate
 students, and 47 are continuing education students.  Now suppose that
 support for the issue among the poll respondents is is 25% among
 undergraduate students (subgroup 1), 40% among graduate students
-(group 2), and 80% among continuing education students (group 3).  Now
-suppose that the student body is made up of 20,000 undergraduates,
-5,000 graduate students, and 2,000 continuing education students.  It
-is important that our subgroups are exclusive and exhaustive, i.e.,
-they form a partition of the population.
+(subgroup 2), and 80% among continuing education students (subgroup
+3).  Now suppose that the student body is made up of 20,000
+undergraduates, 5,000 graduate students, and 2,000 continuing
+education students.  It is important that our subgroups are exclusive
+and exhaustive, i.e., they form a partition of the population.
 
 The proportion of support in the poll among students in each group
 provides a simple maximum likelihood estimate $\theta^* = (0.25, 0.5,
@@ -68,8 +68,9 @@ belongs.
 An estimate of the population prevalence of support for the
 issue among students can be constructed by simply multiplying
 estimated support in each group by the size of each group.  Letting
-$N = (20,000,\, 5,000,\, 2,000)$ be the subgroup sizes, the
-poststratified estimate of support $\theta^*$ in the population is
+$N = (20\,000,\, 5\,000,\, 2\,000)$ be the subgroup sizes, the
+poststratified estimate of support in the population $\phi^*$ is
+estimated by 
 $$
 \phi^*
 = \frac{\displaystyle \sum_{j = 1}^3 \theta_j^* \cdot N_j}
@@ -78,9 +79,9 @@ $$
 Plugging in our estimates and population counts yields
 \begin{eqnarray*}
 \phi*
-& = & \frac{0.25 \cdot 20,000 + 0.4 \cdot 5,000 + 0.8 \cdot 2,000}
-           {20,000 + 5,000 + 2,000}
-\\[4pt] & = & \frac{8,600}{27,000}
+& = & \frac{0.25 \cdot 20\,000 + 0.4 \cdot 5\,000 + 0.8 \cdot 2\,000}
+           {20\,000 + 5\,000 + 2\,000}
+\\[4pt] & = & \frac{8\,600}{27\,000}
 \\[4pt] & \approx & 0.32.
 \end{eqnarray*}
 
@@ -154,7 +155,9 @@ generated quantities {t
 The likelihood is vectorized, and implicitly sums over the $j$.
 The prior is implicitly uniform on $(0, 1),$ the support of $\theta.$
 The summation is computed using a dot product and the sum function,
-which is why `N` was declared as a vector.    
+which is why `N` was declared as a vector rather than as an array of
+integers.
+
 
 ## Regression and poststratification
 
@@ -177,12 +180,12 @@ have zero respondents and almost all groups will have very few
 respondents.
 
 A practical approach to overcoming the problem of low data size per
-stratum is to use a regression model.  Each demographic
-feature will require a regression coefficient for each of its
-subgroups, but now the parameters grow multiplicatively rather than
-exponentially.  For example, with 4 age brackets, 2 sexes, 5 income
+stratum is to use a regression model.  Each demographic feature will
+require a regression coefficient for each of its subgroups, but now
+the parameters add to rather than multiply the total number of
+parameters.  For example, with 4 age brackets, 2 sexes, 5 income
 brackets, and 50 states of residence, there are only $4 + 2 + 5 + 50 =
-61$ regression coefficients to estimate.  For instance, suppose that
+61$ regression coefficients to estimate. Now suppose that
 item $n$ has demographic features $\textrm{age}_n \in 1:5$,
 $\textrm{sex}_n \in 1:2$, $\textrm{income}_n \in 1:5,$ and
 $\textrm{state}_n \in 1:50$.  A logistic regression may be formulated
@@ -198,9 +201,19 @@ y_n \sim
 $$
 where $\textrm{age}[n]$ is the age of the $n$-th respondent,
 $\textrm{sex}[n]$ is their sex, $\textrm{income}[n]$ their income and
-$\textrm{state}[n]$ their state of residence.  If all of these
-coefficients are given fixed priors, the result is a regression and
-poststratification model.
+$\textrm{state}[n]$ their state of residence.  These coefficients can
+be assigned priors, resulting in a Bayesian regression model.  
+
+To poststratify the results, the population size for each combination of
+predictors must still be known.  Then the population estimate is
+constructed as
+$$
+\sum_{i = 1}^5 \sum_{j = 1}^2 \sum{k = 1}^5 \sum{m = 1}^50
+\textrm{logit}^{-1}(\alpha + \beta_i + \gamma_j + \delta_k + \eta_m)
+\cdot \textrm{pop}_{i, j, k, m},
+$$
+where $\textrm{pop}_{i, j, k, m}$ is the size of the subpopulation
+with age $i$, sex $j$, income level $k$, and state of residence $m$.
 
 As formulated, it should be clear that any kind of prediction could be
 used as a basis for poststratification.  For example, a Gaussian
@@ -210,15 +223,16 @@ model of outcomes $y$ given predictors $x$.
 
 ## Multilevel regression and poststratification
 
-If there are large numbers of demographic features, but not
-necessarily large numbers of any individual feature.  For instance,
-even in a poll of 10,000 respondents, if they are divided by the 50
-states, that's only 200 respondents per state.  When data sizes are
-small, parameter estimation can be stabilized and sharpened by
-providing hierarchical priors.  With hierarchical priors, the data
-determines both the amount of partial pooling among the groups.  The
-only drawback is that if the number of groups is small, it can be hard
-to fit these models without strong hyperpriors.
+With large numbers of demographic features, each cell may have very
+few items in it with which to estimate regression coefficients.  For
+example, even in a national-level poll of 10,000 respondents, if they
+are divided by the 50 states, that's only 200 respondents per state on
+average.  When data sizes are small, parameter estimation can be
+stabilized and sharpened by providing hierarchical priors.  With
+hierarchical priors, the data determines the amount of partial
+pooling among the groups.  The only drawback is that if the number of
+groups is small, it can be hard to fit these models without strong
+hyperpriors.
 
 The model introduced in the previous section had likelihood
 $$
@@ -247,26 +261,32 @@ The other regression parameters can be given hierarchical priors,
 
 
 The hyperparameters for scale of variation within a group can
-be given hyperpriors,
+be given simple standard hyperpriors,
 $$
 \sigma^{\beta}, \sigma^{\gamma}, \sigma^{\delta}, \sigma^{\epsilon}
 \sim \textrm{normal}(0, 1).
 $$
+The scales of these fixed hyperpriors need to be determined on a
+problem-by-problem basis, though ideally they will be close to
+standard (mean zero, unit variance).
+
 
 ### Dealing with small partitions and non-identifiability
 
 The multilevel structure of the models used for multilevel regression
-and poststratification consist of a a sum of intercepts that vary by
+and poststratification consist of a sum of intercepts that vary by
 demographic feature. This immediately introduces non-identifiability.
 A constant added to each state coefficient and subtracted from each age
 coefficient leads to exactly the same likelihood.
 
-This non-identifiability that is only mitigated by the (hierarchical)
-priors.  When demographic partitions are small, as they are with
-several categories in the example, it can be more computationally
-tractable to enforce a sum-to-zero constraint on the coefficients.
-Other values than zero will be absorbed into the intercept.  With
-binary features, coefficients will be negations of each other.  For
+This is non-identifiability that is only mitigated by the
+(hierarchical) priors.  When demographic partitions are small, as they
+are with several categories in the example, it can be more
+computationally tractable to enforce a sum-to-zero constraint on the
+coefficients.  Other values than zero will by necessity be absorbed
+into the intercept, which is why it typically gets a broader prior
+even with standardized data.  With a sum to zero constraint,
+coefficients for binary features will be negations of each other.  For
 example, because there are only two sex categories, $\gamma_2 =
 -\gamma_1.$
 
@@ -298,7 +318,10 @@ model {
   sum(alpha) ~ normal(0, 0.001);
 ```
 This leaves the regular prior, but adds a second prior that
-concentrates the sum near zero.  
+concentrates the sum near zero.  The scale of the second prior will
+need to be established on a problem and data-set specific basis so
+that it doesn't shrink the estimates beyond the shrinkage of the
+hierarchical scale parameters.
 
 Note that in the hierarchical model, the values of the coefficients
 when there are only two coefficients should be the same absolute value
@@ -306,23 +329,15 @@ but opposite signs.  Any other difference could be combined into the
 overall intercept $\alpha.$  Even with a wide prior on the intercept,
 the hyperprior on $\sigma^{\gamma}$ may not be strong enough to
 enforce that, leading to a weak form non-identifiability in the
-posterior.  
+posterior.  Enforcing a (hard or soft) sum-to-zero constraint can help
+mitigate non-identifiability.  Whatever prior is chosen, prior
+predictive checks can help diagnose problems with it.
 
-An alternative coding that preserves symmetry is to reduce the degrees
-of freedom by defining
-$$
-\gamma_2 = -\gamma_1.
-$$
-This is straightforward in Stan.  If a prior is placed on
-$\gamma_{1:2}$, the priors for $\gamma_1$ an $\gamma_2$ add together,
-even though $\gamma_2 = -\gamma_1.$  The behavior of such priors can
-be examined using prior predictive checks.
-
-None of this has anything to do with the poststratification by the
-way---this is just to fit a large multilevel regression with multiple
-discrete categories.  Having multiple intercepts always leads to weak
-non-identifiability, even with the priors on the intercepts all
-centered at zero.
+None of this work to manage identifiability in multilevel regressions
+has anything to do with the poststratification; it's just required to
+fit a large multilevel regression with multiple discrete categories.
+Having multiple intercepts always leads to weak non-identifiability,
+even with the priors on the intercepts all centered at zero.
 
 
 ## Coding MRP in Stan
@@ -346,7 +361,8 @@ non-identifiability with the overall intercept.  The centered
 parameterization drops the `multiplier`.  
 
 Here is the full Stan model, which performs poststratification in the
-generated quantities using population group from data variable `P`.
+generated quantities using population sizes made available through
+data variable `P`.
 ```
 data {
   int<lower = 0> N;
@@ -399,7 +415,7 @@ be much much more efficient, especially for discrete quantities).
 ### Binomial coding
 
 In some cases, it can be more efficient to break the data down by
-group.  Here, there are $4 \times 5 \times 2 \times 50 = 2000$
+group.  Suppose there are $4 \times 5 \times 2 \times 50 = 2000$
 groups.  The data can be broken down into a size-2000 array, with
 entries corresponding to total vote counts in that group
 ```
@@ -497,5 +513,4 @@ expect_pos
 	         + income[d] * psi);
 ```
 Here `d` is the loop variable looping over states.  This ensures that
-the poststratification formula matches the likelihood formula;  they
-must both be updated together.
+the poststratification formula matches the likelihood formula.

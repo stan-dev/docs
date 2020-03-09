@@ -6,14 +6,14 @@ notion of "utility" associated with them.  The so-called "Bayes
 optimal" decision is the one that maximizes expected utility (or
 equivalently, minimizes expected loss).  This chapter shows how Stan
 can be used to simultaneously estimate the distribution of outcomes
-based on decisions and compute the requied expected utilities.
+based on decisions and compute the required expected utilities.
 
 ## Outline of decision analysis
 
 Following [@GelmanEtAl:2013], Bayesian decision analysis can be
 factored into the following four steps.
 
-1. Define a set $X$ of possible outcomes and $D$ of possible
+1. Define a set $X$ of possible outcomes and a set $D$ of possible
 decisions.
 
 2.  Define a probability distribution of outcomes conditional on
@@ -41,8 +41,8 @@ another unit of money decreases the more money one has).
 
 This section outlines a very simple decision analysis for a commuter
 deciding among modes of transportation to get to work: walk, bike
-share, public transportion, or cab.  Suppose the commmuter has been
-taking various modes of transporation for the previous year and the
+share, public transportion, or cab.  Suppose the commuter has been
+taking various modes of transportation for the previous year and the
 transportation conditions and costs have not changed during that
 time.  Over the year, such a commuter might accumulate two hundred
 observations of the time it takes to get to work given a choice of
@@ -65,7 +65,7 @@ time and cost.  More formally,
 
 The density required is $p(x \mid d),$ where $d \in D$ is a decision and
 $x = (c, t) \in X$ is an outcome.  Being a statistical decision
-problem, this density will the a posterior predictive distibution
+problem, this density will the a posterior predictive distribution
 conditioned on previously observed outcome and decision pairs, based
 on a parameter model with parameters $\theta,$
 $$
@@ -76,11 +76,8 @@ p(x \mid d, x^{\textrm{obs}}, d^{\textrm{obs}})
   \cdot p(\theta \mid x^{\textrm{obs}}, d^{\textrm{obs}})
   \, \textrm{d}\theta.
 $$
-Up until now, the notation has not been considering conditioning on
-observed data.
-
 The observed data for a year of commutes consists of choice of the
-chosen commute mode $d^{\textrm{obs}}_n$ and observec dosts and times
+chosen commute mode $d^{\textrm{obs}}_n$ and observed costs and times
 $x^{\textrm{obs}}_n = (c^{\textrm{obs}}_n, t^{\textrm{obs}}_n)$ for $n
 \in 1:200.$
 
@@ -89,7 +86,7 @@ lognormal for a given choice of transportation $d_n \in 1:4,$
 $$
 t_n \sim \textrm{lognormal}(\mu_{d[n]}, \sigma_{d[n]}).
 $$
-To undertand the notation, $d_n$, also written $d[n]$, is the mode of
+To understand the notation, $d_n$, also written $d[n]$, is the mode of
 transportation used for trip $n$.  For example if trip $n$ was by
 bicycle, then $t_n \sim \textrm{lognormal}(\mu_2, \sigma_2),$ where
 $\mu_2$ and $\sigma_2$ are the lognormal parameters for bicycling.
@@ -102,7 +99,8 @@ Simple fixed priors are used for each mode of transportation $k \in 1:4,$
 \end{eqnarray*}
 These priors are consistent with a broad range of commute times; in a
 more realistic model each commute mode would have its own prior based
-on knowledge of the city and time may vary by day or time of the commute.
+on knowledge of the city and the time of day would be used as a covariate;
+here the commutes are taken to be exchangeable.
 
 Cost is usually a constant function for public transportation,
 walking, and bicycling.  Nevertheless, for simplicity, all costs will
@@ -140,12 +138,14 @@ $$
 The sign is negative because high cost is undesirable.  A better
 utility function might have a step function or increasing costs for
 being late, different costs for different modes of transportation
-because of their comfort and environmental impact.
+because of their comfort and environmental impact, and non-linearity
+of utility in cost.
+
 
 ### Step 4.  Maximize expected utility {-}
 
 At this point, all that is left is to calculate expected utility for
-each decision and choose the optimal decision.  If the decisions
+each decision and choose the optimum.  If the decisions
 consist of a small set of discrete choices, expected utility can be
 easily coded in Stan.  The utility function is coded as a function,
 the observed data is coded as data, the model parameters coded as
@@ -173,7 +173,6 @@ model {
   mu ~ normal(0, 1);
   sigma ~ lognormal(0, 0.25);
   t ~ lognormal(mu, sigma);
-
   nu ~ normal(0, 20);
   tau ~ lognormal(0, 0.25);
   c ~ lognormal(nu, tau);
@@ -186,8 +185,8 @@ generated quantities {
 }
 ```
 
-The generated quantities block defines a variable `util` where
-`util[k]` will hold the utility derived from a random commute
+The generated quantities block defines an array variable `util` where
+`util[k]`, which will hold the utility derived from a random commute
 for choice `k` generated according to the model parameters for that
 choice.  This randomness is required to appropriately characterize the
 posterior predictive distribution of utility.
@@ -235,7 +234,7 @@ after multiple chains are run and combined.
 It only remains to make the decision `k` with highest expected
 utility, which will correspond to the choice with the highest
 posterior mean for `util[k]`.  This can be read off of the `mean`
-column of the Stan's summary statistics or accessed programatically
+column of the Stan's summary statistics or accessed programmatically
 through Stan's interfaces.
 
 ## Continuous choices

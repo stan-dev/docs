@@ -9,9 +9,9 @@ calibration (SBC) exploits this property of Bayesian inference to
 asses the soundness of a posterior sampler.  Roughly, the way it works
 is by simulating parameters according to the prior, then simulating
 data conditioned on the simulated parameters, then testing posterior
-calibration of the inference algorithm when given the simulated data.
-This chapter follows [@TaltsEtAl:2018], which improves on the original
-approach taken in [@CookGelmanRubin:2006].
+calibration of the inference algorithm over independently simulated
+data sets.  This chapter follows [@TaltsEtAl:2018], which improves on
+the original approach taken in [@CookGelmanRubin:2006].
 
 ## Bayes is calibrated by construction
 
@@ -22,7 +22,7 @@ parameters from the prior,
 $$
 \theta^{\textrm{sim}} \sim p(\theta),
 $$
-and then simulates data given the paraemters,
+and then simulates data given the parameters,
 $$
 y^{\textrm{sim}} \sim p(y \mid \theta^{\textrm{sim}}).
 $$
@@ -42,7 +42,7 @@ $$
 \theta^{\textrm{sim}} \sim p(\theta \mid y^{\textrm{sim}}).
 $$
 Now consider an algorithm that produces a
-sequence of draws from the posterior
+sequence of draws from the posterior given this simulated data,
 $$
 \theta^{(1)}, \ldots, \theta^{(M)}
 \sim p(\theta \mid y^{\textrm{sim}}).
@@ -68,15 +68,15 @@ p(y, \theta) = p(y \mid \theta) \cdot p(\theta),
 $$
 with data $y$ and parameters $\theta$ (both are typically
 multivariate).  Simulation-based calibration works by generating $N$
-simulated parameter and data pairs,
+simulated parameter and data pairs according to the joint density,
 $$
 (y^{\textrm{sim}(1)}, \theta^{\textrm{sim}(1)}),
 \ldots, (y^{\textrm{sim}(N)}, \theta^{\textrm{sim}(N)}),
 \sim p(y, \theta).
 $$
 For each simulated data set $y^{\textrm{sim}(n)}$, use the algorithm
-to be tested to generate $M$ posterior draws, presumbably distributed
-marginally as 
+to be tested to generate $M$ posterior draws, which if everything is
+working properly, will be distributed marginally as
 $$
 \theta^{(n, 1)}, \ldots, \theta^{(n, M)}
 \sim p(\theta \mid y^{\textrm{sim}(n)}).
@@ -95,7 +95,6 @@ r_{n, k}
 \end{eqnarray*}
 That is, the rank is the number of posterior draws $\theta^{(n,m)}_k$
 that are less than the simulated draw $\theta^{\textrm{sim}(n)}_k.$
-
 
 If the algorithm generates posterior draws according to the posterior,
 the ranks should be uniformly distributed from $0$ to $M$, so that
@@ -137,7 +136,7 @@ given the parameters,
 $$
 y_n \sim \textrm{normal}(\mu, \sigma).
 $$
-Expressed as densities, the prior density is
+The joint prior density is thus
 $$
 p(\mu, \sigma)
 = \textrm{normal}(\mu \mid 0, 1)
@@ -149,13 +148,15 @@ p(y \mid \mu, \sigma)
 = \prod_{n=1}^N \textrm{normal}(y_n \mid \mu, \sigma).
 $$
 
-Consider the first run of sampling, $n = 1$.  In simulating
-simulating from the prior, suppose the following
-two parameter values are drawn,
+For example, suppose the following two parameter values are drawn from
+the prior in the first simulation,
 $$
 (\mu^{\textrm{sim(1)}}, \sigma^{\textrm{sim(1)}}) = (1.01, 0.23).
 $$
-Suppose $M = 4$ posterior simulations are drawn, with results
+Then data $y^{\textrm{sim}(1)} \sim p(y \mid \mu^{\textrm{sim(1)}},
+\sigma^{\textrm{sim(1)}})$ is drawn according to the sampling
+distribution.  Next, $M = 4$ draws are taken from the posterior
+$\mu^{(1,m)}, \sigma^{(1,m)} \sim p(\mu, \sigma \mid y^{\textrm{sim}(1)})$,
 $$
 \begin{array}{r|rr}
 m & \mu^{(1,m)} & \sigma^{(1,m)}
@@ -172,8 +173,8 @@ $$
 Then the comparisons on which ranks are based look as follows,
 $$
 \begin{array}{r|cc}
-m & \textrm{I}[\mu^{(1,m)} < \mu^{\textrm{sim}(1)}]
-& \textrm{I}[\sigma^{(1,m)} < \sigma^{\textrm{sim}(1)}]
+m & \textrm{I}(\mu^{(1,m)} < \mu^{\textrm{sim}(1)})
+& \textrm{I}(\sigma^{(1,m)} < \sigma^{\textrm{sim}(1)})
 \\ \hline
 1 & 0 & 0
 \\
@@ -184,15 +185,15 @@ m & \textrm{I}[\mu^{(1,m)} < \mu^{\textrm{sim}(1)}]
 4 & 0 & 0
 \end{array}
 $$
-The ranks are the column sums, or $r_{1,1} = 2$ and $r_{1,2} = 1$.
+The ranks are the column sums, $r_{1,1} = 2$ and $r_{1,2} = 1$.
 Because the simulated parameters are distributed according to the posterior,
 these ranks should be distributed uniformly between $0$ and $M$, the
 number of posterior draws.
 
-### Testing a Stan program with SBC
+### Testing a Stan program with simulation-based calibration
 
-Now consider using simulation-based calibration to test a Stan
-program.  The transformed data block is used to simulate parameters
+To code simulation-based calibration in a Stan program,
+the transformed data block can be used to simulate parameters
 and data from the model.  The parameters, transformed parameters, and
 model block then define the model over the simulated data.  Then, in
 the generated quantities block, the program records an indicator for
@@ -202,9 +203,9 @@ above, the rank is then the sum of the simulated indicator variables.
 transformed data {
   real mu_sim = normal_rng(0, 1);
   real<lower = 0> sigma_sim = lognormal_rng(0, 1);
-  int<lower = 0> N = 10;
-  for (n in 1:N)
-    y_sim[n] = normal_rng(mu_sim, sigma_sim);
+  int<lower = 0> J = 10;
+  for (j in 1:J)
+    y_sim[j] = normal_rng(mu_sim, sigma_sim);
 }
 parameters {
   real mu;
@@ -220,6 +221,9 @@ generated quantities {
       = { mu < mu_sim, sigma < sigma_sim };
 }
 ```
+To avoid confusion with the number of simulated data sets used
+for simulation-based calibration, `J` is used for the number of
+simulated data points.
 
 The model is implemented twice---once as a data generating process
 using random number generators in the transformed data block, then
@@ -229,9 +233,9 @@ chance for errors.  The blessing is that by implementing the model
 twice and comparing results, the chance of there being a mistake
 in the model is reduced.
 
-### Pseudocode for SBC
+### Pseudocode for simulation-based calibration
 
-The entire SBC process is as follows, where
+The entire simulation-based calibration process is as follows, where
 
 * `p(theta)` is the prior density
 * `p(y | theta)` is the sampling density
@@ -253,7 +257,7 @@ for (n in 1:N) {
 
     // calculate rank of sim among posterior draws
     for (k in 1:K)
-        rank(n, k) = SUM_m I[theta[k](n,m) < theta[k](sim(n))]
+        rank(n, k) = SUM_m I(theta[k](n,m) < theta[k](sim(n)))
 }
 // test uniformity of each parameter
 for (k in 1:K)
@@ -264,31 +268,30 @@ for (k in 1:K)
 
 The draws from the posterior are assumed to be roughly independent.
 If they are not, artifacts may arise in the uniformity tests due to
-correlation in the posterior draws.  This will almost always require
-thinning down to the point where the effective sample size is roughly
-the same as the number of thinned draws.  This may require running the
-code a few times to judge the number of draws required to get a high
-enough effective sample size.  This operation that can be put into a
-loop that doubles the number of iterations until all parameters have
-an effective sample size of `M`, then thinning down to `M` draws.
+correlation in the posterior draws.  Thus it is best to think the
+posterior draws down to the point where the effective sample size is
+roughly the same as the number of thinned draws.  This may require
+running the code a few times to judge the number of draws required to
+produce a target effective sample size.  This operation that can be
+put into a loop that doubles the number of iterations until all
+parameters have an effective sample size of `M`, then thinning down to
+`M` draws.
 
 ## Testing uniformity
 
 A simple, though not very highly powered, $\chi^2$-squared test for
 uniformity can be formulated by binning the ranks $0:M$ into $J$
-evenly sized bins and testing that the bins all have roughly the
+bins and testing that the bins all have roughly the
 expected number of draws in them.  Many other tests for uniformity are
 possible.  For example, [@CookGelmanRubin:2006] transform the ranks
 using the inverse cumulative distribution function for the standard
 normal and then perform a test for normality.  [@TaltsEtAl:2018]
 recommends visual inspection of the binned plots.
 
-If there are $N$ total runs and the $J$ bins are of equal size, then
-$N / J$ elements are expected to fall into each bin.
-
 The bins don't need to be exactly the same size.  In general, if $b_j$
 is the number of ranks that fall into bin $j$ and $e_j$ is the number
-of ranks expected to fall into bin $j$, the test statistic is
+of ranks expected to fall into bin $j$ (which will be proportional to
+its size under uniformity), the test statistic is
 $$
 X^2 = \sum_{j = 1}^J \frac{(b_j - e_j)^2}{e_j}.
 $$
@@ -303,7 +306,7 @@ to $X^2$.  Because this test relies on the binomial being
 approximately normal, the traditional advice is to make sure the
 expected count in each bin is at least five, i.e., $e_j \geq 5.$
 
-### Indexing for simplicity
+### Indexing to simplify arithmetic
 
 Because there are $M + 1$ possible ranks, with $J$ bins, it is
 easiest to have $M + 1$ be divisible by $J$.  For instance, if
@@ -312,10 +315,11 @@ expected count in each bin of $\frac{M + 1}{J} = 50.$
 
 Distributing the ranks into bins is another fiddly operation
 that can be done with integer arithmetic or the floor operation.
+Using floor, the following function determines the bin for a rank,
 $$
 \textrm{bin}(r_{n, m}, M, J)
 = 1 + \left\lfloor \frac{r_{n, m}}{(M + 1) / J} \right\rfloor.
-$$.
+$$
 For example, with $M = 999$ and $J = 20$, $(M + 1) / J = 50$.
 The lowest rank checks out,
 $$
@@ -332,11 +336,7 @@ $$
 The highest rank also checks out, with $\textrm{bin}(1000, 999, 20) = 50.$
 
 To summarize, the following pseudocode computes the $b_j$ values for
-the $\chi^2$ test or for visualization in a histogram.  Care must be
-taken in visualizing histograms for discrete data because it's easy to
-introduce off-by-one errors and artifacts at the edges because of the
-way boundaries are computed by default.  That's why so much attention
-is being devoted to indexing and binning here.
+the $\chi^2$ test or for visualization in a histogram. 
 ```
 Inputs: M draws, J bins, N parameters, ranks r[n, m]
 b[1:J] = 0
@@ -345,6 +345,12 @@ for (m in 1:M)
 ```
 where the `++b[n]` notation is a common form of syntactic sugar
 for `b[n] = b[n] + 1.`
+
+In general, a great deal of care must be taken in visualizing discrete
+data because it's easy to introduce off-by-one errors and artifacts at
+the edges because of the way boundaries are computed by default.
+That's why so much attention must be devoted to indexing and binning.
+
 
 
 ## Examples of simulation-based calibration
@@ -373,10 +379,10 @@ transformed data {
   real mu_sim = normal_rng(0, 1);
   real<lower = 0> sigma_sim = lognormal_rng(0, 1);
 
-  int<lower = 0> N = 10;
-  vector[N] y_sim;
-  for (n in 1:N)
-    y_sim[n] = student_t_rng(4, mu_sim, sigma_sim);
+  int<lower = 0> J = 10;
+  vector[J] y_sim;
+  for (j in 1:J)
+    y_sim[j] = student_t_rng(4, mu_sim, sigma_sim);
 }
 parameters {
   real mu;
@@ -420,7 +426,7 @@ sampler.
 
 This can happen in Stan with well-specified models if the posterior
 geometry is too difficult (usually due to extreme stiffness that
-varies). A simple example is the now-classic Eight Schools problem,
+varies). A simple example is the eight schools problem,
 the data for which consists of sample means $y_j$ and standard
 deviations $\sigma_j$ of differences in test score after the same
 intervention in $J = 8$ different schools. [@Rubin:1981] applies a
@@ -435,7 +441,7 @@ standard deviation $\tau > 0$ as well as the effect $\theta_j$ of the
 treatment in each school.  The model has weak normal and half-normal
 priors for the population-level parameters,
 \begin{eqnarray*}
-\mu & \sim & \textrm{normal}(0, 5),
+\mu & \sim & \textrm{normal}(0, 5)
 \\[4pt]
 \tau & \sim & \textrm{normal}_{+}(0, 5).
 \end{eqnarray*}
@@ -488,18 +494,19 @@ data $\sigma_j$ and $y_j.$  The parameters and model are a direct
 encoding of the mathematical presentation using vectorized sampling
 statements.  The generated quantities block includes indicators for
 parameter comparisons, saving only $\theta_1$ because the schools are
-exchangeable.
+exchangeable in the simulation.
 
 When fitting the model in Stan, multiple warning messages are
 provided that the sampler has diverged.  The divergence warnings are
 in Stan's sampler precisely to diagnose the sampler's inability
-to follow the curvature in the posterior.
+to follow the curvature in the posterior and provide independent
+confirmation that Stan's sampler cannot fit this model as specified.
 
 SBC also diagnoses the problem. Here's the rank plots for running $N =
 200$ simulations with 1000 warmup iterations and $M = 999$ draws per
 simulation used to compute the ranks.
 
-```{r include = TRUE, echo = FALSE, fig.align = "center", fig.cap = "Simulation based calibration plots for the eight-schools model with  centered parameterization in Stan.  The geometry is too difficult for the NUTS sampler to handle, as indicated by the plot for theta[1]."}
+```{r include = TRUE, echo = FALSE, fig.align = "center", out.width = '30%', fig.width = 2, fig.cap = "Simulation based calibration plots for the eight-schools model with  centered parameterization in Stan.  The geometry is too difficult for the NUTS sampler to handle, as indicated by the plot for theta[1]."}
 knitr::include_graphics("./img/sbc-ctr-8-schools-mu.png", auto_pdf = TRUE)
 knitr::include_graphics("./img/sbc-ctr-8-schools-tau.png", auto_pdf = TRUE)
 knitr::include_graphics("./img/sbc-ctr-8-schools-theta1.png", auto_pdf = TRUE)

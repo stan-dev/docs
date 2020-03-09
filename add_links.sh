@@ -1,9 +1,20 @@
 #!/usr/bin/env bash
 
-mkdir docs/2_20_tmp
-(cd docs/2_20; tar cf - .) | (cd docs/2_20_tmp; tar xvf - )
-python link_to_latest.py docs/2_20_tmp/stan-users-guide "Stan User's Guide"
-python link_to_latest.py docs/2_20_tmp/reference-manual "Stan Reference Manual"
-python link_to_latest.py docs/2_20_tmp/functions-reference "Stan Functions Reference"
-mv docs/2_20 docs/2_20_bak
-mv docs/2_20_tmp/ docs/2_20
+### USAGE
+# add_links.sh last_docs_version_dir
+# add_links.sh 2_21
+
+directory="$1"
+
+mkdir docs/"$directory"_tmp
+
+(cd docs/"$directory"; tar cf - .) | (cd docs/"$directory"_tmp; tar xvf - )
+
+python link_to_latest.py docs/"$directory"_tmp/stan-users-guide "Stan User's Guide"
+python link_to_latest.py docs/"$directory"_tmp/reference-manual "Stan Reference Manual"
+python link_to_latest.py docs/"$directory"_tmp/functions-reference "Stan Functions Reference"
+
+mv docs/"$directory" docs/"$directory"_bak
+mv docs/"$directory"_tmp/ docs/"$directory"
+
+rm -r "$directory"_tmp

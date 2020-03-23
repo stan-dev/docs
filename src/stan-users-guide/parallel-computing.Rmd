@@ -1,11 +1,200 @@
-# Map-Reduce  {#map-reduce.chapter}
+# Parallel Computing  {#parallel-computing.chapter}
+
+Stan has two mechanisms for parallelizing calculations used in a model: `reduce_sum` and and `map_rect`.
+
+The main differences are:
+1. `reduce_sum` requires the result of the calculation to be a scalar, while `map_rect` returns a list of vectors
+2. `reduce_sum` has a more flexible interface and can accept arbitrary Stan types as arguments, `map_rect` is more restrictive on what arguments can be and how they are shaped
+3. `map_rect` can parallelize work over multiple computers or a single computer, while `reduce_sum` works only on a single computer
+4. `map_rect` requires work to be broken into pieces manually, while `reduce_sum` mostly automates this
+
+## Reduce-Sum { #reduce-sum }
+
+```reduce_sum``` is a tool for parallelizing operations that can be represented as a parallel-for combined with a sum (that returns a scalar).
+
+In terms of probabilistic models, an example of this comes up when N terms in a likelihood combined multiplicatively and can be computed independently of each other (where independence here is in the computational sense, not necessarily the statistical sense). In this case, computing the log density means computing the sum of a number of terms that can each be computed separately. 
+
+```reduce_sum``` is not useful when there are dependencies between the terms. This can happen, for instance, if there were N terms in a Gaussian process likelihood. ```reduce_sum``` will not be useful for accelerating this.
+
+If for a set of input arguments, ```args0, args1, args2, ...``` and a scalar function ```f```, the log likelihood can be computed as:
+
+```f(args0) + f(args1) + f(args2) + ...```
+
+then this calculation can be written as a reduction over the set of arguments. If this reducing function is called ```reduce```, then it would need to perform the operations:
+
+```reduce({ args0, args1, args2, ... }) = f(args0) + f(args1) + f(args2) + ...```
+
+If the user can write a function like ```reduce```, then it is trivial for us to provide a function to automatically parallelize the calculations.
+
+Again, if the set of work is represented as a list of arguments ``{ args0, args1, args2, ... }```, then mathematically it is possible to rewrite this sum with any combination of partial-reduces.
+
+For instance, the sum can be written:
+
+1. ```reduce({ args0, args1, args2, ... })```, summing over all arguments, using one reduce function
+2. ```reduce({ args0, ..., args(M - 1) }) + reduce({ argsM, args2, ...})```, computing the first M terms separately from the rest
+3. ```reduce({ args0 }) + reduce({ args1 }) + reduce({ args2 }) + ...```, computing each term individually and summing them
+
+The first function call is completely serial, the second can be parallelized over two workers, and the last can be parallelized over as many workers as there are arguments. Depending on how the list is sliced up, it is possible to parallelize this calculation over many workers.
+
+```reduce_sum``` is the tool that will allow us to automatically parallelize these reduce operations (and sum them together).
+
+To implement this efficiently in Stan, the individual arguments are split into two types. The first are the arguments that are specific to each term in the reduction. These are called the sliced arguments (because we will slice these up to determine how to distribute the work). The second type of arguments are shared arguments, and are information that is shared in the computation of every term in the sum.
+
+Given this, the signature for reduce_sum is:
+
+```
+real reduce_sum(F func, T[] sliced_arg, int grainsize, T1 arg1, T2 arg2, ...)
+```
+
+1. ```func``` - The user-defined reduce function
+2. ```sliced_arg``` - An array of any type, with each element of the array corresponding to a term of the final summation (the length of ```sliced_arg``` is the total number of terms to sum)
+3. ```grainsize``` - A hint to the runtime of how many terms of the summation to compute in each reduction
+4-. ```arg1, arg2, ...``` - All the arguments that are to be shared in the calculation of every term in the sum
+
+The user-defined reduce function is slightly different:
+
+```
+real func(int start, int end, T[] subset_sliced_arg, T1 arg1, T2 arg2, ...)
+```
+
+and takes the arguments:
+1. ```start``` - An integer specifying the first element of the sequence of terms this reduce call is responsible for computing
+2. ```end``` - An integer specifying the last element of the sequence of terms this reduce call is responsible for computing
+3. ```subset_sliced_arg``` - The subset of sliced_arg for which this reduce is responsible (```sliced_arg[start:end]```)
+4-. ```arg1, arg2, ...``` all the shared arguments -- passed on without modification from the reduce_sum call
+
+The user-provided function ```func``` is expect to compute the ```start``` through ```end``` terms of the overall sum, accumulate them, and return that value. The user function is only passed the subset ```sliced_arg[start:end]``` of sliced arg (as ```subset_sliced_arg```). ```start``` and ```end``` are passed so that ```func``` can index any of the ```argM``` appropriately. The trailing arguments ```argM``` are passed without modification to every call of ```func```.
+
+An overall call to ```reduce_sum``` can be replaced by either:
+
+```
+real sum = func(1, size(sliced_arg), sliced_arg, arg1, arg2, ...)
+```
+
+or (modulo differences due to rearrangements of summations) the code:
+
+```
+real sum = 0.0;
+for(i in 1:size(sliced_arg)) {
+  sum = sum + func(i, i, { sliced_arg[i] }, arg1, arg2, ...);
+}
+```
+
+### Example: Logistic Regression
+
+Logistic Regression is a useful example to clarify both the syntax
+and semantics of `reduce_sum` and how it can be used to speed up a typical
+model.
+
+A basic logistic regression can be coded in Stan as:
+
+```
+data {
+  int N;
+  int y[N];
+  vector[N] x;
+}
+parameters {
+  vector[2] beta;
+}
+model {
+  beta ~ std_normal();
+  y ~ bernoulli_logit(beta[1] + beta[2] * x);
+}
+```
+
+In this model predictions are made about the `N` outputs `y` using the
+covariate `x`. The intercept and slope of the linear equation are to be estimated.
+
+The key point to getting this calculation into `reduce_sum`, is recognizing that
+the statement:
+
+```
+y ~ bernoulli_logit(beta[1] + beta[2] * x);
+```
+
+can be rewritten (up to a proportionality constant) as:
+```
+for(n in 1:N) {
+  target += bernoulli_logit_lpmf(y[n] | beta[1] + beta[2] * x[n])
+}
+```
+
+Now it is clear that the calculation is the sum of a number of conditionally
+independent Bernoulli log probability statements, which is the condition where
+`reduce_sum` is useful.
+
+To use `reduce_sum`, a function must be written that can be used to compute
+arbitrary subsets of the sums.
+
+Using the reducer interface defined in [Reduce-Sum](#reduce-sum), such a function
+can be written like:
+
+```
+functions {
+  real reducer_func(int start, int end,
+                    int[] subset_y,
+                    vector x,
+                    vector beta) {
+    return bernoulli_logit_lpmf(subset_y | beta[1] + beta[2] * x[start:end]);
+  }
+}
+```
+
+And the likelihood statement in the model can now be written:
+
+```
+target += reducer_fun(1, N, y, x, beta); // Sum terms 1 to N in the likelihood
+```
+
+In this example, `y` was chosen to be sliced over because there
+is one term in the summation per value of `y`. Technically `x` would  have
+worked as well. Use whatever conceptually makes the most sense.
+
+Because `x` is a shared argument, it is subset manually with `start:end`.
+
+With this function, `reduce_sum` can be used to automatically parallelize the
+likelihood:
+
+```
+int grainsize = 100;
+target += reduce_sum(reducer_func, y,
+                     grainsize,
+                     x, beta);
+```
+
+`reduce_sum` automatically breaks the sum into roughly `grainsize` sized pieces
+and computes them in parallel. `grainsize = 0` specifies that the grainsize should
+be estimated automatically.
+
+### Picking the Grainsize
+
+The `grainsize` is a recommendation on how large each piece of parallel work is
+(how many terms it contains). If zero, it will be chosen automatically, but it
+is probably best to choose this manually for each model.
+
+To figure out an appropriate grainsize, think about how many terms are in the summation
+and on how many cores the model should run. If there are `N` terms and `M` cores,
+run a quick test model with `grainsize` set roughly to `N / M`. Record the time, cut the
+grainsize in half, and run the test again. Repeat this iteratively until the model runtime
+begins to increase. This is a suitable grainsize for the model, because this ensures the
+caculations can be carried out with the most parallelism without losing too much efficiency.
+
+For instance, in a model with `N=10000` and `M = 4`, start with `grainsize = 25000`, and
+sequentially try `grainsize = 12500`, `grainsize = 6250`, etc.
+
+It is important to repeat this process until performance gets worse! It is possible
+after many halvings nothing happens, but there might still be a small grainsize that performs better.
+Even if a sum has many tens of thousands of terms, depending on the internal calculations, a `grainsize`
+of thirty or forty or smaller might be the best, and it is difficult to predict this behavior.
+Without doing these halvings until performance actually gets worse, it is easy to miss this.
+
+## Map-Rect
 
 Map-reduce allows large calculations (e.g., log likelihoods) to be
 broken into components which may be calculated modularly (e.g., data
 blocks) and combined (e.g., by summation and incrementing the target
 log density).
-
-## Overview of Map-Reduce
 
 A _map function_ is a higher-order function that applies an
 argument function to every member of some collection, returning a
@@ -21,14 +210,14 @@ are summation (with the return being a single value) or sorting (with
 the return being a sorted sequence).  The combination of mapping and
 reducing is so common it has its own name, _map-reduce_.
 
-## Map Function
+### Map Function
 
 In order to generalize the form of functions and results that are
 possible and accommodate both parameters (which need derivatives) and
 data values (which don't), Stan's map function operates on more than
 just a sequence of inputs.
 
-### Map Function Signature {-}
+#### Map Function Signature {-}
 
 Stan's map function has the following signature
 
@@ -68,7 +257,7 @@ Although `f` will often return a vector of size one, the built-in
 flexibility allows general multivariate functions to be mapped, even
 raggedly.
 
-### Map Function Semantics {-}
+#### Map Function Semantics {-}
 
 Stan's map function applies the function `f` to the shared
 parameters along with one element each of the job parameters, real
@@ -88,13 +277,13 @@ of each application of `f` is a vector, and the sequence of
 `N` vectors is concatenated together to return a single vector.
 
 
-## Example:  Mapping Logistic Regression
+### Example:  Logistic Regression
 
 An example should help to clarify both the syntax and semantics of the
 mapping operation and how it may be combined with reductions built
 into Stan to provide a map-reduce implementation.
 
-### Unmapped Logistic Regression {-}
+#### Unmapped Logistic Regression {-}
 
 Consider the following simple logistic regression model, which is
 coded unconventionally to accomodate direct translation to a mapped
@@ -124,7 +313,7 @@ because the argument is on the logit scale---it implicitly applies the
 inverse logit function to map the argument to a probability.
 
 
-### Mapped Logistic Regression {-}
+#### Mapped Logistic Regression {-}
 
 The unmapped logistic regression model described in the previous
 subsection may be implemented using Stan's rectangular mapping
@@ -196,7 +385,7 @@ shared across shards.  There are no shard-specific parameters, so
 the array of job-specific parameters `theta` contains only empty
 vectors.
 
-## Example:  Hierarchical Logistic Regression
+### Example:  Hierarchical Logistic Regression
 
 Consider a hierarchical model of American presidential voting behavior
 based on state of residence.^[This example is a simplified form of the model
@@ -220,7 +409,7 @@ The slopes and intercepts get hierarchical priors,
 \beta_k  &\sim \textsf{normal}(\mu_{\beta}, \sigma_{\beta})
 \end{align*}
 
-### Unmapped Implementation {-}
+#### Unmapped Implementation {-}
 
 This model can be coded up in Stan directly as follows.
 
@@ -263,9 +452,7 @@ for (n in 1:N)
   y[n] ~ bernoulli_logit(beta[kk[n], 1] + beta[kk[n], 2] * x[n]);
 ```
 
-
-
-### Mapped Implementation {-}
+#### Mapped Implementation {-}
 
 The mapped version of the model will map over the states `K`.
 This means the group-level parameters, real data, and integer-data
@@ -368,13 +555,13 @@ parallelization with the version that leaves the prior in the model
 block.
 
 
-## Ragged Inputs and Outputs
+### Ragged Inputs and Outputs
 
 The previous examples included rectangular data structures and single
 outputs.  Despite the name, this is not technically required by
 `map_rect`.
 
-### Ragged Inputs {-}
+#### Ragged Inputs {-}
 
 If each group has a different number of observations, then the
 rectangular data structures for predictors and outcomes will need to
@@ -383,7 +570,7 @@ structure will need to be passed as integer data. This holds for
 shards with varying numbers of parameters as well as varying numbers
 of data points.
 
-### Ragged Outputs {-}
+#### Ragged Outputs {-}
 
 The output of each mapped function is concatenated in order of inputs
 to produce the output of `map_rect`.  When every shard returns a singleton

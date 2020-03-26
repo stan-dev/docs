@@ -10,6 +10,7 @@ if (knitr::is_html_output()) {
 cat(' * <a href="functions-algebraic-solver.html">Algebraic Equation Solver</a>\n')
 cat(' * <a href="functions-ode-solver.html">Ordinary Differential Equation (ODE) Solvers</a>\n')
 cat(' * <a href="functions-1d-integrator.html">1D Integrator</a>\n')
+cat(' * <a href="functions-reduce.html">Reduce-Sum</a>\n')
 cat(' * <a href="functions-map.html">Higher-Order Map</a>\n')
 }
 ```
@@ -382,67 +383,75 @@ Internally the 1D integrator uses the double-exponential methods in the Boost 1D
 
 The gradients of the integral are computed in accordance with the Leibniz integral rule. Gradients of the integrand are computed internally with Stan's automatic differentiation.
 
-## Parallel Reduce-Sum Function {#functions-reduce}
+## Reduce-Sum Function {#functions-reduce}
 
-Stan provides a higher-order ```reduce_sum``` function for parallelizing operations that can be represented as a reduce (by summation) over a sequence of terms.
+Stan provides a higher-order `reduce_sum` function for parallelizing operations that can be represented as a sum of a function, `g: U -> real`, evaluated at each element of a list of type `U[]`, `{ x1, x2, ... }`. That is:
 
-### Reduce-Sum Function
+```g(x1) + g(x2) + ...```
 
-The reduce sum function operates on a reducing function, a list of
-sliced arguments (one for each term in the parallel-for), a recommended grainsize,
-and a set of shared arguments.
+`reduce_sum` doesn't work on `g` itself, but takes a partial sum function, `f: U[] -> real`, where:
 
-<!-- real; map_rect; (F f, T[] sliced\_arg, int grainsize, T1 arg1, T2 arg2, ...); -->
-\index{{\tt \bfseries reduce\_sum }!{\tt (F f, T[] sliced\_arg, int grainsize, T1 arg1, T2 arg2, ...): real}|hyperpage}
+```f({ x1 }) = g(x1)```
+```f({ x1, x2 }) = g(x1) + g(x2)```
+```f({ x1, x2, ... }) = g(x1) + g(x2) + ...```
 
-`real` **`reduce_sum`**`(F f, T[] sliced_arg, int grainsize, T1 arg1, T2 arg2, ...)`<br>\newline
+### The Reduce-sum Function
 
-Return the equivalent of `f(1, size(sliced_arg), arg1, arg2, ...)`, but compute
-the result in parallel by breaking `sliced_arg` into pieces and computing each piece
-in a different thread. `arg1, arg2, ...` are shared between all terms in the sum.
+The `reduce_sum` function takes a partial sum function, an array argument x
+(with one for each term in the sum), a recommended grainsize, and a set of shared arguments and
+parallelizes the resultant sum.
 
-* *`f`*: function literal referring to a function specifying the reduce operation with signature  `(int, int, T[], T1, T2, ...):real`
+<!-- real; reduce_sum; (F f, T[] x, int grainsize, T1 s1, T2 s2, ...); -->
+\index{{\tt \bfseries reduce\_sum }!{\tt (F f, T[] x, int grainsize, T1 s1, T2 s2, ...): real}|hyperpage}
+
+`real` **`reduce_sum`**`(F f, T[] x, int grainsize, T1 s1, T2 s2, ...)`<br>\newline
+
+Return the equivalent of `f(1, size(x), x, s1, s2, ...)`, but compute
+the result in parallel by breaking the array `x` into pieces and computing each piece
+in a different thread. `s1, s2, ...` are shared between all terms in the sum.
+
+* *`f`*: function literal referring to a function specifying the partial sum operation with signature  `(int, int, T[], T1, T2, ...):real`
 The arguments represent
-    + (1) the index of the first term of the reduction,
-    + (2) the index of the last term of the reduction,
-    + (3) the subset `sliced_arg` this reduce is responsible for computing,
+    + (1) the index of the first term of the partial sum,
+    + (2) the index of the last term of the partial sum,
+    + (3) the subset `x` this reduce is responsible for computing,
     + (4) first shared argument,
     + (5) second shared argument,
     + ... the rest of the shared arguments.
 
-* *`sliced_args`*: array of non-shared arguments, one for each term of the reduction, array of `T`, where `T` can be any type,
-* *`grainsize`*: recommented number of terms in each reduce call, set to zero to estimate automatically, type `int`,
-* *`arg1`*: first (optional) shared argument, type `T1`, where `T1` can be any type
-* *`arg2`*: second (optional) shared argument, type `T2`, where `T2` can be any type,
+* *`x`*: array of `T`, one for each term of the reduction, `T` can be any type,
+* *`grainsize`*: recommented number of terms in each reduce call, set to one to estimate automatically, type `int`,
+* *`s1`*: first (optional) shared argument, type `T1`, where `T1` can be any type
+* *`s2`*: second (optional) shared argument, type `T2`, where `T2` can be any type,
 * *`...`*: remainder of shared arguments, each of which can be any type.
 
-### Specifying the Reduce Function
+### The Partial-sum Function
 
-The reduce function must have the following signature where the types T, and the
-types of all the variadic arguments (`T1`, `T2`, ...) match those of the original
+The partial sum function must have the following signature where the types `T`, and the
+types of all the shared arguments (`T1`, `T2`, ...) match those of the original
 `reduce_sum` call.
 
 ```
-(int start, int end, T[] subset_sliced_arg, T1 arg1, T2 arg2, ...):real
+(int start, int end, T[] x_subset, T1 s1, T2 s2, ...):real
 ```
 
-The reduce function returns the sum of the `start` to `end` terms of the overall
+The reduce function returns the sum of the `start` to `end` terms (inclusive) of the overall
 calculations. The arguments to the reduce function are:
 
-*   *`start`*, the index of the first term of the reduction, type `int`
+*   *`start`*, the index of the first term of the partial sum, type `int`
 
-*   *`end`*, the index of the last term of the reduction (inclusive), type `int`
+*   *`end`*, the index of the last term of the partial sum (inclusive), type `int`
 
-*   *`subset_sliced_arg`*, the subset `sliced_arg` this reduce is responsible for computing, type `T[]`, where `T` matches the type of `sliced_arg` in `reduce_sum`
+*   *`x_subset`*, the subset of `x` this partial sum is responsible for computing, type `T[]`, where `T` matches the type of `x` in `reduce_sum`
 
-*   *`arg1`*, first shared argument, type `T1`, matching type of `arg1` in `reduce_sum`
+*   *`s1`*, first shared argument, type `T1`, matching type of `s1` in `reduce_sum`
 
-*   *`arg2`*, second shared argument, type `T2`, matching type of `arg2` in `reduce_sum`
+*   *`s2`*, second shared argument, type `T2`, matching type of `s2` in `reduce_sum`
 
 *   *`...`*, remainder of shared arguments, with types matching those in `reduce_sum`
 
 
-## Parallel Map-Rect Function {#functions-map}
+## Map-Rect Function {#functions-map}
 
 Stan provides a higher-order map function.  This allows map-reduce
 functionality to be coded in Stan as described in the user's guide.

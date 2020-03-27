@@ -1,4 +1,4 @@
-# Parallel Computing  {#parallel-computing.chapter}
+# Parallelization  {#parallelization.chapter}
 
 Stan has two mechanisms for parallelizing calculations used in a model: `reduce_sum` and and `map_rect`.
 
@@ -8,14 +8,14 @@ The main advantages to `reduce_sum` are:
 2. `reduce_sum` partitions the data for parallelization automatically (this is done manually in `map_rect`).
 3. `reduce_sum` is easier to use.
 
-while the advantages of `map_rect` are:
+The advantages of `map_rect` are:
 
 1. `map_rect` returns a list of vectors, while `reduce_sum` returns only a real.
 2. `map_rect` can be parallelized across multiple computers, while `reduce_sum` can only parallelized across multiple cores.
 
 ## Reduce-Sum { #reduce-sum }
 
-```reduce_sum``` is a tool for parallelizing operations that can be represented as a sum of functions, `g: U -> real`.
+```reduce_sum``` parallelizes operations that can be represented as a sum of functions, `g: U -> real`.
 
 For instance, for a sequence of ```x``` values of type ```U```, ```{ x1, x2, ... }```, we might compute the sum:
 
@@ -23,7 +23,7 @@ For instance, for a sequence of ```x``` values of type ```U```, ```{ x1, x2, ...
 
 In probabilistic modeling this comes up when there are N conditionally independent terms in a likelihood. Because of the conditional independence, these terms can be computed in parallel. If dependencies exist between the terms, then this isn't possible. For instance, in evaluating the log density of a Gaussian process ```reduce_sum``` would not be very useful.
 
-```reduce_sum``` doesn't actually take ```g: U -> real``` as an input argument. Instead it takes ```f: U[] -> real```, where ```f``` computes the partial sum corresponding to the slice of the sequence ```x``` passed in. For instance:
+```reduce_sum``` takes a function ```f: U[] -> real```, where ```f``` computes the partial sum corresponding to the slice of the sequence ```x``` passed in. For instance:
 
 ```
 f({ x1, x2, x3 }) = g(x1) + g(x2) + g(x3)
@@ -31,7 +31,7 @@ f({ x1 }) = g(x1)
 f({ x1, x2, x3 }) = f({ x1, x2 }) + f({ x3 })
 ```
 
-If the user can write a function ```f: U[] -> real``` to compute the necessary partial sums in the calculation, then we can provide a function to automatically parallelize the calculations (and this is what ```reduce_sum``` is).
+If the user can write a function ```f: U[] -> real``` to compute the necessary partial sums in the calculation, then ```reduce_sum``` can automatically parallelize the calculations.
 
 If the set of work is represented as an array ```{ x1, x2, x3, ... }```, then mathematically it is possible to rewrite this sum with any combination of partial sums.
 
@@ -73,16 +73,16 @@ real reduce_sum(F func, T[] x, int grainsize, T1 s1, T2 s2, ...)
 The user-defined partial sum functions have the signature:
 
 ```
-real func(int start, int end, T[] x_subset, T1 arg1, T2 arg2, ...)
+real func(int start, int end, T[] x_slice, T1 arg1, T2 arg2, ...)
 ```
 
 and take the arguments:
 1. ```start``` - An integer specifying the first term in the partial sum
 2. ```end``` - An integer specifying the last term in the partial sum (inclusive)
-3. ```x_subset``` - The subset of ```x``` (from ```reduce_sum```) for which this partial sum is responsible (```x[start:end]```)
+3. ```x_slice``` - The subset of ```x``` (from ```reduce_sum```) for which this partial sum is responsible (```x[start:end]```)
 4-. ```arg1, arg2, ...``` Arguments shared in every term  (passed on without modification from the reduce_sum call)
 
-The user-provided function ```func``` is expect to compute the ```start``` through ```end``` terms of the overall sum, accumulate them, and return that value. The user function is passed the subset ```x[start:end]``` as ```x_subset```. ```start``` and ```end``` are passed so that ```func``` can index any of the tailing ```sM``` arguments as necessary. The trailing ```sM``` arguments are passed without modification to every call of ```func```.
+The user-provided function ```func``` is expect to compute the ```start``` through ```end``` terms of the overall sum, accumulate them, and return that value. The user function is passed the subset ```x[start:end]``` as ```x_slice```. ```start``` and ```end``` are passed so that ```func``` can index any of the tailing ```sM``` arguments as necessary. The trailing ```sM``` arguments are passed without modification to every call of ```func```.
 
 The ```reduce_sum``` call:
 
@@ -158,10 +158,10 @@ can be written like:
 ```
 functions {
   real partial_sum(int start, int end,
-                   int[] y_subset,
+                   int[] y_slice,
                    vector x,
                    vector beta) {
-    return bernoulli_logit_lpmf(y_subset | beta[1] + beta[2] * x[start:end]);
+    return bernoulli_logit_lpmf(y_slice | beta[1] + beta[2] * x[start:end]);
   }
 }
 ```
@@ -195,10 +195,10 @@ be estimated automatically. The final model looks like:
 ```
 functions {
   real partial_sum(int start, int end,
-                   int[] y_subset,
+                   int[] y_slice,
                    vector x,
                    vector beta) {
-    return bernoulli_logit_lpmf(y_subset | beta[1] + beta[2] * x[start:end]);
+    return bernoulli_logit_lpmf(y_slice | beta[1] + beta[2] * x[start:end]);
   }
 }
 data {
@@ -221,7 +221,7 @@ model {
 ### Picking the Grainsize
 
 The `grainsize` is a recommendation on how large each piece of parallel work is
-(how many terms it contains). If zero, it will be chosen automatically, but it
+(how many terms it contains). If one, it will be chosen automatically, but it
 is probably best to choose this manually for each model.
 
 To figure out an appropriate grainsize, think about how many terms are in the summation

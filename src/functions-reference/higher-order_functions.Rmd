@@ -385,47 +385,48 @@ The gradients of the integral are computed in accordance with the Leibniz integr
 
 ## Reduce-Sum Function {#functions-reduce}
 
-Stan provides a higher-order `reduce_sum` function for parallelizing operations that can be represented as a sum of a function, `g: U -> real`, evaluated at each element of a list of type `U[]`, `{ x1, x2, ... }`. That is:
+Stan provides a higher-order `reduce_sum` function which maps
+evaluation of a function `g: U -> real` to a list of type `U[]`, `{
+x1, x2, ... }`, and performs as reduction operation a sum over the
+results. That is:
 
 ```g(x1) + g(x2) + ...```
 
-`reduce_sum` doesn't work on `g` itself, but takes a partial sum function, `f: U[] -> real`, where:
+`reduce_sum` doesn't work with the element-wise evaluated
+function `g` itself, but instead works through evaluating partial
+sums, `f: U[] -> real`, where:
 
-```f({ x1 }) = g(x1)```
-```f({ x1, x2 }) = g(x1) + g(x2)```
-```f({ x1, x2, ... }) = g(x1) + g(x2) + ...```
+```
+f({ x1 }) = g(x1)
+f({ x1, x2 }) = g(x1) + g(x2)
+f({ x1, x2, ... }) = g(x1) + g(x2) + ...
+```
 
-### The Reduce-sum Function
+### Specifying the Reduce-sum Function
 
-The `reduce_sum` function takes a partial sum function, an array argument x
-(with one for each term in the sum), a recommended grainsize, and a set of shared arguments and
-parallelizes the resultant sum.
+The `reduce_sum` function takes a partial sum function `f`, an array argument `x`
+(with one array element for each term in the sum), a recommended
+`grainsize`, and a set of shared arguments. This representation allows
+to parallelize the resultant sum.
 
 <!-- real; reduce_sum; (F f, T[] x, int grainsize, T1 s1, T2 s2, ...); -->
 \index{{\tt \bfseries reduce\_sum }!{\tt (F f, T[] x, int grainsize, T1 s1, T2 s2, ...): real}|hyperpage}
 
 `real` **`reduce_sum`**`(F f, T[] x, int grainsize, T1 s1, T2 s2, ...)`<br>\newline
 
-Return the equivalent of `f(1, size(x), x, s1, s2, ...)`, but compute
-the result in parallel by breaking the array `x` into pieces and computing each piece
-in a different thread. `s1, s2, ...` are shared between all terms in the sum.
+Returns the equivalent of `f(1, size(x), x, s1, s2, ...)`, but computes
+the result in parallel by breaking the array `x` into independent
+partial sums. `s1, s2, ...` are shared between all terms in the sum.
 
-* *`f`*: function literal referring to a function specifying the partial sum operation with signature  `(int, int, T[], T1, T2, ...):real`
-The arguments represent
-    + (1) the index of the first term of the partial sum,
-    + (2) the index of the last term of the partial sum,
-    + (3) the subset `x` this reduce is responsible for computing,
-    + (4) first shared argument,
-    + (5) second shared argument,
-    + ... the rest of the shared arguments.
-
+* *`f`*: function literal referring to a function specifying the
+partial sum operation. Refer to the [partial sum function](#functions-partial-sum).
 * *`x`*: array of `T`, one for each term of the reduction, `T` can be any type,
-* *`grainsize`*: recommented number of terms in each reduce call, set to one to estimate automatically, type `int`,
+* *`grainsize`*: recommended number of terms in each reduce call, set to one to estimate automatically, type `int`,
 * *`s1`*: first (optional) shared argument, type `T1`, where `T1` can be any type
 * *`s2`*: second (optional) shared argument, type `T2`, where `T2` can be any type,
 * *`...`*: remainder of shared arguments, each of which can be any type.
 
-### The Partial-sum Function
+### The Partial-sum Function {#functions-partial-sum}
 
 The partial sum function must have the following signature where the types `T`, and the
 types of all the shared arguments (`T1`, `T2`, ...) match those of the original
@@ -435,14 +436,14 @@ types of all the shared arguments (`T1`, `T2`, ...) match those of the original
 (int start, int end, T[] x_subset, T1 s1, T2 s2, ...):real
 ```
 
-The reduce function returns the sum of the `start` to `end` terms (inclusive) of the overall
-calculations. The arguments to the reduce function are:
+The partial sum function returns the sum of the `start` to `end` terms (inclusive) of the overall
+calculations. The arguments to the partial sum function are:
 
 *   *`start`*, the index of the first term of the partial sum, type `int`
 
 *   *`end`*, the index of the last term of the partial sum (inclusive), type `int`
 
-*   *`x_subset`*, the subset of `x` this partial sum is responsible for computing, type `T[]`, where `T` matches the type of `x` in `reduce_sum`
+*   *`x_subset`*, the subset of `x` a given partial sum is responsible for computing, type `T[]`, where `T` matches the type of `x` in `reduce_sum`
 
 *   *`s1`*, first shared argument, type `T1`, matching type of `s1` in `reduce_sum`
 

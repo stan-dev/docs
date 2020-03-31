@@ -1,0 +1,264 @@
+# Sequential A/B Testing
+
+This chapter explains how to implement and evaluate sequential A/B
+testing in Stan.  Following [@Robbins:1952; @Robbins:1956], these are
+widely known as "bandit problems," but we prefer the more general
+testing terminology. 
+
+In general sequential A/B tests, subjects arrive as
+a sequential process, are assigned treatments according to some policy
+based on previous results, and their results recorded.  The goal is to
+find effective treatments with a minimum amount of testing.
+[@Robbins:1952; @Robbins:1956; @Thompson:1933; @Scott:2010;
+@Agrawal-Goyal:2012; @Chapelle-Li:2011].
+
+## A clinical trial example
+
+Suppose a pharmacologist wishes to evaluate $K$ potential treatments
+for a disease and they have available a stream of subjects which are
+expensive to test and in the case of animal subjects, unethical to
+provide with treatments that are known to be inferior.  To avoid
+getting tangled up in details, suppose the outcome of a treatment is
+either positive or negative.  No matter what utility is placed on
+positive versus negative outcomes, higher success rates will lead to
+higher utility, and thus this particular simple drug testing problem
+may be reduced to maximizing success rate.
+
+The pharmacologist may test subjects one at a time, but must do so
+according to some policy for assigning subjects to treatments based on
+the treatment assignments and outcomes for previous subjects.  The
+simplest policy is to assign each subject a random treatment, or to
+assign the treatments sequentially.  This simple policy is the primary
+testing policy for certifying new drugs in most government
+organizations around the world.  The assignment of subjects can be
+done all at once ahead of time because it does not rely on any
+information about previous trials.  Thus trials can be carried out in
+parallel by setting the size of the trial.
+
+Suppose the pharmacologist is able to evaluate the probability that
+each treatment is the best treatment based on the previously observed
+treatment assignments and outcomes.  If the goal is to quickly
+eliminate ineffective treatments and focus on effective ones, a better
+policy than random assignment is to assign each subject to a treatment
+at random with probability proportional to that treatment's being the
+most effective.  This policy, known as probability matching or
+Thompson sampling, requires inference to estimate which treatment is
+the best based on previous observations [@Thompson:1933].
+
+## Thompson sampling for the Bernoulli case
+
+Suppose there are $K$ treatments, and a model $p(y \mid \theta_k)$ of
+utility for applying a treatment $k$.  In the simple clinical trial
+example considered in the previous section, the outcome of a treatment
+is either success or failure.  In this example, the outcomes may be
+modeled as Bernoulli,
+$$
+p(y \mid \theta_k) = \textrm{bernoulli}(y \mid \theta_k),
+$$
+where $\theta_k \in [0, 1]$ is the probability of treatment $k$ being
+effective. 
+
+Let $z_n \in 1:K$ be the treatment assignment for subject $n$ and $y_n
+\{ 0, 1 \}$ the result of the treatment (1 being success and 0
+failure).  In order to assign a treatment to subject $n + 1$, the
+probability of each treatment being the best is required,
+$$
+\phi_{n, k}
+= \textrm{Pr}[\theta_k = \textrm{max}(\theta) \mid z_{1:n}, y_{1:n}].
+$$
+Then the treatment for subject $n$ is sampled according to
+$$
+z_n \sim \textrm{categorical}(\phi_{n, 1:K}).
+$$
+
+Stan is able to provide draws from the posterior,
+$$
+\theta^{(m)} \sim p(\theta \mid z_{1:n}, y_{1:n}).
+$$
+With these, it is possible to calculate the desired probabilities as
+expectations of indicator functions,
+$$
+\mbox{Pr}[\theta_k = \textrm{max}(\theta) \mid z_{1:n}, y_{1:n}]
+\approx
+\frac{1}{M} \sum_{m = 1}^M
+\textrm{I}(\theta_k^{(m)} = \textrm{max}(\theta^{(m)}).
+$$
+
+This general form of Bayesian Thompson sampling from the posterior may
+be applied for any kinds of model [@Scott:2010].
+
+## Coding the Bernoulli model in Stan
+
+The Stan model declares the number of treatments `K`, number of subjects
+observed so far `N`, and the treatment `z[n]` and outcome `y[n]`
+for subject `N`.   For treatment `k`, `theta[k]` is the parameter
+representing its chance of success.
+
+```
+functions {
+  int max_index(vector theta) {
+    int max_idx = 1;
+    for (n in 2:rows(theta))
+      if (theta[n] > theta[max_idx])
+        max_idx = n;
+    return max_idx;	
+}
+data {
+  int<lower = 1> K;
+  int<lower = 0> N;
+  int<lower = 1, upper = K> z[N];
+  int<lower = 0, upper = 1> y[N];
+}
+parameters {
+  vector<lower = 0, upper = 1>[K] theta;
+}
+model {
+  y ~ bernoulli(theta[z]);
+}
+generated quantities {
+  int<lower = 0, upper = 1> phi[K] = rep_array(0, K);
+  phi[max_index(theta)] = 1;
+}
+```
+
+The model is a simple one-liner using array slicing and vectorization.
+The parameter `theta[z]` is a vector of success probabilities of size
+`N` (the same size as `z`), with entries `theta[z][n] = theta[z[n]]`.
+With Stan's vectorization, each `y[n]` is assigned a
+`bernoulli[theta[z[n]]]` distribution.
+
+The generated quantities block defines an array `phi` that has all 0
+entries other than for the `k` such that `theta[k]` is the largest.
+The function to select the `k` whose `theta[k]` is largest is defined
+in the functions block.  This function is able to assume `theta` is at
+least size 1 because `K` is declared as being of at least size 1.  The
+array `phi` is initialized as all zeros.  Then it is set to 1 at the
+index of the best model.  The definition of `phi` is such that
+$$
+\texttt{phi[k]} = \textrm{I}(\theta_k = \textrm{max}(\theta)).
+$$
+and thus
+\begin{eqnarray*}
+\phi_k
+& = & \mbox{Pr}[\theta_k = \textrm{max}(\theta) \mid z, y]
+\\[4pt]
+& = & \frac{1}{M} \sum_{m = 1}^M
+      \textrm{I}(\theta_k^{(m)} = \textrm{max}(\theta^{(m)})),
+\end{eqnarray*}
+with
+$$
+\theta^{(m)} \sim p(\theta \mid z, y)
+$$
+is just the posterior mean of the indicator variable
+`phi[k]`.
+
+All that is needed for Thompson sampling is then to be able to draw
+$$
+z_n \sim \textrm{categorical}(\phi).
+$$
+This can be done externally.  Stan needs to be run after each subject
+is assigned a treatment.  As a byproduct of deciding which treatment
+to apply to a subject, the intermediate output provides the
+probabilities that each treatment is the best.
+
+If a final decision is needed at the end of the trial, it is this
+final probability estimate that'll be used.  In general, more
+complicated decision analysis may need to be applied in cases where
+the treatments do not have equal costs or do not have similarly scaled
+outcomes.  
+
+## Only one posterior draw necessary
+
+The previous section used standard Monte Carlo methods to compute the
+probability of each treatment being the best treatment.  It turns out
+there is a much simpler way to get the same randomization by taking a
+single draw from the posterior.  Rather than
+$$
+z_n \sim \textrm{categorical}(\phi)
+$$
+where $\phi_k$ is the proability that treatment $k$ is best, it
+is equivalent to take a single posterior draw
+$$
+\theta \sim p(\theta \mid z_{1:n}, y_{1:n})
+$$
+and let $z_n$ be the index of the largest $\theta$
+$$
+z_n = \textrm{argmax}_k \theta_k,
+$$
+so that
+$$
+\textrm{max}(\theta) = \theta_{z_n}.
+$$
+
+To see that this is equivalent, suppose there are $M$ posterior draws.
+Either way the calculation is done, the probability that $z_n = k$ is
+chosen will be proportional to the number of those $M$ draws in which
+$\theta_k$ is the maximum.
+
+For the simple Bernoulli model with uniform priors (or more generally
+Beta priors), the posterior for each $\theta_k$ is a beta distribution
+with easily calculated parameters so that an exact sample of
+$\theta_k$ may be drawn.
+
+## Adding a hierarchical prior
+
+If the treatments are being modeled as exchangeable, as they are here,
+it makes sense to bring in a hierarchical prior.  For example, a
+hierarchical normal prior on the log odds scale could be coded as
+follows. 
+
+```
+parameters {
+  vector<offset = mu, multiplier = sigma>[K] alpha;
+}
+transformed parameters {
+  vector<lower = 0, upper = 1> theta = inv_logit(alpha);
+  real mu;
+  real<lower = 0> sigma;
+}
+model {
+  alpha ~ normal(mu, sigma);
+  mu ~ normal(0, 5); 
+  sigma ~ normal(0, 5);
+}
+```
+
+The use of the `offset` and `multiplier` transform for `alpha` along
+with the matching natural prior `normal(mu, sigma)` implements a
+non-centered parameterization for `alpha`.  
+
+The hyperpriors on `mu` and `sigma` are intentionally broad because
+nothing is assumed to be known about the efficacy of the drugs or the
+variation among them.  In a more realistic modeling setting, more
+informative hyperpriors can and should be used.  
+
+
+## More general outcome likelihoods
+
+There is nothing in this formulation that relies on the outcome being
+governed by a simple Bernoulli distribution, or even being discrete.
+It can be ordinal or in the form of continuous utility or can even be
+multivariate.  In order to perform Thompson sampling, all that is
+needed is to be able to compute which treatment is best based only on
+its parameters.  Even if that can't be calculated analytically, as it
+can for the Bernoulli and other finite-outcome cases, it is possible
+to simulate outcomes and compare those.
+
+## Subject-level and treatment-level covariates
+
+It is common in testing situations such as these to have genetic,
+demographic, or other covariates for the $n$-th subject.  For
+instance, in a drug trial, these might be sex, age, and weight.
+Handling these goes under the rubric "contextual bandits" in the
+literature. 
+
+All that is needed to handle covariate information is an outcome model
+that uses it.  For example, the outcome model can be a generalized
+linear model based on covariates of the subject.  Covariates of
+treatments may also be used either to structure hierarchical priors or
+as fixed effects.  All that is necessary is to be able to estimate
+the outcome distribution given the covariates and parameters.
+
+Such covariates may be combined into a multilevel model both within
+and across treatments.  
+

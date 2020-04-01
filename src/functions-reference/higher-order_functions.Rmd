@@ -385,16 +385,16 @@ The gradients of the integral are computed in accordance with the Leibniz integr
 
 ## Reduce-Sum Function {#functions-reduce}
 
-Stan provides a higher-order `reduce_sum` function which maps
-evaluation of a function `g: U -> real` to a list of type `U[]`, `{
-x1, x2, ... }`, and performs as reduction operation a sum over the
-results. That is:
+Stan provides a higher-order reduce function for summation. A function
+`g: U -> real`, which returns a scalar, is mapped to every element of
+a list of type `U[]`, `{ x1, x2, ... }` and all the results are
+accumulated,
 
 ```g(x1) + g(x2) + ...```
 
-`reduce_sum` doesn't work with the element-wise evaluated
-function `g` itself, but instead works through evaluating partial
-sums, `f: U[] -> real`, where:
+For efficiency reasons the reduce function doesn't work with the
+element-wise evaluated function `g` itself, but instead works through
+evaluating partial sums, `f: U[] -> real`, where:
 
 ```
 f({ x1 }) = g(x1)
@@ -402,9 +402,24 @@ f({ x1, x2 }) = g(x1) + g(x2)
 f({ x1, x2, ... }) = g(x1) + g(x2) + ...
 ```
 
+Mathematically the summation reduction is associative and forming
+arbitrary partial sums in an aribitrary order will not change the
+result. However, floating point numerics on computers only have
+a limited precision such that associativity does not hold
+exactly. This implies that the order of summation determines the exact
+numerical result. For this reason, the higher-order reduce function is
+available in two variants:
+
+* `reduce_sum`: Automatically forms partial sums resulting usually in good
+ performance without further tuning.
+* `reduce_sum_static`: Creates for the same input always the same
+call graph resulting in stable numerical evaluation. This version
+requires setting a tuning parameter which controls the maximal size of partial
+sums formed.
+
 ### Specifying the Reduce-sum Function
 
-The `reduce_sum` function takes a partial sum function `f`, an array argument `x`
+The higher-order reduce function takes a partial sum function `f`, an array argument `x`
 (with one array element for each term in the sum), a recommended
 `grainsize`, and a set of shared arguments. This representation allows
 to parallelize the resultant sum.
@@ -413,6 +428,7 @@ to parallelize the resultant sum.
 \index{{\tt \bfseries reduce\_sum }!{\tt (F f, T[] x, int grainsize, T1 s1, T2 s2, ...): real}|hyperpage}
 
 `real` **`reduce_sum`**`(F f, T[] x, int grainsize, T1 s1, T2 s2, ...)`<br>\newline
+`real` **`reduce_sum_static`**`(F f, T[] x, int grainsize, T1 s1, T2 s2, ...)`<br>\newline
 
 Returns the equivalent of `f(1, size(x), x, s1, s2, ...)`, but computes
 the result in parallel by breaking the array `x` into independent
@@ -421,7 +437,9 @@ partial sums. `s1, s2, ...` are shared between all terms in the sum.
 * *`f`*: function literal referring to a function specifying the
 partial sum operation. Refer to the [partial sum function](#functions-partial-sum).
 * *`x`*: array of `T`, one for each term of the reduction, `T` can be any type,
-* *`grainsize`*: recommended number of terms in each reduce call, set to one to estimate automatically, type `int`,
+* *`grainsize`*: recommended number of terms in each reduce call, set
+to one to estimate automatically for `reduce_sum` while for
+`reduce_sum_static` this determines the maximal size of the partial sums, type `int`,
 * *`s1`*: first (optional) shared argument, type `T1`, where `T1` can be any type
 * *`s2`*: second (optional) shared argument, type `T2`, where `T2` can be any type,
 * *`...`*: remainder of shared arguments, each of which can be any type.
@@ -430,7 +448,7 @@ partial sum operation. Refer to the [partial sum function](#functions-partial-su
 
 The partial sum function must have the following signature where the types `T`, and the
 types of all the shared arguments (`T1`, `T2`, ...) match those of the original
-`reduce_sum` call.
+`reduce_sum` (`reduce_sum_static`) call.
 
 ```
 (int start, int end, T[] x_subset, T1 s1, T2 s2, ...):real
@@ -443,13 +461,13 @@ calculations. The arguments to the partial sum function are:
 
 *   *`end`*, the index of the last term of the partial sum (inclusive), type `int`
 
-*   *`x_subset`*, the subset of `x` a given partial sum is responsible for computing, type `T[]`, where `T` matches the type of `x` in `reduce_sum`
+*   *`x_subset`*, the subset of `x` a given partial sum is responsible for computing, type `T[]`, where `T` matches the type of `x` in `reduce_sum` (`reduce_sum_static`)
 
-*   *`s1`*, first shared argument, type `T1`, matching type of `s1` in `reduce_sum`
+*   *`s1`*, first shared argument, type `T1`, matching type of `s1` in `reduce_sum` (`reduce_sum_static`)
 
-*   *`s2`*, second shared argument, type `T2`, matching type of `s2` in `reduce_sum`
+*   *`s2`*, second shared argument, type `T2`, matching type of `s2` in `reduce_sum` (`reduce_sum_static`)
 
-*   *`...`*, remainder of shared arguments, with types matching those in `reduce_sum`
+*   *`...`*, remainder of shared arguments, with types matching those in `reduce_sum` (`reduce_sum_static`)
 
 
 ## Map-Rect Function {#functions-map}

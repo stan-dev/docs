@@ -11,6 +11,7 @@ parameters {
 }
 model {
   y ~ poisson(lambda);
+  lambda ~ exponential(0.1);
 }
 generated quantities {
   int<lower = 0> y_rep[N] = poisson_rng(rep_array(lambda, N));

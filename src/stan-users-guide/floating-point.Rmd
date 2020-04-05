@@ -134,7 +134,7 @@ decimal representation of a base and a signed integer decimal
 exponent.  For example, `36.29e-3` represents the number $36.29 \times
 10^{-3}$, which is the same number as is represented by `0.03629`.
 
-## Arithmetic Precision
+## Arithmetic precision
 
 The choice of significand provides $\log_{10} 2^{53} \approx 15.95$
 decimal (base 10) digits of *arithmetic precision*.  This is just the
@@ -273,25 +273,27 @@ $$
 This is why all of Stan's probability functions operate on the log
 scale.
 
-### Adding on the log scale
+## Log sum of exponentials {#log-sum-of-exponentials}
 
-If we work on the log scale, multiplication is converted to addition,
+Working on the log scale, multiplication is converted to addition,
 $$
-\log (a \times b) = \log a + \log b.
+\log (a \cdot b) = \log a + \log b.
 $$
-Thus we can just start on the log scale and stay there through
-multiplication.  But what about addition?  If we have $\log a$ and
+Thus sequences of multiplication operations can remain on the log scale.
+But what about addition?  Given $\log a$ and
 $\log b$, how do we get $\log (a + b)$?  Working out the algebra,
 $$
 \log (a + b)
 =
-\log (\exp(\log a) + \exp(\log b))
+\log (\exp(\log a) + \exp(\log b)).
 $$
 
+### Log-sum-exp function
+
 The nested log of sum of exponentials is so common, it has its own
-name,
+name, "log-sum-exp",
 $$
-\texttt{log}\mathtt{\_}\texttt{sum}\mathtt{\_}\texttt{exp}(u, v)
+\textrm{log-sum-exp}(u, v)
 =
 \log (\exp(u) + \exp(v)).
 $$
@@ -299,7 +301,7 @@ so that
 $$
 \log (a + b)
 =
-\texttt{log}\mathtt{\_}\texttt{sum}\mathtt{\_}\texttt{exp}(\log a, \log b).
+\textrm{log-sum-exp}(\log a, \log b).
 $$
 
 Although it appears this might overflow as soon as exponentiation is
@@ -307,30 +309,58 @@ introduced, evaluation does not proceed by evaluating the terms as
 written.  Instead, with a little algebra, the terms are rearranged
 into a stable form,
 $$
-\texttt{log}\mathtt{\_}\texttt{sum}\mathtt{\_}\texttt{exp}(u, v)
+\textrm{log-sum-exp}(u, v)
 =
 \max(u, v) + \log\big( \exp(u - \max(u, v)) + \exp(v - \max(u, v)) \big).
 $$
 
 Because the terms inside the exponentiations are $u - \max(u, v)$ and
-$v - \max(u, v)$, one will be zero, and the other will be negative.
+$v - \max(u, v)$, one will be zero and the other will be negative.
 Because the operation is symmetric, it may be assumed without loss of
 generality that $u \geq v$, so that
 $$
-\texttt{log}\mathtt{\_}\texttt{sum}\mathtt{\_}\texttt{exp}(u, v) = u + \log\big(1 + \exp(v - u)\big).
+\textrm{log-sum-exp}(u, v) = u + \log\big(1 + \exp(v - u)\big).
 $$
 
-The inner term may itself be evaluated using `log1p`, there is only
-limited gain because $\exp(v - u)$ is only near zero when $u$ is much
-larger than $v$, meaning the result is likely to round to $u$ anyway.
+Although the inner term may itself be evaluated using the built-in
+function `log1p`, there is only limited gain because $\exp(v - u)$ is
+only near zero when $u$ is much larger than $v$, meaning the final
+result is likely to round to $u$ anyway.
 
 To conclude, when evaluating $\log (a + b)$ given $\log a$ and $\log
 b$, and assuming $\log a > \log b$, return
 
 $$
 \log (a + b) =
-\log a + \texttt{log1p}\big(\exp(\log b - \log a)\big).
+\log a + \textrm{log1p}\big(\exp(\log b - \log a)\big).
 $$
+
+### Applying log-sum-exp to a sequence
+
+The log sum of exponentials function may be generalized to sequences
+in the obvious way, so that if $v = v_1, \ldots, v_N$, then
+\begin{eqnarray*}
+\textrm{log-sum-exp}(v)
+& = & \log \sum_{n = 1}^N \exp(v_n)
+\\[4pt]
+& = & \max(v) + \log \sum_{n = 1}^N \exp(v_n - \max(v)).
+\end{eqnarray*}
+The exponent cannot overflow because its argument is either zero or negative.
+This form makes it easy to calculate $\log (u_1 + \cdots + u_N)$ given
+only $\log u_n$.
+
+### Calculating means with log-sum-exp
+
+An immediate application is to computing the mean of a vector $u$ entirely
+on the log scale.  That is, given $\log u$ and returning $\log \textrm{mean}(u)$.
+\begin{eqnarray*}
+\log \left( \frac{1}{N} \sum_{n = 1}^N u_n \right)
+& = & \log \frac{1}{N} + \log \sum_{n = 1}^N \exp(\log u_n)
+\\[4pt]
+& = & -\log N + \textrm{log-sum-exp}(\log u).
+\end{eqnarray*}
+where $\log u = (\log u_1, \ldots, \log u_N)$ is understood elementwise.
+
 
 ## Comparing floating-point numbers
 

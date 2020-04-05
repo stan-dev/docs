@@ -14,7 +14,7 @@ distribution in Stan, including applications to posterior predictive
 simulation and calculating event probabilities.  These techniques can
 be coded in Stan using random number generation in the generated
 quantities block.  Further, a technique for fitting and performing
-inference in two stages is presented in a section on standalone
+inference in two stages is presented in a section on stand-alone
 generated quantities in Stan
 
 ## Posterior predictive distribution
@@ -48,15 +48,26 @@ p(\tilde{y} \mid y)
 \frac{1}{M} \sum_{m = 1}^M p(\tilde{y} \mid \theta^{(m)}).
 $$
 
-Computing in this form will lead to underflow in many situations, but
-the log posterior predictive density, $\log p(\tilde{y} \mid y)$ may
-be computed using the stable log sum of exponents function as
-$$
+Computing directly using tis formula will lead to underflow in many
+situations, but the log posterior predictive density, $\log
+p(\tilde{y} \mid y)$ may be computed using the stable log sum of
+exponents function as
+\begin{eqnarray*}
 \log p(\tilde{y} \mid y)
-=
+& \approx &
+\log \frac{1}{M} \sum_{m = 1}^M p(\tilde{y} \mid \theta^{(m)}).
+\\[4pt]
+& = &
 - \log M
-+ \textrm{log-sum-exp}_{m = 1}^M \log p(\tilde{y} \mid \theta^{(m)}).
++ \textrm{log-sum-exp}_{m = 1}^M \log p(\tilde{y} \mid \theta^{(m)}),
+\end{eqnarray*}
+where
 $$
+\textrm{log-sum-exp}_{m = 1}^M v_m
+= \log \sum_{m = 1}^M \exp v_m
+$$
+is used to maintain arithmetic precision.  See the [section on log sum
+of exponentials](#log-sum-of-exponentials) for more details.
 
 
 ## Sampling from the posterior predictive distribution
@@ -154,7 +165,7 @@ which is just the posterior mean of $f(\tilde{y}, \theta).$  This
 quantity is computed by Stan if the value of $f(\tilde{y}, \theta)$ is assigned
 to a variable in the generated quantities block.  That is, if we have
 ```
-generated quatnities {
+generated quantities {
   real f = f(y_tilde, theta);
   ...
 ```
@@ -257,7 +268,7 @@ The mean of the posterior predictive distribution is the expected value
 where the $\tilde{y}^{(m)} \sim p(\tilde{y} \mid \tilde{x}, x, y)$ are
 drawn from the posterior predictive distribution.  Thus the posterior
 mean of `y_tilde[n]` after running Stan is the expected value of
-$\tilde{y}_n$ conditioned on the the training data $x, y$ and
+$\tilde{y}_n$ conditioned on the training data $x, y$ and
 predictor $\tilde{x}_n.$ This is the Bayesian estimate for $\tilde{y}$
 with minimum expected squared error.  The posterior draws can also be
 used to estimate quantiles for the median and any posterior intervals
@@ -343,7 +354,7 @@ expression of a protein in a cell), then
 \end{eqnarray*}
 where $\tilde{y}^{(m)} \sim p(\tilde{y} \mid \tilde{x}, x, y).$
 
-## Standalone generated quantities and ongoing prediction
+## Stand-alone generated quantities and ongoing prediction
 
 Stan's sampling algorithms take a Stan program representing a
 posterior $p(\theta \mid y, x)$ along with actual data $x$ and $y$ to
@@ -410,7 +421,7 @@ generated quantities {
     = normal_rng(alpha + beta * x_tilde, sigma);
 }
 ```
-When running standalone generated quantities, the inputs required
+When running stand-alone generated quantities, the inputs required
 are the original draws for the parameters and any predictors
 corresponding to new predictions, and the output will be draws for
 $\tilde{y}$ or derived quantities such as event probabilities.

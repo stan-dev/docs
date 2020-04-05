@@ -1,4 +1,4 @@
-# Held-Out and Cross-Validation
+# Held-Out Evaluation and Cross-Validation
 
 Held-out evaluation involves splitting a data set into two parts, a
 training data set and a test data set.  The training data is used to
@@ -135,7 +135,7 @@ $$
 $$
 
 If the estimate is larger than the true value, the error is positive,
-and if oit's smaller, then error is negative.  If an estimator's
+and if it's smaller, then error is negative.  If an estimator's
 unbiased, then expected error is zero.  So typically, absolute error
 or squared error are used, which will always have positive
 expectations for an imperfect estimator.  *Absolute error* is defined as
@@ -146,6 +146,8 @@ and *squared error* as
 $$
 \textrm{sq-err} = \left( \hat{\theta} - \theta \right)^2.
 $$
+@GneitingRaftery:2007 provide a thorough overview of such scoring rules
+and their properties.
 
 Bayesian posterior means minimize expected square error, whereas
 posterior medians minimize expected absolute error.  Estimates based
@@ -228,10 +230,10 @@ estimated coefficients,
 & \approx &
 \frac{1}{M} \sum_{m = 1}^M
   \left( \alpha^{(m)} + \beta^{(m)} \cdot \tilde{x}_n \right)
-\\[4pt]  
+\\[4pt]
 & = & \frac{1}{M} \sum_{m = 1}^M \alpha^{(m)}
       + \frac{1}{M} \sum_{m = 1}^M (\beta^{(m)} \cdot \tilde{x}_n)
-\\[4pt]  
+\\[4pt]
 & = & \frac{1}{M} \sum_{m = 1}^M \alpha^{(m)}
       + \left( \frac{1}{M} \sum_{m = 1}^M \beta^{(m)}\right) \cdot \tilde{x}_n
 \\[4pt]
@@ -262,12 +264,15 @@ by partitioning the data and using each subset in turn as the test set
 with the remaining subsets as training data.  A partition into ten
 subsets is common to reduce computational overhead.  In the limit,
 when the test set is just a single item, the result is known as
-leave-one-out (LOO) cross-validation.
+leave-one-out (LOO) cross-validation [@VehtariEtAl:2017].
 
 Partitioning the data and reusing the partitions is very fiddly in the
 indexes and may not lead to even divisions of the data. It's far
 easier to use random partitions, which support arbitrarily sized
-test/training splits and can be easily implemented in Stan.
+test/training splits and can be easily implemented in Stan.  The
+drawback is that the variance of the resulting estimate is higher than
+with a balanced block partition.
+
 
 ### Stan implementation with random folds
 
@@ -365,7 +370,7 @@ will be the error of the posterior mean estimate,
 \\[4pt]
 & = &
 \mathbb{E}\left[
-  \hat{y}^{\textrm{test}} - y^{\textrm{test}}  
+  \hat{y}^{\textrm{test}} - y^{\textrm{test}}
   \mid x^{\textrm{test}}, x^{\textrm{train}}, y^{\textrm{train}}
 \right]
 \\[4pt]
@@ -379,7 +384,7 @@ $$
 y^{\textrm{train}}).
 $$
 This just calculates error; taking absolute value or squaring will
-compute absolue error and mean square error. Note that the absolute
+compute absolute error and mean square error. Note that the absolute
 value and square operation should *not* be done within the Stan
 program because neither is a linear function and the result of
 averaging squares is not the same as squaring an average in general.
@@ -388,3 +393,50 @@ Because the test set size is chosen for convenience in
 cross-validation, results should be presented on a per-item scale,
 such as average absolute error or root mean square error, not on the
 scale of error in the fold being evaluated.
+
+### User-defined permutations
+
+It is straightforward to declare the variable `permutation` in the
+data block instead of the transformed data block and read it in as
+data.  This allows an external program to control the blocking,
+allowing non-random partitions to be evaluated.
+
+
+### Cross-validation with structured data
+
+Cross-validation must be done with care if the data is inherently
+structured.  For example, in a simple natural language application,
+data might be structured by document.  For cross-validation, one needs
+to cross-validate at the document level, not at the individual word
+level.  This is related to [mixed replication in posterior predictive
+checking](#mixed-replication), where there is a choice to simulate new
+elements of existing groups or generate entirely new groups.
+
+Education testing applications are typically grouped by school
+district, by school, by classroom, and by demographic features of the
+individual students or the school as a whole.  Depending on the
+variables of interest, different structured subsets should be
+evaluated.  For example, the focus of interest may be on the
+performance of entire classrooms, so it would make sense to
+cross-validate at the class or school level on classroom performance.
+
+
+### Cross-validation with spatio-temporal data
+
+Often data measurements have spatial or temporal properties.  For
+example, home energy consumption varies by time of day, day of week,
+on holidays, by season, and by ambient temperature (e.g., a hot spell
+or a cold snap).  Cross-validation must be tailored to the predictive
+goal.  For example, in predicting energy consumption, the quantity of
+interest may be the prediction for next week's energy consumption
+given historical data and current weather covariates.  This suggests
+an alternative to cross-validation, wherein individual weeks are each
+tested given previous data.  This often allows comparing how well
+prediction performs with more or less historical data.
+
+### Approximate cross-validation
+
+@VehtariEtAl:2017 introduce a method that approximates the evaluation
+of leave-one-out cross validation inexpensively using only the data
+point log likelihoods from a single model fit.  This method is
+documented and implemented in the R package loo [@GabryEtAl:2019].

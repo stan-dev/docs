@@ -10,8 +10,8 @@ asses the soundness of a posterior sampler.  Roughly, the way it works
 is by simulating parameters according to the prior, then simulating
 data conditioned on the simulated parameters, then testing posterior
 calibration of the inference algorithm over independently simulated
-data sets.  This chapter follows [@TaltsEtAl:2018], which improves on
-the original approach taken in [@CookGelmanRubin:2006].
+data sets.  This chapter follows @TaltsEtAl:2018, which improves on
+the original approach developed by @CookGelmanRubin:2006.
 
 ## Bayes is calibrated by construction
 
@@ -28,7 +28,7 @@ y^{\textrm{sim}} \sim p(y \mid \theta^{\textrm{sim}}).
 $$
 By the definition of conditional densities, the simulated data and
 parameters constitute an independent draw from the model's joint
-distribution,  
+distribution,
 $$
 (y^{\textrm{sim}}, \theta^{\textrm{sim}}) \sim p(y, \theta).
 $$
@@ -98,7 +98,7 @@ that are less than the simulated draw $\theta^{\textrm{sim}(n)}_k.$
 
 If the algorithm generates posterior draws according to the posterior,
 the ranks should be uniformly distributed from $0$ to $M$, so that
-the ranks plus one are uniformly distributed from $1$ to $M + 1$, 
+the ranks plus one are uniformly distributed from $1$ to $M + 1$,
 $$
 r_{n, k} + 1
 \sim
@@ -106,8 +106,8 @@ r_{n, k} + 1
 $$
 Simulation-based calibration uses this expected behavior to test the
 calibration of each parameter of a model on simulated data.
-[@TaltsEtAl:2018] suggest plotting binned counts of $r_{1:N,
-k}$ for different parameters $k$;  [@CookGelmanRubin:2006]
+@TaltsEtAl:2018 suggest plotting binned counts of $r_{1:N,
+k}$ for different parameters $k$;  @CookGelmanRubin:2006
 automate the process with a hypothesis test for uniformity.
 
 ## SBC in Stan
@@ -250,7 +250,7 @@ for (n in 1:N) {
     // simulate parameters and data
     theta(sim(n)) ~ p(theta)
     y(sim(n)) ~ p(y | theta(sim(n)))
-    
+
     // posterior draws given simulated data
     for (m in 1:M)
         theta(n, m) ~ p(theta | y(sim(n)))
@@ -283,10 +283,10 @@ A simple, though not very highly powered, $\chi^2$-squared test for
 uniformity can be formulated by binning the ranks $0:M$ into $J$
 bins and testing that the bins all have roughly the
 expected number of draws in them.  Many other tests for uniformity are
-possible.  For example, [@CookGelmanRubin:2006] transform the ranks
+possible.  For example, @CookGelmanRubin:2006 transform the ranks
 using the inverse cumulative distribution function for the standard
-normal and then perform a test for normality.  [@TaltsEtAl:2018]
-recommends visual inspection of the binned plots.
+normal and then perform a test for normality.  @TaltsEtAl:2018
+recommend visual inspection of the binned plots.
 
 The bins don't need to be exactly the same size.  In general, if $b_j$
 is the number of ranks that fall into bin $j$ and $e_j$ is the number
@@ -295,7 +295,7 @@ its size under uniformity), the test statistic is
 $$
 X^2 = \sum_{j = 1}^J \frac{(b_j - e_j)^2}{e_j}.
 $$
-The terms are approximately square standard normal, so that 
+The terms are approximately square standard normal, so that
 under the null hypothesis of uniformity,
 $$
 X^2 \sim \textrm{chiSquared}(J - 1),
@@ -336,7 +336,7 @@ $$
 The highest rank also checks out, with $\textrm{bin}(1000, 999, 20) = 50.$
 
 To summarize, the following pseudocode computes the $b_j$ values for
-the $\chi^2$ test or for visualization in a histogram. 
+the $\chi^2$ test or for visualization in a histogram.
 ```
 Inputs: M draws, J bins, N parameters, ranks r[n, m]
 b[1:J] = 0
@@ -429,11 +429,11 @@ geometry is too difficult (usually due to extreme stiffness that
 varies). A simple example is the eight schools problem,
 the data for which consists of sample means $y_j$ and standard
 deviations $\sigma_j$ of differences in test score after the same
-intervention in $J = 8$ different schools. [@Rubin:1981] applies a
+intervention in $J = 8$ different schools. @Rubin:1981 applies a
 hierarchical model for a meta-analysis of the results, estimating the
 mean intervention effect and a varying effect for each school. With a
 standard parameterization and weak priors, this model has very
-challenging posterior geometry, as shown in [@TaltsEtAl:2018]; this
+challenging posterior geometry, as shown by @TaltsEtAl:2018; this
 section replicates their results.
 
 The meta-analysis model has parameters for a population mean $\mu$ and
@@ -511,6 +511,7 @@ knitr::include_graphics("./img/sbc-ctr-8-schools-mu.png", auto_pdf = TRUE)
 knitr::include_graphics("./img/sbc-ctr-8-schools-tau.png", auto_pdf = TRUE)
 knitr::include_graphics("./img/sbc-ctr-8-schools-theta1.png", auto_pdf = TRUE)
 ```
+
 Although the population mean and standard deviation $\mu$ and $\tau$
 appear well calibrated, $\theta_1$ tells a very different story. The
 simulated values are much smaller than the values fit from the data.

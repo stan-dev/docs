@@ -1118,27 +1118,33 @@ literals.*
 `integrate_1d`, | `real, real, real[]` | `real[], int[]` | `real`
 `integrate_ode_X`, | `real, real[], real[]` | `real[], int[]` | `real[]`
 `map_rect` | `vector, vector` | `real[], int[]` | `vector`
+`reduce_sum` | ```T[], T1, T2, ...``` | | `real`
 
-For example, the rectangular mapping function might be used in the
-following way to compute the log likelihood of a hierarchical model.
+`T`, `T1`, `T2`, and the types of `...` can be any Stan type.
+
+For example, the `integrate_ode_rk45` function can be used to integrate
+differential equations in Stan:
 
 ```stan
 functions {
-  vector foo_ll(vector phi, vector theta, real[] x_r, int[] x_i) {
+  real[] foo(real t, real[] y, real[] theta, real[] x_r, int[] x_i) {
     ...
 ...
-vector[11] phi;
-vector[2] thetas[N];
-real x_rs[N, 5];
-real x_is[N, 0];
+int<lower=1> T;
+real y0[2];
+real t0;
+real ts[T];
+real theta[1];
+real x_r[0];
+int x_i[0];
 ...
-target += sum(map_rect(foo_ll, phi, thetas, x_rs, x_is));
+real y_hat[T, 2] = integrate_ode_rk45(foo, y0, t0, ts, theta, x_r, x_i);
 ```
 
 The function argument is `foo`, the name of the user-defined
 function;  as shown in the [higher-order functions table](#higher-order-functions), `foo`
-takes two vectors, a real array, and an integer array as arguments and
-returns a vector.
+takes a real, three more real arrays, and an integer array as arguments and
+returns a real array.
 
 
 ### Functions Passed by Reference {-}

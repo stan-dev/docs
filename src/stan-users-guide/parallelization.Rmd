@@ -36,14 +36,14 @@ inputs, then that sum looks like:
 
 `g(x1) + g(x2) + ...`
 
-The `reduce_sum` function is a tool for automatically parallelizing these
+`reduce_sum` and `reduce_sum_static` are tools for parallelizing these
 calculations.
 
 For efficiency reasons the reduce function doesn’t work with the
 element-wise evaluated function `g`, but instead the partial
 sum function `f: U[] -> real`, where `f` computes the partial
 sum corresponding to a slice of the sequence `x` passed in. Due to the
-the associativity of the sum reduction it holds that:
+associativity of the sum reduction it holds that:
 
 ```
 g(x1) + g(x2) + g(x3) = f({ x1, x2, x3 })
@@ -68,12 +68,13 @@ reduce summation facility:
 
 `grainsize` is the one tuning parameter. For `reduce_sum`, `grainsize` is
 a suggested partial sum size. A `grainsize` of 1 leaves the partitioning
-entirely up to the scheduler.
+entirely up to the scheduler. This should be the default way of using
+`reduce_sum` unless time is spent carefully picking `grainsize`. For picking a `grainsize`, see details [below](#reduce-sum-grainsize).
 
 For `reduce_sum_static`, `grainsize` specifies the maximal partial sum size.
 With `reduce_sum_static` it is more important to choose `grainsize`
 carefully since it entirely determines the partitioning of work.
-See details in [more detail below](#reduce-sum-grainsize).
+See details [below](#reduce-sum-grainsize).
 
 For efficiency and convenience additional
 shared arguments can be passed to every term in the sum. So for the
@@ -219,15 +220,15 @@ accordingly with `start:end`. With this function, reduce summation can
 be used to automatically parallelize the likelihood:
 
 ```
-int grainsize = 100;
+int grainsize = 1;
 target += reduce_sum(partial_sum, y,
                      grainsize,
                      x, beta);
 ```
 
-The reduce summation facility automatically breaks the sum into roughly `grainsize` sized pieces
-and computes them in parallel. `grainsize = 1` specifies that the `grainsize` should
-be estimated automatically. The final model looks as:
+The reduce summation facility automatically breaks the sum into pieces
+and computes them in parallel. `grainsize = 1` specifies that the
+`grainsize` should be estimated automatically. The final model looks as:
 
 ```
 functions {
@@ -247,7 +248,7 @@ parameters {
   vector[2] beta;
 }
 model {
-  int grainsize = 100;
+  int grainsize = 1;
   beta ~ std_normal();
   target += reduce_sum(partial_sum, y,
                        grainsize,
@@ -257,25 +258,19 @@ model {
 
 ### Picking the Grainsize {#reduce-sum-grainsize}
 
-For `grainsize` is a recommendation on how large each piece of
-parallel work is (how many terms it contains). When using the
-non-static version, it is recommended to choose 1 as a starting
-point as automatic aggregation of partial sums are performed. However,
-for the static version the `grainsize` defines the maximal size of the
-partial sums, e.g. 
-
 The rational for choosing a sensible `grainsize` is based on
 balancing the overhead implied by creating many small tasks versus
 creating fewer large tasks which limits the potential parallelism.
 
 In `reduce_sum`, `grainsize` is a recommendation on how to partition
 the work in the partial sum into smaller pieces. A `grainsize` of 1
-leaves this entirely up to the internal scheduler. Ideally this will be
+leaves this entirely up to the internal scheduler and should be chosen
+if no benchmarking of other grainsizes is done. Ideally this will be
 efficient, but there are no guarantees.
 
 In `reduce_sum_static`, `grainsize` is an upper limit on the worksize.
 Work will be split until all partial sums are just smaller than `grainsize`
-(and the split will happen the same way every time for the same data).
+(and the split will happen the same way every time for the same inputs).
 For the static version it is more important to select a sensible `grainsize`.
 
 In order to figure out an optimal `grainsize`, if there are `N`

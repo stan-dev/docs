@@ -410,12 +410,12 @@ exactly. This implies that the order of summation determines the exact
 numerical result. For this reason, the higher-order reduce function is
 available in two variants:
 
-* `reduce_sum`: Compute partial sums automatically. This usually
- results in good performance without further tuning.
-* `reduce_sum_static`: For the same input, always create the same call
-graph. This results in stable numerical evaluation. This version
-requires setting a tuning parameter which controls the maximal size of
-partial sums formed.
+* `reduce_sum`: Automatically choose partial sums partitioning based on a dynamic
+ scheduling algorithm.
+* `reduce_sum_static`: Compute the same sum as `reduce_sum`, but partition
+ the input in the same way for given data set (in `reduce_sum` this partitioning
+ might change depending on computer load). This should result in stable
+ numerical evaluations.
 
 ### Specifying the Reduce-sum Function
 
@@ -437,16 +437,14 @@ partial sums. `s1, s2, ...` are shared between all terms in the sum.
 * *`f`*: function literal referring to a function specifying the
 partial sum operation. Refer to the [partial sum function](#functions-partial-sum).
 * *`x`*: array of `T`, one for each term of the reduction, `T` can be any type,
-* *`grainsize`*: recommended number of terms in each reduce call, set
-to 1 to estimate automatically for `reduce_sum` while for
-`reduce_sum_static` this determines the maximal size of the partial sums, type `int`,
+* *`grainsize`*: For `reduce_sum`, `grainsize` is the recommended size of the partial sum. For `reduce_sum_static`, `grainsize` determinse the maximum size of the partial sums, type `int`,
 * *`s1`*: first (optional) shared argument, type `T1`, where `T1` can be any type
 * *`s2`*: second (optional) shared argument, type `T2`, where `T2` can be any type,
 * *`...`*: remainder of shared arguments, each of which can be any type.
 
-### The Partial-sum Function {#functions-partial-sum}
+### The Partial sum Function {#functions-partial-sum}
 
-The partial sum function must have the following signature where the types `T`, and the
+The partial sum function must have the following signature where the type `T`, and the
 types of all the shared arguments (`T1`, `T2`, ...) match those of the original
 `reduce_sum` (`reduce_sum_static`) call.
 

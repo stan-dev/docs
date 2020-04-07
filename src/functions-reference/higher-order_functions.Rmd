@@ -11,7 +11,7 @@ cat(' * <a href="functions-algebraic-solver.html">Algebraic Equation Solver</a>\
 cat(' * <a href="functions-ode-solver.html">Ordinary Differential Equation (ODE) Solvers</a>\n')
 cat(' * <a href="functions-1d-integrator.html">1D Integrator</a>\n')
 cat(' * <a href="functions-reduce.html">Reduce-Sum</a>\n')
-cat(' * <a href="functions-map.html">Higher-Order Map</a>\n')
+cat(' * <a href="functions-map.html">Map-Rect</a>\n')
 }
 ```
 
@@ -386,11 +386,11 @@ The gradients of the integral are computed in accordance with the Leibniz integr
 ## Reduce-Sum Function {#functions-reduce}
 
 Stan provides a higher-order reduce function for summation. A function
-`g: U -> real`, which returns a scalar, is mapped to every element of
-a list of type `U[]`, `{ x1, x2, ... }` and all the results are
+which returns a scalar `g: U -> real` is mapped to every element of a
+list of type `U[]`, `{ x1, x2, ... }` and all the results are
 accumulated,
 
-```g(x1) + g(x2) + ...```
+`g(x1) + g(x2) + ...`
 
 For efficiency reasons the reduce function doesn't work with the
 element-wise evaluated function `g` itself, but instead works through
@@ -410,12 +410,12 @@ exactly. This implies that the order of summation determines the exact
 numerical result. For this reason, the higher-order reduce function is
 available in two variants:
 
-* `reduce_sum`: Automatically forms partial sums resulting usually in good
- performance without further tuning.
-* `reduce_sum_static`: Creates for the same input always the same
-call graph resulting in stable numerical evaluation. This version
-requires setting a tuning parameter which controls the maximal size of partial
-sums formed.
+* `reduce_sum`: Compute partial sums automatically. This usually
+ results in good performance without further tuning.
+* `reduce_sum_static`: For the same input, always create the same call
+graph. This results in stable numerical evaluation. This version
+requires setting a tuning parameter which controls the maximal size of
+partial sums formed.
 
 ### Specifying the Reduce-sum Function
 
@@ -438,7 +438,7 @@ partial sums. `s1, s2, ...` are shared between all terms in the sum.
 partial sum operation. Refer to the [partial sum function](#functions-partial-sum).
 * *`x`*: array of `T`, one for each term of the reduction, `T` can be any type,
 * *`grainsize`*: recommended number of terms in each reduce call, set
-to one to estimate automatically for `reduce_sum` while for
+to 1 to estimate automatically for `reduce_sum` while for
 `reduce_sum_static` this determines the maximal size of the partial sums, type `int`,
 * *`s1`*: first (optional) shared argument, type `T1`, where `T1` can be any type
 * *`s2`*: second (optional) shared argument, type `T2`, where `T2` can be any type,

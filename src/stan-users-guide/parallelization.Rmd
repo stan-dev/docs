@@ -34,7 +34,7 @@ function `g: U -> real`, which returns a scalar, to a list of type
 over the results. For instance, for a sequence of ```x``` values of
 type ```U```, ```{ x1, x2, ... }```, we might compute the sum:
 
-```g(x1) + g(x2) + ...```
+`g(x1) + g(x2) + ...`
 
 In probabilistic modeling this comes up when there are $N$
 conditionally independent terms in a likelihood. Because of the
@@ -71,10 +71,10 @@ call graph resulting in stable numerical evaluation. This version
 requires setting a sensible tuning parameter for good performance.
 
 The tuning parameter is the so-called `grainsize`. For the
-`reduce_sum` version the `grainsize` is merely a suggested partial sum
-size while for the `reduce_sum_static` version the `grainsize`
+`reduce_sum` version, the `grainsize` is merely a suggested partial sum
+size, while for the `reduce_sum_static` version the `grainsize`
 specifies the maximal partial sum size. While for `reduce_sum` a
-`grainsize` of one commonly leads to good performance already (since
+`grainsize` of 1 commonly leads to good performance already (since
 automatic aggregation is performed), the `reduce_sum_static` variant
 requires setting a sensible `grainsize` for good performance as
 explained in [more detail below](#reduce-sum-grainsize).
@@ -156,9 +156,7 @@ for(i in 1:size(x)) {
 
 Logistic regression is a useful example to clarify both the syntax
 and semantics of reduce summation and how it can be used to speed up a typical
-model.
-
-A basic logistic regression can be coded in Stan as:
+model. A basic logistic regression can be coded in Stan as:
 
 ```
 data {
@@ -177,7 +175,6 @@ model {
 
 In this model predictions are made about the `N` outputs `y` using the
 covariate `x`. The intercept and slope of the linear equation are to be estimated.
-
 The key point to getting this calculation to use reduce summation, is recognizing that
 the statement:
 
@@ -194,13 +191,10 @@ for(n in 1:N) {
 
 Now it is clear that the calculation is the sum of a number of conditionally
 independent Bernoulli log probability statements, which is the condition where
-reduce summation is useful.
-
-To use the reduce summation, a function must be written that can be used to compute
-arbitrary partial sums of the total sum.
-
-Using the interface defined in [Reduce-Sum](#reduce-sum), such a function
-can be written like:
+reduce summation is useful. To use the reduce summation, a function
+must be written that can be used to compute arbitrary partial sums of
+the total sum. Using the interface defined in
+[Reduce-Sum](#reduce-sum), such a function can be written like:
 
 ```
 functions {
@@ -213,7 +207,7 @@ functions {
 }
 ```
 
-And the likelihood statement in the model can now be written:
+The likelihood statement in the model can now be written:
 
 ```
 target += partial_sum(1, N, y, x, beta); // Sum terms 1 to N of the likelihood
@@ -221,12 +215,12 @@ target += partial_sum(1, N, y, x, beta); // Sum terms 1 to N of the likelihood
 
 In this example, `y` was chosen to be sliced over because there
 is one term in the summation per value of `y`. Technically `x` would  have
-worked as well. Use whatever conceptually makes the most sense.
-
-Because `x` is a shared argument, it is subset accordingly with `start:end`.
-
-With this function, reduce summation can be used to automatically parallelize the
-likelihood:
+worked as well. Use whatever conceptually makes the most
+sense for a given model, e.g. slice over independent terms like
+conditionally independent observations or groups of observations as in
+hierarchical models. Because `x` is a shared argument, it is subset
+accordingly with `start:end`. With this function, reduce summation can
+be used to automatically parallelize the likelihood:
 
 ```
 int grainsize = 100;
@@ -237,7 +231,7 @@ target += reduce_sum(partial_sum, y,
 
 The reduce summation facility automatically breaks the sum into roughly `grainsize` sized pieces
 and computes them in parallel. `grainsize = 1` specifies that the grainsize should
-be estimated automatically. The final model looks like:
+be estimated automatically. The final model looks as:
 
 ```
 functions {
@@ -269,7 +263,7 @@ model {
 
 The `grainsize` is a recommendation on how large each piece of
 parallel work is (how many terms it contains). When using the
-non-static version, it is recommended to choose one as a starting
+non-static version, it is recommended to choose 1 as a starting
 point as automatic aggregation of partial sums are performed. However,
 for the static version the `grainsize` defines the maximal size of the
 partial sums, e.g. the static variant will split the input sequence

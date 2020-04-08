@@ -29,10 +29,50 @@ In RStudio: to build the project, open `index.Rmd` in RStudio and click `knit`
 #### Outside of RStudio
 
 First, you will need to install `pandoc` and `pandoc-citeproc` in
-addition to the `bookdown` package in R.  After that, it can be built
-from within R in this directory using `bookdown::render('index.Rmd')`
-or from the shell using `./build.sh` to build both PDF and HTML
-versions.
+addition to the `bookdown` package in R.  Then
+
+```
+> setwd('docs/src/stan-users-guide')
+```
+
+Then execute one of the following commands depending on whether
+you want HTML or PDF output.
+
+**HTML**  To build the HTML version,
+```
+> bookdown::render_book('index.Rmd', 'gitbook')
+```
+The home of the output will be in `_book/index.html`.
+
+**PDF** To build the PDF version,
+```
+bookdown::render_book('index.Rmd', 'pdf_book')
+```
+The output will be in the single file `_book/main.pdf`.
+
+#### From the shell
+
+R can be run as a script from the shell in the source diectory.  First
+change to the source directory:
+
+```
+$ cd docs/src/stan-users-guide
+```
+
+Then execute one of the following for HTML or PDF output.
+
+**HTML**
+```
+$ Rscript -e "bookdown::render_book('index.Rmd')"
+```
+The home of the output will be in `_book/index.html`.
+
+
+**PDF**
+```
+$ Rscript -e "bookdown::render_book('index.Rmd', 'pdf_book')"
+```
+The output will be in the single file `_book/main.pdf`.
 
 
 ### Style Guide for Authors

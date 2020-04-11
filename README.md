@@ -33,7 +33,7 @@ GitHub (re)builds and (re)deploys the website.
 
 ## Generating the static site
 
-1. Install R packages:  bookdown
+1. Install R packages:  bookdown, arm
 
 2. Install on OS and ensure on PATH: pandoc, pandoc-citeproc, pdflatex
 

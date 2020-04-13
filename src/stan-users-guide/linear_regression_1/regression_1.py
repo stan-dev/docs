@@ -1,23 +1,20 @@
-import os
-from cmdstanpy import cmdstan_path, CmdStanModel
-import numpy as np
-import fileinput
-import sys
+""" Example program that generates data, compiles and runs regression.stan"""
+from cmdstanpy import CmdStanModel
+import numpy
+
+
 # Run from command line: Python regression_1.py
 
-alpha = 2
-beta = 3
-sigma = 5
+ALPHA = 2
+BETA = 3
+SIGMA = 5
 N = 100
-x = np.random.uniform(size = N)
-y = np.random.normal(size = N, loc=alpha + beta * x, scale = sigma)
+X = numpy.random.uniform(size=N)
+Y = numpy.random.normal(size=N, loc=ALPHA + BETA * X, scale=SIGMA)
 
-stan_data = {'N': N, 'x': x, 'y': y}
+STAN_DATA = {'N': N, 'x': X, 'y': Y}
 
-stan_program = CmdStanModel(stan_file='regression_1.stan')
-stan_program.compile()
-fit = stan_program.sample(data=stan_data,
-                           csv_basename='./regression_1')
-
-
-print(fit)
+STAN_PROGRAM = CmdStanModel(stan_file='regression_1.stan')
+STAN_PROGRAM.compile()
+FIT = STAN_PROGRAM.sample(data=STAN_DATA, output_dir='.')
+print(FIT.summary())

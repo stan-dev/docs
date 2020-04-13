@@ -5,16 +5,16 @@ import numpy
 
 # Run from command line: Python regression_1.py
 
-ALPHA = 2
-BETA = 3
-SIGMA = 5
-N = 100
-X = numpy.random.uniform(size=N)
-Y = numpy.random.normal(size=N, loc=ALPHA + BETA * X, scale=SIGMA)
+alpha = 2
+beta = 3
+sigma = 5
+n = 100
+x = numpy.random.uniform(size=n)
+y = numpy.random.normal(size=n, loc=alpha + beta * x, scale=sigma)
 
-STAN_DATA = {'N': N, 'x': X, 'y': Y}
+stan_data = {'N': n, 'x': x, 'y': y}
 
-STAN_PROGRAM = CmdStanModel(stan_file='regression_1.stan')
-STAN_PROGRAM.compile()
-FIT = STAN_PROGRAM.sample(data=STAN_DATA, output_dir='.')
-print(FIT.summary())
+stan_program = CmdStanModel(stan_file='regression_1.stan')
+stan_program.compile()
+fit = stan_program.sample(data=stan_data, output_dir='.')
+print(fit.summary())

@@ -4,7 +4,7 @@ Command Line with R (install instructions https://mc-stan.org/cmdstanr/articles/
 
 OSX/Linux: 
 
-> Rscript regression_1.R
+> Rscript run.R
 
 Windows:
 
@@ -13,7 +13,7 @@ Windows:
 
 OSX/Linux: 
 
-> python regression_1.py
+> python run.py
 
 Windows:
 

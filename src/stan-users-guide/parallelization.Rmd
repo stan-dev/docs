@@ -108,15 +108,15 @@ real reduce_sum_static(F f, T[] x, int grainsize, T1 s1, T2 s2, ...)
 The user-defined partial sum functions have the signature:
 
 ```
-real f(int start, int end, T[] x_slice, T1 s1, T2 s2, ...)
+real f(T[] x_slice, int start, int end, T1 s1, T2 s2, ...)
 ```
 
 and take the arguments:
 
-1. ```start``` - An integer specifying the first term in the partial sum
-2. ```end``` - An integer specifying the last term in the partial sum (inclusive)
-3. ```x_slice``` - The subset of ```x``` (from ```reduce_sum``` / `reduce_sum_static`) for
-which this partial sum is responsible (```x_slice = x[start:end]```)
+1. ```x_slice``` - The subset of ```x``` (from ```reduce_sum``` / `reduce_sum_static`) for
+  which this partial sum is responsible (```x_slice = x[start:end]```)
+2. ```start``` - An integer specifying the first term in the partial sum
+3. ```end``` - An integer specifying the last term in the partial sum (inclusive)
 4. ```s1, s2, ...``` - Arguments shared in every term  (passed on
 without modification from the ```reduce_sum``` / `reduce_sum_static` call)
 
@@ -137,7 +137,7 @@ real sum = reduce_sum(f, x, grainsize, s1, s2, ...);
 can be replaced by either:
 
 ```
-real sum = f(1, size(x), x, s1, s2, ...);
+real sum = f(x, 1, size(x), s1, s2, ...);
 ```
 
 or the code:
@@ -145,7 +145,7 @@ or the code:
 ```
 real sum = 0.0;
 for(i in 1:size(x)) {
-  sum += f(i, i, { x[i] }, s1, s2, ...);
+  sum += f({ x[i] }, i, i, s1, s2, ...);
 }
 ```
 
@@ -180,6 +180,7 @@ y ~ bernoulli_logit(beta[1] + beta[2] * x);
 ```
 
 can be rewritten (up to a proportionality constant) as:
+
 ```
 for(n in 1:N) {
   target += bernoulli_logit_lpmf(y[n] | beta[1] + beta[2] * x[n])
@@ -195,8 +196,8 @@ the total sum. Using the interface defined in
 
 ```
 functions {
-  real partial_sum(int start, int end,
-                   int[] y_slice,
+  real partial_sum(int[] y_slice,
+                   int start, int end,
                    vector x,
                    vector beta) {
     return bernoulli_logit_lpmf(y_slice | beta[1] + beta[2] * x[start:end]);
@@ -207,7 +208,7 @@ functions {
 The likelihood statement in the model can now be written:
 
 ```
-target += partial_sum(1, N, y, x, beta); // Sum terms 1 to N of the likelihood
+target += partial_sum(y, 1, N, x, beta); // Sum terms 1 to N of the likelihood
 ```
 
 In this example, `y` was chosen to be sliced over because there
@@ -232,8 +233,8 @@ and computes them in parallel. `grainsize = 1` specifies that the
 
 ```
 functions {
-  real partial_sum(int start, int end,
-                   int[] y_slice,
+  real partial_sum(int[] y_slice,
+                   int start, int end,
                    vector x,
                    vector beta) {
     return bernoulli_logit_lpmf(y_slice | beta[1] + beta[2] * x[start:end]);

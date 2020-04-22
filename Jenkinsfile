@@ -51,6 +51,9 @@ pipeline {
         }
         stage("Link docs to latest") {
             steps{
+                sh "ls -lhart"
+                sh "ls -lhart docs"
+                sh "chmod +x add_links.sh"
                 sh "add_links.sh $last_docs_version_dir"
             }
         }

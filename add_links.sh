@@ -16,5 +16,3 @@ python link_to_latest.py docs/"$directory"_tmp/functions-reference "Stan Functio
 
 mv docs/"$directory" docs/"$directory"_bak
 mv docs/"$directory"_tmp/ docs/"$directory"
-
-rm -r docs/"$directory"_tmp

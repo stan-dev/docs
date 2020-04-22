@@ -43,8 +43,8 @@ model {
 }
 ```
 
-There are `N` observations, each with predictor `x[n]` and
-outcome `y[n]`.  The intercept and slope parameters are
+There are `N` observations and or each observation, $n \in N$,  we have predictor
+`x[n]` and outcome `y[n]`.  The intercept and slope parameters are
 `alpha` and `beta`.  The model assumes a normally
 distributed noise term with scale `sigma`.  This model has
 improper priors for the two regression coefficients.
@@ -108,7 +108,7 @@ and `beta` a $K$-vector of coefficients, so `x * beta` is an
 $N$-vector of predictions, one for each of the $N$ data items.  These
 predictions line up with the outcomes in the $N$-vector `y`, so
 the entire model may be written using matrix arithmetic as shown.  It
-would be possible to include a column of ones the data matrix `x` and
+would be possible to include a column of ones in the data matrix `x` to
 remove the `alpha` parameter.
 
 The sampling statement in the model above is just a more efficient,
@@ -278,7 +278,7 @@ regression models may be used.  These generalized linear models vary
 only in the link function they use to map linear predictions in
 $(-\infty,\infty)$ to probability values in $(0,1)$.  Their respective
 link functions, the logistic function and the standard normal cumulative distribution
-function, are both sigmoid functions (i.e., they are both \textit{S}-shaped).
+function, are both sigmoid functions (i.e., they are both *S*-shaped).
 
 A logistic regression model with one predictor and an intercept is coded as
 follows.
@@ -899,7 +899,7 @@ students each answer one or more of a group of test questions.  The
 model is based on parameters for the ability of the students, the
 difficulty of the questions, and in more articulated models, the
 discriminativeness of the questions and the probability of guessing
-correctly; [@GelmanHill:2007, pps. 314--320] for a textbook
+correctly; see @GelmanHill:2007 [pps. 314--320] for a textbook
 introduction to hierarchical IRT models and @Curtis:2010 for
 encodings of a range of IRT models in BUGS.
 
@@ -949,7 +949,7 @@ parameters {
 }
 ```
 
-The parameter `alpha[j]` is the ability coefficient for student
+The parameter `alpha[J]` is the ability coefficient for student
 `j` and `beta[k]` is the difficulty coefficient for question
 `k`.  The non-standard parameterization used here also includes
 an intercept term `delta`, which represents the average student's
@@ -1178,7 +1178,7 @@ state income and unemployment level.
 
 ### Multivariate Regression Example {-}
 
-[@GelmanHill:2007, Chapter 13, Chapter 17] includes a discussion of a
+@GelmanHill:2007 [, Chapter 13, Chapter 17] provide a discussion of a
 hierarchical model with $N$ individuals organized into $J$ groups.
 Each individual has a predictor row vector $x_n$ of size $K$; to unify
 the notation, they assume that $x_{n,1} = 1$ is a fixed "intercept"
@@ -1203,7 +1203,7 @@ Gelman and Hill model the coefficient vectors $\beta_j$ as being drawn
 from a multivariate distribution with mean vector $\mu$ and
 covariance matrix $\Sigma$,
 $$
-\beta_j \sim \textsf{multivariate normal}(\mu, \, \Sigma)
+\beta_j \sim \textsf{multivariate normal}(\mu_j, \, \Sigma)
 \quad\text{for}\quad j \in \{ 1, \dotsc, J \}.
 $$
 
@@ -1222,7 +1222,7 @@ $$
 $$
 If more is known about the expected coefficient values
 $\beta_{j, k}$, this information can be incorporated into the prior for
-$\mu_k$.
+$\mu_j$.
 
 For the prior on the covariance matrix, Gelman and Hill suggest using
 a scaled inverse Wishart.  That choice was motivated primarily by
@@ -1473,7 +1473,7 @@ Omega = L_Omega * L_Omega'
 ```
 
 The prior scale vector `tau` is unchanged, and furthermore,
-Pre-multiplying the Cholesky factor by the scale produces the Cholesky
+pre-multiplying the Cholesky factor by the scale produces the Cholesky
 factor of the final covariance matrix,
 
 ```
@@ -1535,8 +1535,8 @@ author's feelings about the opposite of "fore").
 ### Programming Predictions {-}
 
 As a simple example, the following linear regression provides the same
-setup for estimating the coefficients `beta` as in our  first
-example above, using `y` for the `N` observations and
+setup for estimating the coefficients `beta` as in our very first
+example, using `y` for the `N` observations and
 `x` for the `N` predictor vectors.  The model parameters and
 model for observations are exactly the same as before.
 
@@ -1608,8 +1608,8 @@ constraints placed on the variables will be violated.  It is possible
 to check a value assigned by an RNG and reject it if it overflows, but
 this is both inefficient and leads to biased posterior estimates.
 Instead, the conditions causing overflow, such as trying to generate a
-negative binomial random variate with a mean of $2^{31}$.  These must
-be intercepted and dealt with, typically be reparameterizing or
+negative binomial random variate with a mean of $2^{31}$, must
+be intercepted and dealt with. This is typically done by reparameterizing or
 reimplementing the random number generator using real values rather
 than integers, which are upper-bounded by $2^{31} - 1$ in Stan.
 

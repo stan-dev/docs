@@ -1,19 +1,21 @@
 data {
-  int<lower=0> N;
-  vector[N] x;
+  int<lower = 0> N;
+  vector [N ] x;
   vector[N] y;
 }
 
+
 parameters {
-  real alpha_hat;
-  real beta_hat;
-  real<lower=0> sigma_hat;
+  real alpha;
+  real beta;
+  real<lower = 0> sigma;
 }
 
 //Just vectorized right now. 
 model {
-  alpha_hat ~ normal(5,10);
-  beta_hat ~ normal(5,10);
-  sigma_hat ~ normal(5,10);
-  y ~ normal(alpha_hat + beta_hat*x, sigma_hat);
+  alpha ~ normal(5, 10);
+  beta ~ normal(5, 10);
+  sigma ~ normal(5, 10);
+  y ~ normal(alpha + beta * x, sigma);
 }
+

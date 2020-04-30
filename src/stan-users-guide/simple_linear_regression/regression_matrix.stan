@@ -5,10 +5,6 @@ data {
   vector[N] y;      // outcome vector
 }
 
-transformed data {
-  print("N = ", N, "K = ", K, "x = ", x, "y = ", y);
-}
-
 parameters {
   real alpha;             // intercept
   vector[K] beta;         // coefficients for predictors

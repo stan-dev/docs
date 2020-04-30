@@ -54,7 +54,7 @@ for (n in 1:N)
   y[n] ~ normal(alpha + beta * x[n], sigma);
 ```
 
-In addition to being more concise, the vectorized form is much faster.^[Unlike in Python and R, which are interpreted, Stan is translated to C++ and compiled, so loops and assignment statements are fast.  Vectorized code is faster in Stan because (a) the expression tree used to compute derivatives can be simplified, leading to fewer virtual function calls, and (b) computations that would be repeated in the looping version, such as `log(sigma)` in the above model, will be computed once and reused.]
+In addition to being more concise, the vectorized form is much faster.^[Unlike in Python and R, which are interpreted, Stan is translated to C++ and compiled, so loops and assignment statements are fast.  Vectorized code is faster in Stan because (a) the expression tree used to compute derivatives can be simplified, leading to fewer virtual function calls, and (b) computations that would be repeated in the looping version, such as `log(sigma)` which is implicit in computing `normal(normal(alpha + beta * x[n], sigma)` in the above model, will be computed once and reused.]
 
 In general, Stan allows the arguments to distributions such as
 `normal` to be vectors.  If any of the other arguments are vectors or
@@ -70,24 +70,11 @@ because `x` is of type `vector` and `beta` of type
 Because Stan supports vectorization, a regression model with more than
 one predictor can be written directly using matrix notation.
 
-```
-data {
-  int<lower=0> N;   // number of data items
-  int<lower=0> K;   // number of predictors
-  matrix[N, K] x;   // predictor matrix
-  vector[N] y;      // outcome vector
-}
-parameters {
-  real alpha;           // intercept
-  vector[K] beta;       // coefficients for predictors
-  real<lower=0> sigma;  // error scale
-}
-model {
-  y ~ normal(x * beta + alpha, sigma);  // likelihood
-}
+```{r echo=FALSE}
+print_file('simple_linear_regression/regression_matrix.stan')
 ```
 
-The constraint `lower=0` in the declaration of `sigma`
+The constraint `lower = 0` in the declaration of `sigma`
 constrains the value to be greater than or equal to 0.  With no prior
 in the model block, the effect is an improper prior on non-negative
 real numbers.  Although a more informative prior may be added, improper
@@ -154,35 +141,8 @@ R^\ast$ where $Q^\ast = Q * \sqrt{n - 1}$ and $R^\ast =
 \beta = Q R \beta = Q^\ast R^\ast \beta$. If we let $\theta = R^\ast
 \beta$, then we have $\eta = Q^\ast \theta$ and $\beta = R^{\ast^{-1}}
 \theta$. In that case, the previous Stan program becomes
-
-```
-data {
-  int<lower=0> N;   // number of data items
-  int<lower=0> K;   // number of predictors
-  matrix[N, K] x;   // predictor matrix
-  vector[N] y;      // outcome vector
-}
-transformed data {
-  matrix[N, K] Q_ast;
-  matrix[K, K] R_ast;
-  matrix[K, K] R_ast_inverse;
-  // thin and scale the QR decomposition
-  Q_ast = qr_thin_Q(x) * sqrt(N - 1);
-  R_ast = qr_thin_R(x) / sqrt(N - 1);
-  R_ast_inverse = inverse(R_ast);
-}
-parameters {
-  real alpha;           // intercept
-  vector[K] theta;      // coefficients on Q_ast
-  real<lower=0> sigma;  // error scale
-}
-model {
-  y ~ normal(Q_ast * theta + alpha, sigma);  // likelihood
-}
-generated quantities {
-  vector[K] beta;
-  beta = R_ast_inverse * theta; // coefficients on x
-}
+```{r echo=FALSE}
+print_file('simple_linear_regression/regression_QR.stan')
 ```
 
 Since this Stan program generates equivalent predictions for $y$ and
@@ -245,7 +205,7 @@ term $\epsilon$ as having a normal distribution.  From Stan's
 perspective, there is nothing special about normally distributed
 noise.  For instance, robust regression can be accommodated by giving
 the noise term a Student-$t$ distribution.  To code this in Stan, the
-sampling distribution is changed to the following.
+sampling distribution is changed to the following [student_t_regression]( https://github.com/stan-dev/docs/tree/footnote/src/stan-users-guide/student_t_regression).
 
 
 ```

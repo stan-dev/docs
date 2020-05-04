@@ -15,6 +15,6 @@ model {
   y ~ bernoulli_logit(alpha + beta * x);
   /** Mathematically equivalent, less efficient likelihood
    * for (n in 1:N)
-   *  y[n] ~ bernoulli_logit(alpha + beta * x[n]);
+   * y[n] ~ bernoulli_logit(alpha + beta * x[n]);
    */
 }

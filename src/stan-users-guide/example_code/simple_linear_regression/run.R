@@ -12,6 +12,7 @@ sigma_s <- 1
 n <- 1000
 x <- runif(n, 0, 10)
 y <- rnorm(n, alpha_s + beta_s * x, sigma_s)
+stan_data <- list(N = n, x = x, y = y)
 
 print(sprintf(paste("simulation parameters are: alpha_s=%.1f",
               "beta_s=%.1f, sigma_s=%.1f, n=%d"),
@@ -19,7 +20,6 @@ print(sprintf(paste("simulation parameters are: alpha_s=%.1f",
 
 #=============runs simplest version==========
 
-stan_data <- list(N = n, x = x, y = y)
 model <- cmdstan_model("regression_naive.stan")
 fit <- model$sample(data = stan_data, num_chains = 4, output_dir = "output")
 print(paste("ran stan executable: ", model$exe_file()))
@@ -45,6 +45,7 @@ print(paste("ran stan executable: ", model_3$exe_file()))
 print(fit_3$summary())
 
 #=============runs matrix version with integrated intercept==========
+
 k_2 <- 2
 x_matrix <- matrix(ncol = k_2, nrow = n)
 x_matrix[, 1] <- rep(1, n) # intercept is always 1
@@ -63,3 +64,11 @@ fit_5 <- model_5$sample(data = stan_data_matrix_w_intercept,
                       num_chains = 4, output_dir = "output")
 print(paste("ran stan executable: ", model_5$exe_file()))
 print(fit_5$summary())
+
+#=============runs centered and scaled parameter version,  
+#=============see chapter Efficiency Tuning, section Standardizing Predictors and Outputs==========
+
+model_6 <- cmdstan_model("regression_centered_scaled.stan")
+fit_6 <- model_6$sample(data = stan_data, output_dir = "output")
+print(paste("ran stan executable: ", model_6$exe_file()))
+print(fit_6$summary())

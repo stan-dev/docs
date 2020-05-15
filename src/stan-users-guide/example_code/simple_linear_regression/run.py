@@ -7,8 +7,8 @@ import numpy
 
 alpha = 2.0
 beta = 3.0
-sigma = 5.0
-n = 100
+sigma = 1.0
+n = 1000
 x = numpy.random.uniform(size=n)
 y = numpy.random.normal(size=n, loc=alpha + beta * x, scale=sigma)
 
@@ -26,8 +26,17 @@ print(fit.summary())
 
 #=============runs efficient version========
 
-stan_program2 = CmdStanModel(stan_file='regression_efficient.stan')
-stan_program2.compile()
-fit2 = stan_program2.sample(data=stan_data, output_dir='output')
-print("running stan executable: ", stan_program2.exe_file)
+stan_2 = CmdStanModel(stan_file='regression_efficient.stan')
+stan_2.compile()
+fit2 = stan_2.sample(data=stan_data, output_dir='output')
+print("running stan executable: ", stan_2.exe_file)
 print(fit2.summary())
+
+#=============runs centered and scaled parameter version,  
+#=============see chapter Efficiency Tuning, section Standardizing Predictors and Outputs==========
+
+stan_6 = CmdStanModel(stan_file='regression_centered_scaled.stan')
+stan_6.compile()
+fit_6 = stan_6.sample(data = stan_data, output_dir = "output")
+print("running stan executable: ", stan_6.exe_file)
+print(fit_6.summary())

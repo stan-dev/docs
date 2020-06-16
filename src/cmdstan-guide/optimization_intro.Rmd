@@ -1,0 +1,104 @@
+# Optimization
+
+The compiled executable model can run Stan’s optimization algorithms
+for penalized maximum likelihood estimation which provide a
+deterministic method to find the posterior mode.
+The executable does not need to be
+recompiled in order to switch from sampling to optimization, and the
+data input format is the same. The following is a minimal call to
+Stan's optimizer using defaults for everything but the location of the
+data file.
+
+```
+> ./bernoulli optimize data file=bernoulli.data.json
+```
+
+Executing this command prints both output to the console and
+to a csv file.
+
+The first part of the console output reports on the configuration used.
+The above command uses all default configurations, therefore the optimizer
+used is the L-BFGS optimizer and its default initial stepsize and
+tolerances for monitoring convergence:
+```
+ ./bernoulli optimize data file=bernoulli.data.json
+method = optimize
+  optimize
+    algorithm = lbfgs (Default)
+      lbfgs
+        init_alpha = 0.001 (Default)
+        tol_obj = 9.9999999999999998e-13 (Default)
+        tol_rel_obj = 10000 (Default)
+        tol_grad = 1e-08 (Default)
+        tol_rel_grad = 10000000 (Default)
+        tol_param = 1e-08 (Default)
+        history_size = 5 (Default)
+    iter = 2000 (Default)
+    save_iterations = 0 (Default)
+id = 0 (Default)
+data
+  file = bernoulli.data.json
+init = 2 (Default)
+random
+  seed = 3316231346 (Default)
+output
+  file = output.csv (Default)
+  diagnostic_file =  (Default)
+  refresh = 100 (Default)
+```
+
+The second part of the
+output indicates how well the algorithm fared, here converging and
+terminating normally. The numbers reported indicate that it took 5
+iterations and 8 gradient evaluations.
+This is, not surprisingly, far fewer iterations than required
+for sampling; even fewer iterations would be used with less stringent
+user-specified convergence tolerances.
+The `alpha` value is for step size used. 
+In the final state the change in parameters was roughly 0.0002
+and the length of the gradient roughly 9e-8.
+
+```
+Initial log joint probability = -5.26908
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+       5      -5.00402   0.000172451   9.39034e-08           1           1        8   
+Optimization terminated normally: 
+  Convergence detected: relative gradient magnitude is below tolerance
+```
+
+The output from optimization is written into the file
+`output.csv` by default. The output follows the same pattern as
+the output for sampling, first dumping the entire set of parameters
+used as comment lines:
+
+```
+# stan_version_major = 2
+# stan_version_minor = 23
+# stan_version_patch = 0
+# model = bernoulli_model
+# method = optimize
+#   optimize
+#     algorithm = lbfgs (Default)
+...
+```
+
+Following the config information, are two lines of output:
+the CSV headers and the recorded values:
+
+```
+lp__,theta
+-5.00402,0.2
+```
+
+Note that everything is a comment other than a line for the header,
+and a line for the values. Here, the header indicates the unnormalized
+log probability with `lp__` and the model parameter
+`theta`. The maximum log probability is -5.0 and the posterior
+mode for `theta` is 0.20. The mode exactly matches what we would
+expect from the data.^[The Jacobian adjustment included for the sampler's log
+probability function is not applied during optimization, because it
+can  change the shape of the posterior and hence the solution.]
+
+Because the prior was uniform, the result 0.20 represents the maximum
+likelihood estimate (MLE) for the very simple Bernoulli model. Note
+that no uncertainty is reported.

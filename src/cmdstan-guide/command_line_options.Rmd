@@ -1,14 +1,29 @@
 # Command-Line Interface Overview
 
-The CmdStan command line interface consists of nested sets of arguments consisting of
-a keyword followed by key-value argument pairs.
+The CmdStan executable consists of the Stan model concept and
+the CmdStan command line arguments parser.
+The command line argument syntax consists of sets of keywords and keyword-value pairs.
+The main command line configuration arguments are:
 
-The top-level keywords are:
+- `method` - specifies the kind of inference done on the model.<br>
+Each kind of inference requires further configuration via sub-arguments.
+The `method` argument is required; it can be specified either in the form of
+a keyword-value pair `method=<inference>` or as one of the following
+kinds of inference:
 
-- `method` - specifies the kind of inference or other processing
-- `data` - specifies the input data file
-- `init` - specifies initial values for the model parameters.
+    + `sample` - obtain a sample from the posterior using HMC
+    + `optimize` - penalized maximum likelihood estimation
+    + `variational` - automatic variational inference 
+    + `generate_quantities` - run model's `generated quantities` block on existing sample
+to obtain new quantities of interest.    
+    + `diagnose` - compute and compare sampler gradient calculations to finite differences.
+
+- `data` - specifies the input data file, if any.
+
+- `init` - specifies initial values for the model parameters, if any.
+
 - `random` - specifies the seed for the psuedo-random number.
+
 - `output` - specifies program outputs, both disk files and terminal window outputs.
 
 CmdStan provides a `help` and `help-all` mechanism that displays either the
@@ -39,12 +54,39 @@ Additional configuration available by specifying
 See ./bernoulli <arg1> [ help | help-all ] for details on individual arguments.
 ```
 
-## Methods
+The next several chapters cover the per-inference configuration options.
+The remainder of this chapter covers the general configuration options
+used for all processing.
 
-  + `sample` - HMC sampler
-  + `optimize` - penalized maximum likelihood estimation
-  + `variational` - automatic variational inference 
-  + `generate_quantities` - run model's `generated quantities` on existing sample
-  + `diagnose` - compute, compare sampler gradient calculations
+## Input Data Arguments
 
-## General Configuration
+The values for all variables declared in the model's `data` block are read in from
+an input data file in either JSON or Rdump format, specified on the command line as:
+`data file=<filepath>`.
+
+The input data file must contain definitions for all data variables declared in the model's `data` block.
+If the model doesn't declare any data variables, this argument is ignored.
+
+
+
+
+
+Syntax:  
+Validvalues: Pathtoexistingfile (Defaults to empty path)
+
+
+## Random Number Generator Arguments
+
+
+random
+Random number configuration Valid subarguments: seed
+
+## Process Identifier Argument:  `id`
+
+The keyword value pair `id=<int>` takes a positive interger value.
+This integer is used to advance the random number generator so that random numbers do not overlap across chains.
+The default value is 0.
+
+This argument is used when running multiple chains using the same random seed.
+(Defaults to 0)
+

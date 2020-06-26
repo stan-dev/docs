@@ -1,6 +1,165 @@
-# `sample`: MCMC Sampling
+# MCMC Sampling using Hamiltonian Monte Carlo
 
-Available samplers, configuration options for each.
+The `sample` method provides Bayesian inference over the model conditioned on data
+using Hamiltonian Monte Carlo (HMC) sampling.  By default, the inference engine used is
+the No-U-Turn sampler (NUTS), an adaptive form of Hamiltonian Monte Carlo sampling.
+For details on HMC and NUTS, see the Stan Reference Manual chapter on
+[MCMC Sampling](https://mc-stan.org/docs/reference-manual/hmc-chapter.html).
+
+The full set of configuration options available for the `sample` method is
+reported at the beginning of the sampler output file as csv comments.
+When the example model `bernoulli.stan` is run via the command line
+with all default arguments,
+the resulting Stan csv file header comments show the complete set
+of default configuration options:
+```
+# model = bernoulli_model
+# method = sample (Default)
+#   sample
+#     num_samples = 1000 (Default)
+#     num_warmup = 1000 (Default)
+#     save_warmup = 0 (Default)
+#     thin = 1 (Default)
+#     adapt
+#       engaged = 1 (Default)
+#       gamma = 0.05 (Default)
+#       delta = 0.8 (Default)
+#       kappa = 0.75 (Default)
+#       t0 = 10 (Default)
+#       init_buffer = 75 (Default)
+#       term_buffer = 50 (Default)
+#       window = 25 (Default)
+#     algorithm = hmc (Default)
+#       hmc
+#         engine = nuts (Default)
+#           nuts
+#             max_depth = 10 (Default)
+#         metric = diag_e (Default)
+#         metric_file =  (Default)
+#         stepsize = 1 (Default)
+#         stepsize_jitter = 0 (Default)
+```
+
+## Iterations
+
+At every sampler iteration, the sampler returns a set of estimates
+for all parameters and quantities of interest in the model.
+During warmup, the NUTS algorithm adjusts the HMC algorithm parameters
+`metric` and `stepsize` in order to efficiently sample from
+_typical set_, the neighborhood substantial posterior probability mass
+through which the Markov chain will travel in equilibrium.
+After warmup, the fixed metric and stepsize are used to produce
+a set of draws.
+
+The following keyword-value arguments control the total number of iterations and
+the number of draws written to the output file:
+
+- `num_samples`
+- `num_warmup`
+- `save_warmup`
+- `thin`
+
+## Adaptation
+
+The `adapt` keyword is used to specify non-default options for
+the sampler adaptation schedule and settings.
+
+Adaptation can be turned off by setting sub-argument `engaged` to value $0$.
+If `engaged=0`, no adaptation will be done, and all other adaptation sub-arguments will be ignored.
+Since the default value is `engaged=1`, this keyword-value pair can be omitted from the command.
+
+There are two sets of adaptation sub-arguments: step-size optimization parameters and the warmup schedule.
+These are described in detail in the Reference Manual section
+[Automatic Parameter Tuning](https://mc-stan.org/docs/2_23/reference-manual/hmc-algorithm-parameters.html).
+
+### Step-size optimization configuration
+
+The following keyword-value arguments control the settings used to optimize the step size:
+
+- `delta`  - The target Metropolis acceptance rate. The default value is $0.8$.
+Its value must be strictly between $0$ and $1$.  Increasing the default value
+forces the algorithm to use smaller step sizes. This can
+improve sampling efficiency (effective sample size per iteration) at
+the cost of increased iteration times. Raising the value of `delta`
+will also allow some models that would otherwise get stuck to overcome
+their blockages.  
+
+- `gamma` - Adaptation regularization scale.
+Must be a positive real number, default value is $0.05$. 
+This is a parameter of the Nesterov dual-averaging algorithm.
+We recommend always using the default value.
+
+- `gamma` - Adaptation relaxation exponent.
+Must be a positive real number, default value is $0.75$. 
+This is a parameter of the Nesterov dual-averaging algorithm.
+We recommend always using the default value.
+
+- `t_0` - Adaptation iteration offset.
+Must be a positive real number, default value is $10$. 
+This is a parameter of the Nesterov dual-averaging algorithm.
+We recommend always using the default value.
+
+
+### Warmup schedule configuration
+
+When adaptation is engaged, the warmup schedule is specified by sub-arguments,
+all of which take positive integers as values:
+
+- `init_buffer` - The number of iterations spent tuning the step size at the outset of adaptation.
+- `window` - The initial number of iterations devoted to tune the metric, will be doubled successively.
+- `term_buffer` - The number of iterations used to re-tune the step-size once the metric has been tuned.
+
+The specified values may be modified slightly in order to ensure alignment
+between the warmup schedule and total number of warmup iterations.
+
+The following figure is taken from the Stan Reference Manual,
+where label "I" correspond to `init_buffer`, the initial "II" correponds to `window`,
+and the final "III" corresponds to `term_buffer`:
+
+**Warmup Epochs Figure.** <a id="adaptation.figure"></a>
+*Adaptation during warmup occurs in three stages: an initial fast
+adaptation interval (I), a series of expanding slow adaptation
+intervals (II), and a final fast adaptation interval (III). For HMC,
+both the fast and slow intervals are used for adapting the step size,
+while the slow intervals are used for learning the (co)variance
+necessitated by the metric. Iteration numbering starts at 1 on the
+left side of the figure and increases to the right.*
+
+![](img/warmup-epochs.png)
+
+
+## Algorithm
+
+The `algorithm` keyword-value pair specifies the algorithm used to generate the sample.
+There are two possible values:  `hmc`, which generates from an HMC-driven Markov chain;
+and `fixed_param` which generates a new sample without changing the state of the Markov chain.
+The default value is `algorithm=hmc`.
+
+If a model doesn't specify any parameters, as is the case for models which generate psuedo-data
+via the transformed data and generated quantities blocks, then argument `algorithm=fixed_param`
+is mandatory.
+
+
+### HMC sampler configurations
+
+#### NUTS-HMC sampler
+
+#### Staic HMC sampler
+
+
+
+## Examples
+
+Common sampler configurations.
+
+
+
+
+
+
+
+
+
 
 
 

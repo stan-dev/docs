@@ -270,7 +270,7 @@ By default, all parameters are initialized to random draws from a uniform distri
 To initialize some or all parameters to good starting points on the constrained scale from
 a data file in JSON or Rdump format, use the keyword-value argument `init=<filepath>`:
 ```
-./my_model sample init=my_param.inits.json data file=my_model.data.json \
+./my_model sample init=my_param_inits.json data file=my_model.data.json \
             output file=output_${i}.csv
 ```
 
@@ -306,6 +306,7 @@ closer to $1$.
 To skip adaptation altogether, use the keyword-value argument `engaged=0`.
 Disabling adaptation disables both metric and stepsize adaptation, so a stepsize should be
 provided along with a metric to enable efficient sampling.
+
 Even with adaptation disabled, it is still advisable to run warmup iterations in order to reach the typical set.
 To skip warmup altogether requires specifying both `num_warmup=0` and `adapt engaged=0`.
 ```
@@ -326,10 +327,11 @@ This requires specifying a series of keyword-argument pairs:
             output file=output_${i}.csv
 ```
 
-### Capturing Hamiltonian diagnostics
+### Capturing Hamiltonian diagnostics and gradients
 
-To get the gradients of all model parameters for each draw,
-specify the `diagnostic_file=<filepath>` as part of the `output` arguments:
+The `output` keyword sub-argument `diagnostic_file=<filepath>`
+write the sampler parameters and gradients of all model parameters
+for each draw to a csv file:
 ```
 ./my_model sample data file=my_model.data.json \
             output file=output_${i}.csv \
@@ -338,7 +340,7 @@ specify the `diagnostic_file=<filepath>` as part of the `output` arguments:
 
 ### Suppressing progress updates to the console
 
-The keyword value pair `refresh=<int>` specifies the 
+The `output` keyword sub-argument `refresh=<int>` specifies the 
 number of iterations between progress messages written to the terminal window.
 The default value is 100 iterations.
 The progress updates look like:
@@ -351,13 +353,66 @@ Iteration:  300 / 2000 [ 15%]  (Warmup)
 
 For simple models which fit quickly, such updates can be annoying;
 to suppress them altogether, set `refresh=0`.
-This turns off the `Iteration: ` messages; the configuration
+This only turns off the `Iteration: ` messages; the configuration
 and timing information are still written to the terminal.
+
+```
+./my_model sample data file=my_model.data.json \
+            output file=output_${i}.csv \
+            refresh=0
+```
 
 For complicated models which take a long time to fit, setting
 the refresh rate to a low number, e.g. 10 or even 1, provides a
 way to more closely monitor the sampler.
 
+
+### Everything Example
+
+The CmdStan argument parser requires keeping sampler config sub-arguments together;
+interleaving sampler config with the inputs, outputs, inits, RNG seed and chain id config
+results in an error message such as the following:
+```
+./bernoulli sample data file=bernoulli.data.json adapt delta=0.95
+adapt is either mistyped or misplaced.
+Perhaps you meant one of the following valid configurations?
+  method=sample sample adapt
+  method=variational variational adapt
+Failed to parse arguments, terminating Stan
+```
+
+The following example provides a template for a call to the sampler
+which specifies input data, initial parameters, initial step-size and metric,
+adaptation, output, and RNG initialization.
+```
+./my_model sample num_warmup=2000 \
+           init=my_param_inits.json \
+           adapt delta=0.95 init_buffer=100 \
+           window=50 term_buffer=100 \
+           algorithm=hmc engine=nuts max_depth=15 \
+           metric=dense_e metric_file=my_metric.json \
+           stepsize=0.6555 \
+           data file=my_model.data.json \
+           output file=output_${i}.csv refresh=10 \
+           random seed=12345 id=${i}
+```
+The keywords `sample`, `data`, `output`, and `random` are the top-level argument groups.
+Within the `sample` config arguments, the keyword `adapt` groups the adaptation algorithm parameters and
+the keyword-value `algorithm=hmc` groups the NUTS-HMC parameters.
+
+The top-level groups can be freely ordered with respect to one another.
+The following is also a valid command:
+```
+./my_model random seed=12345 id=${i} \
+           data file=my_model.data.json \
+           output file=output_${i}.csv refresh=10 \
+           sample num_warmup=2000 \
+           init=my_param_inits.json \
+           algorithm=hmc engine=nuts max_depth=15 \
+           metric=dense_e metric_file=my_metric.json \
+           stepsize=0.6555 \
+           adapt delta=0.95 init_buffer=100 \
+           window=50 term_buffer=100
 ```
 
 

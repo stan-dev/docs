@@ -113,7 +113,7 @@ The specified values may be modified slightly in order to ensure alignment
 between the warmup schedule and total number of warmup iterations.
 
 The following figure is taken from the Stan Reference Manual,
-where label "I" correspond to `init_buffer`, the initial "II" correponds to `window`,
+where label "I" correspond to `init_buffer`, the initial "II" corresponds to `window`,
 and the final "III" corresponds to `term_buffer`:
 
 **Warmup Epochs Figure.** <a id="adaptation.figure"></a>
@@ -135,7 +135,7 @@ There are two possible values:  `hmc`, which generates from an HMC-driven Markov
 and `fixed_param` which generates a new sample without changing the state of the Markov chain.
 The default argument is `algorithm=hmc`.
 
-If a model doesn't specify any parameters, as is the case for models which generate psuedo-data
+If a model doesn't specify any parameters, as is the case for models which generate pseudo-data
 via the transformed data and generated quantities blocks, then argument `algorithm=fixed_param`
 is mandatory.
 
@@ -179,47 +179,102 @@ the user must specify the integration time via keyword `int_time`
 which takes as a value a positive number.
 The default value is $2\pi$.
 
+## Sampler Diagnostic File
+
+The `output` keyword sub-argument `diagnostic_file=<filepath>`
+specifies the location of the auxiliary output file which contains sampler information for each draw,
+including the gradients on the unconstrained scale and log probabilities.
+By default, no auxiliary output file is produced.
+
 ## Examples
+
+The Quickstart Guide [MCMC Sampling chapter](#mcmc-intro) section on multiple chains
+showed how to run multiple chains given a model and data, using the minimal required
+command line options: the method, the name of the data file, and a chain-specific name for the output file.
+
+To run 4 chains in parallel on Mac OS and Linux, the syntax in both bash and zsh is the same:
+```
+> for i in {1..4}
+    do
+      ./bernoulli sample data file=my_model.data.json \
+                  output file=output_${i}.csv &
+    done
+```
+The backslash (`\`) indicates a line continuation in Unix.
+The expression `${i}` substitutes in the value of loop index variable `i`.
+The ampersand (`&`) pushes each process into the background which allows the loop to continue
+without waiting for the current chain to finish. 
+
+On Windows the corresponding loop is:
+```
+>for /l %i in (1, 1, 4) do start /b bernoulli.exe sample ^
+                                    data file=my_model.data.json my_data ^
+                                    output file=output_%i.csv
+```
+The caret (`^`) indicates a line continuation in DOS.
+The expression `%i` is the loop index.
+
+In the following examples, we focus on just the nested sampler command for Unix.
 
 ### Running multiple chains with a specified RNG seed
 
 For reproducibility, we specify the same RNG seed across all chains and use
 the chain id argument to specify the RNG offset.
 
-The Quickstart Guide [MCMC Sampling chapter](#mcmc-intro) section on multiple chains
-showed how to run multiple chains given a model and data, using the minimal required
-command line options: the method, the name of the data file, and a chain-specific name for the output file.
-
-```
-> for i in {1..4}
-    do
-      ./bernoulli sample data file=bernoulli.data.json \
-                  output file=output_${i}.csv
-    done
-```
-
 The RNG seed is specified by `random seed=<int>` and the offset is specified
 by `id=<loop index>`, so the call to the sampler is:
 ```
-./bernoulli sample data file=bernoulli.data.json \
+./my_model sample data file=my_model.data.json \
             output file=output_${i}.csv \
             random seed=12345 id=${i}
 ```
-On DOS, the call to the sampler is:
-```
-bernoulli.exe sample data file=bernoulli.data.json ^
-              output file=output_%i.csv ^
-              random seed=12345 id=%i
-```
-
 
 ### Changing the default warmup and sampling iterations
 
-### Changing adaptation during warmup
+The number of warmup and sampling iterations are both set to default $1000$.
+For well-specified models and data, the sampler may converge faster and this many
+warmup iterations may be overkill.  Conversely, complex models which have difficult
+posterior geometries may require more warmup iterations in order to arrive at good
+values for the step size and metric.
+
+The number of sampling iterations to runs depends on the effective sample size (EFF)
+reported for each parameter and the desired precision of your estimates.
+An EFF of at least 100 is required to make a viable estimate.  The precision of your
+estimate is $\sqrt{N}; therefore every additional decimal place of accuracy increases
+this by a factor of 10.
+
+The warmup and sampling iteration keyword-value arguments must follow the `sample` keyword.
+The call to the sampler which overrides the default warmup and sampling iterations is:
+
+```
+./my_model sample num_warmup=500 num_sampling=500 \
+            data file=my_model.data.json \
+            output file=output_${i}.csv
+```
+
+### Saving warmup draws
+
+By default, warmup draws are not saved to the output file.
+To override this, use the keyword-value argument `save_warmup=1`,
+which must also be grouped with the other `sample` keyword sub-arguments.
+
+```
+./my_model sample num_warmup=500 num_sampling=500 save_warmup=1 \
+            data file=my_model.data.json \
+            output file=output_${i}.csv
+```
 
 ### Initializing parameters
 
-### Specifing the metric and stepsize
+By default, all parameters are initialized to random draws from a uniform distribution over the range $[-2, 2]$.
+To initialize some or all parameters to good starting points on the constrained scale from
+a data file in JSON or Rdump format, use the keyword-value argument `init=<filepath>`:
+```
+./my_model sample init=my_param.inits.json data file=my_model.data.json \
+            output file=output_${i}.csv
+```
+
+### Specifying the metric and stepsize
 
 - as starting point for warmup
 
@@ -228,10 +283,81 @@ bernoulli.exe sample data file=bernoulli.data.json ^
 - note on initialization
 
 
-### Increasing the treedepth
+### Changing the NUTS-HMC adaptation parameters
+
+The Stan User's Guide section on
+[model conditioning and curvature](https://mc-stan.org/docs/stan-users-guide/model-conditioning-and-curvature.html)
+provides a discussion of adaptation and stepsize issues.
+The Stan Reference Manual section on
+[HMC algorithm parameters](https://mc-stan.org/docs/reference-manual/hmc-algorithm-parameters.html)
+explains the NUTS-HMC adaptation schedule and the tuning parameters for setting the step size.
+The keyword-value arguments for these settings are grouped together under the `adapt` keyword
+which itself is a sub-argument of the `sample` keyword.
+
+Models with difficult posterior geometries may required increasing the `delta` argument
+closer to $1$.
+
+```
+./my_model sample adapt delta=0.95 \
+            data file=my_model.data.json \
+            output file=output_${i}.csv
+```
+
+To skip adaptation altogether, use the keyword-value argument `engaged=0`.
+Disabling adaptation disables both metric and stepsize adaptation, so a stepsize should be
+provided along with a metric to enable efficient sampling.
+Even with adaptation disabled, it is still advisable to run warmup iterations in order to reach the typical set.
+To skip warmup altogether requires specifying both `num_warmup=0` and `adapt engaged=0`.
+```
+../my_model sample num_warmup=0 adapt engaged=0 \
+            data file=my_model.data.json \
+            output file=output_${i}.csv
+```
+
+### Increasing the tree-depth
+
+Models with difficult posterior geometries may required increasing the `max_depth` argument from its default value $10$.
+This requires specifying a series of keyword-argument pairs:
+
+```
+./my_model sample adapt delta=0.95 \
+            algorithm=hmc engine=nuts max_depth=15 \
+            data file=my_model.data.json \
+            output file=output_${i}.csv
+```
 
 ### Capturing Hamiltonian diagnostics
 
+To get the gradients of all model parameters for each draw,
+specify the `diagnostic_file=<filepath>` as part of the `output` arguments:
+```
+./my_model sample data file=my_model.data.json \
+            output file=output_${i}.csv \
+            diagnostic_file=diagnostics_${i}.csv
+```
+
 ### Suppressing progress updates to the console
 
-### Putting it all together
+The keyword value pair `refresh=<int>` specifies the 
+number of iterations between progress messages written to the terminal window.
+The default value is 100 iterations.
+The progress updates look like:
+```
+Iteration:    1 / 2000 [  0%]  (Warmup)
+Iteration:  100 / 2000 [  5%]  (Warmup)
+Iteration:  200 / 2000 [ 10%]  (Warmup)
+Iteration:  300 / 2000 [ 15%]  (Warmup)
+```
+
+For simple models which fit quickly, such updates can be annoying;
+to suppress them altogether, set `refresh=0`.
+This turns off the `Iteration: ` messages; the configuration
+and timing information are still written to the terminal.
+
+For complicated models which take a long time to fit, setting
+the refresh rate to a low number, e.g. 10 or even 1, provides a
+way to more closely monitor the sampler.
+
+```
+
+

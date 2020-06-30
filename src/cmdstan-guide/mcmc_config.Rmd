@@ -1,4 +1,4 @@
-# MCMC Sampling using Hamiltonian Monte Carlo
+# MCMC Sampling using Hamiltonian Monte Carlo {#mcmc-config}
 
 The `sample` method provides Bayesian inference over the model conditioned on data
 using Hamiltonian Monte Carlo (HMC) sampling.  By default, the inference engine used is
@@ -66,13 +66,13 @@ the sampler adaptation schedule and settings.
 
 Adaptation can be turned off by setting sub-argument `engaged` to value $0$.
 If `engaged=0`, no adaptation will be done, and all other adaptation sub-arguments will be ignored.
-Since the default value is `engaged=1`, this keyword-value pair can be omitted from the command.
+Since the default argument is `engaged=1`, this keyword-value pair can be omitted from the command.
 
-There are two sets of adaptation sub-arguments: step-size optimization parameters and the warmup schedule.
+There are two sets of adaptation sub-arguments: step size optimization parameters and the warmup schedule.
 These are described in detail in the Reference Manual section
 [Automatic Parameter Tuning](https://mc-stan.org/docs/2_23/reference-manual/hmc-algorithm-parameters.html).
 
-### Step-size optimization configuration
+### step size optimization configuration
 
 The following keyword-value arguments control the settings used to optimize the step size:
 
@@ -107,7 +107,7 @@ all of which take positive integers as values:
 
 - `init_buffer` - The number of iterations spent tuning the step size at the outset of adaptation.
 - `window` - The initial number of iterations devoted to tune the metric, will be doubled successively.
-- `term_buffer` - The number of iterations used to re-tune the step-size once the metric has been tuned.
+- `term_buffer` - The number of iterations used to re-tune the step size once the metric has been tuned.
 
 The specified values may be modified slightly in order to ensure alignment
 between the warmup schedule and total number of warmup iterations.
@@ -133,35 +133,105 @@ left side of the figure and increases to the right.*
 The `algorithm` keyword-value pair specifies the algorithm used to generate the sample.
 There are two possible values:  `hmc`, which generates from an HMC-driven Markov chain;
 and `fixed_param` which generates a new sample without changing the state of the Markov chain.
-The default value is `algorithm=hmc`.
+The default argument is `algorithm=hmc`.
 
 If a model doesn't specify any parameters, as is the case for models which generate psuedo-data
 via the transformed data and generated quantities blocks, then argument `algorithm=fixed_param`
 is mandatory.
 
+### HMC sampler engines
 
-### HMC sampler configurations
+All HMC algorithms have three parameters:
 
-#### NUTS-HMC sampler
+- step size
+- metric
+- integration time - the number of steps taken along the Hamiltonian trajectory
 
-#### Staic HMC sampler
+See the Stan Reference Manual section on
+[HMC algorithm parameters](https://mc-stan.org/docs/reference-manual/hmc-algorithm-parameters.html)
+for further details.
 
+CmdStan provides two HMC algorithm implementations, which are specified by keyword `engine` with
+possible values:
 
+- `nuts` - the No-U-Turn Sampler which dynamically determines the optimal integration time.
+- `static` - an HMC sampler which uses a user-specified integration time.
+
+The default argument is `engine=nuts`.
+It takes one sub-argument, keyword `max_depth which takes a positive integer value.
+The default argument is `max_depth=10`.
+
+The NUTS sampler generates a proposal by starting at an initial position determined
+by the parameters drawn in the last iteration. It then evolves the initial system both
+forwards and backwards in time to form a balanced binary tree. The algorithm is iterative;
+at each iteration the tree depth is increased by one, doubling the number of leapfrog steps
+thus effectively doubling the computation time. 
+The algorithm terminates in one of two ways: either
+the NUTS criterion (i.e., a U-turn in Euclidean space on a subtree)
+is satisfied for a new subtree or the completed tree;
+or the depth of the completed tree hits the maximum depth allowed.
+
+In the case where a model has a difficult posterior from which to sample,
+`max_depth` should be increased to ensure that that the NUTS tree can grow as large as necessary.
+
+When the argument `engine=static` is specified, 
+the user must specify the integration time via keyword `int_time`
+which takes as a value a positive number.
+The default value is $2\pi$.
 
 ## Examples
 
-Common sampler configurations.
+### Running multiple chains with a specified RNG seed
+
+For reproducibility, we specify the same RNG seed across all chains and use
+the chain id argument to specify the RNG offset.
+
+The Quickstart Guide [MCMC Sampling chapter](#mcmc-intro) section on multiple chains
+showed how to run multiple chains given a model and data, using the minimal required
+command line options: the method, the name of the data file, and a chain-specific name for the output file.
+
+```
+> for i in {1..4}
+    do
+      ./bernoulli sample data file=bernoulli.data.json \
+                  output file=output_${i}.csv
+    done
+```
+
+The RNG seed is specified by `random seed=<int>` and the offset is specified
+by `id=<loop index>`, so the call to the sampler is:
+```
+./bernoulli sample data file=bernoulli.data.json \
+            output file=output_${i}.csv \
+            random seed=12345 id=${i}
+```
+On DOS, the call to the sampler is:
+```
+bernoulli.exe sample data file=bernoulli.data.json ^
+              output file=output_%i.csv ^
+              random seed=12345 id=%i
+```
 
 
+### Changing the default warmup and sampling iterations
+
+### Changing adaptation during warmup
+
+### Initializing parameters
+
+### Specifing the metric and stepsize
+
+- as starting point for warmup
+
+- instead of adaptation during warmup
+
+- note on initialization
 
 
+### Increasing the treedepth
 
+### Capturing Hamiltonian diagnostics
 
+### Suppressing progress updates to the console
 
-
-
-
-
-
-
-
+### Putting it all together

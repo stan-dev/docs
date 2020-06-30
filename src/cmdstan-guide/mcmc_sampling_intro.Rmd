@@ -1,4 +1,4 @@
-# MCMC Sampling
+# MCMC Sampling {#mcmc-intro}
 
 ## Running the Sampler
 
@@ -99,34 +99,48 @@ to other randomly initialized chains.
 For robust diagnostics, we recommend running 4 chains.
 
 To run multiple chains given a model and data, either sequentially or in parallel,
-we use the Bash or DOS shell `for` loop to set up index variables needed to identify
+we use the Unix or DOS shell `for` loop to set up index variables needed to identify
 each chain and its outputs.
+
+On MacOS or Linux, the [for-loop syntax](https://linuxcourse.rutgers.edu/documents/Bash-Beginners-Guide/sect_09_01.html)
+for both the bash and zsh interpreters is:
+```
+for NAME [in LIST]; do COMMANDS; done
+```
+The list can be a simple sequence of numbers, or you can use the shell expansion synatx `{1..N}`
+which expands to the sequence from $1$ to $N$, e.g. `{1..4}` expands to `1 2 3 4`.
+Note that the expression `{1..N}` cannot contain spaces.
 
 To run 4 chains for the example bernoulli model on MacOS or Linux:
 ```
 > for i in {1..4}
     do
-      ./bernoulli sample data file=bernoulli.data.json output file=output_${i}.csv
+      ./bernoulli sample data file=bernoulli.data.json \
+      output file=output_${i}.csv
     done
 ```
-The Bash interpreter is sensitive to spaces; the string `{1..4}` expands to `1, 2, 3, 4`,
-whereas the string `{ 1..4 }` expands to `{, 1..4, }`.
-Alternatively, the expression `i in {1..4}` be written `((i=1; i<=4; i++))`.
-
+The backslash (`\`) indicates a line continuation in DOS.
 To run chains in parallel, put an ampersand (`&`) at the end of the nested sampler command:
 ```
 > for i in {1..4}
     do
-      ./bernoulli sample data file=bernoulli.data.json output file=output_${i}.csv &
+      ./bernoulli sample data file=bernoulli.data.json \
+      output file=output_${i}.csv &
     done
 ```
 This pushes each process into the background, so that the loop can continue
 without waiting for the current chain to finish. 
 
-On Windows, the following is functionally equivalent to the Bash snippet above
+On Windows, the DOS [for-loop syntax](https://www.windows-commandline.com/windows-for-loop-examples/) is one of:
 ```
->for /l %x in (1, 1, 4) do start /b bernoulli.exe sample ^
-   data file=bernoulli.data.json my_data ^ output file=output_%x.csv
+for %i in (SET) do COMMAND COMMAND-ARGUMENTS
+for /l %i in (START, STEP, END) do COMMAND COMMAND-ARGUMENTS
+```
+To run 4 chains in parallel on Windows:
+```
+>for /l %i in (1, 1, 4) do start /b bernoulli.exe sample ^
+                                    data file=bernoulli.data.json my_data ^
+                                    output file=output_%i.csv
 ```
 The caret (`^`) indicates a line continuation in DOS.
 

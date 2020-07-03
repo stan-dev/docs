@@ -18,7 +18,7 @@ import subprocess
 import sys
 import contextlib
 
-all_docs = ("functions-reference", "reference-manual", "stan-users-guide")
+all_docs = ("functions-reference", "reference-manual", "stan-users-guide", "cmdstan-guide")
 all_formats = ("html", "pdf")
 
 @contextlib.contextmanager

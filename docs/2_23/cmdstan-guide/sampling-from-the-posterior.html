@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>1.4 Sampling from the Posterior | CmdStan User’s Guide</title>
+  <meta name="description" content="CmdStan user’s guide." />
+  <meta name="generator" content="bookdown 0.19 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="1.4 Sampling from the Posterior | CmdStan User’s Guide" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:image" content="img/logo-tm.pdf" />
+  <meta property="og:description" content="CmdStan user’s guide." />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="1.4 Sampling from the Posterior | CmdStan User’s Guide" />
+  
+  <meta name="twitter:description" content="CmdStan user’s guide." />
+  <meta name="twitter:image" content="img/logo-tm.pdf" />
+
+<meta name="author" content="Stan Development Team" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="compiling-the-program-bernoulli-stan.html"/>
+<link rel="next" href="optimization.html"/>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="stan-manual.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li style="font-size:110%; font-weight:400; font-family: Verdana, Helvetica, sans; line-height:1.4; margin: 0.5em 0 0 1em"><a href="https://mc-stan.org/docs/cmdstan-guide/index.html" style="color:#4183C4">CmdStan User's Guide</a></li>
+
+<li class="divider"></li>
+<li><a href="index.html#introduction"><i style='font-size: 110%; color:#990017;'>Introduction</i></a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Stan Home Page</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#licensing"><i class="fa fa-check"></i>Licensing</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#stan-documentation-users-guide-and-reference-manuals"><i class="fa fa-check"></i>Stan Documentation: User’s Guide and Reference Manuals</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#benefits-of-cmdstan"><i class="fa fa-check"></i>Benefits of CmdStan</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="getting-started.html"><a href="getting-started.html"><i class="fa fa-check"></i><b>1</b> Getting Started</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html"><i class="fa fa-check"></i><b>1.1</b> CmdStan Installation</a>
+<ul>
+<li class="chapter" data-level="1.1.1" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html#gnu-make-utility"><i class="fa fa-check"></i><b>1.1.1</b> GNU-Make Utility</a></li>
+<li class="chapter" data-level="1.1.2" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html#building-cmdstan"><i class="fa fa-check"></i><b>1.1.2</b> Building CmdStan</a></li>
+</ul></li>
+<li class="chapter" data-level="1.2" data-path="example-model-and-data.html"><a href="example-model-and-data.html"><i class="fa fa-check"></i><b>1.2</b> Example Model and Data</a></li>
+<li class="chapter" data-level="1.3" data-path="compiling-the-program-bernoulli-stan.html"><a href="compiling-the-program-bernoulli-stan.html"><i class="fa fa-check"></i><b>1.3</b> Compiling the Program <code>bernoulli.stan</code></a></li>
+<li class="chapter" data-level="1.4" data-path="sampling-from-the-posterior.html"><a href="sampling-from-the-posterior.html"><i class="fa fa-check"></i><b>1.4</b> Sampling from the Posterior</a>
+<ul>
+<li class="chapter" data-level="1.4.1" data-path="sampling-from-the-posterior.html"><a href="sampling-from-the-posterior.html#running-the-nuts-hmc-sampler"><i class="fa fa-check"></i><b>1.4.1</b> Running the NUTS-HMC Sampler</a></li>
+<li class="chapter" data-level="1.4.2" data-path="sampling-from-the-posterior.html"><a href="sampling-from-the-posterior.html#stan-csv-output-file"><i class="fa fa-check"></i><b>1.4.2</b> Stan CSV Output File</a></li>
+<li class="chapter" data-level="1.4.3" data-path="sampling-from-the-posterior.html"><a href="sampling-from-the-posterior.html#summarizing-sampler-outputs-with-stansummary"><i class="fa fa-check"></i><b>1.4.3</b> Summarizing Sampler Output(s) with <code>stansummary</code></a></li>
+</ul></li>
+<li class="chapter" data-level="1.5" data-path="optimization.html"><a href="optimization.html"><i class="fa fa-check"></i><b>1.5</b> Optimization</a></li>
+</ul></li>
+<li><a href="cmdstan-tools.html#cmdstan-tools"><i style='font-size: 110%; color:#990017;'>CmdStan Tools</i></a></li>
+<li class="chapter" data-level="2" data-path="overview.html"><a href="overview.html"><i class="fa fa-check"></i><b>2</b> Overview</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="gnu-make-utility-1.html"><a href="gnu-make-utility-1.html"><i class="fa fa-check"></i><b>2.1</b> GNU-Make utility</a></li>
+<li class="chapter" data-level="2.2" data-path="build.html"><a href="build.html"><i class="fa fa-check"></i><b>2.2</b> Building the CmdStan Tools</a></li>
+</ul></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">CmdStan User’s Guide</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="sampling-from-the-posterior" class="section level2">
+<h2><span class="header-section-number">1.4</span> Sampling from the Posterior</h2>
+<div id="running-the-nuts-hmc-sampler" class="section level3">
+<h3><span class="header-section-number">1.4.1</span> Running the NUTS-HMC Sampler</h3>
+<p>The generated executable is a program which conditions the model on
+the input data and generates a sample from the posterior.
+This executable can be run from any directory.
+Here, we run it in the directory which contains the Stan program and input data,
+<code>&lt;cmdstan-home&gt;/examples/bernoulli</code>:</p>
+<pre><code>&gt; cd examples/bernoulli</code></pre>
+<p>To execute sampling of the model under Linux or Mac, use:</p>
+<pre><code>&gt; ./bernoulli sample data file=bernoulli.data.JSON</code></pre>
+<p>In Windows, the <code>./</code> prefix is not needed:</p>
+<pre><code>&gt; bernoulli.exe sample data file=bernoulli.data.JSON</code></pre>
+<p>The output is the same across all supported platforms. First, the
+configuration of the program is echoed to the standard output:</p>
+<pre><code>method = sample (Default)
+  sample
+    num_samples = 1000 (Default)
+    num_warmup = 1000 (Default)
+    save_warmup = 0 (Default)
+    thin = 1 (Default)
+    adapt
+      engaged = 1 (Default)
+      gamma = 0.050000000000000003 (Default)
+      delta = 0.80000000000000004 (Default)
+      kappa = 0.75 (Default)
+      t0 = 10 (Default)
+      init_buffer = 75 (Default)
+      term_buffer = 50 (Default)
+      window = 25 (Default)
+    algorithm = hmc (Default)
+      hmc
+        engine = nuts (Default)
+          nuts
+            max_depth = 10 (Default)
+        metric = diag_e (Default)
+        metric_file =  (Default)
+        stepsize = 1 (Default)
+        stepsize_jitter = 0 (Default)
+id = 0 (Default)
+data
+  file = bernoulli.data.json
+init = 2 (Default)
+random
+  seed = 3252652196 (Default)
+output
+  file = output.csv (Default)
+  diagnostic_file =  (Default)
+  refresh = 100 (Default)</code></pre>
+<p>After the configuration has been displayed, a short timing message is
+given.</p>
+<pre><code>Gradient evaluation took 1.2e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
+Adjust your expectations accordingly!</code></pre>
+<p>Next, the sampler reports the iteration number, reporting the
+percentage complete.</p>
+<pre><code>Iteration:    1 / 2000 [  0%]  (Warmup)
+....
+Iteration: 2000 / 2000 [100%]  (Sampling)</code></pre>
+<p>Finally, the sampler reports timing information:</p>
+<pre><code> Elapsed Time: 0.007 seconds (Warm-up)
+               0.017 seconds (Sampling)
+               0.024 seconds (Total)</code></pre>
+</div>
+<div id="stan-csv-output-file" class="section level3">
+<h3><span class="header-section-number">1.4.2</span> Stan CSV Output File</h3>
+<p>Each execution of the model results in draws from a single Markov
+chain being written to a file in comma-separated value (CSV) format.
+The default name of the output file is <code>output.csv</code>.</p>
+<p>The first part of the output file records the version of the
+underlying Stan library and the configuration as comments (i.e., lines
+beginning with the pound sign (<code>#</code>)).</p>
+<pre><code># stan_version_major = 2
+# stan_version_minor = 23
+# stan_version_patch = 0
+# model = bernoulli_model
+# method = sample (Default)
+#   sample
+#     num_samples = 1000 (Default)
+#     num_warmup = 1000 (Default)
+...
+# output
+#   file = output.csv (Default)
+#   diagnostic_file =  (Default)
+#   refresh = 100 (Default)</code></pre>
+<p>This is followed by a CSV header indicating the names of the values
+sampled.</p>
+<pre><code>lp__,accept_stat__,stepsize__,treedepth__,n_leapfrog__,divergent__,energy__,theta</code></pre>
+<p>The first output columns report the HMC sampler information:</p>
+<ul>
+<li><code>lp__</code> - the unnormalized log probability of the model</li>
+<li><code>accept_stat__</code> - the Metropolis acceptance probability averaged over samples in the slice</li>
+<li><code>stepsize__</code> - integrator step size</li>
+<li><code>treedepth__</code> - tree depth (NUTS sampler)</li>
+<li><code>n_leapfrog__</code> - Number of leapfrog calculations (NUTS sampler)</li>
+<li><code>divergent__</code> - has value <code>1</code> if trajectory diverged, otherwise <code>0</code>. (NUTS sampler)</li>
+<li><code>energy__</code> - Hamiltonian value</li>
+<li><code>int_time__</code> - Total integration time (HMC sampler)</li>
+</ul>
+<p>The remaining columns correspond to model parameters. For the
+Bernoulli model, it is just the final column, <code>theta</code>.</p>
+<p>The header line is written to the output file before warmup begins.
+If option <code>save_warmup</code> is set to <code>1</code>, the following lines will contain
+the warmup draws.
+The total number of warmup draws saved is <code>num_warmup</code> divided by <code>thin</code>, rounded up (i.e., <code>ceiling</code>).</p>
+<p>Following the warmup draws (if any), are comments which record the results of adaptation:
+the stepsize, and inverse mass metric used during sampling:</p>
+<pre><code># Adaptation terminated
+# Step size = 0.884484
+# Diagonal elements of inverse mass matrix:
+# 0.535006</code></pre>
+<p>The default sampler is NUTS with an adapted step size and a diagonal
+inverse mass matrix. For this example, the step size is 0.884484, and
+the inverse mass contains the single entry 0.535006 corresponding to
+the parameter <code>theta</code>.</p>
+<p>Draws from the posterior distribution are printed out next, each line
+containing a single draw with the columns corresponding to the header.</p>
+<pre><code>-6.84097,0.974135,0.884484,1,3,0,6.89299,0.198853
+-6.91767,0.985167,0.884484,1,1,0,6.92236,0.182295
+-7.04879,0.976609,0.884484,1,1,0,7.05641,0.162299
+-6.88712,1,0.884484,1,1,0,7.02101,0.188229
+-7.22917,0.899446,0.884484,1,3,0,7.73663,0.383596
+...</code></pre>
+<p>The output ends with timing details:</p>
+<pre><code>#  Elapsed Time: 0.007 seconds (Warm-up)
+#                0.017 seconds (Sampling)
+#                0.024 seconds (Total)</code></pre>
+</div>
+<div id="summarizing-sampler-outputs-with-stansummary" class="section level3">
+<h3><span class="header-section-number">1.4.3</span> Summarizing Sampler Output(s) with <code>stansummary</code></h3>
+<p>The <code>stansummary</code> utility processes one or more output files from a run
+or set of runs of Stan’s HMC sampler given a model and data.
+For all columns in the Stan csv output file <code>stansummary</code> reports a set of statistics
+including mean, standard deviation, percentiles, effective number of samples, and <span class="math inline">\(\hat{R}\)</span> values.</p>
+<p>To run <code>stansummary</code> on the output file generated
+by the above run of the <code>bernoulli</code> model on Mac or Linux:</p>
+<pre><code>&lt;cmdstan-home&gt;/bin/stansummary output.csv</code></pre>
+<p>On Window, use backslashes to call the <code>stansummary.exe</code>.</p>
+<pre><code>&lt;cmdstan-home&gt;\bin\stansummary.exe output.csv</code></pre>
+<p>The stansummary output consists of one row of statistics per column
+in the Stan csv output file. Therefore, the first rows in the
+stansummary report statistics over the sampler state.
+The final row of output summarizes the estimates of the model variable <code>theta</code>:</p>
+<pre><code>Inference for Stan model: bernoulli_model
+1 chains: each with iter=(1000); warmup=(0); thin=(1); 1000 iterations saved.
+
+Warmup took (0.0070) seconds, 0.0070 seconds total
+Sampling took (0.017) seconds, 0.017 seconds total
+
+                Mean     MCSE   StdDev     5%   50%   95%    N_Eff  N_Eff/s    R_hat
+lp__            -7.3  4.4e-02  7.9e-01   -8.7  -7.0  -6.8  3.2e+02  1.9e+04  1.0e+00
+accept_stat__   0.92  3.7e-03  1.2e-01   0.65  0.98   1.0  9.9e+02  5.8e+04  1.0e+00
+stepsize__      0.88      nan  2.8e-15   0.88  0.88  0.88      nan      nan      nan
+treedepth__      1.4  1.6e-02  4.9e-01    1.0   1.0   2.0  9.7e+02  5.7e+04  1.0e+00
+n_leapfrog__     2.6  5.0e-02  1.5e+00    1.0   3.0   7.0  8.5e+02  5.0e+04  1.0e+00
+divergent__     0.00      nan  0.0e+00   0.00  0.00  0.00      nan      nan      nan
+energy__         7.8  6.2e-02  1.1e+00    6.8   7.4   9.8  3.2e+02  1.9e+04  1.0e+00
+theta           0.26  5.9e-03  1.2e-01  0.088  0.25  0.47  4.0e+02  2.3e+04  1.0e+00
+
+Samples were drawn using hmc with nuts.
+For each parameter, N_Eff is a crude measure of effective sample size,
+and R_hat is the potential scale reduction factor on split chains (at 
+convergence, R_hat=1).</code></pre>
+<p>In this example, we conditioned the model on a dataset consisting of the outcomes of
+10 bernoulli trials, where only 2 trials reported success. The 5%, 50%, and 95%
+percentile values for <code>theta</code> reflect the uncertainty in our estimate, due to the
+small amount of data, given the prior of <code>beta(1, 1)</code></p>
+<p>The command <code>bin/stansummary</code> can be called with more than one
+csv file by separating filenames with spaces. It will also take
+wildcards in specifying filenames. A typical usage of Stan from the
+command line would first create one or more Markov chains by calling
+the model executable, typically in parallel, writing the output CSV
+file for each into its own directory. After all of the processes are
+finished, the results would be analyzed using <code>stansummary</code> to
+assess convergence and inspect the means and quantiles of the fitted
+variables. Additionally, downstream inferences may be performed using
+the draws (e.g., to make decisions or predictions for unseen data).</p>
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="compiling-the-program-bernoulli-stan.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="optimization.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": null,
+"fontsettings": {
+"theme": "white",
+"family": "serif",
+"size": 2
+},
+"edit": null,
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": null,
+"toc": {
+"collapse": "section",
+"scroll_highlight": true
+},
+"search": true,
+"toolbar": {
+"position": "static"
+}
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

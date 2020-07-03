@@ -1,0 +1,77 @@
+# Compiling a Stan Program
+
+A Stan program must be in a file with extension `.stan`.
+The CmdStan makefile rules specify all necessary steps to
+translate files with suffix `.stan` to a CmdStan executable program.
+This is a two-stage process:
+
+- first the Stan program is translated to C++ by the `stanc` compiler
+- then the C++ compiler compiles all C++ sources and links them together
+with the CmdStan interface program and the Stan and math libraries.
+
+## Invoking the Make Utility
+
+To compile Stan programs, you must invoke the Make program from
+the `<cmdstan-home>` directory.
+The Stan program can be in a different directory, but the directory path
+names cannot contain spaces - this limitation is imposed by Make.
+```
+> cd <cmdstan_home>
+```
+
+In the call to Make, the target is name of the CmdStan executable
+corresponding to the Stan program file.
+On Mac and Linux, this is the name of the Stan program with the `.stan`
+omitted. On Windows, replace `.stan` with `.exe`, and make
+sure that the path is given with slashes and not backslashes.
+To build the Bernoulli example, on Mac and Linux:
+```
+> make examples/bernoulli/bernoulli
+```
+On Windows, the command is the same with the addition of `.exe`
+at the end of the target (_note the use of forward slashes_):
+```
+> make examples/bernoulli/bernoulli.exe
+```
+The generated C++ code (`bernoulli.hpp`), object file (`bernoulli.o`)
+and the compiled executable will be placed in the same directory as the Stan program.
+
+The compiled executable consists of the Stan model and the CmdStan command line interface
+which provides inference algorithms to do MCMC sampling, optimization, and variational inference.
+The following sections provide examples of doing inference using each method
+on the example model and data file.
+
+## Dependencies
+
+When executing a `make` target, all its dependencies are checked
+to see if they are up to date, and if they are not, they are rebuilt.
+If the you call `make` with target `bernoulli` twice, without any
+edits to `bernoulli.stan` or other changes to the system,
+the second call to make willis invoked a second time, it will see that it is up to date,
+and will not recompile the program:
+
+```
+> make examples/bernoulli/bernoulli
+make: `examples/bernoulli/bernoulli' is up to date.
+```
+If the file containing the Stan program is updated,
+the next call to `make` will rebuild the CmdStan executable.
+
+
+## Compiler Errors
+
+Stan probabalistic programming language is a programming language with a rich syntax,
+as such, it is often the case that a carefully written contains errors.
+
+## Troubleshooting
+
+The stanc compiler is also a program, and while it has been extensively tested,
+it may still contain errors such that the generated C++ code fails to compile.
+If this happens, report the error, together with the Stan program on GitHub.
+This is what a compiler error looks like.
+This is what other kinds of errors look like.
+
+
+
+
+

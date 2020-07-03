@@ -1,0 +1,47 @@
+# Generating Quantities of Interest from a Fitted Model
+
+The [generated quantities block](https://mc-stan.org/docs/reference-manual/program-block-generated-quantities.html)
+computes *quantities of interest* (QOIs) based on the data,
+transformed data, parameters, and transformed parameters.
+It can be used to:
+
+-  generate simulated data for model testing by forward sampling
+-  generate predictions for new data
+-  calculate posterior event probabilities, including multiple
+   comparisons, sign tests, etc.
+-  calculating posterior expectations
+-  transform parameters for reporting
+-  apply full Bayesian decision theory
+-  calculate log likelihoods, deviances, etc. for model comparison
+
+The `generate_quantities` method allows you to generate additional quantities
+of interest from a fitted model without re-running the sampler.
+Instead, you write a modified version of the original Stan program
+and add a generated quantities block or modify the existing one
+which specifies how to compute the new quantities of interest.
+Running the `generate_quantities` method on the new program
+together with sampler outputs from the fitted model
+runs the generated quantities block of the new program using
+the estimated parameter values from the existing sample.
+
+To illustrate how this works, we add poterior predictive checks to
+the example model `bernoulli.stan`.
+We create a new model, `bernoulli_yrep.stan` which contains
+the following generated quantities block:
+```
+generated quantities {
+  int y_sim[N];
+  real<lower=0,upper=1> theta_rep;
+  for (n in 1:N)
+    y_sim[n] = bernoulli_rng(theta);
+  theta_rep = sum(y) / N;
+}
+```
+
+We compile this model, and then run it with the fit from a previous run of
+the original model and the same input data file:
+
+```
+> ./bernoulli_yrep generate_quantities ....
+```
+

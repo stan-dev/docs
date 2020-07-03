@@ -1,0 +1,266 @@
+# CmdStan Installation
+
+To install CmdStan you need:
+
+- A modern C++11 compiler.<br>
+C++ compiler versions used for testing and development on Mac, Linux, and Windows
+are documented on the Stan GitHub wiki: https://github.com/stan-dev/stan/wiki/Coding-Style-and-Idioms#supported-cpp-versions-and-compilers.
+
+- The [GNU-Make](https://www.gnu.org/software/make/manual/make.html)
+utility program for Mac and Linux systems,
+or the Windows equivalent `mingw32-make`
+which is installed as part of RTools: https://cran.rstudio.com/bin/windows/Rtools/.
+
+- The CmdStan C++ source code and libraries.<br>
+The most recent CmdStan release is available as a single compressed tarfile
+containing all of the CmdStan tools and the Stan and math libraries from GitHub:
+https://github.com/stan-dev/cmdstan/releases/latest
+or you can [clone the GitHub repo](#git-clone.section).
+
+The CmdStan release unpacks into a directory called `cmdstan-<version>` where the
+version string consists of the major.minor.patch version numbers, e.g. `cmdstan-2.23.0`.
+Cloning CmdStan from GitHub creates a directory simply called `cmdstan`.
+Throughout this manual, we refer to this top-level CmdStan source directory as **`<cmdstan-home>`**.
+
+## GNU-Make Utility
+
+CmdStan relies on the GNU-make utility to build both the
+Stan model executables and the CmdStan tools.
+
+GNU-Make builds executable programs and libraries from source code by reading files
+called Makefiles which specify how to derive the target program.
+A Makefile consists of a set of recursive rules where each rule
+specifies a target, its dependencies, 
+and the specific operations required to build the target.
+Specifying dependencies for a target provides a way to control
+the build process so that targets which depend on other files will
+be updated as needed _only_ when there are changes to those other files.
+Thus Make provides an efficient way to manage complex software.
+
+The CmdStan Makefile is in the `<cmdstan-home>` directory
+and is named `makefile`. This is one of the default
+[GNU Makefile names](https://www.gnu.org/software/make/manual/html_node/Makefile-Names.html),
+which allows you to omit the `-f makefile` argument to the Make command.
+Because the CmdStan Makefile includes several other Makefiles,
+**Make only works properly when invoked from the `<cmdstan-home>` directory**;
+attempts to use this Makefile from another directory by specifying the
+full path to the file `makefile` won't work.
+For example, trying to call Make from another directory by specifying
+the full path the the makefile results in the following set of error messages:
+
+```
+make -f ~/github/stan-dev/cmdstan/makefile
+/Users/mitzi/github/stan-dev/cmdstan/makefile:58: make/stanc: No such file or directory
+/Users/mitzi/github/stan-dev/cmdstan/makefile:59: make/program: No such file or directory
+/Users/mitzi/github/stan-dev/cmdstan/makefile:60: make/tests: No such file or directory
+/Users/mitzi/github/stan-dev/cmdstan/makefile:61: make/command: No such file or directory
+make: *** No rule to make target `make/command'.  Stop.
+```
+
+Makefile rules can be written as general pattern rules based on file suffixes.
+The Stan makefile rules specify how to process Stan program files with
+suffix `.stan` into executable files.
+For example, to compile the Stan program `my_program.stan` in directory `../my_dir/`,
+the make target is `../my_dir/my_program` or ` ../my_dir/my_program.exe` (on Windows).
+
+Make is invoked with a list of target names.
+Makefile targets can be preceded by zero or more Makefile variable name=value pairs.
+For example to compile `../my_dir/my_program.stan` for an OpenCL (GPU) machine,
+the makefile variable `STAN_OPENCL` is set to `TRUE`:
+```
+> make STAN_OPENCL=TRUE ../my_dir/my_program
+```
+Makefile variables can also be set by creating a file named `local` in the
+CmdStan `make` subdirectory which contains a list of `<VARIABLE>=<VALUE>` pairs,
+one per line.  The complete set of Makefile variables can be found in file
+`cmdstan/stan/lib/stan_math/make/compiler_flags`.
+
+When invoked without any arguments at all, Make prints a help message:
+```
+> make
+--------------------------------------------------------------------------------
+CmdStan v2.23.0 help
+
+  Build CmdStan utilities:
+    > make build
+
+    This target will:
+    1. Install the Stan compiler bin/stanc from stanc3 binaries.
+    2. Build the print utility bin/print (deprecated; will be removed in v3.0)
+    3. Build the stansummary utility bin/stansummary
+    4. Build the diagnose utility bin/diagnose
+    5. Build all libraries and object files compile and link an executable Stan program
+
+    Note: to build using multiple cores, use the -j option to make, e.g., 
+    for 4 cores:
+    > make build -j4
+
+
+  Build a Stan program:
+
+    Given a Stan program at foo/bar.stan, build an executable by typing:
+    > make foo/bar
+
+    This target will:
+    1. Install the Stan compiler (bin/stanc or bin/stanc2), as needed.
+    2. Use the Stan compiler to generate C++ code, foo/bar.hpp.
+    3. Compile the C++ code using cc . to generate foo/bar
+
+  Additional make options:
+    STANCFLAGS: defaults to "". These are extra options passed to bin/stanc
+      when generating C++ code. If you want to allow undefined functions in the
+      Stan program, either add this to make/local or the command line:
+          STANCFLAGS = --allow_undefined
+    USER_HEADER: when STANCFLAGS has --allow_undefined, this is the name of the
+      header file that is included. This defaults to "user_header.hpp" in the
+      directory of the Stan program.
+    STANC2: When set, use bin/stanc2 to generate C++ code.
+
+
+  Example - bernoulli model: examples/bernoulli/bernoulli.stan
+
+    1. Build the model:
+       > make examples/bernoulli/bernoulli
+    2. Run the model:
+       > examples/bernoulli/bernoulli sample data file=examples/bernoulli/bernoulli.data.R
+    3. Look at the samples:
+       > bin/stansummary output.csv
+
+
+  Clean CmdStan:
+
+    Remove the built CmdStan tools:
+    > make clean-all
+
+--------------------------------------------------------------------------------
+```
+
+
+## Building CmdStan
+
+Building CmdStan involves preparing a set of executable programs
+and compiling the command line interface and supporting libraries.
+The CmdStan tools are:
+
+- `stanc`: the Stan compiler (translates Stan language to C++).
+
+- `stansummary`: a basic posterior analysis tool.
+The `stansummary` utility processes one or more output files from a run
+or set of runs of Stan's HMC sampler.
+For all parameters and quantities of interest in the Stan program,
+`stansummary` reports a set of statistics including mean, standard deviation,
+percentiles, effective number of samples, and $\hat{R}$ values.
+
+- `diagnose`: a basic sampler diagnostic tool which checks for indications
+that the HMC sampler was unable to sample from the full posterior.
+
+CmdStan releases include pre-built binaries of the Stan language
+compiler \url {https://github.com/stan-dev/stanc3}:
+`bin/linux-stanc`, `bin/mac-stanc` and
+`bin/windows-stanc`. The CmdStan makefile `build` task
+copies the appropriate binary to `bin/stanc`. For CmdStan
+installations which have been cloned of downloaded from the CmdStan
+GitHub repository, the makefile task will download the appropriate
+OS-specific binary from the stanc3 repository's nightly release.
+
+Steps to build CmdStan:
+
+- Download the latest release from https://github.com/stan-dev/cmdstan/releases/latest
+or [clone the GitHub repo](#git-clone.section).
+
+- Open a command-line terminal window and change directories to the CmdStan home directory.
+
+- Run the makefile target `build` which instantiates the CmdStan utilities
+and compiles all necessary C++ libraries.
+
+```
+> cd <cmdstan-home>
+> make build
+```
+
+If your computer has multiple cores and sufficient ram, the build process
+can be parallelized by providing the `-j` option. For example, to build on 4 cores, type:
+```
+> make -j4 build
+```
+
+When `make build` is successful, the directory `<cmdstan-home>/bin/`
+will contain the executables `stanc`, `stansummary`, and `diagnose` (on Windows, corresponding `.exe` files)
+and the final lines of console output will show the version of CmdStan
+that has just been built, e.g.:
+```
+--- CmdStan v2.23.0 built ---
+```
+
+**Warning:**  _The Make program may take 10+ minutes and consume 2+ GB of memory to build CmdStan._
+
+**Windows only:** CmdStan requires that the Intel TBB library,
+which is built by the above command, can be found by the Windows system.
+This requires that the directory
+`<cmdstan-home>/stan/lib/stan_math/lib/tbb` is part of the
+`PATH` environment variable.
+To permanently make this setting for the current user, you may execute:
+```
+> mingw32-make install-tbb
+```
+After changing the `PATH` environment variable, you must open an new shell
+in order to these setting to take effect.
+(This is not necessary on Mac and Linux systems because they can use the
+absolute path to the Intel TBB library when linking into Stan programs.)
+
+## Clone the GitHub CmdStan Repository {#git-clone.section}
+
+The CmdStan release tarfile contains all source files an libraries needed
+to build CmdStan.
+The CmdStan GitHub repo contains just the `cmdstan` module;
+the Stan inference engine algorithms and Stan math library functions
+are specified as submodules and stored in seperate GitHub repositories.
+The CmdStan Makefile task `stan-update` assembles these submodules
+in the proper directory structure.
+
+The following sequence of commands will check out the current
+CmdStan `develop` branch on GitHub and assemble and build the
+command line interface and supporting libraries:
+
+```
+> git clone https://github.com/stan-dev/cmdstan.git
+> cd cmdstan
+> make stan-update
+> make build
+```
+
+The resulting set of directories should have the same structure as the release:
+
+- directory `cmdstan/stan` contains the sub-module `stan` (https://github.com/stan-dev/stan)
+- directory `cmdstan/stan/lib/stan_math` contains the sub-module `math` (https://github.com/stan-dev/math)
+
+## Trouble-shooting the installation
+
+To check that the CmdStan installation is complete
+and in working order, run the following series of commands:
+
+```
+# compile the example
+> make examples/bernoulli/bernoulli
+
+# fit to provided data (results of 10 trials, 2 out of 10 successes)
+> ./examples/bernoulli/bernoulli sample data file=examples/bernoulli/bernoulli.json.data
+
+# default output written to file `output.csv`,
+# default num_samples is 1000, output file should have approx 1050 lines
+> ls -l output.csv
+
+# run the `bin/stansummary utility to summarize parameter estimates
+> bin/stansummary output.csv
+```
+The sample data in file `bernoulli.json.data` specifies 2 out of 10 successes, therefore
+the range `mean(theta)`$\pm$`sd(theta)` should include 0.2.
+
+Updates to CmdStan or changes in compiler options may result in errors
+when trying to compile a Stan program.  In some cases, these can be resolved
+by removing the existing CmdStan build and recompiling.
+The Makefile target `clean-all` should be run before rebuilding CmdStan:
+```
+> make clean-all
+> make build
+```

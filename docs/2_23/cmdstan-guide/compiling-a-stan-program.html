@@ -214,7 +214,7 @@ the <code>&lt;cmdstan-home&gt;</code> directory.
 The Stan program can be in a different directory, but the directory path
 names cannot contain spaces - this limitation is imposed by Make.</p>
 <pre><code>&gt; cd &lt;cmdstan_home&gt;</code></pre>
-<p>In the call to Make, the target is name of the CmdStan executable
+<p>In the call to the Make program, the target is name of the CmdStan executable
 corresponding to the Stan program file.
 On Mac and Linux, this is the name of the Stan program with the <code>.stan</code>
 omitted. On Windows, replace <code>.stan</code> with <code>.exe</code>, and make
@@ -247,15 +247,35 @@ the next call to <code>make</code> will rebuild the CmdStan executable.</p>
 <div id="compiler-errors" class="section level2">
 <h2><span class="header-section-number">3.3</span> Compiler Errors</h2>
 <p>Stan probabalistic programming language is a programming language with a rich syntax,
-as such, it is often the case that a carefully written contains errors.</p>
+as such, it is often the case that a carefully written program contains errors,
+often simple syntax errors such as a misspelled variable name or missing semi-colon (<code>;</code>)
+statement termination.</p>
+<p>For example, if in the <code>bernoulli.stan</code> program, we introduct a typo on line <span class="math inline">\(9\)</span>
+by writing <code>thata</code> instead of <code>theta</code>, the Make command fails with the following</p>
+<pre><code>--- Translating Stan model to C++ code ---
+bin/stanc  --o=bernoulli.hpp bernoulli.stan
+
+Semantic error in &#39;bernoulli.stan&#39;, line 9, column 2 to column 7:
+   -------------------------------------------------
+     7:  } 
+     8:  model {
+     9:    thata ~ beta(1,1);  // uniform prior on interval 0,1
+           ^
+    10:    y ~ bernoulli(theta);
+    11:  }
+   -------------------------------------------------
+
+Identifier &#39;thata&#39; not in scope.
+
+make: *** [bernoulli.hpp] Error 1</code></pre>
 </div>
 <div id="troubleshooting" class="section level2">
 <h2><span class="header-section-number">3.4</span> Troubleshooting</h2>
 <p>The stanc compiler is also a program, and while it has been extensively tested,
 it may still contain errors such that the generated C++ code fails to compile.
-If this happens, report the error, together with the Stan program on GitHub.
-This is what a compiler error looks like.
-This is what other kinds of errors look like.</p>
+If this happens, report the error, together with the Stan program on either
+the <a href="https://discourse.mc-stan.org/">Stan Forums</a> or on the Stan compiler
+GitHub <a href="https://github.com/stan-dev/stanc3/issues">issues tracker</a>.</p>
 
 </div>
 </div>

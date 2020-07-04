@@ -9,6 +9,7 @@ by name to the higher-order functions.
 if (knitr::is_html_output()) {
 cat(' * <a href="functions-algebraic-solver.html">Algebraic Equation Solver</a>\n')
 cat(' * <a href="functions-ode-solver.html">Ordinary Differential Equation (ODE) Solvers</a>\n')
+cat(' * <a href="old-functions-ode-solver.html">Old integrate_ode_X ODE Interface</a>\n')
 cat(' * <a href="functions-1d-integrator.html">1D Integrator</a>\n')
 cat(' * <a href="functions-reduce.html">Reduce-Sum</a>\n')
 cat(' * <a href="functions-map.html">Map-Rect</a>\n')
@@ -142,6 +143,138 @@ Stan's automatic differentiation.
 ## Ordinary Differential Equation (ODE) Solvers {#functions-ode-solver}
 
 Stan provides built-in ordinary differential equation (ODE) solvers.
+Because the first argument to each of the solvers is a function itself,
+the ODE solvers in Stan are considered high order functions.
+
+### Specifying an Ordinary Differential Equation as a Function
+
+A system of ODEs is specified as an ordinary function in Stan within
+the functions block. The ODE system function must have the same return
+type and first two arguments as the following function:
+
+```
+ vector ode(real time, vector state, ...)
+```
+
+`...` are any number of arguments passed through unmodified from the ODE integrate
+call.
+
+The ODE system function should return the derivative of the state with
+respect to time at the time and state provided. The length of the returned
+vector must match the length of the state input into the function.
+
+The arguments to this function are:
+
+*   *`time`*, the time to evaluate the ODE system
+
+*   *`state`*, the state of the ODE system at the time specified
+
+*   *...*, all other arguments passed through from the integrate call. Each
+argument can be any type.
+
+### Non-Stiff Solver
+
+<!-- vector[]; ode_rk45; (function ode, vector initial_state, real initial_time, real[] times, ...); -->
+\index{{\tt \bfseries ode\_rk45 }!{\tt (function ode, real[] initial\_state, real initial\_time, real[] times, ...): vector[]}|hyperpage}
+
+`vector[]` **`ode_rk45`**`(function ode, vector initial_state, real initial_time, real[] times, ...)`<br>\newline
+Solves the ODE system for the times provided using the Runge Kutta
+Dopri algorithm with the implementation from Boost.
+
+<!-- vector[]; ode_rk45_tol; (function ode, vector initial_state, real initial_time, real[] times, real rel_tol, real abs_tol, int max_num_steps, ...); -->
+\index{{\tt \bfseries ode\_rk45\_tol }!{\tt (function ode, vector initial\_state, real initial\_time, real[] times, real rel\_tol, real abs\_tol, int max\_num\_steps, ...): vector[]}|hyperpage}
+
+`vector[]` **`ode_rk45_tol`**`(function ode, vector initial_state, real initial_time, real[] times, real rel_tol, real abs_tol, int max_num_steps, ...)`<br>\newline
+Solves the ODE system for the times provided using the Runge Kutta
+Dopri algorithm with the implementation from Boost with additional
+control parameters for the solver.
+
+<!-- vector[]; ode_adams; (function ode, vector initial_state, real initial_time, real[] times, ...); -->
+\index{{\tt \bfseries ode\_adams }!{\tt (function ode, vector initial\_state, real initial\_time, real[] times, ...): vector[]}|hyperpage}
+
+`vector[]` **`ode_adams`**`(function ode, vector initial_state, real initial_time, real[] times, ...)`<br>\newline
+Solves the ODE system for the times provided using the Adams-Moulton
+method with the implementation from CVODES.
+
+<!-- vector[]; ode_adams_tol; (function ode, vector initial_state, real initial_time, real[] times, data real rel_tol, data real abs_tol, data int max_num_steps, ...); -->
+\index{{\tt \bfseries ode\_adams\_tol }!{\tt (function ode, vector initial\_state, real initial\_time, real[] times, data real rel\_tol, data real abs\_tol, data int max\_num\_steps, ...): vector[]}|hyperpage}
+
+`vector[]` **`ode_adams_tol`**`(function ode, vector initial_state, real initial_time, real[] times, data real rel_tol, data real abs_tol, data int max_num_steps, ...)`<br>\newline
+Solves the ODE system for the times provided using the Adams-Moulton
+method with the implementation from CVODES with additional control
+parameters for the CVODES solver.
+
+### Stiff Solver
+
+<!-- vector[]; ode_bdf; (function ode, vector initial_state, real initial_time, real[] times, ...); -->
+\index{{\tt \bfseries ode\_bdf }!{\tt (function ode, vector initial\_state, real initial\_time, real[] times, ...): vector[]}|hyperpage}
+
+`vector[]` **`ode_bdf`**`(function ode, vector initial_state, real initial_time, real[] times, ...)`<br>\newline
+Solves the ODE system for the times provided using the backward
+differentiation formula (BDF) method with the implementation from
+CVODES.
+
+<!-- vector[]; ode_bdf_tol; (function ode, vector initial_state, real initial_time, real[] times, data real rel_tol, data real abs_tol, data int max_num_steps, ...); -->
+\index{{\tt \bfseries ode\_bdf\_tol }!{\tt (function ode, vector initial\_state, real initial\_time, real[] times, data real rel\_tol, data real abs\_tol, data int max\_num\_steps, ...): vector[]}|hyperpage}
+
+`vector[]` **`ode_bdf_tol`**`(function ode, vector initial_state, real initial_time, real[] times, data real rel_tol, data real abs_tol, data int max_num_steps, ...)`<br>\newline
+Solves the ODE system for the times provided using the backward
+differentiation formula (BDF) method with the implementation from
+CVODES with additional control parameters for the CVODES solver.
+
+### Arguments to the ODE solvers
+
+The arguments to the ODE solvers in both the stiff and non-stiff cases
+are as follows.
+
+*   *`ode`*: function literal referring to a function specifying  the
+system of differential equations with signature:
+
+```
+ (real, vector, ...):vector
+```
+
+The arguments represent (1) time, (2) system state, and a sequence of arguments of any type passed unmodified from the integration function call. The return value contains the derivatives with respect to time of the state.
+
+*   *`initial_state`*: initial state, type `vector`,
+
+*   *`initial_time`*: initial time, type `int` or `real`,
+
+*   *`times`*: solution times, type `real[]`,
+
+*   *`...`*: arguments that will be passed through unmodified to the ODE system function, types must match those in the `...` portion of the ode system function
+
+For the versions of the ode integrator functions ending in `_tol`, these three
+parameters must also be provided:
+
+*   `data`   *`rel_tol`*: relative tolerance for the ODE  solver, type `real`,
+data only,
+
+*   `data`   *`abs_tol`*: absolute tolerance for the ODE  solver, type `real`,
+data only, and
+
+*   `data`   *`max_num_steps`*: maximum number of steps to take between output
+times in the ODE solver, type `int`, data only.
+
+#### Return values
+
+The return value for the ODE solvers is an array of vectors (type `vector[]`),
+with values consisting of solutions at the specified times.
+
+#### Sizes and parallel arrays
+
+The sizes must match, and in particular, the following groups are of
+the same size:
+
+*   state variables passed into the system function, derivatives
+returned by the system function, initial state passed into the
+solver, and length of each vector in the output,
+
+*   solution times and number of vectors in the output,
+
+## Old integrate_ode_X ODE Interface {#old-functions-ode-solver}
+
+Stan provides built-in ordinary differential equation (ODE) solvers.
 Although they look like function applications, the ODE solvers are
 special in two ways.
 
@@ -211,35 +344,35 @@ control parameters for the solver.
 Deprecated. Solves the ODE system for the times provided with a
 non-stiff solver. This calls the Runge Kutta Dopri algorithm.
 
-<!-- real[]; integrate_ode_adams; (function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i); -->
-\index{{\tt \bfseries integrate\_ode\_adams }!{\tt (function ode, real[] initial\_state, real initial\_time, real[] times, real[] theta, data real[] x\_r, data int[] x\_i): real[]}|hyperpage}
+<!-- real[ , ]; integrate_ode_adams; (function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i); -->
+\index{{\tt \bfseries integrate\_ode\_adams }!{\tt (function ode, real[] initial\_state, real initial\_time, real[] times, real[] theta, data real[] x\_r, data int[] x\_i): real[ , ]}|hyperpage}
 
-`real[]` **`integrate_ode_adams`**`(function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i)`<br>\newline
+`real[ , ]` **`integrate_ode_adams`**`(function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i)`<br>\newline
 Solves the ODE system for the times provided using the Adams-Moulton
 method with the implementation from CVODES.
 
-<!-- real[]; integrate_ode_adams; (function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i, data real rel_tol, data real abs_tol, dta int max_num_steps); -->
-\index{{\tt \bfseries integrate\_ode\_adams }!{\tt (function ode, real[] initial\_state, real initial\_time, real[] times, real[] theta, data real[] x\_r, data int[] x\_i, data real rel\_tol, data real abs\_tol, dta int max\_num\_steps): real[]}|hyperpage}
+<!-- real[ , ]; integrate_ode_adams; (function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i, data real rel_tol, data real abs_tol, data int max_num_steps); -->
+\index{{\tt \bfseries integrate\_ode\_adams }!{\tt (function ode, real[] initial\_state, real initial\_time, real[] times, real[] theta, data real[] x\_r, data int[] x\_i, data real rel\_tol, data real abs\_tol, data int max\_num\_steps): real[ , ]}|hyperpage}
 
-`real[]` **`integrate_ode_adams`**`(function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i, data real rel_tol, data real abs_tol, dta int max_num_steps)`<br>\newline
+`real[ , ]` **`integrate_ode_adams`**`(function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i, data real rel_tol, data real abs_tol, data int max_num_steps)`<br>\newline
 Solves the ODE system for the times provided using the Adams-Moulton
 method with the implementation from CVODES with additional control
 parameters for the CVODES solver.
 
 ### Stiff Solver
 
-<!-- real[]; integrate_ode_bdf; (function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i); -->
-\index{{\tt \bfseries integrate\_ode\_bdf }!{\tt (function ode, real[] initial\_state, real initial\_time, real[] times, real[] theta, data real[] x\_r, data int[] x\_i): real[]}|hyperpage}
+<!-- real[ , ]; integrate_ode_bdf; (function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i); -->
+\index{{\tt \bfseries integrate\_ode\_bdf }!{\tt (function ode, real[] initial\_state, real initial\_time, real[] times, real[] theta, data real[] x\_r, data int[] x\_i): real[ , ]}|hyperpage}
 
-`real[]` **`integrate_ode_bdf`**`(function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i)`<br>\newline
+`real[ , ]` **`integrate_ode_bdf`**`(function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i)`<br>\newline
 Solves the ODE system for the times provided using the backward
 differentiation formula (BDF) method with the implementation from
 CVODES.
 
-<!-- real[]; integrate_ode_bdf; (function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i, data real rel_tol, data real abs_tol, dta int max_num_steps); -->
-\index{{\tt \bfseries integrate\_ode\_bdf }!{\tt (function ode, real[] initial\_state, real initial\_time, real[] times, real[] theta, data real[] x\_r, data int[] x\_i, data real rel\_tol, data real abs\_tol, dta int max\_num\_steps): real[]}|hyperpage}
+<!-- real[ , ]; integrate_ode_bdf; (function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i, data real rel_tol, data real abs_tol, data int max_num_steps); -->
+\index{{\tt \bfseries integrate\_ode\_bdf }!{\tt (function ode, real[] initial\_state, real initial\_time, real[] times, real[] theta, data real[] x\_r, data int[] x\_i, data real rel\_tol, data real abs\_tol, data int max\_num\_steps): real[ , ]}|hyperpage}
 
-`real[]` **`integrate_ode_bdf`**`(function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i, data real rel_tol, data real abs_tol, dta int max_num_steps)`<br>\newline
+`real[ , ]` **`integrate_ode_bdf`**`(function ode, real[] initial_state, real initial_time, real[] times, real[] theta, data real[] x_r, data int[] x_i, data real rel_tol, data real abs_tol, data int max_num_steps)`<br>\newline
 Solves the ODE system for the times provided using the backward
 differentiation formula (BDF) method with the implementation from
 CVODES with additional control parameters for the CVODES solver.
@@ -250,7 +383,7 @@ The arguments to the ODE solvers in both the stiff and non-stiff cases
 are as follows.
 
 *   *`ode`*: function literal referring to a function specifying   the
-system of differential equations with signature described in [ode functions](#functions-ode-function):
+system of differential equations with signature:
 
 ```
  (real, real[], real[], data real[], data int[]):real[]

@@ -90,7 +90,7 @@
 <li class="chapter" data-level="3.1" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#invoking-the-make-utility"><i class="fa fa-check"></i><b>3.1</b> Invoking the Make Utility</a></li>
 <li class="chapter" data-level="3.2" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#dependencies"><i class="fa fa-check"></i><b>3.2</b> Dependencies</a></li>
 <li class="chapter" data-level="3.3" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#compiler-errors"><i class="fa fa-check"></i><b>3.3</b> Compiler Errors</a></li>
-<li class="chapter" data-level="3.4" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#troubleshooting"><i class="fa fa-check"></i><b>3.4</b> Troubleshooting</a></li>
+<li class="chapter" data-level="3.4" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#troubleshooting-c-compiler-or-linker-errors"><i class="fa fa-check"></i><b>3.4</b> Troubleshooting C++ Compiler or Linker Errors</a></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="mcmc-intro.html"><a href="mcmc-intro.html"><i class="fa fa-check"></i><b>4</b> MCMC Sampling</a>
 <ul>
@@ -315,9 +315,17 @@ The default value is <span class="math inline">\(0\)</span>, i.e., warmup draws 
 When the value is <span class="math inline">\(1\)</span>, the warmup draws are written to the csv output file
 directly after the csv header line.</p>
 <p>Argument <code>thin</code> controls the number of draws from the posterior written to the output file.
-The value of argument <code>thin</code> must be a positive integer. When thin is set to value <span class="math inline">\(N\)</span>,
-every <span class="math inline">\(N^{th}\)</span> iteration is written to the output file.</p>
-<p>Should the value of <code>thin</code> exceed the specified number of iterations, the first iteration is
+Some users familiar with older approaches to MCMC sampling might be used to thinning
+to eliminate an expected autocorrelation in the samples.
+HMC is not nearly as susceptible to this autocorrelation problem and thus
+thinning is generally not required nor advised,
+as HMC can produce <em>anticorrelated</em> draws, which increase the
+effective sample size beyond the number of draws from the posterior.
+Thinning should only be used in circumstances where storage of the samples
+is limited and/or RAM for later processing the samples is limited.</p>
+<p>The value of argument <code>thin</code> must be a positive integer. When thin is set to value <span class="math inline">\(N\)</span>,
+every <span class="math inline">\(N^{th}\)</span> iteration is written to the output file.
+Should the value of <code>thin</code> exceed the specified number of iterations, the first iteration is
 saved to the output. This is because the iteration counter starts from zero and whenever
 the counter modulo the value of <code>thin</code> equals zero, the iteration is saved to the output file.
 Since zero modulo any positive integer is zero, the first iteration is always saved.
@@ -337,20 +345,33 @@ These are described in detail in the Reference Manual section
 <a href="https://mc-stan.org/docs/2_23/reference-manual/hmc-algorithm-parameters.html">Automatic Parameter Tuning</a>.</p>
 <div id="step-size-optimization-configuration" class="section level3">
 <h3><span class="header-section-number">9.2.1</span> Step size optimization configuration</h3>
+<p>The Stan User’s Guide section on
+<a href="https://mc-stan.org/docs/stan-users-guide/model-conditioning-and-curvature.html">model conditioning and curvature</a>
+provides a discussion of adaptation and stepsize issues.
+The Stan Reference Manual section on
+<a href="https://mc-stan.org/docs/reference-manual/hmc-algorithm-parameters.html">HMC algorithm parameters</a>
+explains the NUTS-HMC adaptation schedule and the tuning parameters for setting the step size.</p>
 <p>The following keyword-value arguments control the settings used to optimize the step size:</p>
 <ul>
 <li><p><code>delta</code> - The target Metropolis acceptance rate. The default value is <span class="math inline">\(0.8\)</span>.
-Its value must be strictly between <span class="math inline">\(0\)</span> and <span class="math inline">\(1\)</span>. Increasing the default value
+Its value must be strictly between <span class="math inline">\(0\)</span> and <span class="math inline">\(1\)</span>.
+Increasing the default value
 forces the algorithm to use smaller step sizes. This can
 improve sampling efficiency (effective sample size per iteration) at
 the cost of increased iteration times. Raising the value of <code>delta</code>
 will also allow some models that would otherwise get stuck to overcome
-their blockages.</p></li>
+their blockages. <br>
+Models with difficult posterior geometries may required increasing the <code>delta</code> argument
+closer to <span class="math inline">\(1\)</span>; we recommend first trying to raise it to <span class="math inline">\(0.9\)</span> or at most <span class="math inline">\(0.95\)</span>.
+Values about <span class="math inline">\(0.95\)</span> are strong indication of bad geometry;
+the better solution is to change the model geometry through
+<a href="https://mc-stan.org/docs/stan-users-guide/reparameterization-section.html">reparameterization</a>
+which could yield both more efficient and faster sampling.</p></li>
 <li><p><code>gamma</code> - Adaptation regularization scale.
 Must be a positive real number, default value is <span class="math inline">\(0.05\)</span>.
 This is a parameter of the Nesterov dual-averaging algorithm.
 We recommend always using the default value.</p></li>
-<li><p><code>gamma</code> - Adaptation relaxation exponent.
+<li><p><code>kappa</code> - Adaptation relaxation exponent.
 Must be a positive real number, default value is <span class="math inline">\(0.75\)</span>.
 This is a parameter of the Nesterov dual-averaging algorithm.
 We recommend always using the default value.</p></li>
@@ -577,13 +598,7 @@ For example, the JSON file <code>bernoulli.diag_e.json</code>, contents</p>
 </div>
 <div id="changing-the-nuts-hmc-adaptation-parameters" class="section level3">
 <h3><span class="header-section-number">9.5.6</span> Changing the NUTS-HMC adaptation parameters</h3>
-<p>The Stan User’s Guide section on
-<a href="https://mc-stan.org/docs/stan-users-guide/model-conditioning-and-curvature.html">model conditioning and curvature</a>
-provides a discussion of adaptation and stepsize issues.
-The Stan Reference Manual section on
-<a href="https://mc-stan.org/docs/reference-manual/hmc-algorithm-parameters.html">HMC algorithm parameters</a>
-explains the NUTS-HMC adaptation schedule and the tuning parameters for setting the step size.
-The keyword-value arguments for these settings are grouped together under the <code>adapt</code> keyword
+<p>The keyword-value arguments for these settings are grouped together under the <code>adapt</code> keyword
 which itself is a sub-argument of the <code>sample</code> keyword.</p>
 <p>Models with difficult posterior geometries may required increasing the <code>delta</code> argument
 closer to <span class="math inline">\(1\)</span>.</p>

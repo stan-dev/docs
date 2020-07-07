@@ -79,9 +79,17 @@ When the value is $1$, the warmup draws are written to the csv output file
 directly after the csv header line.
 
 Argument `thin` controls the number of draws from the posterior written to the output file.
+Some users familiar with older approaches to MCMC sampling might be used to thinning
+to eliminate an expected autocorrelation in the samples.
+HMC is not nearly as susceptible to this autocorrelation problem and thus
+thinning is generally not required nor advised,
+as HMC can produce _anticorrelated_ draws, which increase the
+effective sample size beyond the number of draws from the posterior.
+Thinning should only be used in circumstances where storage of the samples
+is limited and/or RAM for later processing the samples is limited.
+
 The value of argument `thin` must be a positive integer.  When thin is set to value $N$,
 every $N^{th}$ iteration is written to the output file.
-
 Should the value of `thin` exceed the specified number of iterations, the first iteration is
 saved to the output.  This is because the iteration counter starts from zero and whenever
 the counter modulo the value of `thin` equals zero, the iteration is saved to the output file.
@@ -89,6 +97,7 @@ Since zero modulo any positive integer is zero, the first iteration is always sa
 When `num_sampling=M` and `thin=N`, the number of iterations written to the
 output csv file will be `ceiling(M/N)`.
 If `save_warmup=1`, thinning is applied to the warmup iterations as well.
+
 
 
 ## Adaptation
@@ -106,22 +115,37 @@ These are described in detail in the Reference Manual section
 
 ### Step size optimization configuration
 
+The Stan User's Guide section on
+[model conditioning and curvature](https://mc-stan.org/docs/stan-users-guide/model-conditioning-and-curvature.html)
+provides a discussion of adaptation and stepsize issues.
+The Stan Reference Manual section on
+[HMC algorithm parameters](https://mc-stan.org/docs/reference-manual/hmc-algorithm-parameters.html)
+explains the NUTS-HMC adaptation schedule and the tuning parameters for setting the step size.
+
+
 The following keyword-value arguments control the settings used to optimize the step size:
 
 - `delta`  - The target Metropolis acceptance rate. The default value is $0.8$.
-Its value must be strictly between $0$ and $1$.  Increasing the default value
+Its value must be strictly between $0$ and $1$.
+Increasing the default value
 forces the algorithm to use smaller step sizes. This can
 improve sampling efficiency (effective sample size per iteration) at
 the cost of increased iteration times. Raising the value of `delta`
 will also allow some models that would otherwise get stuck to overcome
-their blockages.  
+their blockages.  <br>
+Models with difficult posterior geometries may required increasing the `delta` argument
+closer to $1$; we recommend first trying to raise it to $0.9$ or at most $0.95$.
+Values about $0.95$ are strong indication of bad geometry;
+the better solution is to change the model geometry through
+[reparameterization](https://mc-stan.org/docs/stan-users-guide/reparameterization-section.html)
+which could yield both more efficient and faster sampling.
 
 - `gamma` - Adaptation regularization scale.
 Must be a positive real number, default value is $0.05$. 
 This is a parameter of the Nesterov dual-averaging algorithm.
 We recommend always using the default value.
 
-- `gamma` - Adaptation relaxation exponent.
+- `kappa` - Adaptation relaxation exponent.
 Must be a positive real number, default value is $0.75$. 
 This is a parameter of the Nesterov dual-averaging algorithm.
 We recommend always using the default value.
@@ -390,12 +414,6 @@ The resulting output csv file will contain the following set of comment lines:
 
 ### Changing the NUTS-HMC adaptation parameters
 
-The Stan User's Guide section on
-[model conditioning and curvature](https://mc-stan.org/docs/stan-users-guide/model-conditioning-and-curvature.html)
-provides a discussion of adaptation and stepsize issues.
-The Stan Reference Manual section on
-[HMC algorithm parameters](https://mc-stan.org/docs/reference-manual/hmc-algorithm-parameters.html)
-explains the NUTS-HMC adaptation schedule and the tuning parameters for setting the step size.
 The keyword-value arguments for these settings are grouped together under the `adapt` keyword
 which itself is a sub-argument of the `sample` keyword.
 

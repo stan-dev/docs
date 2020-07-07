@@ -1,0 +1,354 @@
+# The Stan Language {#stan-language.chapter}
+
+The Stan language is a strongly typed imperative probabilistic
+programming language.  Strong typing means that all variables have a
+declared type such as real, integer, or matrix.  As an imperative
+language, it supports a conventional style of variable declaration,
+assignment, loops, conditionals, etc., much like Python or R.  Like
+Python and R, there are functional elements to the Stan language, but
+it's style remains largely imperative in that it is focused on
+variable assignment and sequential statement evaluation.   Stan is a
+probabilistic programming language in the sense that its variables may
+be interpreted as random variables.  When combined with inference,
+operations on these variables act in the same way as functions on
+random variables in any inferential context, including Monte Carlo
+sampling, Laplace approximation, or variational inference.
+
+## Variable types
+
+Variables are used at block level for data, parameters, and generated
+quantities, at the statement level for local variables, and for
+function argument declarations.  Every variable in Stan is declared
+with a base type.  Local variables and block variables additionally
+require size declarations.  Block variables are sized and may carry
+additional constraints, such as positivity or positive-definiteness.
+
+### Base types
+
+Being strongly typed, Stan supports a language of simple type
+declarations, simplicity being in the sense of the simply typed lambda
+calculus.  The base types are
+
+* `int` for integers
+* `real` real numbers
+* `vector` real-valued column vector
+* `row_vector` real-valued row vector
+* `matrix` real-valued matrix
+
+Furthermore, for any types `T`, `T0, T1, .., TN` for `N >= 0`,
+
+* `T[]` array with elements of type T
+* (T1, ..., TN)` tuple with elements of types `T1`, ..., `TN`
+* `(T1, ..., TN):T0` `N`-ary function with arguments of types `T1`,
+  ..., `TN`, and result type `T0`.
+
+Base types are used as written above in function arguments.
+
+### Sized types
+
+Sized types are used for local variable declarations.  The set of
+sized type includes
+
+* `int` for integers,
+* `real` real numbers,
+* `vector[M]` real-valued column vector with `M` elements,
+* `row_vector[N]` real-valued row vector with `N` elements, and
+* `matrix[M, N]` real-valued `M x N` matrix.
+
+Furthermore, for any types `T`, `T0, T1, .., TN` for `N >= 0`,
+
+* `T[K]` array of size `K` with elements of type T,
+* (T1, ..., TN)` tuple with elements of types `T1`, ..., `TN`, and
+* `(T1, ..., TN):T0` `N`-ary function with arguments of types `T1`,
+  ..., `TN`, and result type `T0`.
+
+### Constrained types
+
+Constrained types are used for block-level variable declarations.
+Constraints are enforced implicitly for parameters and after the block
+executes for other variables.  The set of constrained types includes
+
+* `int` for integers,
+* `real`, `real<B>` real with optional bounds/transform
+
+The constrained types with base type `vector` are
+
+* `vector[M]`, `vector<B>[M]` real-valued column vector of `M`
+elements with optional bounds/transform
+* `ordered[M]`, column vector with elements in increasing order,
+* `pos_ordered[M]`, column vector positive elements in increasing
+order,
+* `simplex[M]`, colum vector constrained to be positive and sum to
+one (i.e., lie on the unit hypersphere of `M - 1` dimensions)
+* `unit_vector[M]`, column vector constrained to be Euclidean length
+
+The constrained constrained types with base type `row_vector` are
+
+* `row_vector[N]`, `row_vector<B>[M]` real-valued row vector of `N`
+elements with optional bounds/transform,
+
+The constrained types with base type `matrix` are
+
+* `matrix[M, N]`, `matrix[M, N]` real-valued `M x N` matrix with
+optional bounds/transform
+* `cov_matrix[K]`, `K x K` symmetric, positive definite matrix
+* `corr_matrix[K]`, `K x K` symmetric, positive definite matrix with
+unit diagonal,
+* `cholesky_factor[K]`, `K x K` lower-triangular matrix with strictly
+positive diagonal,
+* `cholesky_factor_corr[K]`, `K x K` lower-triangular matrix with strictly
+positive diagonal and whose rows form unit vectors
+
+Furthermore, for constrained any types `T`, `T0, T1, .., TN` for `N >=
+0`, the constrained types also include
+
+* `T[K]` array of size `K` with elements of type T,
+* (T1, ..., TN)` tuple with elements of types `T1`, ..., `TN`, and
+* `(T1, ..., TN):T0` `N`-ary function with arguments of types `T1`,
+  ..., `TN`, and result type `T0`.
+
+## Expressions
+
+Expressions denote values of the natural type---`int` types denote
+integers, `real` type denote real values (typically double-precision
+floating point), vectors denote vectors, and so on.  Sized types only
+match values of the declared size.  Constrained type takes on
+values of the base type that satisfy the constraint.
+
+Integer expressions of type `int` may be promoted to real type `real`
+where necessary in all contexts.
+
+### Literals
+
+Stan allows standard literal notation for integers of type `int`, such
+as `-12` and `2563879`.  It also allows underscores to be used as
+separators, such as `2_563_879`.
+
+Stan also supports standard scientific and decimal notation for
+floating-point values of type `real`, such as `.123`, `0.123`, `3.14`,
+`0.314e+1`, and `1.398e-123`.  
+
+### Constants
+
+Stan builds in function symbols as constants.  Every function constant
+has an associated identifier such as `exp` or `pow`.  Every function
+constant also has one or more types, but at most one type for every
+unique sequence of argument types.  For example, `pow` can apply to
+scalars or vectors as can `normal_lpdf`.
+
+### Variables
+
+The type of a variable in Stan is determined by its declaration.  All
+variables must be declared before they are used.  Variables in Stan
+are represented by identifiers, which are restricted to ASCII
+characters (`a` to `z`, `A` to `Z`, `0` to `9`, and `_`), must start
+with an alphabetic character and may include numerals and underscores
+after the first character.  The type
+
+### Indexing
+
+If `e` is an expression with at least `N` dimensions and `idx1`, ...,
+`idxN` are expressions of type `int` or `int[]`, then then `e[idx1,
+..., idxN]` is an expression, whose type is determined by reducing the
+dimension for each `int` type and preserving the dimension for each
+multi-index of type `int[]`.
+
+For example, suppose `a` is of type `real[]`.  If `idx` is of type
+`int`, then `a[idx]` is of type `real`, but if `idx` is of type
+`int[]`, then `a[idx]` is of type `real[]`.  This works for any type
+`T`, not just `real`.
+
+If the type of `a` is `real[][]`, that is a two-dimensional array,
+then `a[idx1, idx2]` produces a `real` result if both indexes are
+`int` types, a `real[][]` result if both types are `int[]`, and a
+`real[]` type if one is `int` and the other `int[]`.  If only one
+index is supplied, `a[idx]` is `real[]` if `idx` is an `int` and
+`real[][]` if it is `int[]`.
+
+Now suppose `a` is of type `vector`.  A vector has one dimension.
+That means `a[idx]` is of type `real` if `idx` is an `int` and of type
+`vector` if `idx` is of type `int[]`.  Same for row vectors.
+
+Now suppose `a` is of type `matrix`.  Then `a[idx]` has type
+`row_vector` if `idx` is an `int` and type `matrix` if `idx` is of
+type `int[]`.   With two indexes, `a[idx1, idx2]`, the result type is
+`real` if both indexes are integers and type `matrix` if both indexes
+are of type `int[]`.  If `idx1` is `int` and `idx2` is `int[]`, the
+result is a `row_vector`.  If `idx1` is `int[]` and `idx2` is `int`,
+then the result is of type `vector`.
+
+The same thing holds for more nested indexing; integer indexes reduce
+the dimension and arrays of integers preserve it.  If `a` is of type
+`vector[]`, that is an array of vectors, then `a[idx]` is of type
+`vector` if `idx` is an `int` and of type `vector[]` if it is `int[]`.
+The expression `a[idx1, idx2]` is of type `real` if both indexes are
+`int`, of type `vector[]` if both indexes are type `int[]`, of type
+`vector` if `idx1` is `int` and `idx2` is `int[]`, and of type
+`real[]` if `idx1` is `int[]` and `idx2` is `int`.
+
+### Container constructors
+
+If `e1`, ..., `eN` are expressions of types `T`, ..., `T` for `N >=
+1`, then `{ e1, ..., eN }` is an expression of type `T[]`.  Note that
+the sequence must be non-empty;  otherwise it is impossible to infer
+the type `T[]`.
+
+If `e1`, ..., `eN` are expressions of type `real` or `int`, then `[e1,
+..., eN]` is an expression of type `row_vector`.  To construct
+vectors, transpose a row vector, because `[e1, ..., eN]'` is of type
+vector. 
+
+If `e1`, ..., `eN` are expressions of type `row_vector`, then `[e1,
+..., eN]` is an expression of type `matrix`.
+
+### Function application
+
+If `e1`, ..., `eN` are expressions of types `T1`, ..., `TN` for `N >=
+0`, and `f` is an expression of type `(T1, ..., TN):T0`, then `f(e1,
+..., eN)` is an expression of type `T0`.  If promotion is required for
+types, there must be a type for `f` requiring a minimum number of
+substitutions, which will determine the function actually applied.
+
+Some functions use an infix syntax, like multiplication and logical
+and (`*`, `&&`); others use a prefix syntax like arithmetic negation
+and logical negation (`-`, `!`), and still others use a postfix syntax
+like transposition (`'`).
+
+### Ternary operator
+
+If `c` is an expression of type `double` or `int`, and `e1` and `e2`
+are expressions of type `T`, then `c ? e1 : e2` is of type `T`.  If
+one is `e1` or `e2` is type `real` and the other `int`, the `int` will
+be promoted to `real` so that the result will be `real`.  Unlike
+ordinary function application, only one of `e1` or `e2` is evaluated,
+depending on the result of evaluating `c` (`e2` is returned if `c`
+evaluates to zero and `e1` is returned otherwise).
+
+### Parentheses
+
+Parentheses may be used for disambiguation of what might otherwise be
+ambiguous arithmetic expressions.  If `e` is an expression, then so is
+`(e)`.  The two expressions have the same meaning---parentheses are
+purely syntactic.
+
+## Statements
+
+Statements in Stan behave as in other imperative programming
+languages.
+
+### Variable declarations
+
+If `T` is a type and `v` is a variable, then
+```
+T v;
+```
+is a variable declaration statement. For example,
+```
+real x;
+matrix<lower = 0>[M, 7] y;
+```
+Optionally, a declaration may assign an initial value, so that if `e`
+is an expression of a type assignable to `v`, then
+```
+T v = e;
+```
+is a compound declaration/definition.  For example,
+```
+real x = 12;
+vector[3] y = [1, 2, 3]';
+```
+
+For block-level variables, the type is sized and may be constrained.
+Local variables may be sized, but not constrained.
+
+For sized variable declarations, the expressions making up the sizes
+may only contain variables from the data and transformed data blocks,
+and furthermore.  All variables used in declaration sizes must be
+defined before they are used.
+
+### Assignment
+
+If `a` is variable whose type has at least `N` indexes, `idx1`,
+..., `idxN` are expressions of type `int` or `int[]`, and `e` is an
+expression of the type assignable to the type `a[idx1, ..., idxN]`, then
+```
+a[idx1, ..., idxN] = e;
+```
+is a statement.
+
+### Sampling
+
+If `e0`, ..., `eN` are expressions for `N >= 0`, and `f` is an
+expression denoting a probability density or mass function, then
+```
+e0 ~ f(e1, ..., eN);
+```
+is a statement.
+
+### Blocks
+
+If `s1`, ..., `sN` are statements, then so is
+```
+{ s1, ..., sN }
+```
+Blocks define local scope
+
+
+### While loops
+
+If `c` is an expression assignable to type `real` and `s` is a
+statement, then
+```
+while (c) s;
+```
+is a statement.
+
+### For loops
+
+For loops declare a variable that is looped over.  In bounded for
+loops, if `l` and `u` are expressions of type `int`, `v` is a
+variable, and `s` is a statement, then
+```
+for (v in l:u) s;
+```
+is a statement.  The statment is executed for each value of `v`
+between `l` and `u` inclusive.
+
+### For-each loops
+
+If `e` is a container type (`T[]`, `vector`, `row_vector`, `matrix`),
+and `v` is a variable and `s` a statement, then
+```
+for (v in e) s;
+```
+is a statement.  The statement is executed setting `v` to each element
+of the container in turn.
+
+### Break and continue
+
+There are two standard statements for premature loop body
+termination.  One breaks out of the loop altogether,
+```
+break;
+```
+whereas the other jumps to the end of the loop, which then executes
+another iteration including its condition.
+```
+continue;
+```
+
+### Conditionals
+
+If `c1`, ..., `cN` are expressions assignable to `real` and `s1`, ...,
+`sN` are statements for `N >= 1`, then 
+```
+if (c1) s1
+else if (c2) then s2
+...
+else if (cN) then sN
+```
+is a statement.  The condition expressions `c1`, ..., `cN` are
+executed in turn and for the first `cn` that succeeds, the
+corresponding `sn` is executed.  No other conditions or statements are
+executed.  
+

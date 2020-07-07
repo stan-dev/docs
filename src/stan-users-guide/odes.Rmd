@@ -76,9 +76,11 @@ equations; that is, `t` does not show up in the definition of
 ### Strict Signature {-}
 
 Every ODE system function has the same first two arguments and the
-same return type, but the third argument onwards may change be anything.
+same return type. The third argument onwards can be any type, granted all
+the argument types here match the types of their respective arguments in the
+integrate call.
 
-For instance, all of these are valid ODE signatures:
+For instance, all of these are possible ODE signatures:
 
 ```
 vector myode1(real t, vector y, real a0);
@@ -86,107 +88,13 @@ vector myode2(real t, vector y, int[] a0, vector a1);
 vector myode3(real t, vector y, matrix a0, real[] a1, row_vector a2);
 ```
 
-And these are not allowed:
+but these are not allowed:
 
 ```
 vector myode1(real t, real[] y, real a0);
 real[] myode2(real t, vector y, real a0);
 vector myode3(vector y, real a0);
 ```
-
-### Discontinuous ODE System Function {-}
-
-If there are discontinuities in the ODE system function, it is best
-to integrate the ODE to those discontinuities, stop the solver, and
-restart it on the other side.
-
-Nonetheless, the ODE integrator will attempt to integrate over discontinuities
-in the state function. The accuracy of points near the discontinuity
-may be problematic (requiring many small steps).  An example of such a
-discontinuity is a lag in a pharmacokinetic model, where a
-concentration is going to be zero for times $0 < t < t'$ for some
-lag-time $t'$, whereas it will be nonzero for times $t \geq t'$.
-In this example example, we would use code in the system such as
-
-```
-if (t < t_lag)
-  return 0;
-else
-  ... return non-zero value...;
-```
-
-In general it is better to integrate up to `t_lag` in one solve and
-then integrate from `t_lag` onwards in another.
-
-## Solving a System of Linear ODEs using a Matrix Exponential
-
-The solution to $\frac{d}{dt} y = ay$ is $y = y_0e^{at}$, where the constant
-$y_0$ is determined by boundary conditions. We can extend this solution
-to the vector case:
-$$
-\frac{d}{dt}y = A \, y
-$$
-<a name="id:ode.linODEs"></a>
-where $y$ is now a vector of length $n$ and $A$ is an $n$ by $n$ matrix. The
-solution is then given by:
-$$
-y = e^{tA} \, y_0
-$$
-<a name="id:ode.linOEs.sln"></a>
-where the matrix exponential is formally defined by the convergent power series:
-$$
-e^{tA} = \sum_{n=0}^{\infty} \dfrac{tA^n}{n!} = I + tA + \frac{t^2A^2}{2!} + \dotsb
-$$
-<a name="id:ode.matrix_exp.def"></a>
-
-We can apply this technique to the simple harmonic oscillator example, by
-setting
-$$
-y = \begin{bmatrix} y_1 \\ y_2 \end{bmatrix} \qquad
-A = \begin{bmatrix} 0 & 1 \\ -1 & -\theta \end{bmatrix}
-$$
-<a name="id:ode.sho_matrix"></a>
-
-The Stan model to simulate noisy observations using a matrix exponential function
-is given below. Because we are performing matrix
-operations, we declare `y0` and `y_hat` as vectors, instead of using arrays,
-as in the previous example code.
-
-In general, computing a matrix exponential will be more efficient than using a numerical
-solver. We can however only apply this technique to systems of linear ODEs.
-
-```
-data {
-  int<lower=1> T;
-  vector[2] y0;
-  real ts[T];
-  real theta[1];
-}
-model {
-}
-generated quantities {
-  vector[2] y_hat[T];
-  matrix[2, 2] A = [[ 0,  1],
-                    [-1, -theta[1]]]
-  for (t in 1:T)
-    y_hat[t] = matrix_exp((t - 1) * A) * y0;
-  // add measurement error
-  for (t in 1:T) {
-    y_hat[t, 1] += normal_rng(0, 0.1);
-    y_hat[t, 2] += normal_rng(0, 0.1);
-  }
-}
-```
-<a name="id:sho-sim-me.figure"></a>
-
-This Stan program simulates noisy measurements from a simple harmonic
-oscillator.  The system of linear differential equations is coded as a
-matrix. The system parameters `theta` and initial state `y0` are read
-in as data along observation times `ts`.  The generated quantities
-block is used to solve the ODE for the specified times and then add
-random measurement error, producing observations `y_hat`. Because the
-ODEs are linear, we can use the `matrix_exp` function to solve the
-system.
 
 ## Measurement Error Models
 
@@ -276,10 +184,9 @@ measurement noise using `normal_rng`.
 
 ### Estimating System Parameters and Initial State {-}
 
-With noisy observations of the solution it is possible in Stan to estimate
-both parameters and initial conditions. As an example, this is a harmonic
-oscillator example where both the system parameter `theta` and initial state
-`y0` are parameters:
+It is possible in Stan to estimate both the parameters and initial conditions.
+The example below is a harmonic oscillator where both the system parameter
+`theta` and initial state `y0` are parameters:
 
 ```
 functions {
@@ -332,9 +239,9 @@ for (t in 1:T)
 
 As with other regression-like models, it's easy to change the noise
 model to something with heavier tails (e.g., Student-t distributed),
-to be correlated in the state variables (e.g., with a multivariate
-normal distribution), or both (e.g., with a multivariate Student-t
-distribution).
+correlation in the state variables (e.g., with a multivariate
+normal distribution), or both heavy tails and correlation in the state
+variables (e.g., with a multivariate Student-t distribution).
 
 In this simple model, if data is generated with noise scales of 0.1, then ten
 observed data points for times $t = 1,\dotsc, 10$ is sufficient to
@@ -377,9 +284,9 @@ All three additional arguments must be supplied if any of them is required.
 ```
 vector[2] y_hat[T] = ode_bdf_tol(sho, y0, t0, ts,
                                  relative_tolerance,
-				 absolute_tolerance,
-				 max_num_steps,
-				 theta);
+				                         absolute_tolerance,
+				                         max_num_steps,
+				                         theta);
 ```
 
 `relative_tolerance` and `absolute_tolerance` control the stepsize and
@@ -391,6 +298,30 @@ both $10^{-6}$ and the maximum number of steps between outputs is
 one million. For the BDF and Adams solvers, the relative and absolute
 tolerances are $10^{-10}$ and the maximum number of steps between outputs is
 one hundred million.
+
+### Discontinuous ODE System Function {-}
+
+If there are discontinuities in the ODE system function, it is best
+to integrate the ODE to those discontinuities, stop the solver, and
+restart it on the other side.
+
+Nonetheless, the ODE integrator will attempt to integrate over discontinuities
+in the state function. The accuracy of points near the discontinuity
+may be problematic (requiring many small steps).  An example of such a
+discontinuity is a lag in a pharmacokinetic model, where a
+concentration is going to be zero for times $0 < t < t'$ for some
+lag-time $t'$, whereas it will be nonzero for times $t \geq t'$.
+In this example example, we would use code in the system such as
+
+```
+if (t < t_lag)
+  return 0;
+else
+  ... return non-zero value...;
+```
+
+In general it is better to integrate up to `t_lag` in one solve and
+then integrate from `t_lag` onwards in another.
 
 ### Data only for control parameters {-}
 
@@ -410,12 +341,6 @@ maximum absolute error allowed in a solution.
 Smaller tolerances produce more accurate solutions.  Smaller
 tolerances also require more computation time.
 
-#### Sensitivity Analysis {-}
-
-The tolerances should be set low enough that setting them lower does
-not change the statistical properties of posterior samples generated
-by the Stan program.
-
 ### Maximum Number of Steps {-}
 
 The maximum number of steps can be used to stop a runaway simulation.
@@ -423,3 +348,79 @@ This can arise in MCMC when a bad jump is taken, particularly during
 warmup.  With the non-stiff solver, this may result in jumping into a
 stiff region of the parameter space, which would require a  small
 step size and  many steps to satisfy even modest tolerances.
+
+## Solving a System of Linear ODEs using a Matrix Exponential
+
+The solution to $\frac{d}{dt} y = ay$ is $y = y_0e^{at}$, where the constant
+$y_0$ is determined by boundary conditions. We can extend this solution
+to the vector case:
+$$
+\frac{d}{dt}y = A \, y
+$$
+<a name="id:ode.linODEs"></a>
+where $y$ is now a vector of length $n$ and $A$ is an $n$ by $n$ matrix. The
+solution is then given by:
+$$
+y = e^{tA} \, y_0
+$$
+<a name="id:ode.linOEs.sln"></a>
+where the matrix exponential is formally defined by the convergent power series:
+$$
+e^{tA} = \sum_{n=0}^{\infty} \dfrac{tA^n}{n!} = I + tA + \frac{t^2A^2}{2!} + \dotsb
+$$
+<a name="id:ode.matrix_exp.def"></a>
+
+We can apply this technique to the simple harmonic oscillator example, by
+setting
+$$
+y = \begin{bmatrix} y_1 \\ y_2 \end{bmatrix} \qquad
+A = \begin{bmatrix} 0 & 1 \\ -1 & -\theta \end{bmatrix}
+$$
+<a name="id:ode.sho_matrix"></a>
+
+The Stan model to simulate noisy observations using a matrix exponential function
+is given below. Because we are performing matrix
+operations, we declare `y0` and `y_hat` as vectors, instead of using arrays,
+as in the previous example code.
+
+In general, computing a matrix exponential will be more efficient than using a numerical
+solver. We can however only apply this technique to systems of linear ODEs.
+
+```
+data {
+  int<lower=1> T;
+  vector[2] y0;
+  real ts[T];
+  real theta[1];
+}
+model {
+}
+generated quantities {
+  vector[2] y_hat[T];
+  matrix[2, 2] A = [[ 0,  1],
+                    [-1, -theta[1]]]
+  for (t in 1:T)
+    y_hat[t] = matrix_exp((t - 1) * A) * y0;
+  // add measurement error
+  for (t in 1:T) {
+    y_hat[t, 1] += normal_rng(0, 0.1);
+    y_hat[t, 2] += normal_rng(0, 0.1);
+  }
+}
+```
+<a name="id:sho-sim-me.figure"></a>
+
+This Stan program simulates noisy measurements from a simple harmonic
+oscillator.  The system of linear differential equations is coded as a
+matrix. The system parameters `theta` and initial state `y0` are read
+in as data along observation times `ts`.  The generated quantities
+block is used to solve the ODE for the specified times and then add
+random measurement error, producing observations `y_hat`. Because the
+ODEs are linear, we can use the `matrix_exp` function to solve the
+system.
+
+#### Sensitivity Analysis {-}
+
+The tolerances should be set low enough that setting them lower does
+not change the statistical properties of posterior samples generated
+by the Stan program.

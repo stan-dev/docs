@@ -142,35 +142,9 @@ Stan's automatic differentiation.
 
 ## Ordinary Differential Equation (ODE) Solvers {#functions-ode-solver}
 
-Stan provides built-in ordinary differential equation (ODE) solvers.
-Because the first argument to each of the solvers is a function itself,
-the ODE solvers in Stan are considered high order functions.
+Stan provides several higher order functions for solving initial value problems specified as Ordinary Differential Equations (ODEs).
 
-### Specifying an Ordinary Differential Equation as a Function
-
-A system of ODEs is specified as an ordinary function in Stan within
-the functions block. The ODE system function must have the same return
-type and first two arguments as the following function:
-
-```
- vector ode(real time, vector state, ...)
-```
-
-`...` are any number of arguments passed through unmodified from the ODE integrate
-call.
-
-The ODE system function should return the derivative of the state with
-respect to time at the time and state provided. The length of the returned
-vector must match the length of the state input into the function.
-
-The arguments to this function are:
-
-*   *`time`*, the time to evaluate the ODE system
-
-*   *`state`*, the state of the ODE system at the time specified
-
-*   *...*, all other arguments passed through from the integrate call. Each
-argument can be any type.
+Solving an initial value ODE means given a set of differential equations $y' = f(y, t)$ and initial conditions $y(t_0)$, solving for $y$ at a sequence of times $t_0 < t_1 \leq t_2, \cdots \leq t_n$. $f(y, t)$ is referred to here as the ODE system function.
 
 ### Non-Stiff Solver
 
@@ -178,15 +152,15 @@ argument can be any type.
 \index{{\tt \bfseries ode\_rk45 }!{\tt (function ode, real[] initial\_state, real initial\_time, real[] times, ...): vector[]}|hyperpage}
 
 `vector[]` **`ode_rk45`**`(function ode, vector initial_state, real initial_time, real[] times, ...)`<br>\newline
-Solves the ODE system for the times provided using the Runge Kutta
-Dopri algorithm with the implementation from Boost.
+Solves the ODE system for the times provided using the Runge-Kutta
+Dormand-Prince 5 algorithm in Boost.
 
 <!-- vector[]; ode_rk45_tol; (function ode, vector initial_state, real initial_time, real[] times, real rel_tol, real abs_tol, int max_num_steps, ...); -->
 \index{{\tt \bfseries ode\_rk45\_tol }!{\tt (function ode, vector initial\_state, real initial\_time, real[] times, real rel\_tol, real abs\_tol, int max\_num\_steps, ...): vector[]}|hyperpage}
 
 `vector[]` **`ode_rk45_tol`**`(function ode, vector initial_state, real initial_time, real[] times, real rel_tol, real abs_tol, int max_num_steps, ...)`<br>\newline
-Solves the ODE system for the times provided using the Runge Kutta
-Dopri algorithm with the implementation from Boost with additional
+Solves the ODE system for the times provided using the Runge-Kutta
+Dormand-Prince 5 algorithm in Boost with additional
 control parameters for the solver.
 
 <!-- vector[]; ode_adams; (function ode, vector initial_state, real initial_time, real[] times, ...); -->
@@ -227,12 +201,7 @@ CVODES with additional control parameters for the CVODES solver.
 The arguments to the ODE solvers in both the stiff and non-stiff cases
 are as follows.
 
-*   *`ode`*: function literal referring to a function specifying  the
-system of differential equations with signature:
-
-```
- (real, vector, ...):vector
-```
+*   *`ode`*: ODE system function with signature `(real, vector, ...):vector`
 
 The arguments represent (1) time, (2) system state, and a sequence of arguments of any type passed unmodified from the integration function call. The return value contains the derivatives with respect to time of the state.
 
@@ -242,10 +211,10 @@ The arguments represent (1) time, (2) system state, and a sequence of arguments 
 
 *   *`times`*: solution times, type `real[]`,
 
-*   *`...`*: arguments that will be passed through unmodified to the ODE system function, types must match those in the `...` portion of the ode system function
+*   *`...`*: arguments that will be passed through unmodified to the ODE system function. The types here must match the types in the `...` portion of the ode system function arguments.
 
 For the versions of the ode integrator functions ending in `_tol`, these three
-parameters must also be provided:
+parameters must also be provided after `times` and before the `...` arguments:
 
 *   `data`   *`rel_tol`*: relative tolerance for the ODE  solver, type `real`,
 data only,
@@ -255,6 +224,30 @@ data only, and
 
 *   `data`   *`max_num_steps`*: maximum number of steps to take between output
 times in the ODE solver, type `int`, data only.
+
+### Specifying the ODE System Function
+
+The ODE system function must have the a `vector` return type, and the first two arguments must be a `real` and `vector` in that order. These two arguments can be followed by any number of other arguments of any type:
+
+```
+ vector ode(real time, vector state, ...)
+```
+
+`...` are any number of arguments passed through unmodified from the ODE integrate
+call.
+
+The ODE system function should return the derivative of the state with
+respect to time at the time and state provided. The length of the returned
+vector must match the length of the state input into the function.
+
+The arguments to this function are:
+
+*   *`time`*, the time to evaluate the ODE system
+
+*   *`state`*, the state of the ODE system at the time specified
+
+*   *...*, all other arguments passed through from the integrate call. Each
+argument can be any type.
 
 #### Return values
 

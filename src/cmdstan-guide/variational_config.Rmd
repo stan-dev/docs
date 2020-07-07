@@ -1,5 +1,8 @@
 # Variational Inference Algorithm: ADVI
 
+CmdStan can approximate the posterior distribution using variational inference.
+The approximation is a Gaussian in the unconstrained variable space.
+
 Stan implements an automatic variational inference algorithm, called
 Automatic Differentiation Variational Inference (ADVI) @Kucukelbir:2015.
 ADVI uses Monte Carlo integration to approximate the variational
@@ -9,6 +12,14 @@ ADVI optimizes the ELBO in the real-coordinate space using
 The measures of convergence are similar to the
 relative tolerance scheme of Stan's
 [optimization algorithms](https://mc-stan.org/docs/reference-manual/optimization-algorithms-chapter.html).
+
+The algorithm progression consists of an adaptation phase followed by a sampling phase.
+The adaptation phase finds a good value for the step size scaling parameter `eta`.
+The evidence lower bound (ELBO) is the variational objective function and is evaluated based on a Monte Carlo estimate.
+The variational inference algorithm in Stan is stochastic,
+which makes it challenging to assess convergence.
+The algorithm runs until the mean change in ELBO drops below
+the specified tolerance.
 
 The full set of configuration options available for the `variational` method is
 reported at the beginning of the sampler output file as csv comments.
@@ -40,6 +51,103 @@ EXPERIMENTAL ALGORITHM:
   or buggy. The interface is subject to change.
 ```
 
+## Variational Algorithms
+
+Stan implements two variational algorithms.
+The `algorithm` argument specifies the variational algorithm.
+
+- `algorithm=meanfield` - Use a fully factorized Gaussian for the approximation.
+This is the default algorithm.
+
+- `algorithm=fullrank` Use a Gaussian with a full-rank covariance matrix
+for the approximation.
 
 
+## Configuration
 
+- `iter=<int>` Maximum number of iterations. Must be $< 0$. Default is $10000$.
+
+- `grad_samples=<int>` Number of samples for Monte Carlo estimate of gradients. Must be $< 0$. Default is $1$.
+
+
+- `elbo_samples=<int>` Number of samples for Monte Carlo estimate of ELBO (objective function). Must be $< 0$. Default is $100$.
+
+- `eta=<double>` Stepsize weighting parameter for adaptive stepsize sequence. Must be $< 0$. Default is $1.0$.
+
+- `adapt` Warmup Adaptation keyword, takes sub-arguments:
+
+    + `engaged=<boolean>` Adaptation engaged? Valid values: $(0, 1)$. Default is $1$.
+
+    + `iter=<int>` Maximum number of adaptation iterations. Must be $< 0$. Default is $50$.
+
+- `tol_rel_obj=<double>` Convergence tolerance on the relative norm of the objective.  Must be $< 0$. Default is $0.01$.
+
+- `eval_elbo=<int>` Evaluate ELBO every Nth iteration. Must be $< 0$. Default is 100.
+
+- `output_samples=<int>` Number of posterior samples to draw and save. Must be $< 0$. Default is 1000.
+
+## CSV Output
+
+The output file consists of the following pieces of information:
+
+- The full set of configuration options available for the `variational` method is
+reported at the beginning of the sampler output file as CSV comments.
+
+- The first three output columns are labelled `lp__`, `log_p__`, `log_g__`, the rest are the model parameters.
+
+- The stepsize adaptation information is output as csv comments following column header row.
+
+- The following line contains the mean of the variational approximation.
+
+- The rest of the output contains `output_samples` number of samples drawn from the variational approximation.
+
+To illustrate, we call Stan's variational inference on the example model and data:
+```
+> ./bernoulli variational data file=bernoulli.data.R
+```
+
+By default, the output file is `output.csv`.
+Lines 1 - 28 contain configuration information:
+```
+# stan_version_major = 2
+# stan_version_minor = 23
+# stan_version_patch = 0
+# model = bernoulli_model
+# method = variational
+#   variational
+#     algorithm = meanfield (Default)
+#       meanfield
+#     iter = 10000 (Default)
+#     grad_samples = 1 (Default)
+#     elbo_samples = 100 (Default)
+#     eta = 1 (Default)
+#     adapt
+#       engaged = 1 (Default)
+#       iter = 50 (Default)
+#     tol_rel_obj = 0.01 (Default)
+#     eval_elbo = 100 (Default)
+#     output_samples = 1000 (Default)
+...
+```
+The column header row is:
+```
+lp__,log_p__,log_g__,theta
+```
+The stepsize adaptation information is:
+```
+# Stepsize adaptation complete.
+# eta = 1
+```
+The reported mean variational approximations information is:
+```
+0,0,0,0.214911
+```
+That is, the estimate for `theta` given the data is `0.2`.
+
+The following is a sample based on this approximation:
+```
+0,-14.0252,-5.21718,0.770397
+0,-7.05063,-0.10025,0.162061
+0,-6.75031,-0.0191099,0.241606
+...
+```

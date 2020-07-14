@@ -19,7 +19,7 @@ names cannot contain spaces - this limitation is imposed by Make.
 > cd <cmdstan_home>
 ```
 
-In the call to Make, the target is name of the CmdStan executable
+In the call to the Make program, the target is name of the CmdStan executable
 corresponding to the Stan program file.
 On Mac and Linux, this is the name of the Stan program with the `.stan`
 omitted. On Windows, replace `.stan` with `.exe`, and make
@@ -61,15 +61,39 @@ the next call to `make` will rebuild the CmdStan executable.
 ## Compiler Errors
 
 Stan probabalistic programming language is a programming language with a rich syntax,
-as such, it is often the case that a carefully written contains errors.
+as such, it is often the case that a carefully written program contains errors,
+often simple syntax errors such as a misspelled variable name or missing semi-colon (`;`)
+statement termination.
+
+For example, if in the `bernoulli.stan` program, we introduct a typo on line $9$
+by writing `thata` instead of `theta`, the Make command fails with the following
+```
+--- Translating Stan model to C++ code ---
+bin/stanc  --o=bernoulli.hpp bernoulli.stan
+
+Semantic error in 'bernoulli.stan', line 9, column 2 to column 7:
+   -------------------------------------------------
+     7:  } 
+     8:  model {
+     9:    thata ~ beta(1,1);  // uniform prior on interval 0,1
+           ^
+    10:    y ~ bernoulli(theta);
+    11:  }
+   -------------------------------------------------
+
+Identifier 'thata' not in scope.
+
+make: *** [bernoulli.hpp] Error 1
+```
 
 ## Troubleshooting
 
 The stanc compiler is also a program, and while it has been extensively tested,
 it may still contain errors such that the generated C++ code fails to compile.
-If this happens, report the error, together with the Stan program on GitHub.
-This is what a compiler error looks like.
-This is what other kinds of errors look like.
+If this happens, report the error, together with the Stan program on either
+the [Stan Forums](https://discourse.mc-stan.org/) or on the Stan compiler
+GitHub [issues tracker](https://github.com/stan-dev/stanc3/issues).
+
 
 
 

@@ -1,7 +1,7 @@
 # Ordinary Differential Equations  {#ode-solver.chapter}
 
 Stan provides a built-in mechanism for specifying and solving systems
-of ordinary differential equations (ODEs). Three different integrators,
+of ordinary differential equations (ODEs). Three different solvers,
 tuned for solving non-stiff systems and for stiff systems are available.
 
 * `rk45`: a fourth and fifth order Runge-Kutta method for
@@ -91,7 +91,7 @@ The types in the ODE system function are strict. The first argument is the time
 passed as a `real`, the second argument is the state passed as a `vector`,
 and the return type is a `vector`. A model that does not have this signature will
 fail to compile. The third argument onwards can be any type, granted all
-the argument types match the types of the respective arguments in the integrate
+the argument types match the types of the respective arguments in the solver
 call.
 
 All of these are possible ODE signatures:
@@ -267,15 +267,15 @@ difficulties can occur more frequently with loose priors or during warmup.
 Stan provides a specialized solver for stiff ODEs
 [@CohenHindmarsh:1996; @SerbanHindmarsh:2005].  An ODE system is
 specified exactly the same way with a function of exactly the same
-signature.  The only difference is in the call to the integrator for
-the solution; the `rk45` suffix is replaced with `bdf`, as in
+signature.  The only difference is in the call to the solver the
+`rk45` suffix is replaced with `bdf`, as in
 
 ```
 ode_bdf(sho, y0, t0, ts, theta);
 ```
 
-Using the stiff (`bdf`) integrator on a system that is not stiff
-may be much slower than using the non-stiff (`rk45`) integrator because
+Using the stiff (`bdf`) solver on a system that is not stiff
+may be much slower than using the non-stiff (`rk45`) solver because
 each step of the stiff solver takes more time to compute. On the other hand,
 attempting to use the non-stiff solver for a stiff system will cause
 the timestep to become very small, leading the non-stiff solver taking more
@@ -283,7 +283,7 @@ time overall even if each step is easier to compute than for the stiff solver.
 
 ## Control Parameters for ODE Solving
 
-For additional control of the solves, both the non-stiff and stiff integrators
+For additional control of the solves, both the stiff and non-stiff solvers
 have function signatures that makes it possible to specify the
 `relative_tolerance`, `absolute_tolerance`, and `max_num_steps` parameters.
 These are the same as the regular function names but with `_tol` appended to
@@ -318,11 +318,11 @@ one hundred million.
 ### Discontinuous ODE System Function {-}
 
 If there are discontinuities in the ODE system function, it is best
-to integrate the ODE between the discontinuities, stop the solver at each
-one, and restart it on the other side.
+to integrate the ODE between the discontinuities, stopping the solver at each
+one, and restarting it on the other side.
 
-Nonetheless, the ODE integrator will attempt to integrate over discontinuities
-it encounters in the state function. The accuracy of the solution near the
+Nonetheless, the ODE solvers will attempt to integrate over discontinuities
+they encounters in the state function. The accuracy of the solution near the
 discontinuity may be problematic (requiring many small steps). An example of
 such a discontinuity is a lag in a pharmacokinetic model, where a
 concentration is zero for times $0 < t < t'$ and then positive for $t \geq t'$.

@@ -144,20 +144,24 @@ solver directly to the system function.
 
 #### Algorithmic details
 
-Stan offers two algebraic solvers.
-The first one, `algebra_solver`, uses the Powell hybritd method [@Powell:1970],
+Stan offers two algebraic solvers: `algebra_solver` and `algebra_solver_newton`.
+`algebra_solver` is baed on the Powell hybrid method [@Powell:1970],
 which in turn uses first-order derivatives. The Stan code builds on
 the implementation of the hybrid solver in the unsupported module for
 nonlinear optimization problems of the Eigen library [@Eigen:2013].
 This solver is in turn based on the algorithm developed for the
 package MINPACK-1 [@minpack:1980].
 
-The second solver, `algebra_solver_newton`, uses Newton's method,
+`algebra_solver_newton`, uses Newton's method,
 also a first-order derivative based numerical solver.
 The Stan code builds on the implementation in KINSOL
 from the SUNDIALS suite [@Hindmarsh:2005].
-In general, this method works better than Powell's algorithm,
-though the user should be prepared to try both solvers.
+For many problems, we find that `algebra_solver_newton` is faster 
+than Powell's method.
+If however Newton's method performs poorly, either failing to or requiring an excessively
+long time to converge, the user should be prepared to switch
+to `algebra_solver`.
+
 
 For both solvers, the Jacobian of the solution
 with respect to auxiliary parameters is

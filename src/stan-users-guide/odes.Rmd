@@ -281,6 +281,13 @@ attempting to use the non-stiff solver for a stiff system will cause
 the timestep to become very small, leading the non-stiff solver taking more
 time overall even if each step is easier to compute than for the stiff solver.
 
+If it is not known for sure that an ODE system is stiff, run the model with
+both the `rk45` and `bdf` solvers and see which is faster. If the `rk45`
+solver is faster, then the problem is probably non-stiff, and then it makes
+sense to try the `adams` solver as well. The `adams` solver uses higher order
+methods which can take larger timesteps than the `rk45` solver, though similar
+to the `bdf` solver each of these steps is more expensive to compute.
+
 ## Control Parameters for ODE Solving
 
 For additional control of the solves, both the stiff and non-stiff solvers
@@ -339,6 +346,11 @@ In general it is better to integrate up to `t_lag` in one solve and
 then integrate from `t_lag` onwards in another. Mathematically, the
 discontinuity can make the problem ill-defined and the numerical integrator
 may behave erratically around it.
+
+If the location of the discontinuity cannot be controlled precisely, or there is
+some other rapidly change in ODE behavior, it can be useful to tell the ODE
+solver to produce output in the neighborhood. This can help the ODE solver avoid
+indiscriminately stepping over an important feature of the solution.
 
 ### Tolerance {-}
 

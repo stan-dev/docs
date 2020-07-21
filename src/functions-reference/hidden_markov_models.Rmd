@@ -1,0 +1,62 @@
+# Hidden Markov Models (with discrete hidden variables)
+
+An elementary Hidden Markov model is a probabilistic model over
+$N$ obervsations, $y_n$, and $N$ hidden states, $x_n$,
+which can be fully defined by the conditional distributions
+$p(y_n \mid x_n)$ and $p(x_n \mid x_{n - 1})$.
+When $x$ is continuous, the user can explicitly encode these distributions
+in Stan and use Markov chains Monte Carlo to integrate $x$ out.
+
+When $x$ takes a value over a discrete and finite set, say $\{1, 2, ..., K\}$,
+we can take advantage of the dependency structure
+to marginalize $x$ out and compute $p(y)$.
+We start by defining the conditional observational distribution,
+stored in an $N \times K$ matrix $\omega$ with
+$$
+\omega_{i, n} = p(y_n \mid x_n = i).
+$$
+Next, we introduce the $K \times K$ transition matrix, $\Gamma$, with
+$$
+  \Gamma_{ij} = p(x_n = j \mid x_{n - 1} = i).
+$$
+For the matrix to properly define a probability distribution,
+each row must be a simplex (i.e. its components must add up to 1).
+Currently, Stan only supports constant transition matrices.
+Finally we define the $K$ initial state vector $\rho$, with
+$$
+  \rho_i = p(x_0 = i).
+$$
+
+### Stan functions
+
+<!-- real; hmm_marginal; (matrix log_omega, matrix Gamma, vector rho); -->
+\index{{\tt \bfseries hmm\_marginal }!{\tt (matrix log\_omega, matrix Gamma, vector rho): real}|hyperpage}
+
+`real` **`hmm_marginal`**`(matrix log_omega, matrix Gamma, vector rho)`<br>\newline
+The log of the density of y, with x marginalized out, given the observational matrix,
+the transition matrix and the intial state vector.
+
+\index{{\tt \bfseries hmm\_latent\_rng }!{\tt (matrix log\_omega, matrix Gamma, vector rho): int[]}|hyperpage}
+
+`int[]` **`hmm_latent_rng`**`(matrix log_omega, matrix Gamma, vector rho)`<br>\newline
+Generate a sample from the hidden states' posterior distribution, $p(x \mid y)$.
+May be only used in transformed data and generated quantities.
+
+\index{{\tt \bfseries hmm\_hidden\_state\_prob }!{\tt (matrix log\_omega, matrix Gamma, vector rho): matrix}|hyperpage}
+
+`matrix` **`hmm_hidden_state_prob`**`(matrix log_omega, matrix Gamma, vector rho)`<br>\newline
+Returns the posterior probability matrix that hidden variables are in a certain state.
+The $i^\mathrm{th}$ column is a simplex of probabilities for the $i^\mathrm{th}$ variable.
+Moreover, let $A$ be the output. Then $A_{ij} = p(x_j = i \mid y)$.
+This function may only be used in transformed data and generated quantities.
+
+
+
+<!-- The log of the normal density of y given location mu and scale sigma -->
+
+<!-- \index{{\tt \bfseries hmm\_marginal}!{\tt (reals y \textbar\ reals mu, reals sigma): real}|hyperpage} -->
+
+<!-- \index{{\tt \bfseries normal\_lpdf }!{\tt (reals y \textbar\ reals mu, reals sigma): real}|hyperpage} -->
+
+
+

@@ -197,7 +197,8 @@
 <li class="chapter" data-level="5.13.1" data-path="linear-algebra-functions-and-solvers.html"><a href="linear-algebra-functions-and-solvers.html#matrix-division-operators-and-functions"><i class="fa fa-check"></i><b>5.13.1</b> Matrix Division Operators and Functions</a></li>
 <li class="chapter" data-level="5.13.2" data-path="linear-algebra-functions-and-solvers.html"><a href="linear-algebra-functions-and-solvers.html#symmetric-positive-definite-matrix-division-functions"><i class="fa fa-check"></i><b>5.13.2</b> Symmetric positive-definite matrix division functions</a></li>
 <li class="chapter" data-level="5.13.3" data-path="linear-algebra-functions-and-solvers.html"><a href="linear-algebra-functions-and-solvers.html#matrix-exponential"><i class="fa fa-check"></i><b>5.13.3</b> Matrix Exponential</a></li>
-<li class="chapter" data-level="5.13.4" data-path="linear-algebra-functions-and-solvers.html"><a href="linear-algebra-functions-and-solvers.html#linear-algebra-functions"><i class="fa fa-check"></i><b>5.13.4</b> Linear Algebra Functions</a></li>
+<li class="chapter" data-level="5.13.4" data-path="linear-algebra-functions-and-solvers.html"><a href="linear-algebra-functions-and-solvers.html#matrix-power"><i class="fa fa-check"></i><b>5.13.4</b> Matrix Power</a></li>
+<li class="chapter" data-level="5.13.5" data-path="linear-algebra-functions-and-solvers.html"><a href="linear-algebra-functions-and-solvers.html#linear-algebra-functions"><i class="fa fa-check"></i><b>5.13.5</b> Linear Algebra Functions</a></li>
 </ul></li>
 <li class="chapter" data-level="5.14" data-path="sort-functions.html"><a href="sort-functions.html"><i class="fa fa-check"></i><b>5.14</b> Sort Functions</a></li>
 <li class="chapter" data-level="5.15" data-path="reverse-functions.html"><a href="reverse-functions.html"><i class="fa fa-check"></i><b>5.15</b> Reverse Functions</a></li>
@@ -714,11 +715,14 @@
             <section class="normal" id="section-">
 <div id="functions-algebraic-solver" class="section level2">
 <h2><span class="header-section-number">9.1</span> Algebraic Equation Solver</h2>
-<p>Stan provides a built-in algebraic equation solver. Although it looks
-like other function applications, the algebraic solver is special in
-two ways.</p>
-<p>First, the algebraic solver is a higher-order function, i.e. it takes
-another function as one of its arguments. The only other functions in
+<p>Stan provides two built-in algebraic equation solvers,
+respectively based on Powell’s and Newton’s methods.
+The Newton method constitutes a more recent addition to Stan;
+its use is recommended for most problems.
+Although they look like other function applications,
+algebraic solvers are special in two ways.</p>
+<p>First, an algebraic solver is a higher-order function, i.e. it takes
+another function as one of its arguments. Other functions in
 Stan which share this feature are the ordinary differential equation
 solvers (see section <a href="functions-ode-solver.html#functions-ode-solver">Ordinary Differential Equation (ODE) Solvers</a>).
 Ordinary Stan functions do not allow functions as arguments.</p>
@@ -745,8 +749,8 @@ algebraic system.</p>
 <li><p><em><code>x_i</code></em>, integer data used to evaluate the algebraic system</p></li>
 </ul>
 <p>The algebraic system function separates parameter values, <em><code>theta</code></em>,
-from data values, <em><code>x_r</code></em>, for efficiency in computing the gradients
-of the algebraic system.</p>
+from data values, <em><code>x_r</code></em>, for efficiency in propagating the derivatives
+through the algebraic system.</p>
 </div>
 <div id="call-to-the-algebraic-solver" class="section level3">
 <h3><span class="header-section-number">9.1.2</span> Call to the Algebraic Solver</h3>
@@ -760,20 +764,26 @@ hybrid algorithm.</p>
 <p><code>vector</code> <strong><code>algebra_solver</code></strong><code>(function algebra_system, vector y_guess, vector theta, real[] x_r, int[] x_i, real rel_tol, real f_tol, int max_steps)</code><br>
 Solves the algebraic system, given an initial guess, using the Powell
 hybrid algorithm with additional control parameters for the solver.</p>
+<p><em>Note:</em> In future releases, the function <code>algebra_solver</code> will be deprecated
+and replaced with <code>algebra_solver_powell</code>.</p>
+<p></p>
+<p><code>vector</code> <strong><code>algebra_solver_newton</code></strong><code>(function algebra_system, vector y_guess, vector theta, real[] x_r, int[] x_i)</code><br>
+Solves the algebraic system, given an initial guess, using Newton’s method.</p>
+<!-- vector; algebra_solver; (function algebra_system, vector y_guess, vector theta, real[] x_r, int[] x_i, real rel_tol, real f_tol, int max_steps); -->
+<p></p>
+<p><code>vector</code> <strong><code>algebra_solver_newton</code></strong><code>(function algebra_system, vector y_guess, vector theta, real[] x_r, int[] x_i, real rel_tol, real f_tol, int max_steps)</code><br>
+Solves the algebraic system, given an initial guess, using Newton’s method
+with additional control parameters for the solver.</p>
 <div id="arguments-to-the-algebraic-solver" class="section level4">
 <h4><span class="header-section-number">9.1.2.1</span> Arguments to the Algebraic Solver</h4>
-<p>The arguments to the algebraic solver are as follows:</p>
+<p>The arguments to the algebraic solvers are as follows:</p>
 <ul>
-<li><em><code>algebra_system</code></em>: function literal referring to a function
+<li><p><em><code>algebra_system</code></em>: function literal referring to a function
 specifying the system of algebraic equations with signature
-<code>(vector, vector, real[], int[]):vector</code>. The arguments represent</li>
-</ul>
-<ol style="list-style-type: decimal">
-<li>unknowns, (2) parameters, (3) real data, and (4) integer data,
+<code>(vector, vector, real[], int[]):vector</code>. The arguments represent (1)
+unknowns, (2) parameters, (3) real data, and (4) integer data,
 and the return value contains the value of the algebraic function,
-which goes to 0 when we plug in the solution to the algebraic system,</li>
-</ol>
-<ul>
+which goes to 0 when we plug in the solution to the algebraic system,</p></li>
 <li><p><em><code>y_guess</code></em>: initial guess for the solution, type <code>vector</code>,</p></li>
 <li><p><em><code>theta</code></em>: parameters only, type <code>vector</code>,</p></li>
 <li><p><em><code>x_r</code></em>: real data only, type <code>real[]</code>, and</p></li>
@@ -806,13 +816,24 @@ solver directly to the system function.</p>
 </div>
 <div id="algorithmic-details" class="section level4">
 <h4><span class="header-section-number">9.1.2.4</span> Algorithmic details</h4>
-<p>The algebraic solver uses the Powell hybrid method <span class="citation">(Powell <a href="#ref-Powell:1970" role="doc-biblioref">1970</a>)</span>,
+<p>Stan offers two algebraic solvers: <code>algebra_solver</code> and <code>algebra_solver_newton</code>.
+<code>algebra_solver</code> is baed on the Powell hybrid method <span class="citation">(Powell <a href="#ref-Powell:1970" role="doc-biblioref">1970</a>)</span>,
 which in turn uses first-order derivatives. The Stan code builds on
 the implementation of the hybrid solver in the unsupported module for
 nonlinear optimization problems of the Eigen library <span class="citation">(Guennebaud, Jacob, and others <a href="#ref-Eigen:2013" role="doc-biblioref">2010</a>)</span>.
 This solver is in turn based on the algorithm developed for the
 package MINPACK-1 <span class="citation">(Jorge J. More <a href="#ref-minpack:1980" role="doc-biblioref">1980</a>)</span>.</p>
-<p>The Jacobian of the solution with respect to auxiliary parameters is
+<p><code>algebra_solver_newton</code>, uses Newton’s method,
+also a first-order derivative based numerical solver.
+The Stan code builds on the implementation in KINSOL
+from the SUNDIALS suite <span class="citation">(Hindmarsh et al. <a href="#ref-Hindmarsh:2005" role="doc-biblioref">2005</a>)</span>.
+For many problems, we find that <code>algebra_solver_newton</code> is faster
+than Powell’s method.
+If however Newton’s method performs poorly, either failing to or requiring an excessively
+long time to converge, the user should be prepared to switch
+to <code>algebra_solver</code>.</p>
+<p>For both solvers, the Jacobian of the solution
+with respect to auxiliary parameters is
 computed using the implicit function theorem. Intermediate Jacobians
 (of the algebraic function’s output with respect to the unknowns y
 and with respect to the auxiliary parameters theta) are computed using
@@ -824,6 +845,9 @@ Stan’s automatic differentiation.</p>
 <div id="refs" class="references">
 <div id="ref-Eigen:2013">
 <p>Guennebaud, Gaël, Benoît Jacob, and others. 2010. “Eigen V3.” http://eigen.tuxfamily.org.</p>
+</div>
+<div id="ref-Hindmarsh:2005">
+<p>Hindmarsh, Alan C, Peter N Brown, Keith E Grant, Steven L Lee, Radu Serban, Dan E Shumaker, and Carol S Woodward. 2005. “SUNDIALS: Suite of Nonlinear and Differential/Algebraic Equation Solvers.” <em>ACM Transactions on Mathematical Software (TOMS)</em> 31 (3): 363–96.</p>
 </div>
 <div id="ref-minpack:1980">
 <p>Jorge J. More, Kenneth E. Hillstrom, Burton S. Garbow. 1980. <em>User Guide for Minpack-1</em>. 9700 South Cass Avenue, Argonne, Illinois 60439: Argonne National Laboratory.</p>

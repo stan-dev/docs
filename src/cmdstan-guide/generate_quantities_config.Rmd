@@ -1,13 +1,60 @@
 # Standalone Generate Quantities
 
-The `generate_quantities` method allows you to generate additional quantities of interest
-from a fitted model without re-running the sampler.
+The `generate_quantities` method allows you to generate additional
+quantities of interest from a fitted model without re-running the sampler.
+For an overview of the uses of this feature, see the
+[QuickStart Guide section](#gc-intro)
+and the Stan User's Guide section on
+[Stand-alone generated quantities and ongoing prediction](
+https://mc-stan.org/docs/stan-users-guide/stand-alone-generated-quantities-and-ongoing-prediction.html).
 
 This method requires sub-argument `fitted_params` which takes as its value
 an existing Stan csv file that contains a sample from an equivalent model,
 i.e., a model with the same parameters, transformed parameters, and model blocks,
 conditioned on the same data.
 
+If we run the `bernoulli.stan` program for a single chain to
+generate a sample in file `bernoulli_fit.csv`:
+
+```
+> ./bernoulli sample data file=bernoulli.data.json output file=bernoulli_fit.csv
+```
+
+Then we can run the `bernoulli_ppc.stan` to carry out the posterior predictive
+checks:
+
+```
+> ./bernoulli_ppc generate_quantities fitted_params=bernoulli_fit.csv \
+                  data file=bernoulli.data.json \
+                  output file=bernoulli_ppc.csv
+```
+
+The `fitted_params` file must be a Stan csv file; attempts to use a regular csv file
+will result an error message of the form:
+
+```
+Error reading fitted param names from sample csv file <filename.csv>
+```
+
+The `fitted_params` file must contain columns corresponding to legal values
+for all parameters defined in the model.
+If any parameters are missing, the program will exit with an error
+message of the form:
+
+```
+Error reading fitted param names from sample csv file <filename.csv>
+```
+
+The parameter values of the `fitted_params` are on the
+constrained scale and must obey all constraints.
+For example, if we modify the contencts of the first
+reported draw in `bernoulli_fit.csv` so that the value
+of `theta` is outside the declared bounds `real<lower=0,upper=1>`,
+the program will return the following error message:
+
+```
+Exception: lub_free: Bounded variable is 1.21397, but must be in the interval [0, 1] (in 'bernoulli_ppc.stan', line 5, column 2 to column 30)
+```
 
 
 

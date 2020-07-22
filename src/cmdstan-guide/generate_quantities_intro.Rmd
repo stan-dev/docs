@@ -1,4 +1,4 @@
-# Generating Quantities of Interest from a Fitted Model
+# Generating Quantities of Interest from a Fitted Model  {#gc-intro}
 
 The [generated quantities block](https://mc-stan.org/docs/reference-manual/program-block-generated-quantities.html)
 computes *quantities of interest* (QOIs) based on the data,
@@ -20,28 +20,116 @@ Instead, you write a modified version of the original Stan program
 and add a generated quantities block or modify the existing one
 which specifies how to compute the new quantities of interest.
 Running the `generate_quantities` method on the new program
-together with sampler outputs from the fitted model
-runs the generated quantities block of the new program using
-the estimated parameter values from the existing sample.
+together with sampler outputs (i.e., a set of draws)
+from the fitted model runs the generated quantities block
+of the new program using the the existing sample by plugging
+in the per-draw parameter estimates for the computations in
+the generated quantities block.
+See the Stan User's Guide section
+[Stand-alone generated quantities and ongoing prediction](
+https://mc-stan.org/docs/stan-users-guide/stand-alone-generated-quantities-and-ongoing-prediction.html)
+for further details.
 
-To illustrate how this works, we add poterior predictive checks to
-the example model `bernoulli.stan`.
-We create a new model, `bernoulli_yrep.stan` which contains
-the following generated quantities block:
+To illustrate how this works we use the `generate_quantities` method
+to do posterior predictive checks using the estimate of `theta` given
+the example bernoulli model and data, following the
+[posterior predictive simulation](
+https://mc-stan.org/docs/stan-users-guide/posterior-predictive-simulation-in-stan.html)
+procedure in the Stan User's Guide.
+
+We write a program `bernoulli_ppc.stan` which contains
+the following generated quantities block, with comments
+to explain the procedure:
 ```
 generated quantities {
-  int y_sim[N];
   real<lower=0,upper=1> theta_rep;
+  int y_sim[N];
+  // use current estimate of theta to generate new sample
   for (n in 1:N)
     y_sim[n] = bernoulli_rng(theta);
-  theta_rep = sum(y) / N;
+  // estimate theta_rep from new sample
+  theta_rep = sum(y_sim) * 1.0 / N;
+}
+```
+The rest of the program is the same as in `bernoulli.stan`.
+
+The `generate_method` requires the sub-argument `fitted_params`
+which takes as its value the name of a Stan csv file.
+The per-draw parameter estimates from the `fitted_params` file will
+be used to run the generated quantities block.
+
+If we run the `bernoulli.stan` program for a single chain to
+generate a sample in file `bernoulli_fit.csv`:
+
+```
+> ./bernoulli sample data file=bernoulli.data.json output file=bernoulli_fit.csv
+```
+
+Then we can run the `bernoulli_ppc.stan` to carry out the posterior predictive
+checks:
+
+```
+> ./bernoulli_ppc generate_quantities fitted_params=bernoulli_fit.csv \
+                  data file=bernoulli.data.json \
+                  output file=bernoulli_ppc.csv
+```
+
+The output file `bernoulli_ppc.csv` consists of just the values for the variables declared in the generated quantities block, i.e., `theta_rep` and the elements of `y_sim`:
+
+```
+# model = bernoulli_ppc_model
+# method = generate_quantities
+#   generate_quantities
+#     fitted_params = bernoulli_fit.csv
+# id = 0 (Default)
+# data
+#   file = bernoulli.data.json
+# init = 2 (Default)
+# random
+#   seed = 2135140492 (Default)
+# output
+#   file = bernoulli_ppc.csv
+#   diagnostic_file =  (Default)
+#   refresh = 100 (Default)
+theta_rep,y_sim.1,y_sim.2,y_sim.3,y_sim.4,y_sim.5,y_sim.6,y_sim.7,y_sim.8,y_sim.9,y_sim.10
+0.2,0,0,1,0,0,0,0,0,1,0
+0.3,1,0,0,1,0,1,0,0,0,0
+0.8,1,0,1,1,1,1,1,1,1,0
+0.1,0,0,0,0,0,1,0,0,0,0
+0.3,0,0,0,0,0,0,1,1,1,0
+```
+
+_Note_: the only relevant analysis of the resulting csv output is computing per-column statistics; this can easily be done in Python, R, Excel or similar,
+or you can use the CmdStanPy and CmdStanR interfaces which provide a
+better user experience for this workflow.
+
+Given the current implementation, to see the fitted parameter values for each draw,
+create a copy variable in the generated quantities block, e.g.:
+
+```
+generated quantities {
+  real<lower=0,upper=1> theta_cp = theta;
+  real<lower=0,upper=1> theta_rep;
+  int y_sim[N];
+  // use current estimate of theta to generate new sample
+  for (n in 1:N)
+    y_sim[n] = bernoulli_rng(theta);
+  // estimate theta_rep from new sample
+  theta_rep = sum(y_sim) * 1.0 / N;
 }
 ```
 
-We compile this model, and then run it with the fit from a previous run of
-the original model and the same input data file:
+Now the output is slightly more interpretable: `theta_cp` is the same as the `theta`
+used to generate the values `y_sim[1]` through `y_sim[1]`.
+Comparing columns `theta_cp` and `theta_rep` allows us to see how the
+uncertainty in our estimate of `theta` is carried forward
+into our predictions:
 
 ```
-> ./bernoulli_yrep generate_quantities ....
+theta_cp,theta_rep,y_sim.1,y_sim.2,y_sim.3,y_sim.4,y_sim.5,y_sim.6,y_sim.7,y_sim.8,y_sim.9,y_sim.10
+0.102391,0,0,0,0,0,0,0,0,0,0,0
+0.519567,0.2,0,1,0,0,1,0,0,0,0,0
+0.544634,0.6,1,0,0,0,0,1,1,1,1,1
+0.167651,0,0,0,0,0,0,0,0,0,0,0
+0.167651,0.1,1,0,0,0,0,0,0,0,0,0
 ```
-

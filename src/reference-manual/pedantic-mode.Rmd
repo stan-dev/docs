@@ -1,32 +1,34 @@
-
-
 # Pedantic mode
 
 Pedantic mode is a compilation option built into Stanc3 that warns you about potential issues in your Stan program.
 
 For example, consider the following program.
 
-    data {
-      int N;
-      real x[N];
-    }
-    parameters {
-      real sigma;
-    }
-    model {
-      real mu;
-      x ~ normal(mu, sigma);
-    }
+```
+data {
+  int N;
+  real x[N];
+}
+parameters {
+  real sigma;
+}
+model {
+  real mu;
+  x ~ normal(mu, sigma);
+}
+```
 
 When pedantic mode is turned on, the compiler will produce the following warnings.
 
-    Warning:
-      The parameter sigma has no priors.
-    Warning at 'ped-mode-ex1.stan', line 10, column 14 to column 16:
-      The variable mu may not have been assigned a value before its use.
-    Warning at 'ped-mode-ex1.stan', line 10, column 18 to column 23:
-      A normal distribution is given parameter sigma as a scale parameter
-      (argument 2), but sigma was not constrained to be strictly positive.
+```
+Warning:
+  The parameter sigma has no priors.
+Warning at 'ped-mode-ex1.stan', line 10, column 14 to column 16:
+  The variable mu may not have been assigned a value before its use.
+Warning at 'ped-mode-ex1.stan', line 10, column 18 to column 23:
+  A normal distribution is given parameter sigma as a scale parameter
+  (argument 2), but sigma was not constrained to be strictly positive.
+```
 
 Here are the kinds of issues that pedantic mode will find (which are described in more detail in following sections):
 
@@ -48,22 +50,26 @@ When an argument to a built-in distribution certainly does not match that distri
 
 For example, consider the following program.
 
-    parameters {
-      real unb_p;
-      real<lower=0> pos_p;
-    }
-    model {
-      1 ~ poisson(unb_p);
-      1 ~ poisson(pos_p);
-    }
+```
+parameters {
+  real unb_p;
+  real<lower=0> pos_p;
+}
+model {
+  1 ~ poisson(unb_p);
+  1 ~ poisson(pos_p);
+}
+```
 
 The parameter of `poisson` should be strictly positive, but `unb_p` is not constrained to be positive.
 
 Pedantic mode produces the following warning.
 
-    Warning at 'ex-dist-args.stan', line 6, column 14 to column 19:
-      A poisson distribution is given parameter unb_p as a rate parameter
-      (argument 1), but unb_p was not constrained to be strictly positive.
+```
+Warning at 'ex-dist-args.stan', line 6, column 14 to column 19:
+  A poisson distribution is given parameter unb_p as a rate parameter
+  (argument 1), but unb_p was not constrained to be strictly positive.
+```
 
 
 ## Special-case distribution issues
@@ -73,167 +79,179 @@ Pedantic mode checks for some specific uses of distributions that may indicate a
 
 ### Uniform distributions
 
-Any use of uniform distribution generates a warning, except when the variate parameter's declared `upper` and `lower` bounds exactly match the uniform distribution bounds.
-In general, assigning a parameter a uniform distribution can create non-differentiable boundary conditions and is not recommended.
+Any use of uniform distribution generates a warning, except when the variate parameter's declared `upper` and `lower` bounds exactly match the uniform distribution bounds. In general, assigning a parameter a uniform distribution can create non-differentiable boundary conditions and is not recommended.
 
 For example, consider the following program.
 
-    parameters {
-      real a;
-      real<lower=0, upper=1> b;
-    }
-    model {
-      a ~ uniform(0, 1);
-      b ~ uniform(0, 1);
-    }
+```
+parameters {
+  real a;
+  real<lower=0, upper=1> b;
+}
+model {
+  a ~ uniform(0, 1);
+  b ~ uniform(0, 1);
+}
+```
 
 `a` is assigned a uniform distribution that doesn't match its constraints.
 
 Pedantic mode produces the following warning.
 
-    Warning at 'uniform-warn.stan', line 6, column 2 to column 20:
-      Parameter a is given a uniform distribution. The uniform distribution is
-      not recommended, for two reasons: (a) Except when there are logical or
-      physical constraints, it is very unusual for you to be sure that a
-      parameter will fall inside a specified range, and (b) The infinite gradient
-      induced by a uniform density can cause difficulties for Stan's sampling
-      algorithm. As a consequence, we recommend soft constraints rather than hard
-      constraints; for example, instead of giving an elasticity parameter a
-      uniform(0,1) distribution, try normal(0.5,0.5).
+```
+Warning at 'uniform-warn.stan', line 6, column 2 to column 20:
+  Parameter a is given a uniform distribution. The uniform distribution is
+  not recommended, for two reasons: (a) Except when there are logical or
+  physical constraints, it is very unusual for you to be sure that a
+  parameter will fall inside a specified range, and (b) The infinite gradient
+  induced by a uniform density can cause difficulties for Stan's sampling
+  algorithm. As a consequence, we recommend soft constraints rather than hard
+  constraints; for example, instead of giving an elasticity parameter a
+  uniform(0,1) distribution, try normal(0.5,0.5).
+```
 
 
 ### (Inverse-) Gamma distributions
 
-Gamma distributions are sometimes used as an attempt to assign an improper prior to a parameter.
-Pedantic mode gives a warning when the Gamma arguments indicate that this may be the case.
+Gamma distributions are sometimes used as an attempt to assign an improper prior to a parameter. Pedantic mode gives a warning when the Gamma arguments indicate that this may be the case.
 
 
 ### lkj\_corr distribution
 
-Any use of the `lkj_corr` distribution generates a warning that suggests using the Cholesky variant instead.
-See <https://mc-stan.org/docs/functions-reference/lkj-correlation.html> for details.
+Any use of the `lkj_corr` distribution generates a warning that suggests using the Cholesky variant instead. See <https://mc-stan.org/docs/functions-reference/lkj-correlation.html> for details.
 
 
 ## Unused parameters
 
-A warning is generated when a parameter is declared but does not have any effect on the program.
-This is determined by checking whether the value of the `target` variable depends in any way on each of the parameters.
+A warning is generated when a parameter is declared but does not have any effect on the program. This is determined by checking whether the value of the `target` variable depends in any way on each of the parameters.
 
 For example, consider the following program.
 
-    parameters {
-      real a;
-      real b;
-    }
-    model {
-      a ~ normal(1, 1);
-    }
+```
+parameters {
+  real a;
+  real b;
+}
+model {
+  a ~ normal(1, 1);
+}
+```
 
 `a` participates in the density function but `b` does not.
 
 Pedantic mode produces the following warning.
 
-    Warning:
-      The parameter b was declared but was not used in the density calculation.
+```
+Warning:
+  The parameter b was declared but was not used in the density calculation.
+```
 
 
 ## Large or small constants in a distribution
 
-When numbers with magnitude less than 0.1 or greater than 10 are used as arguments to a distribution, it indicates that some parameter is not scaled to unit value, so a warning is thrown.
-See <https://mc-stan.org/docs/stan-users-guide/standardizing-predictors-and-outputs.html> for a discussion of scaling parameters.
+When numbers with magnitude less than 0.1 or greater than 10 are used as arguments to a distribution, it indicates that some parameter is not scaled to unit value, so a warning is thrown. See <https://mc-stan.org/docs/stan-users-guide/standardizing-predictors-and-outputs.html> for a discussion of scaling parameters.
 
 For example, consider the following program.
 
-    parameters {
-      real x;
-      real y;
-    }
-    model {
-      x ~ normal(-100, 100);
-      y ~ normal(0, 1);
-    }
+```
+parameters {
+  real x;
+  real y;
+}
+model {
+  x ~ normal(-100, 100);
+  y ~ normal(0, 1);
+}
+```
 
 The constants `-100` and `100` suggest that `x` is not unit scaled.
 
 Pedantic mode produces the following warning.
 
-    Warning at 'constants-warn.stan', line 6, column 14 to column 17:
-      Argument -100 suggests there may be parameters that are not unit scale;
-      consider rescaling with a multiplier (see manual section 22.12).
-    Warning at 'constants-warn.stan', line 6, column 19 to column 22:
-      Argument 100 suggests there may be parameters that are not unit scale;
-      consider rescaling with a multiplier (see manual section 22.12).
+```
+Warning at 'constants-warn.stan', line 6, column 14 to column 17:
+  Argument -100 suggests there may be parameters that are not unit scale;
+  consider rescaling with a multiplier (see manual section 22.12).
+Warning at 'constants-warn.stan', line 6, column 19 to column 22:
+  Argument 100 suggests there may be parameters that are not unit scale;
+  consider rescaling with a multiplier (see manual section 22.12).
+```
 
 
 ## Control flow depends on a parameter
 
-Control flow statements, such as `if`, `for` and `while`, should not depend on parameters or functions of parameters to determine their branching conditions.
-This is likely to introduce a discontinuity into the density function.
-Pedantic mode generates a warning when any branching condition may depend on a parameter value.
+Control flow statements, such as `if`, `for` and `while`, should not depend on parameters or functions of parameters to determine their branching conditions. This is likely to introduce a discontinuity into the density function. Pedantic mode generates a warning when any branching condition may depend on a parameter value.
 
 For example, consider the following program.
 
-    parameters {
-      real a;
-    }
-    model {
-      // x depends on parameter a
-      real x = a * a;
-    
-      int m;
-    
-      // the if-then-else depends on x which depends on a
-      if(x > 0) {
-        //now m depends on x which depends on a
-        m = 1;
-      } else {
-        m = 2;
-      }
-    
-      // for loop depends on m -> x -> a
-      for (i in 0:m) {
-        a ~ normal(i, 1);
-      }
-    }
+```
+parameters {
+  real a;
+}
+model {
+  // x depends on parameter a
+  real x = a * a;
+
+  int m;
+
+  // the if-then-else depends on x which depends on a
+  if(x > 0) {
+    //now m depends on x which depends on a
+    m = 1;
+  } else {
+    m = 2;
+  }
+
+  // for loop depends on m -> x -> a
+  for (i in 0:m) {
+    a ~ normal(i, 1);
+  }
+}
+```
 
 The `if` and `for` statements are control flow that depend (indirectly) on the value of the parameter `m`.
 
 Pedantic mode produces the following warning.
 
-    Warning at 'param-dep-cf-warn.stan', line 11, column 2 to line 16, column 3:
-      A control flow statement depends on parameter(s): a.
-    Warning at 'param-dep-cf-warn.stan', line 19, column 2 to line 21, column 3:
-      A control flow statement depends on parameter(s): a.
+```
+Warning at 'param-dep-cf-warn.stan', line 11, column 2 to line 16, column 3:
+  A control flow statement depends on parameter(s): a.
+Warning at 'param-dep-cf-warn.stan', line 19, column 2 to line 21, column 3:
+  A control flow statement depends on parameter(s): a.
+```
 
 
 ## Parameters with multiple twiddles
 
-A warning is generated when a parameter is found on the left-hand side of more than one ~ statements (or an equivalent `target +=` conditional density statement).
-This pattern is not inherently an issue, but it is unusual and may indicate a mistake.
+A warning is generated when a parameter is found on the left-hand side of more than one ~ statements (or an equivalent `target +=` conditional density statement). This pattern is not inherently an issue, but it is unusual and may indicate a mistake.
 
 Pedantic mode only searches for repeated statements, it will not for example generate a warning when a ~ statement is executed repeatedly inside of a loop.
 
 For example, consider the following program.
 
-    data {
-      real x;
-    }
-    parameters {
-      real a;
-      real b;
-    }
-    model {
-      a ~ normal(0, 1);
-      a ~ normal(x, 1);
-    
-      b ~ normal(1, 1);
-    }
+```
+data {
+  real x;
+}
+parameters {
+  real a;
+  real b;
+}
+model {
+  a ~ normal(0, 1);
+  a ~ normal(x, 1);
+
+  b ~ normal(1, 1);
+}
+```
 
 Pedantic mode produces the following warning.
 
-    Warning at 'multi-twiddle.stan', line 9, column 2 to column 19:
-      The parameter a is on the left-hand side of more than one twiddle
-      statement.
+```
+Warning at 'multi-twiddle.stan', line 9, column 2 to column 19:
+  The parameter a is on the left-hand side of more than one twiddle
+  statement.
+```
 
 
 ## Parameters with zero or multiple priors
@@ -246,39 +264,43 @@ One limitation of this approach is that the compiler cannot distinguish between 
 
 For example, consider the following program.
 
-    data {
-      real x;
-    }
-    parameters {
-      real a;
-      real b;
-      real c;
-      real d;
-    }
-    model
-    {
-      a ~ normal(0, 1); // this is a prior
-      x ~ normal(a, 1); // this is not a prior, since data is involved
-    
-      b ~ normal(x, 1); // this is also not a prior, since data is involved
-    
-      // this is not a prior for c, since data is involved through b
-      // but it is a prior for b, since the data is only involved through b
-      c ~ normal(b, 1);
-    
-      //these are multiple priors:
-      d ~ normal(0, 1);
-      1 ~ normal(d, 1);
-    }
+```
+data {
+  real x;
+}
+parameters {
+  real a;
+  real b;
+  real c;
+  real d;
+}
+model
+{
+  a ~ normal(0, 1); // this is a prior
+  x ~ normal(a, 1); // this is not a prior, since data is involved
+
+  b ~ normal(x, 1); // this is also not a prior, since data is involved
+
+  // this is not a prior for c, since data is involved through b
+  // but it is a prior for b, since the data is only involved through b
+  c ~ normal(b, 1);
+
+  //these are multiple priors:
+  d ~ normal(0, 1);
+  1 ~ normal(d, 1);
+}
+```
 
 One prior is found for `a` and for `b`, while `c` only has a factor that touches a `data` variable and `d` has multiple priors.
 
 Pedantic mode produces the following warning.
 
-    Warning:
-      The parameter c has no priors.
-    Warning:
-      The parameter d has 2 priors.
+```
+Warning:
+  The parameter c has no priors.
+Warning:
+  The parameter d has 2 priors.
+```
 
 
 ## Variables used before assignment
@@ -287,53 +309,60 @@ A warning is generated when any variable is used before it has been assigned a v
 
 For example, consider the following program.
 
-    transformed data {
-      real x;
-      if (1 > 2)
-        x = 1;
-      else
-        print("oops");
-      print(x);
-    }
+```
+transformed data {
+  real x;
+  if (1 > 2)
+    x = 1;
+  else
+    print("oops");
+  print(x);
+}
+```
 
-Since `x` is only assigned in one of the branches of the `if` statement, it might get to `print(x)` without having been assigned to. 
+Since `x` is only assigned in one of the branches of the `if` statement, it might get to `print(x)` without having been assigned to.
 
 Pedantic mode produces the following warning.
 
-    Warning at 'uninit-warn.stan', line 7, column 8 to column 9:
-      The variable x may not have been assigned a value before its use.
+```
+Warning at 'uninit-warn.stan', line 7, column 8 to column 9:
+  The variable x may not have been assigned a value before its use.
+```
 
 
 ## Strict or nonsensical parameter bounds
 
-Except when there are logical or physical constraints, it is very unusual for you to be sure that a parameter will fall inside a specified range.
-A warning is generated for all parameters declared with the bounds `<lower=.., upper=..>` except for `<lower=0, upper=1>` or `<lower=-1, upper=1>`.
+Except when there are logical or physical constraints, it is very unusual for you to be sure that a parameter will fall inside a specified range. A warning is generated for all parameters declared with the bounds `<lower=.., upper=..>` except for `<lower=0, upper=1>` or `<lower=-1, upper=1>`.
 
 In addition, a warning is generated when a parameter bound is found to have `lower >= upper`.
 
 For example, consider the following program.
 
-    parameters {
-      real<lower=0, upper=1> a;
-      real<lower=-1, upper=1> b;
-      real<lower=-2, upper=1012> c;
-    }
-    model {
-      c ~ normal(b, a);
-    }
+```
+parameters {
+  real<lower=0, upper=1> a;
+  real<lower=-1, upper=1> b;
+  real<lower=-2, upper=1012> c;
+}
+model {
+  c ~ normal(b, a);
+}
+```
 
 Pedantic mode produces the following warning.
 
-    Warning:
-      Your Stan program has a parameter c with a lower and upper bound in its
-      declaration. These hard constraints are not recommended, for two reasons:
-      (a) Except when there are logical or physical constraints, it is very
-      unusual for you to be sure that a parameter will fall inside a specified
-      range, and (b) The infinite gradient induced by a hard constraint can cause
-      difficulties for Stan's sampling algorithm. As a consequence, we recommend
-      soft constraints rather than hard constraints; for example, instead of
-      constraining an elasticity parameter to fall between 0, and 1, leave it
-      unconstrained and give it a normal(0.5,0.5) prior distribution.
+```
+Warning:
+  Your Stan program has a parameter c with a lower and upper bound in its
+  declaration. These hard constraints are not recommended, for two reasons:
+  (a) Except when there are logical or physical constraints, it is very
+  unusual for you to be sure that a parameter will fall inside a specified
+  range, and (b) The infinite gradient induced by a hard constraint can cause
+  difficulties for Stan's sampling algorithm. As a consequence, we recommend
+  soft constraints rather than hard constraints; for example, instead of
+  constraining an elasticity parameter to fall between 0, and 1, leave it
+  unconstrained and give it a normal(0.5,0.5) prior distribution.
+```
 
 
 ## Pedantic mode limitations
@@ -341,15 +370,12 @@ Pedantic mode produces the following warning.
 
 #### Constant values are sometimes uncomputable
 
-Pedantic mode attempts to evaluate expressions down to literal values so that they can be used to generate warnings.
-For example, in the code `normal(x, 1 - 2)`, the expression `1 - 2` will be evaluated to `-1`, which is not a valid variance argument so a warning is generated.
-However, this strategy is limited; it is often impossible to fully evaluate expressions in finite time.
+Pedantic mode attempts to evaluate expressions down to literal values so that they can be used to generate warnings. For example, in the code `normal(x, 1 - 2)`, the expression `1 - 2` will be evaluated to `-1`, which is not a valid variance argument so a warning is generated. However, this strategy is limited; it is often impossible to fully evaluate expressions in finite time.
 
 
 #### Container types
 
-Currently, indexed variables are not handled intelligently, so they are treated as monolithic variables.
-Each analysis treats indexed variables conservatively (erring toward generating fewer warnings).
+Currently, indexed variables are not handled intelligently, so they are treated as monolithic variables. Each analysis treats indexed variables conservatively (erring toward generating fewer warnings).
 
 
 #### Data variables
@@ -360,4 +386,3 @@ The declaration information for `data` variables is currently not considered, so
 #### Control flow dependent on parameters in nested functions
 
 If a parameter is passed as an argument to a user-defined function within another user-defined function, and then some control flow depends on that argument, the appropriate warning will not be thrown.
-

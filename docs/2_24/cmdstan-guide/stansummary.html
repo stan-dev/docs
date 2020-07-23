@@ -90,7 +90,7 @@
 <li class="chapter" data-level="3.1" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#invoking-the-make-utility"><i class="fa fa-check"></i><b>3.1</b> Invoking the Make Utility</a></li>
 <li class="chapter" data-level="3.2" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#dependencies"><i class="fa fa-check"></i><b>3.2</b> Dependencies</a></li>
 <li class="chapter" data-level="3.3" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#compiler-errors"><i class="fa fa-check"></i><b>3.3</b> Compiler Errors</a></li>
-<li class="chapter" data-level="3.4" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#troubleshooting"><i class="fa fa-check"></i><b>3.4</b> Troubleshooting</a></li>
+<li class="chapter" data-level="3.4" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#troubleshooting-c-compiler-or-linker-errors"><i class="fa fa-check"></i><b>3.4</b> Troubleshooting C++ Compiler or Linker Errors</a></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="mcmc-intro.html"><a href="mcmc-intro.html"><i class="fa fa-check"></i><b>4</b> MCMC Sampling</a>
 <ul>
@@ -101,7 +101,7 @@
 </ul></li>
 <li class="chapter" data-level="5" data-path="optimization.html"><a href="optimization.html"><i class="fa fa-check"></i><b>5</b> Optimization</a></li>
 <li class="chapter" data-level="6" data-path="variational-inference.html"><a href="variational-inference.html"><i class="fa fa-check"></i><b>6</b> Variational Inference</a></li>
-<li class="chapter" data-level="7" data-path="generating-quantities-of-interest-from-a-fitted-model.html"><a href="generating-quantities-of-interest-from-a-fitted-model.html"><i class="fa fa-check"></i><b>7</b> Generating Quantities of Interest from a Fitted Model</a></li>
+<li class="chapter" data-level="7" data-path="gc-intro.html"><a href="gc-intro.html"><i class="fa fa-check"></i><b>7</b> Generating Quantities of Interest from a Fitted Model</a></li>
 <li><a href="cmdstan-reference.html#cmdstan-reference"><i style='font-size: 110%; color:#990017;'>CmdStan Reference</i></a></li>
 <li class="chapter" data-level="8" data-path="command-line-interface-overview.html"><a href="command-line-interface-overview.html"><i class="fa fa-check"></i><b>8</b> Command-Line Interface Overview</a>
 <ul>
@@ -166,7 +166,11 @@
 <li class="chapter" data-level="15" data-path="stansummary.html"><a href="stansummary.html"><i class="fa fa-check"></i><b>15</b> <code>stansummary</code>: MCMC Output Analysis</a>
 <ul>
 <li class="chapter" data-level="15.1" data-path="stansummary.html"><a href="stansummary.html#building-the-stansummary-command"><i class="fa fa-check"></i><b>15.1</b> Building the stansummary Command</a></li>
-<li class="chapter" data-level="15.2" data-path="stansummary.html"><a href="stansummary.html#running-the-stansummary-command"><i class="fa fa-check"></i><b>15.2</b> Running the stansummary Command</a></li>
+<li class="chapter" data-level="15.2" data-path="stansummary.html"><a href="stansummary.html#running-the-stansummary-program"><i class="fa fa-check"></i><b>15.2</b> Running the <code>stansummary</code> Program</a>
+<ul>
+<li class="chapter" data-level="15.2.1" data-path="stansummary.html"><a href="stansummary.html#sampler-parameters"><i class="fa fa-check"></i><b>15.2.1</b> Sampler Parameters</a></li>
+<li class="chapter" data-level="15.2.2" data-path="stansummary.html"><a href="stansummary.html#model-parameters-and-quantities-of-interest"><i class="fa fa-check"></i><b>15.2.2</b> Model Parameters and Quantities of Interest</a></li>
+</ul></li>
 <li class="chapter" data-level="15.3" data-path="stansummary.html"><a href="stansummary.html#command-line-options"><i class="fa fa-check"></i><b>15.3</b> Command-line Options</a></li>
 </ul></li>
 <li class="chapter" data-level="16" data-path="diagnose.html"><a href="diagnose.html"><i class="fa fa-check"></i><b>16</b> <code>diagnose</code>: Diagnosing Biased Hamiltonian Monte Carlo Inferences</a>
@@ -245,11 +249,37 @@
             <section class="normal" id="section-">
 <div id="stansummary" class="section level1">
 <h1><span class="header-section-number">15</span> <code>stansummary</code>: MCMC Output Analysis</h1>
-<p>CmdStan’s <code>stansummary</code> utility processes one or more output files from a run
-or set of runs of Stan’s HMC sampler.
-For all parameters and quantities of interest in the Stan program,
-<code>stansummary</code> reports a set of statistics including mean, standard deviation,
-percentiles, effective number of samples, and <span class="math inline">\(\hat{R}\)</span> values.</p>
+<p>The CmdStan <code>stansummary</code> program reports statistics for one or more sampler chains
+over all sampler and model parameters and quantities of interest.
+The statistics reported include both summary statistics of the estimates and
+diagnostic statistics on the sampler chains, reported in the following order:</p>
+<ul>
+<li>Mean - sample mean</li>
+<li>MCSE - Monte Carlo Standard Error, a measure of the amount of noise in the sample</li>
+<li>StdDev - sample standard deviation</li>
+<li>Quantiles - default 5%, 50%, 95%</li>
+<li>N_eff - effective sample size - the number of independent draws in the sample</li>
+<li>N_eff/S - the number of independent draws per second</li>
+<li>R_hat - <span class="math inline">\(\hat{R}\)</span> statistic, a measure of chain equilibrium, must be within <span class="math inline">\(0.05\)</span> of <span class="math inline">\(1.0\)</span>.</li>
+</ul>
+<p>When reviewing the <code>stansummary</code> output, it is important to check the final three
+output columns first - these are the diagnostic statistics on chain convergence and
+number of independent draws in the sample.
+A <span class="math inline">\(\hat{R}\)</span> statistic of greater than <span class="math inline">\(1.05\)</span> indicates that the chain has not converged and
+therefore the sample is not drawn from the posterior, thus the estimates of the mean and
+all other summary statistics are invalid.</p>
+<p>Estimation by sampling produces an approximate value for the model parameters;
+the MCSE statistic indicates the amount of noise in the estimate.
+Therefore MCSE column is placed next to the sample mean column,
+in order to make it easy to compare this sample with others.</p>
+<p>For more information, see the
+<a href="https://mc-stan.org/docs/reference-manual/analysis-chapter.html">Posterior Analysis</a>
+chapter of the Stan Reference Manual which describes both the theory and practice of MCMC
+estimation techniques.
+The summary statistics and the algorithms used to compute them are described in sections
+<a href="https://mc-stan.org/docs/reference-manual/notation-for-samples-chains-and-draws.html">Notation for samples</a>
+and
+<a href="https://mc-stan.org/docs/reference-manual/effective-sample-size-section.html">Effective Sample Size</a>.</p>
 <div id="building-the-stansummary-command" class="section level2">
 <h2><span class="header-section-number">15.1</span> Building the stansummary Command</h2>
 <p>The CmdStan makefile task <code>build</code> compiles the <code>stansummary</code> utility
@@ -258,43 +288,112 @@ It can be compiled directly using the makefile as follows:</p>
 <pre><code>&gt; cd &lt;cmdstan-home&gt;
 &gt; make bin/stansummary</code></pre>
 </div>
-<div id="running-the-stansummary-command" class="section level2">
-<h2><span class="header-section-number">15.2</span> Running the stansummary Command</h2>
-<p>The <code>stansummary</code> utility processes one or more output files from a run
-or set of runs of Stan’s HMC sampler given a model and data.
-For all columns in the Stan csv output file <code>stansummary</code> reports a set of statistics
-including mean, standard deviation, percentiles, effective number of samples, and <span class="math inline">\(\hat{R}\)</span> values.</p>
-<p>To run <code>stansummary</code> on the output file or files generated by a run of
+<div id="running-the-stansummary-program" class="section level2">
+<h2><span class="header-section-number">15.2</span> Running the <code>stansummary</code> Program</h2>
+<p>The <code>stansummary</code> utility processes one or more output files from a set of
+chains from one run of the HMC sampler.
+To run <code>stansummary</code> on the output file or files generated by a run of
 the sampler, on Mac or Linux:</p>
 <pre><code>&lt;cmdstan-home&gt;/bin/stansummary &lt;file_1.csv&gt; ... &lt;file_N.csv&gt;</code></pre>
 <p>On Windows, use backslashes to call the <code>stansummary.exe</code>.</p>
 <pre><code>&lt;cmdstan-home&gt;\bin\stansummary.exe &lt;file_1.csv&gt; ... &lt;file_N.csv&gt;</code></pre>
-<p>The values for each quantity are the posterior means,
-standard deviations, and quantiles, along with Monte-Carlo standard
-error, effective sample size estimates (per second), and convergence
-diagnostic statistic.</p>
-<p>For Windows, the forward slash in paths need to be converted to
-backslashes.</p>
+<p>For example, after running 4 chains to fit the example model <code>eight_schools.stan</code>
+to the supplied example data file, we run <code>stansummary</code> on the resulting Stan csv
+output files to get the following report:</p>
+<pre><code>&gt; bin/stansummary eight_*.csv
+Input files: eight_1.csv, eight_2.csv, eight_3.csv, eight_4.csv
+Inference for Stan model: eight_schools_model
+4 chains: each with iter=(1000,1000,1000,1000); warmup=(0,0,0,0); thin=(1,1,1,1); 4000 iterations saved.
+
+Warmup took (0.048, 0.060, 0.047, 0.045) seconds, 0.20 seconds total
+Sampling took (0.057, 0.058, 0.061, 0.066) seconds, 0.24 seconds total
+
+                 Mean     MCSE  StdDev     5%   50%   95%  N_Eff  N_Eff/s    R_hat
+
+lp__              -18     0.33     5.1    -26   -19  -9.1    233      963      1.0
+accept_stat__    0.88  1.6e-02    0.23   0.21  0.98  1.00    203      838  1.0e+00
+stepsize__       0.18  2.2e-02   0.031   0.14  0.20  0.22    2.0      8.3  3.9e+13
+treedepth__       3.8  5.9e-02    0.78    2.0   4.0   5.0    175      724  1.0e+00
+n_leapfrog__       18  1.3e+00     9.4    7.0    15    31     51      212  1.0e+00
+divergent__     0.015  4.1e-03    0.12   0.00  0.00  0.00    865     3576  1.0e+00
+energy__           23  3.4e-01     5.5     13    23    32    258     1066  1.0e+00
+
+mu                7.9     0.16     5.1  -0.23   7.9    16   1021     4221      1.0
+theta[1]           12     0.30     8.6  -0.48    11    28    837     3459      1.0
+theta[2]          7.8     0.15     6.4   -2.7   7.7    18   1717     7096     1.00
+theta[3]          6.1     0.19     7.7   -6.5   6.5    18   1684     6958      1.0
+theta[4]          7.5     0.15     6.7   -3.1   7.4    18   2026     8373      1.0
+theta[5]          4.7     0.17     6.4   -6.7   5.3    15   1391     5747     1.00
+theta[6]          5.9     0.16     6.7   -5.8   6.2    16   1673     6915     1.00
+theta[7]           11     0.22     7.0  0.057    10    23   1069     4419      1.0
+theta[8]          8.3     0.20     7.9   -4.2   8.0    22   1503     6209     1.00
+tau               7.2     0.26     5.2    1.5   5.9    17    401     1657      1.0
+
+Samples were drawn using hmc with nuts.
+For each parameter, N_Eff is a crude measure of effective sample size,
+and R_hat is the potential scale reduction factor on split chains (at 
+convergence, R_hat=1).</code></pre>
+<p>The console output information consists of</p>
+<ul>
+<li>Model, chains, and timing summaries</li>
+<li>Sampler parameter statistics</li>
+<li>Model parameter statistics</li>
+<li>Sampling algorithm - either nuts (shown here) or static HMC.</li>
+</ul>
+<p>There is one row per parameter and the row order in the summary report corresponds
+to the column order in the Stan csv output file.</p>
+<div id="sampler-parameters" class="section level3">
+<h3><span class="header-section-number">15.2.1</span> Sampler Parameters</h3>
+<p>The initial Stan csv columns provide information on the sampler state for each draw:</p>
+<ul>
+<li><code>lp__</code> - the total log probability density (up to an additive constant) at each sample</li>
+<li><code>accept_stat__</code> - the average Metropolis acceptance probability over each simulated Hamiltonian trajectory</li>
+<li><code>stepsize__</code> - integrator step size</li>
+<li><code>treedepth__</code> - depth of tree used by NUTS (NUTS sampler)</li>
+<li><code>n_leapfrog__</code> - number of leapfrog calculations (NUTS sampler)</li>
+<li><code>divergent__</code> - has value <code>1</code> if trajectory diverged, otherwise <code>0</code>. (NUTS sampler)</li>
+<li><code>energy__</code> - value of the Hamiltonian</li>
+<li><code>int_time__</code> - total integration time (static HMC sampler)</li>
+</ul>
+<p>Because we ran the NUTS sampler, the above summary reports sampler parameters
+<code>treedepth__</code>, <code>n_leapfrog__</code>, and <code>divergent__</code>;
+the static HMC sampler would report <code>int_time__</code> instead.</p>
+</div>
+<div id="model-parameters-and-quantities-of-interest" class="section level3">
+<h3><span class="header-section-number">15.2.2</span> Model Parameters and Quantities of Interest</h3>
+<p>The remaining Stan csv columns report the values of all parameters, transformed parameters,
+and generated quantities in the order in which these variables are declared in the Stan program.
+For container variables, i.e., vector, row_vector, matrix, and array variables,
+the statistics for each element are reported separately, in row-major order.
+The <code>eight_schools.stan</code> program parameters block contains the following parameter variable
+declarations:</p>
+<pre><code>  real mu;
+  real theta[J];
+  real&lt;lower=0&gt; tau;</code></pre>
+<p>In the example data, <code>J</code> is <span class="math inline">\(8\)</span>; therefore the stansummary listing
+reports on <code>theta[1]</code> through <code>theta[8]</code>.</p>
+</div>
 </div>
 <div id="command-line-options" class="section level2">
 <h2><span class="header-section-number">15.3</span> Command-line Options</h2>
 <p>The <code>stansummary</code> command syntax provides a set of flags to customize the output
-which must precede the list of filenames:</p>
-<ul>
-<li><p><code>--sig_figs</code> - The number of significant figures displayed in the output.
-Must be an integer value &gt; 0. The default value is 2.</p></li>
-<li><p><code>--csv_file</code> - Writes output to the specified filename in csv format
-using <code>#</code> for comment lines. Appends output to the file if it exists.</p></li>
-<li><p><code>--percentiles</code> - An string containing an ordered list of integers
-in the range (0,100) specifying the percentiles to use in the set of output columns.
-Defaults to <code>"5, 50, 95"</code>.</p></li>
-<li><p><code>--autocorr</code> - 0-based index into the list of filenames used to
-display the autocorrelation between all draws in that chain.
-For example, for a set of 4 csv files <code>--autocorr 0</code>
-will output the autocorrelation for chain 1 and <code>--autocorr 3</code> will
-examine the autocorrelation for chain 4.
-No autocorrelation output by default.</p></li>
-</ul>
+which must precede the list of filenames.
+When invoked with no arguments or with the <code>-h</code> or <code>--help</code> option,
+the program prints the usage message to the console and exits.</p>
+<pre><code>Report statistics for one or more Stan csv files from a HMC sampler run.
+Example:  stansummary model_chain_1.csv model_chain_2.csv
+Options:
+  -a, --autocorr [n]          Display the chain autocorrelation for the n-th
+                              input file, in addition to statistics.
+  -c, --csv_filename [file]   Write statistics to a csv file.
+  -h, --help                  Produce help message, then exit.
+  -p, --percentiles [values]  Percentiles to report as ordered set of
+                              comma-separated integers from (1,99), inclusive.
+                              Default is 5,50,95.
+  -s, --sig_figs [n]          Significant figures reported. Default is 2.
+                              Must be an integer from (1, 10), inclusive.</code></pre>
+<p>Both short an long option names are allowed. Short names are specified as <code>-&lt;o&gt; &lt;value&gt;</code>;
+long option names can be specified either as <code>--&lt;option&gt;=&lt;value&gt;</code> or <code>--&lt;option&gt; &lt;value&gt;</code>.</p>
 
 </div>
 </div>

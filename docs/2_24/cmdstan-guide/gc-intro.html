@@ -90,7 +90,7 @@
 <li class="chapter" data-level="3.1" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#invoking-the-make-utility"><i class="fa fa-check"></i><b>3.1</b> Invoking the Make Utility</a></li>
 <li class="chapter" data-level="3.2" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#dependencies"><i class="fa fa-check"></i><b>3.2</b> Dependencies</a></li>
 <li class="chapter" data-level="3.3" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#compiler-errors"><i class="fa fa-check"></i><b>3.3</b> Compiler Errors</a></li>
-<li class="chapter" data-level="3.4" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#troubleshooting"><i class="fa fa-check"></i><b>3.4</b> Troubleshooting</a></li>
+<li class="chapter" data-level="3.4" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#troubleshooting-c-compiler-or-linker-errors"><i class="fa fa-check"></i><b>3.4</b> Troubleshooting C++ Compiler or Linker Errors</a></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="mcmc-intro.html"><a href="mcmc-intro.html"><i class="fa fa-check"></i><b>4</b> MCMC Sampling</a>
 <ul>
@@ -101,7 +101,7 @@
 </ul></li>
 <li class="chapter" data-level="5" data-path="optimization.html"><a href="optimization.html"><i class="fa fa-check"></i><b>5</b> Optimization</a></li>
 <li class="chapter" data-level="6" data-path="variational-inference.html"><a href="variational-inference.html"><i class="fa fa-check"></i><b>6</b> Variational Inference</a></li>
-<li class="chapter" data-level="7" data-path="generating-quantities-of-interest-from-a-fitted-model.html"><a href="generating-quantities-of-interest-from-a-fitted-model.html"><i class="fa fa-check"></i><b>7</b> Generating Quantities of Interest from a Fitted Model</a></li>
+<li class="chapter" data-level="7" data-path="gc-intro.html"><a href="gc-intro.html"><i class="fa fa-check"></i><b>7</b> Generating Quantities of Interest from a Fitted Model</a></li>
 <li><a href="cmdstan-reference.html#cmdstan-reference"><i style='font-size: 110%; color:#990017;'>CmdStan Reference</i></a></li>
 <li class="chapter" data-level="8" data-path="command-line-interface-overview.html"><a href="command-line-interface-overview.html"><i class="fa fa-check"></i><b>8</b> Command-Line Interface Overview</a>
 <ul>
@@ -166,7 +166,11 @@
 <li class="chapter" data-level="15" data-path="stansummary.html"><a href="stansummary.html"><i class="fa fa-check"></i><b>15</b> <code>stansummary</code>: MCMC Output Analysis</a>
 <ul>
 <li class="chapter" data-level="15.1" data-path="stansummary.html"><a href="stansummary.html#building-the-stansummary-command"><i class="fa fa-check"></i><b>15.1</b> Building the stansummary Command</a></li>
-<li class="chapter" data-level="15.2" data-path="stansummary.html"><a href="stansummary.html#running-the-stansummary-command"><i class="fa fa-check"></i><b>15.2</b> Running the stansummary Command</a></li>
+<li class="chapter" data-level="15.2" data-path="stansummary.html"><a href="stansummary.html#running-the-stansummary-program"><i class="fa fa-check"></i><b>15.2</b> Running the <code>stansummary</code> Program</a>
+<ul>
+<li class="chapter" data-level="15.2.1" data-path="stansummary.html"><a href="stansummary.html#sampler-parameters"><i class="fa fa-check"></i><b>15.2.1</b> Sampler Parameters</a></li>
+<li class="chapter" data-level="15.2.2" data-path="stansummary.html"><a href="stansummary.html#model-parameters-and-quantities-of-interest"><i class="fa fa-check"></i><b>15.2.2</b> Model Parameters and Quantities of Interest</a></li>
+</ul></li>
 <li class="chapter" data-level="15.3" data-path="stansummary.html"><a href="stansummary.html#command-line-options"><i class="fa fa-check"></i><b>15.3</b> Command-line Options</a></li>
 </ul></li>
 <li class="chapter" data-level="16" data-path="diagnose.html"><a href="diagnose.html"><i class="fa fa-check"></i><b>16</b> <code>diagnose</code>: Diagnosing Biased Hamiltonian Monte Carlo Inferences</a>
@@ -243,7 +247,7 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="generating-quantities-of-interest-from-a-fitted-model" class="section level1">
+<div id="gc-intro" class="section level1">
 <h1><span class="header-section-number">7</span> Generating Quantities of Interest from a Fitted Model</h1>
 <p>The <a href="https://mc-stan.org/docs/reference-manual/program-block-generated-quantities.html">generated quantities block</a>
 computes <em>quantities of interest</em> (QOIs) based on the data,
@@ -265,23 +269,91 @@ Instead, you write a modified version of the original Stan program
 and add a generated quantities block or modify the existing one
 which specifies how to compute the new quantities of interest.
 Running the <code>generate_quantities</code> method on the new program
-together with sampler outputs from the fitted model
-runs the generated quantities block of the new program using
-the estimated parameter values from the existing sample.</p>
-<p>To illustrate how this works, we add poterior predictive checks to
-the example model <code>bernoulli.stan</code>.
-We create a new model, <code>bernoulli_yrep.stan</code> which contains
-the following generated quantities block:</p>
+together with sampler outputs (i.e., a set of draws)
+from the fitted model runs the generated quantities block
+of the new program using the the existing sample by plugging
+in the per-draw parameter estimates for the computations in
+the generated quantities block.
+See the Stan User’s Guide section
+<a href="https://mc-stan.org/docs/stan-users-guide/stand-alone-generated-quantities-and-ongoing-prediction.html">Stand-alone generated quantities and ongoing prediction</a>
+for further details.</p>
+<p>To illustrate how this works we use the <code>generate_quantities</code> method
+to do posterior predictive checks using the estimate of <code>theta</code> given
+the example bernoulli model and data, following the
+<a href="https://mc-stan.org/docs/stan-users-guide/posterior-predictive-simulation-in-stan.html">posterior predictive simulation</a>
+procedure in the Stan User’s Guide.</p>
+<p>We write a program <code>bernoulli_ppc.stan</code> which contains
+the following generated quantities block, with comments
+to explain the procedure:</p>
 <pre><code>generated quantities {
-  int y_sim[N];
   real&lt;lower=0,upper=1&gt; theta_rep;
+  int y_sim[N];
+  // use current estimate of theta to generate new sample
   for (n in 1:N)
     y_sim[n] = bernoulli_rng(theta);
-  theta_rep = sum(y) / N;
+  // estimate theta_rep from new sample
+  theta_rep = sum(y_sim) * 1.0 / N;
 }</code></pre>
-<p>We compile this model, and then run it with the fit from a previous run of
-the original model and the same input data file:</p>
-<pre><code>&gt; ./bernoulli_yrep generate_quantities ....</code></pre>
+<p>The rest of the program is the same as in <code>bernoulli.stan</code>.</p>
+<p>The <code>generate_method</code> requires the sub-argument <code>fitted_params</code>
+which takes as its value the name of a Stan csv file.
+The per-draw parameter estimates from the <code>fitted_params</code> file will
+be used to run the generated quantities block.</p>
+<p>If we run the <code>bernoulli.stan</code> program for a single chain to
+generate a sample in file <code>bernoulli_fit.csv</code>:</p>
+<pre><code>&gt; ./bernoulli sample data file=bernoulli.data.json output file=bernoulli_fit.csv</code></pre>
+<p>Then we can run the <code>bernoulli_ppc.stan</code> to carry out the posterior predictive
+checks:</p>
+<pre><code>&gt; ./bernoulli_ppc generate_quantities fitted_params=bernoulli_fit.csv \
+                  data file=bernoulli.data.json \
+                  output file=bernoulli_ppc.csv</code></pre>
+<p>The output file <code>bernoulli_ppc.csv</code> consists of just the values for the variables declared in the generated quantities block, i.e., <code>theta_rep</code> and the elements of <code>y_sim</code>:</p>
+<pre><code># model = bernoulli_ppc_model
+# method = generate_quantities
+#   generate_quantities
+#     fitted_params = bernoulli_fit.csv
+# id = 0 (Default)
+# data
+#   file = bernoulli.data.json
+# init = 2 (Default)
+# random
+#   seed = 2135140492 (Default)
+# output
+#   file = bernoulli_ppc.csv
+#   diagnostic_file =  (Default)
+#   refresh = 100 (Default)
+theta_rep,y_sim.1,y_sim.2,y_sim.3,y_sim.4,y_sim.5,y_sim.6,y_sim.7,y_sim.8,y_sim.9,y_sim.10
+0.2,0,0,1,0,0,0,0,0,1,0
+0.3,1,0,0,1,0,1,0,0,0,0
+0.8,1,0,1,1,1,1,1,1,1,0
+0.1,0,0,0,0,0,1,0,0,0,0
+0.3,0,0,0,0,0,0,1,1,1,0</code></pre>
+<p><em>Note</em>: the only relevant analysis of the resulting csv output is computing per-column statistics; this can easily be done in Python, R, Excel or similar,
+or you can use the CmdStanPy and CmdStanR interfaces which provide a
+better user experience for this workflow.</p>
+<p>Given the current implementation, to see the fitted parameter values for each draw,
+create a copy variable in the generated quantities block, e.g.:</p>
+<pre><code>generated quantities {
+  real&lt;lower=0,upper=1&gt; theta_cp = theta;
+  real&lt;lower=0,upper=1&gt; theta_rep;
+  int y_sim[N];
+  // use current estimate of theta to generate new sample
+  for (n in 1:N)
+    y_sim[n] = bernoulli_rng(theta);
+  // estimate theta_rep from new sample
+  theta_rep = sum(y_sim) * 1.0 / N;
+}</code></pre>
+<p>Now the output is slightly more interpretable: <code>theta_cp</code> is the same as the <code>theta</code>
+used to generate the values <code>y_sim[1]</code> through <code>y_sim[1]</code>.
+Comparing columns <code>theta_cp</code> and <code>theta_rep</code> allows us to see how the
+uncertainty in our estimate of <code>theta</code> is carried forward
+into our predictions:</p>
+<pre><code>theta_cp,theta_rep,y_sim.1,y_sim.2,y_sim.3,y_sim.4,y_sim.5,y_sim.6,y_sim.7,y_sim.8,y_sim.9,y_sim.10
+0.102391,0,0,0,0,0,0,0,0,0,0,0
+0.519567,0.2,0,1,0,0,1,0,0,0,0,0
+0.544634,0.6,1,0,0,0,0,1,1,1,1,1
+0.167651,0,0,0,0,0,0,0,0,0,0,0
+0.167651,0.1,1,0,0,0,0,0,0,0,0,0</code></pre>
 
 </div>
             </section>

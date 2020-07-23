@@ -90,7 +90,7 @@
 <li class="chapter" data-level="3.1" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#invoking-the-make-utility"><i class="fa fa-check"></i><b>3.1</b> Invoking the Make Utility</a></li>
 <li class="chapter" data-level="3.2" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#dependencies"><i class="fa fa-check"></i><b>3.2</b> Dependencies</a></li>
 <li class="chapter" data-level="3.3" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#compiler-errors"><i class="fa fa-check"></i><b>3.3</b> Compiler Errors</a></li>
-<li class="chapter" data-level="3.4" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#troubleshooting"><i class="fa fa-check"></i><b>3.4</b> Troubleshooting</a></li>
+<li class="chapter" data-level="3.4" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#troubleshooting-c-compiler-or-linker-errors"><i class="fa fa-check"></i><b>3.4</b> Troubleshooting C++ Compiler or Linker Errors</a></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="mcmc-intro.html"><a href="mcmc-intro.html"><i class="fa fa-check"></i><b>4</b> MCMC Sampling</a>
 <ul>
@@ -101,7 +101,7 @@
 </ul></li>
 <li class="chapter" data-level="5" data-path="optimization.html"><a href="optimization.html"><i class="fa fa-check"></i><b>5</b> Optimization</a></li>
 <li class="chapter" data-level="6" data-path="variational-inference.html"><a href="variational-inference.html"><i class="fa fa-check"></i><b>6</b> Variational Inference</a></li>
-<li class="chapter" data-level="7" data-path="generating-quantities-of-interest-from-a-fitted-model.html"><a href="generating-quantities-of-interest-from-a-fitted-model.html"><i class="fa fa-check"></i><b>7</b> Generating Quantities of Interest from a Fitted Model</a></li>
+<li class="chapter" data-level="7" data-path="gc-intro.html"><a href="gc-intro.html"><i class="fa fa-check"></i><b>7</b> Generating Quantities of Interest from a Fitted Model</a></li>
 <li><a href="cmdstan-reference.html#cmdstan-reference"><i style='font-size: 110%; color:#990017;'>CmdStan Reference</i></a></li>
 <li class="chapter" data-level="8" data-path="command-line-interface-overview.html"><a href="command-line-interface-overview.html"><i class="fa fa-check"></i><b>8</b> Command-Line Interface Overview</a>
 <ul>
@@ -166,7 +166,11 @@
 <li class="chapter" data-level="15" data-path="stansummary.html"><a href="stansummary.html"><i class="fa fa-check"></i><b>15</b> <code>stansummary</code>: MCMC Output Analysis</a>
 <ul>
 <li class="chapter" data-level="15.1" data-path="stansummary.html"><a href="stansummary.html#building-the-stansummary-command"><i class="fa fa-check"></i><b>15.1</b> Building the stansummary Command</a></li>
-<li class="chapter" data-level="15.2" data-path="stansummary.html"><a href="stansummary.html#running-the-stansummary-command"><i class="fa fa-check"></i><b>15.2</b> Running the stansummary Command</a></li>
+<li class="chapter" data-level="15.2" data-path="stansummary.html"><a href="stansummary.html#running-the-stansummary-program"><i class="fa fa-check"></i><b>15.2</b> Running the <code>stansummary</code> Program</a>
+<ul>
+<li class="chapter" data-level="15.2.1" data-path="stansummary.html"><a href="stansummary.html#sampler-parameters"><i class="fa fa-check"></i><b>15.2.1</b> Sampler Parameters</a></li>
+<li class="chapter" data-level="15.2.2" data-path="stansummary.html"><a href="stansummary.html#model-parameters-and-quantities-of-interest"><i class="fa fa-check"></i><b>15.2.2</b> Model Parameters and Quantities of Interest</a></li>
+</ul></li>
 <li class="chapter" data-level="15.3" data-path="stansummary.html"><a href="stansummary.html#command-line-options"><i class="fa fa-check"></i><b>15.3</b> Command-line Options</a></li>
 </ul></li>
 <li class="chapter" data-level="16" data-path="diagnose.html"><a href="diagnose.html"><i class="fa fa-check"></i><b>16</b> <code>diagnose</code>: Diagnosing Biased Hamiltonian Monte Carlo Inferences</a>
@@ -245,12 +249,39 @@
             <section class="normal" id="section-">
 <div id="standalone-generate-quantities" class="section level1">
 <h1><span class="header-section-number">12</span> Standalone Generate Quantities</h1>
-<p>The <code>generate_quantities</code> method allows you to generate additional quantities of interest
-from a fitted model without re-running the sampler.</p>
+<p>The <code>generate_quantities</code> method allows you to generate additional
+quantities of interest from a fitted model without re-running the sampler.
+For an overview of the uses of this feature, see the
+<a href="gc-intro.html#gc-intro">QuickStart Guide section</a>
+and the Stan User’s Guide section on
+<a href="https://mc-stan.org/docs/stan-users-guide/stand-alone-generated-quantities-and-ongoing-prediction.html">Stand-alone generated quantities and ongoing prediction</a>.</p>
 <p>This method requires sub-argument <code>fitted_params</code> which takes as its value
 an existing Stan csv file that contains a sample from an equivalent model,
 i.e., a model with the same parameters, transformed parameters, and model blocks,
 conditioned on the same data.</p>
+<p>If we run the <code>bernoulli.stan</code> program for a single chain to
+generate a sample in file <code>bernoulli_fit.csv</code>:</p>
+<pre><code>&gt; ./bernoulli sample data file=bernoulli.data.json output file=bernoulli_fit.csv</code></pre>
+<p>Then we can run the <code>bernoulli_ppc.stan</code> to carry out the posterior predictive
+checks:</p>
+<pre><code>&gt; ./bernoulli_ppc generate_quantities fitted_params=bernoulli_fit.csv \
+                  data file=bernoulli.data.json \
+                  output file=bernoulli_ppc.csv</code></pre>
+<p>The <code>fitted_params</code> file must be a Stan csv file; attempts to use a regular csv file
+will result an error message of the form:</p>
+<pre><code>Error reading fitted param names from sample csv file &lt;filename.csv&gt;</code></pre>
+<p>The <code>fitted_params</code> file must contain columns corresponding to legal values
+for all parameters defined in the model.
+If any parameters are missing, the program will exit with an error
+message of the form:</p>
+<pre><code>Error reading fitted param names from sample csv file &lt;filename.csv&gt;</code></pre>
+<p>The parameter values of the <code>fitted_params</code> are on the
+constrained scale and must obey all constraints.
+For example, if we modify the contencts of the first
+reported draw in <code>bernoulli_fit.csv</code> so that the value
+of <code>theta</code> is outside the declared bounds <code>real&lt;lower=0,upper=1&gt;</code>,
+the program will return the following error message:</p>
+<pre><code>Exception: lub_free: Bounded variable is 1.21397, but must be in the interval [0, 1] (in &#39;bernoulli_ppc.stan&#39;, line 5, column 2 to column 30)</code></pre>
 
 </div>
             </section>

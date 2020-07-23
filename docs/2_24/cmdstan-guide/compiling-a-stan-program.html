@@ -90,7 +90,7 @@
 <li class="chapter" data-level="3.1" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#invoking-the-make-utility"><i class="fa fa-check"></i><b>3.1</b> Invoking the Make Utility</a></li>
 <li class="chapter" data-level="3.2" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#dependencies"><i class="fa fa-check"></i><b>3.2</b> Dependencies</a></li>
 <li class="chapter" data-level="3.3" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#compiler-errors"><i class="fa fa-check"></i><b>3.3</b> Compiler Errors</a></li>
-<li class="chapter" data-level="3.4" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#troubleshooting"><i class="fa fa-check"></i><b>3.4</b> Troubleshooting</a></li>
+<li class="chapter" data-level="3.4" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#troubleshooting-c-compiler-or-linker-errors"><i class="fa fa-check"></i><b>3.4</b> Troubleshooting C++ Compiler or Linker Errors</a></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="mcmc-intro.html"><a href="mcmc-intro.html"><i class="fa fa-check"></i><b>4</b> MCMC Sampling</a>
 <ul>
@@ -101,7 +101,7 @@
 </ul></li>
 <li class="chapter" data-level="5" data-path="optimization.html"><a href="optimization.html"><i class="fa fa-check"></i><b>5</b> Optimization</a></li>
 <li class="chapter" data-level="6" data-path="variational-inference.html"><a href="variational-inference.html"><i class="fa fa-check"></i><b>6</b> Variational Inference</a></li>
-<li class="chapter" data-level="7" data-path="generating-quantities-of-interest-from-a-fitted-model.html"><a href="generating-quantities-of-interest-from-a-fitted-model.html"><i class="fa fa-check"></i><b>7</b> Generating Quantities of Interest from a Fitted Model</a></li>
+<li class="chapter" data-level="7" data-path="gc-intro.html"><a href="gc-intro.html"><i class="fa fa-check"></i><b>7</b> Generating Quantities of Interest from a Fitted Model</a></li>
 <li><a href="cmdstan-reference.html#cmdstan-reference"><i style='font-size: 110%; color:#990017;'>CmdStan Reference</i></a></li>
 <li class="chapter" data-level="8" data-path="command-line-interface-overview.html"><a href="command-line-interface-overview.html"><i class="fa fa-check"></i><b>8</b> Command-Line Interface Overview</a>
 <ul>
@@ -166,7 +166,11 @@
 <li class="chapter" data-level="15" data-path="stansummary.html"><a href="stansummary.html"><i class="fa fa-check"></i><b>15</b> <code>stansummary</code>: MCMC Output Analysis</a>
 <ul>
 <li class="chapter" data-level="15.1" data-path="stansummary.html"><a href="stansummary.html#building-the-stansummary-command"><i class="fa fa-check"></i><b>15.1</b> Building the stansummary Command</a></li>
-<li class="chapter" data-level="15.2" data-path="stansummary.html"><a href="stansummary.html#running-the-stansummary-command"><i class="fa fa-check"></i><b>15.2</b> Running the stansummary Command</a></li>
+<li class="chapter" data-level="15.2" data-path="stansummary.html"><a href="stansummary.html#running-the-stansummary-program"><i class="fa fa-check"></i><b>15.2</b> Running the <code>stansummary</code> Program</a>
+<ul>
+<li class="chapter" data-level="15.2.1" data-path="stansummary.html"><a href="stansummary.html#sampler-parameters"><i class="fa fa-check"></i><b>15.2.1</b> Sampler Parameters</a></li>
+<li class="chapter" data-level="15.2.2" data-path="stansummary.html"><a href="stansummary.html#model-parameters-and-quantities-of-interest"><i class="fa fa-check"></i><b>15.2.2</b> Model Parameters and Quantities of Interest</a></li>
+</ul></li>
 <li class="chapter" data-level="15.3" data-path="stansummary.html"><a href="stansummary.html#command-line-options"><i class="fa fa-check"></i><b>15.3</b> Command-line Options</a></li>
 </ul></li>
 <li class="chapter" data-level="16" data-path="diagnose.html"><a href="diagnose.html"><i class="fa fa-check"></i><b>16</b> <code>diagnose</code>: Diagnosing Biased Hamiltonian Monte Carlo Inferences</a>
@@ -280,12 +284,12 @@ on the example model and data file.</p>
 </div>
 <div id="dependencies" class="section level2">
 <h2><span class="header-section-number">3.2</span> Dependencies</h2>
-<p>When executing a <code>make</code> target, all its dependencies are checked
+<p>When executing a Make target, all its dependencies are checked
 to see if they are up to date, and if they are not, they are rebuilt.
-If the you call <code>make</code> with target <code>bernoulli</code> twice, without any
-edits to <code>bernoulli.stan</code> or other changes to the system,
-the second call to make willis invoked a second time, it will see that it is up to date,
-and will not recompile the program:</p>
+If the you call Make with target <code>bernoulli</code> twice in a row, without any
+editing <code>bernoulli.stan</code> or otherwise changing the system,
+on the second invocation, Make will determine that the executable is already newer
+than the Stan source file and will not recompile the program:</p>
 <pre><code>&gt; make examples/bernoulli/bernoulli
 make: `examples/bernoulli/bernoulli&#39; is up to date.</code></pre>
 <p>If the file containing the Stan program is updated,
@@ -293,11 +297,12 @@ the next call to <code>make</code> will rebuild the CmdStan executable.</p>
 </div>
 <div id="compiler-errors" class="section level2">
 <h2><span class="header-section-number">3.3</span> Compiler Errors</h2>
-<p>Stan probabalistic programming language is a programming language with a rich syntax,
-as such, it is often the case that a carefully written program contains errors,
-often simple syntax errors such as a misspelled variable name or missing semi-colon (<code>;</code>)
-statement termination.</p>
-<p>For example, if in the <code>bernoulli.stan</code> program, we introduct a typo on line <span class="math inline">\(9\)</span>
+<p>The Stan probabilistic programming language is a programming language with a rich syntax,
+as such, it is often the case that a carefully written program contains errors.</p>
+<p>The simplest class of errors are simple syntax errors such as forgetting
+the semi-colon statement termination marker at the end of a line,
+or typos such as a misspelled variable name.
+For example, if in the <code>bernoulli.stan</code> program, we introduce a typo on line <span class="math inline">\(9\)</span>
 by writing <code>thata</code> instead of <code>theta</code>, the Make command fails with the following</p>
 <pre><code>--- Translating Stan model to C++ code ---
 bin/stanc  --o=bernoulli.hpp bernoulli.stan
@@ -315,12 +320,43 @@ Semantic error in &#39;bernoulli.stan&#39;, line 9, column 2 to column 7:
 Identifier &#39;thata&#39; not in scope.
 
 make: *** [bernoulli.hpp] Error 1</code></pre>
+<p>Stan is a <a href="https://mc-stan.org/docs/reference-manual/data-types-chapter.html">strongly-typed language</a>;
+and the compiler will throw an error if statements or expressions violate the type rules.
+The following trivial program <code>foo.stan</code> contains an illegal assignment statement:</p>
+<pre><code>data {
+  real x;
+}
+transformed data {
+  int y = x;
+}</code></pre>
+<p>The Make command fails with the following:</p>
+<pre><code>Semantic error in &#39;foo.stan&#39;, line 5, column 2 to column 12:
+   -------------------------------------------------
+     3:  }
+     4:  transformed data {
+     5:    int y = x;
+           ^
+     6:  }
+   -------------------------------------------------
+
+Ill-typed arguments supplied to assignment operator =: lhs has type int and rhs has type real</code></pre>
+<p>The <a href="https://mc-stan.org/docs/reference-manual/language.html#language">Stan Reference Manual</a>
+provides a complete specification of the Stan programming language.</p>
 </div>
-<div id="troubleshooting" class="section level2">
-<h2><span class="header-section-number">3.4</span> Troubleshooting</h2>
-<p>The stanc compiler is also a program, and while it has been extensively tested,
-it may still contain errors such that the generated C++ code fails to compile.
-If this happens, report the error, together with the Stan program on either
+<div id="troubleshooting-c-compiler-or-linker-errors" class="section level2">
+<h2><span class="header-section-number">3.4</span> Troubleshooting C++ Compiler or Linker Errors</h2>
+<p>If the stanc compiler successfully translates a Stan program to C++,
+the resulting C++ code should be valid C++ which can be
+compiled into an executable.
+The stanc compiler is also a program, and while it has been extensively tested,
+it may still contain errors such that the generated C++ code fails to compile.</p>
+<p>The Make command prints the following message to the terminal
+at the point when it compiles and links the C++ file:</p>
+<pre><code>--- Compiling, linking C++ code ---</code></pre>
+<p>If the program fails to compile for any reason,
+the C++ compiler and linker will most likely print a long series
+of error messages to the console.</p>
+<p>If this happens, please report the error, together with the Stan program on either
 the <a href="https://discourse.mc-stan.org/">Stan Forums</a> or on the Stan compiler
 GitHub <a href="https://github.com/stan-dev/stanc3/issues">issues tracker</a>.</p>
 

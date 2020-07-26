@@ -5,7 +5,8 @@ values, which are expressed in Stan as arrays.
 
 ```{r results='asis', echo=FALSE}
 if (knitr::is_html_output()) {
-cat(' * <a href="multinomial-distribution.html">Multinomial Distribution</a>\n')
+    cat(' * <a href="multinomial-distribution.html">Multinomial Distribution</a>\n')
+    cat(' * <a href="multinomial-distribution-logit-parameterization.html">Multinomial Distribution, Logit Parameterization</a>\n')
 }
 ```
 
@@ -44,6 +45,50 @@ of size $K$ given the $K$-simplex distribution parameter theta and
 
 `int[]` **`multinomial_rng`**`(vector theta, int N)`<br>\newline
 Generate a multinomial variate with simplex distribution parameter
-theta and total count N; may only be used in transformed data and
+theta and total count $N$; may only be used in transformed data and
+generated quantities blocks
+
+## Multinomial Distribution, Logit Parameterization
+
+Stan also provides a version of the multinomial probability mass
+function distribution with the $\text{$K$-simplex}$ for the event
+count probabilities per category given on the unconstrained logistic
+scale.
+
+### Probability Mass Function
+
+If $K \in \mathbb{N}$, $N \in \mathbb{N}$, and $\text{softmax}^{-1}(\theta) \in
+\text{$K$-simplex}$, then for $y \in \mathbb{N}^K$ such that
+$\sum_{k=1}^K y_k = N$, \[
+\text{MultinomialLogit}(y|\theta) = \text{Multinomial}(y|\text{softmax}^{-1}(\theta)) =
+\binom{N}{y_1,\ldots,y_K} \prod_{k=1}^K [\text{softmax}^{-1}(\theta)_k]^{y_k}, \] where the
+multinomial coefficient is defined by \[ \binom{N}{y_1,\ldots,y_k} =
+\frac{N!}{\prod_{k=1}^K y_k!}. \]
+
+### Sampling Statement
+
+`y ~ ` **`multinomial_logit`**`(theta)`
+
+Increment target log probability density with `multinomial_logit_lpmf(y | theta)`
+dropping constant additive terms.
+<!-- real; multinomial_logit ~; -->
+\index{{\tt \bfseries multinomial\_logit }!sampling statement|hyperpage}
+
+### Stan Functions
+
+<!-- real; multinomial_logit_lpmf; (int[] y | vector theta); -->
+\index{{\tt \bfseries multinomial\_logit\_lpmf }!{\tt (int[] y \textbar\ vector theta): real}|hyperpage}
+
+`real` **`multinomial_logit_lpmf`**`(int[] y | vector theta)`<br>\newline
+The log multinomial probability mass function with outcome array `y`
+of size $K$ given the $K$-simplex distribution parameter $\text{softmax}^{-1}(\theta)$ and
+(implicit) total count `N = sum(y)`
+
+<!-- int[]; multinomial_logit_rng; (vector theta, int N); -->
+\index{{\tt \bfseries multinomial\_logit\_rng }!{\tt (vector theta, int N): int[]}|hyperpage}
+
+`int[]` **`multinomial_logit_rng`**`(vector theta, int N)`<br>\newline
+Generate a multinomial variate with simplex distribution parameter
+$\text{softmax}^{-1}(\theta)$ and total count $N$; may only be used in transformed data and
 generated quantities blocks
 

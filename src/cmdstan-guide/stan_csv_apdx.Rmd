@@ -16,6 +16,34 @@ additional information about the inference engine and the resulting estimate.
 
 - Data rows:  numerical values (including `NaN`, `inf`, `+inf`, `-inf`)
 
+## Container Variable Column Names, Order
+
+Stan provides three types of container objects: arrays, vectors, and matrices. 
+The output columns for a container object is a set of consecutive columns where the
+column name is composed of the variable name and element indices separated by the '.' (period) character.
+Vectors and matrices, as well as arrays, are indexed starting from one in Stan,
+and the output is in column-major order.
+
+Given a program with parameters block:
+
+```
+parameters {
+  real alpha;
+  real phi[5, 2];
+  vector[2] nu;
+}
+```
+
+The resulting Stan CSV file has columns:
+
+```
+'alpha', 'phi.1.1', 'phi.1.2', 'phi.1.3', 'phi.1.4', 'phi.1.5',' phi.2.1', 'phi.2.2', 'phi.2.3', 'phi.2.4', 'phi.2.5', 'nu.1', 'nu.2'
+```
+
+The 2-dimensional array `phi` has 5 rows, and 2 columns.
+In the CSV output, all elements of column 1 are listed in ascending order, followed by all elements of column 2.
+In [column major order](https://eli.thegreenplace.net/2015/memory-layout-of-multi-dimensional-arrays), a.k.a. "Fortran" where the first index changes the slowest and the last index changes the fastest.
+
 
 ## MCMC Sampler CSV Output
 
@@ -28,7 +56,7 @@ additional information about the inference engine and the resulting estimate.
 - Sampling draws
 - Timing information as comments
 
-### Diagnostic file - latent Hamiltonin plus gradients
+### Diagnostic file - latent Hamiltonian plus gradients
 
 - Header row
 - Warmup draws, if `save_warmup=1`

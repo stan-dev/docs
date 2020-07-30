@@ -1,0 +1,37 @@
+# Parallelization
+
+Stan provides [high-level parallelization](https://mc-stan.org/docs/stan-users-guide/parallelization-chapter.html)
+via multi-threading by use of the `reduce_sum` and `map_rect` functions in a Stan program.
+Stan also provides [low-level parallelization](https://arxiv.org/pdf/1907.01063.pdf)
+on GPU hardware using the [OpenCL](https://www.khronos.org/opencl/) framework to speed
+up matrix operations.
+Both of these features require building executibles which call the appropriate
+libraries.  This is done via [makefile variables](#gnu-make) which set the appropriate
+C++ compiler and linker flags:
+
+- `STAN_THREADS` - compiler directives for threading
+- `STAN_OPENCL` - compiler directives for GPU-aware matrix operations
+
+These options can be combined, it is possible to run a program which uses multi-threading
+operations on a machine with GPU hardware, in which case, the call to Make 
+
+For example to compile program `parallel_logistic.stan` which uses
+[`reduce_sum`](https://mc-stan.org/docs/stan-users-guide/reduce-sum.html) for within-chain
+parallelization on an OpenCL (GPU) machine:
+
+```
+> make STAN_THREADS=TRUE STAN_OPENCL=TRUE /path/to/parallel_logistic
+```
+
+In addition, for multi-threaded programs, it is necessary to specify the number of available threads
+via the shell environment variable `STAN_NUM_THREADS` which specifies how many threads to run in parallel.
+Generally, this number should not exceed the number of available cores.
+If this variable isn't set, then the program will run single-threaded.
+To run a single chain on a 4-core machine for program `parallel_logistic`:
+
+```
+export STAN_NUM_THREADS=4
+./parallel_logistic sample data file=data.csv ...
+```
+
+

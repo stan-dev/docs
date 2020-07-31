@@ -1122,11 +1122,35 @@ model {
   eta ~ normal(0, 1);
 }
 ```
-Where since $\eta \sim normal(0, 1)$, $f$ is distributed multi-variate normally. 
+Where since $\eta \sim normal(0, 1)$, $f$ is distributed multivariate normal.
 
 We can implement a gaussian process regression model with a Squared Exponential kernel, along with the posterior predictive for the regression model as follows:
 
 
 ### The Dot Product Covariance Function
 
-The dot product kernel, or linear kernel, is analogous to a Bayesian linear regression with a normal(0, 1) prior on regression coefficients. This can be combined with other covariance functions to 
+The dot product kernel, or linear kernel, is analogous to a Bayesian linear regression with a normal(0, 1) prior on regression coefficients. This can be combined with other covariance functions to interpolate linear trends in data, but that will be discussed in a later chapter. The analytic form is simply an inner product between observations $x$ and $x'$, with bias parameter $\sigma_0 > 0$ and inner product $(\cdot, \cdot)$:
+
+$$
+K(x, x' \mid \sigma, l) = \sigma_0^2 + (x', x)
+$$
+
+We can define a dot product covariance function almost identicle to defining the squared exponential covariance function, instead as `gp_dot_prod_cov` with a constant parameter $\sigma_0$, for training data `matrix[D] x[N]`, an $N\times D$ matrix as
+
+```
+matrix[N, N] K = gp_dot_prod_cov(x, sigma0)
+```
+
+and for the cross covariance matrix with $N_{pred} \times D$ `matrix[D] x[N_pred] x_pred` as:
+
+```
+matrix[N, N_pred] K gp_dot_prod_cov(x_pred, x, sigma0)
+
+```
+
+Fixing the bias parameter, we can generate samples from the linear kernel (left) and the linear kernel fitting a linear function:
+
+
+The code for fitting a linear model in Stan with a Gaussian Process is almost indenticle to that of fitting a GP regression with a squared exponential kernel, but instead replacing every instance of `gp_exp_quad_cov` with `gp_dot_prod_cov` and declaring and using parameteres for the dot product kernel, accordingly.
+
+

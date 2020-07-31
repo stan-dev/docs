@@ -4,6 +4,7 @@ data {
   matrix[N, K] x; // predictor matrix
   vector[N] y; // outcome vector
 }
+
 transformed data {
   matrix[N, K] Q_ast;
   matrix[K, K] R_ast;
@@ -19,7 +20,11 @@ parameters {
   vector[K] theta; // coefficients on Q_ast
   real<lower = 0> sigma; // error scale
 }
+
 model {
+  alpha ~ normal(0, 1);
+  theta ~ normal(0, 1);
+  sigma ~ normal(0, 1);
   y ~ normal(Q_ast * theta + alpha, sigma); // likelihood
 }
 

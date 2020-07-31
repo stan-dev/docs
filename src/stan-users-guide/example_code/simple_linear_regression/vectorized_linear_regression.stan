@@ -11,8 +11,8 @@ parameters {
 }
 
 model {
-  alpha ~ normal(5, 10); // priors
-  beta ~ normal(5, 10);
-  sigma ~ normal(5, 10);
+  alpha ~ normal(0, 1); // priors
+  beta ~ normal(0, 1);
+  sigma ~ normal(0, 1);
   y ~ normal(alpha + beta * x, sigma); // likelihood
 }

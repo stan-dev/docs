@@ -1098,11 +1098,35 @@ A common choice for a covariance function is the Squared Exponential covariance 
 $$
 K(x, x' \mid \sigma, l) = \sigma^2 \exp\left(-\dfrac{||x - x'||_2^2}{2 l^2}\right).
 $$
-for $\sigma,l \geq 0$, where $||\cdot||_2^2$ is the squared l-2 norm, and $x$ and $x'$ are observations of design matrix $X$. The $K_{i,j}$ will then be the covariance computed between rows $i$ and $j$ of the design matrix. Here's what generations from the squared exponential kernel look like, before and after being conditioned on data:
+for $\sigma,l \geq 0$, where $||\cdot||_2^2$ is the squared l-2 norm, and $x$ and $x'$ are observations of design matrix $X$. The $K_{i,j}$ will then be the covariance computed between rows $i$ and $j$ of the design matrix. Here's what draws from the squared exponential kernel look like, before and after being conditioned on data, with fixed hyper priors for the magntitude parameter $\sigma^2$ and length-scale parameter $l$:
+
+We can sample from a multivariate gaussian distribution in Stan by first instantiating a covariance matrix, for example for `vector[D] x[N]`, and parameters `real<lower=0> sigma` and `real<lower=0> length_scale` as
+
+```
+matrix[N, N] K = gp_exp_quad_cov(x, sigma, l)
+```
+
+And then we add noise and sample from a multivariate gaussian distribution using cholesky decomposition:
+
+```
+
+transformed parameters {
+  vector[N] f;
+  matrix[N, N] L_K;
+  K = add_diag(K, epsilon);
+  L_K = choleskey_decompose(K);
+  f = L_K * eta;
+}
+...
+model {
+  eta ~ normal(0, 1);
+}
+```
+Where since $\eta \sim normal(0, 1)$, $f$ is distributed multi-variate normally. 
 
 We can implement a gaussian process regression model with a Squared Exponential kernel, along with the posterior predictive for the regression model as follows:
 
 
 ### The Dot Product Covariance Function
 
-The dot product kernel, or linear kernel, is analogous to a Bayesian linear regression with a normal(0, 1) prior on regression coefficients. This can primarily be used to interpolate linear trends through data.
+The dot product kernel, or linear kernel, is analogous to a Bayesian linear regression with a normal(0, 1) prior on regression coefficients. This can be combined with other covariance functions to 

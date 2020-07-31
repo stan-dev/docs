@@ -15,9 +15,9 @@ parameters {
   real<lower = 0> sigma_std;
 }
 model {
-  alpha_std ~ normal(0, 10);
-  beta_std ~ normal(0, 10);
-  sigma_std ~ cauchy(0, 5);
+  alpha_std ~ normal(0, 1);
+  beta_std ~ normal(0, 1);
+  sigma_std ~ cauchy(0, 1);
   for (n in 1:N)
     y_std[n] ~ normal(alpha_std + beta_std * x_std[n], 
                       sigma_std);

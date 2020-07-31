@@ -10,7 +10,7 @@ parameters {
   real<lower = 0> sigma;  // error scale
 }
 model {
-  beta ~ normal(5, 10); // priors
-  sigma ~ normal(5, 10);
+  beta ~ normal(0, 1); // priors
+  sigma ~ normal(0, 1);
   y ~ normal(x * beta, sigma);  // likelihood
 }

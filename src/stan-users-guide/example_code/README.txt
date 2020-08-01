@@ -20,7 +20,7 @@ All code should demonstrate good coding practices and pass relevant linters:
 
 2) The run.py should adhere to the style guide at:https://www.python.org/dev/peps/pep-0008. The linter currently being used is pylint.
 
-3) The run.R should adhere to Hadley Wickham's style guide at http://adv-r.had.co.nz/Style.html. RStudio implements `rlint` which is accessed by the menu Code>Show Diagnistics. The linter output shows up in the Markers tab on the output window.
+3) The run.R should adhere to Hadley Wickham's style guide at http://adv-r.had.co.nz/Style.html. RStudio implements `rlint` which is accessed by the menu Code>Show Diagnistics. The linter output shows up in the Markers tab on the output window. I have had mixed success with that interface so alternatively I run in the R Studio console `library("lintr")`, set the working directory to where `run.R` is and type lintr::lint("run.R"). Output will show up in the Markers Tab unless no errors are found.  
 
 The `test_run_all_runs.py` runs both the python and R versions of the run programs and will fail if any of the `run.*` programs fail. There is no checking if the output is correct, just whether the programs completed without errors being thrown. To run:
 

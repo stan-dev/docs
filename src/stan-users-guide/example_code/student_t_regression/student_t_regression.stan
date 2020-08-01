@@ -2,7 +2,7 @@ data {
   int<lower = 0> N; // number of data elements
   vector[N] x;      // predictor vector
   vector[N] y;      // outcomes vector
-  real<lower=2> nu; // degrees of freedom
+  real<lower = 2> nu; // degrees of freedom
 }
 
 parameters {

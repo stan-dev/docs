@@ -17,7 +17,7 @@ y <- rt(n, nu, alpha_true + beta_true * x) # sigma_true implictly = 1
 
 #=============runs robust noise regression, Student's t==========
 
-stan_data <- list(N=n, x=x, y=y, nu=nu)
+stan_data <- list(N = n, x = x, y = y, nu = nu)
 model <- cmdstan_model("student_t_regression.stan")
 fit <- model$sample(data = stan_data, output_dir = "output")
 print(paste("ran stan executable: ", model$exe_file()))

@@ -27,7 +27,7 @@ The `test_run_all_runs.py` runs both the python and R versions of the run progra
 >cd <path to repo>/docs/src/stan-users-guide/example_code
 >python test_run_all_runs.py
 
-If a run.* program fails a message appears, 'End to end test FAIL', then scroll back up and see the last 'Testing: <dir>/run.*', the <dir> indicates the failedR or python run.* code.
+If a run.* program fails a message appears, 'End to end test FAIL', then scroll back up and see the last 'Testing: <dir>/run.*', the <dir> indicates the failed R or python run.* code.
 
 To run an individual run.* file supply the path as an argument, e.g. if `simple_linear_regression/run.R` is failing:
 

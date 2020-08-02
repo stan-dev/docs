@@ -1,4 +1,5 @@
-""" Example program that generates data, compiles and runs probit_regression.stan"""
+""" Example program that generates data, compiles and runs
+probit_regression.stan"""
 from cmdstanpy import CmdStanModel
 from scipy.stats import binom, norm, uniform
 

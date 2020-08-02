@@ -18,7 +18,7 @@ All code should demonstrate good coding practices and pass relevant linters:
 
 1) Stan programs should adhere to the 'Stan Program Style Guide' in the user's manual. There is a simple linter available at: https://github.com/breckbaldwin/stan_linter.git
 
-2) The run.py should adhere to the style guide at:https://www.python.org/dev/peps/pep-0008. The linter currently being used is pylint.
+2) The run.py should adhere to the style guide at:https://www.python.org/dev/peps/pep-0008. The linter currently being used is pycodestyle.
 
 3) The run.R should adhere to Hadley Wickham's style guide at http://adv-r.had.co.nz/Style.html. RStudio implements `rlint` which is accessed by the menu Code>Show Diagnistics. The linter output shows up in the Markers tab on the output window. I have had mixed success with that interface so alternatively I run in the R Studio console `library("lintr")`, set the working directory to where `run.R` is and type lintr::lint("run.R"). Output will show up in the Markers Tab unless no errors are found.  
 

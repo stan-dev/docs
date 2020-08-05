@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>10 Maximum Likelihood Estimation | CmdStan User’s Guide</title>
+  <title>14 Parallelization | CmdStan User’s Guide</title>
   <meta name="description" content="CmdStan user’s guide." />
   <meta name="generator" content="bookdown 0.20 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="10 Maximum Likelihood Estimation | CmdStan User’s Guide" />
+  <meta property="og:title" content="14 Parallelization | CmdStan User’s Guide" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="img/logo-tm.pdf" />
@@ -16,7 +16,7 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="10 Maximum Likelihood Estimation | CmdStan User’s Guide" />
+  <meta name="twitter:title" content="14 Parallelization | CmdStan User’s Guide" />
   
   <meta name="twitter:description" content="CmdStan user’s guide." />
   <meta name="twitter:image" content="img/logo-tm.pdf" />
@@ -30,8 +30,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="mcmc-config.html"/>
-<link rel="next" href="variational-inference-algorithm-advi.html"/>
+<link rel="prev" href="diagnosing-hmc-by-comparison-of-gradients.html"/>
+<link rel="next" href="cmdstan-tools.html"/>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -255,101 +255,42 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="maximum-likelihood-estimation" class="section level1">
-<h1><span class="header-section-number">10</span> Maximum Likelihood Estimation</h1>
-<p>The <code>optimize</code> method finds the mode of the posterior distribution, assuming that there is one.
-If the posterior is not convex, there is no guarantee Stan will be able to find the global mode
-as opposed to a local optimum of log probability.
-For optimization, the mode is calculated without the Jacobian adjustment
-for constrained variables, which shifts the mode due to the change of variables.
-Thus modes correspond to modes of the model as written.</p>
-<p>The full set of configuration options available for the <code>optimize</code> method is
-reported at the beginning of the sampler output file as CSV comments.
-When the example model <code>bernoulli.stan</code> is run with <code>method=optimize</code>
-via the command line with all default arguments,
-the resulting Stan CSV file header comments show the complete set
-of default configuration options:</p>
-<pre><code># model = bernoulli_model
-# method = optimize
-#   optimize
-#     algorithm = lbfgs (Default)
-#       lbfgs
-#         init_alpha = 0.001 (Default)
-#         tol_obj = 9.9999999999999998e-13 (Default)
-#         tol_rel_obj = 10000 (Default)
-#         tol_grad = 1e-08 (Default)
-#         tol_rel_grad = 10000000 (Default)
-#         tol_param = 1e-08 (Default)
-#         history_size = 5 (Default)
-#     iter = 2000 (Default)
-#     save_iterations = 0 (Default)</code></pre>
-<div id="optimization-algorithms" class="section level2">
-<h2><span class="header-section-number">10.1</span> Optimization Algorithms</h2>
-<p>The <code>algorithm</code> argument specifies the optimization algorithm.
-This argument takes one of the following three values:</p>
+<div id="parallelization" class="section level1">
+<h1><span class="header-section-number">14</span> Parallelization</h1>
+<p>Stan provides <a href="https://mc-stan.org/docs/stan-users-guide/parallelization-chapter.html">high-level parallelization</a>
+via multi-threading by use of the <code>reduce_sum</code> and <code>map_rect</code> functions in a Stan program.
+Stan also provides <a href="https://arxiv.org/pdf/1907.01063.pdf">low-level parallelization</a>
+on GPU hardware using the <a href="https://www.khronos.org/opencl/">OpenCL</a> framework to speed
+up matrix operations.
+Both of these features require building executibles which call the appropriate
+libraries. This is done via <a href="cmdstan-installation.html#gnu-make">makefile variables</a> which set the appropriate
+C++ compiler and linker flags:</p>
 <ul>
-<li><p><code>lbfgs</code> A quasi-Newton optimizer. This is the default optimizer
-and also much faster than the other optimizers.</p></li>
-<li><p><code>bfgs</code> A quasi-Newton optimizer.</p></li>
-<li><p><code>newton</code> A Newton optimizer. This is the least efficient optimization algorithm,
-but has the advantage of setting its own stepsize.</p></li>
+<li><code>STAN_THREADS</code> - compiler directives for threading</li>
+<li><code>STAN_OPENCL</code> - compiler directives for GPU-aware matrix operations</li>
 </ul>
-<p>See the Stan Reference Manual’s
-<a href="https://mc-stan.org/docs/reference-manual/optimization-algorithms-chapter.html">Optimization chapter</a>
-for a description of these algorithms.</p>
-</div>
-<div id="the-quasi-newton-optimizers" class="section level2">
-<h2><span class="header-section-number">10.2</span> The quasi-Newton optimizers</h2>
-<p>For both BFGS and L-BFGS optimizers,
-convergence monitoring is controlled by a number of tolerance values,
-any one of which being satisfied causes the algorithm to terminate with a solution.
-See the
-<a href="https://mc-stan.org/docs/reference-manual/bfgs-and-l-bfgs-configuration.html">BFGS and L-BFGS configuration chapter</a>
-for details on the convergence tests.</p>
-<p>Both BFGS and L-BFGS have the following configuration arguments:</p>
-<ul>
-<li><p><code>init_alpha</code> - The initial step size parameter.
-Must be a positive real number. Default value is <span class="math inline">\(0.001\)</span></p></li>
-<li><p><code>tol_obj</code> - Convergence tolerance on changes in objective function value.
-Must be a positive real number. Default value is <span class="math inline">\(1^{-12}\)</span>.</p></li>
-<li><p><code>tol_rel_obj</code> - Convergence tolerance on relative changes in objective function value.
-Must be a positive real number. Default value is <span class="math inline">\(1^{4}\)</span>.</p></li>
-<li><p><code>tol_grad</code> - Convergence tolerance on the norm of the gradient.
-Must be a positive real number. Default value is <span class="math inline">\(1^{-8}\)</span>.</p></li>
-<li><p><code>tol_rel_grad</code> - Convergence tolerance on the relative norm of the gradient.
-Must be a positive real number. Default value is <span class="math inline">\(1^{7}\)</span>.</p></li>
-<li><p><code>tol_param</code> - Convergence tolerance on changes in parameter value.
-Must be a positive real number. Default value is <span class="math inline">\(1^{-8}\)</span>.</p></li>
-</ul>
-<p>The <code>init_alpha</code> argument specifies the first step size to try on the initial iteration.
-If the first iteration takes a long time (and requires a lot of function evaluations),
-set <code>init_alpha</code> to be the roughly equal to the alpha used in that first iteration.
-The default value is very small, which is reasonable for many problems but might be too large
-or too small depending on the objective function and initialization.
-Being too big or too small just means that the first iteration will take longer
-(i.e., require more gradient evaluations) before the line search finds a good step length.</p>
-<p>In addition to the above, the L-BFGS algorithm has argument <code>history</code>
-which controls the size of the history it uses to approximate the Hessian.
-The value should be less than the dimensionality of the parameter space and,
-in general, relatively small values (<span class="math inline">\(5\)</span>-<span class="math inline">\(10\)</span>) are sufficient; the default value is <span class="math inline">\(5\)</span>.</p>
-<p>If L-BFGS performs poorly but BFGS performs well, consider increasing the history size.
-Increasing history size will increase the memory usage,
-although this is unlikely to be an issue for typical Stan models.</p>
-</div>
-<div id="the-newton-optimizer" class="section level2">
-<h2><span class="header-section-number">10.3</span> The Newton optimizer</h2>
-<p>There are no configuration parameters for the Newton optimizer.
-It is not recommended because of the slow Hessian calculation involving finite differences.</p>
+<p>These options can be combined, it is possible to run a program which uses multi-threading
+operations on a machine with GPU hardware, in which case, the call to Make</p>
+<p>For example to compile program <code>parallel_logistic.stan</code> which uses
+<a href="https://mc-stan.org/docs/stan-users-guide/reduce-sum.html"><code>reduce_sum</code></a> for within-chain
+parallelization on an OpenCL (GPU) machine:</p>
+<pre><code>&gt; make STAN_THREADS=TRUE STAN_OPENCL=TRUE /path/to/parallel_logistic</code></pre>
+<p>In addition, for multi-threaded programs, it is necessary to specify the number of available threads
+via the shell environment variable <code>STAN_NUM_THREADS</code> which specifies how many threads to run in parallel.
+Generally, this number should not exceed the number of available cores.
+If this variable isn’t set, then the program will run single-threaded.
+To run a single chain on a 4-core machine for program <code>parallel_logistic</code>:</p>
+<pre><code>export STAN_NUM_THREADS=4
+./parallel_logistic sample data file=data.csv ...</code></pre>
 
-</div>
 </div>
             </section>
 
           </div>
         </div>
       </div>
-<a href="mcmc-config.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="variational-inference-algorithm-advi.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="diagnosing-hmc-by-comparison-of-gradients.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="cmdstan-tools.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>

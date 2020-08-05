@@ -1,3 +1,8 @@
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+source("before-chapter.R")
+```
+
+
 # Regression Models
 
 Stan supports regression models from simple linear regressions to
@@ -25,29 +30,16 @@ $$
 y_n \sim \operatorname{normal}(\alpha + \beta X_n, \, \sigma).
 $$
 
-This latter form of the model is coded in Stan as follows.
+This latter form of the model is coded in `naive_linear_regression.stan` in the folder [simple_linear_regression/](https://github.com/stan-dev/docs/tree/footnote/src/stan-users-guide/example_code/simple_linear_regression):
 
-```
-data {
-  int<lower=0> N;
-  vector[N] x;
-  vector[N] y;
-}
-parameters {
-  real alpha;
-  real beta;
-  real<lower=0> sigma;
-}
-model {
-  y ~ normal(alpha + beta * x, sigma);
-}
-```
 
-There are `N` observations and for each observation, $n \in N$,  we have predictor
-`x[n]` and outcome `y[n]`.  The intercept and slope parameters are
+```{r echo=FALSE, comment=NA}
+print_file('example_code/simple_linear_regression/naive_linear_regression.stan')
+```
+There are `N` observations, each with predictor `x[n]` and
+outcome `y[n]`.  The intercept and slope parameters are
 `alpha` and `beta`.  The model assumes a normally
-distributed noise term with scale `sigma`.  This model has
-improper priors for the two regression coefficients.
+distributed noise term with scale `sigma`. Note that the folder [simple_linear_regression/](https://github.com/stan-dev/docs/tree/footnote/src/stan-users-guide/example_code/simple_linear_regression) contains a `run.R` and `run.py` that generate data and run the Stan programs from this section. 
 
 ### Matrix Notation and Vectorization {- #vectorization.section}
 
@@ -64,7 +56,7 @@ for (n in 1:N)
   y[n] ~ normal(alpha + beta * x[n], sigma);
 ```
 
-In addition to being more concise, the vectorized form is much faster.^[Unlike in Python and R, which are interpreted, Stan is translated to C++ and compiled, so loops and assignment statements are fast.  Vectorized code is faster in Stan because (a) the expression tree used to compute derivatives can be simplified, leading to fewer virtual function calls, and (b) computations that would be repeated in the looping version, such as `log(sigma)` in the above model, will be computed once and reused.]
+In addition to being more concise, the vectorized form is much faster.^[Unlike in Python and R, which are interpreted, Stan is translated to C++ and compiled, so loops and assignment statements are fast.  Vectorized code is faster in Stan because (a) the expression tree used to compute derivatives can be simplified, leading to fewer virtual function calls, and (b) computations that would be repeated in the looping version, such as `log(sigma)` which is implicit in computing `normal(normal(alpha + beta * x[n], sigma)` in the above model, will be computed once and reused.]
 
 In general, Stan allows the arguments to distributions such as
 `normal` to be vectors.  If any of the other arguments are vectors or
@@ -78,26 +70,13 @@ overloaded to perform matrix arithmetic on matrices.  In this case,
 because `x` is of type `vector` and `beta` of type
 `real`, the expression `beta * x` is of type `vector`.
 Because Stan supports vectorization, a regression model with more than
-one predictor can be written directly using matrix notation.
+one predictor can be written directly using matrix notation. See `vectorized_linear_regression.stan` in  [simple_linear_regression/](https://github.com/stan-dev/docs/tree/footnote/src/stan-users-guide/example_code/simple_linear_regression)
 
-```
-data {
-  int<lower=0> N;   // number of data items
-  int<lower=0> K;   // number of predictors
-  matrix[N, K] x;   // predictor matrix
-  vector[N] y;      // outcome vector
-}
-parameters {
-  real alpha;           // intercept
-  vector[K] beta;       // coefficients for predictors
-  real<lower=0> sigma;  // error scale
-}
-model {
-  y ~ normal(x * beta + alpha, sigma);  // likelihood
-}
+```{r echo=FALSE}
+print_file('example_code/simple_linear_regression/vectorized_linear_regression.stan')
 ```
 
-The constraint `lower=0` in the declaration of `sigma`
+The constraint `lower = 0` in the declaration of `sigma`
 constrains the value to be greater than or equal to 0.  With no prior
 in the model block, the effect is an improper prior on non-negative
 real numbers.  Although a more informative prior may be added, improper
@@ -134,10 +113,7 @@ In the model formulation
 y ~ normal(x * beta, sigma);
 ```
 
-there is no longer an intercept coefficient `alpha`.  Instead, we
-have assumed that the first column of the input matrix `x` is a
-column of 1 values.  This way, `beta[1]` plays the role of the
-intercept.  If the intercept gets a different prior than the slope
+there is no longer an intercept coefficient `alpha`. See `matrix_w_intercept_linear_regression.stan` in  [simple_linear_regression/](https://github.com/stan-dev/docs/tree/footnote/src/stan-users-guide/example_code/simple_linear_regression). Instead, we have assumed that the first column of the input matrix `x` is a column of 1 values.  This way, `beta[1]` plays the role of the intercept.  If the intercept gets a different prior than the slope
 terms, then it would be clearer to break it out.  It is also slightly
 more efficient in its explicit form with the intercept variable
 singled out because there's one fewer multiplications; it should not
@@ -163,36 +139,9 @@ R^\ast$ where $Q^\ast = Q * \sqrt{n - 1}$ and $R^\ast =
 \frac{1}{\sqrt{n - 1}} R$. Thus, we can equivalently write $\eta = x
 \beta = Q R \beta = Q^\ast R^\ast \beta$. If we let $\theta = R^\ast
 \beta$, then we have $\eta = Q^\ast \theta$ and $\beta = R^{\ast^{-1}}
-\theta$. In that case, the previous Stan program becomes
-
-```
-data {
-  int<lower=0> N;   // number of data items
-  int<lower=0> K;   // number of predictors
-  matrix[N, K] x;   // predictor matrix
-  vector[N] y;      // outcome vector
-}
-transformed data {
-  matrix[N, K] Q_ast;
-  matrix[K, K] R_ast;
-  matrix[K, K] R_ast_inverse;
-  // thin and scale the QR decomposition
-  Q_ast = qr_thin_Q(x) * sqrt(N - 1);
-  R_ast = qr_thin_R(x) / sqrt(N - 1);
-  R_ast_inverse = inverse(R_ast);
-}
-parameters {
-  real alpha;           // intercept
-  vector[K] theta;      // coefficients on Q_ast
-  real<lower=0> sigma;  // error scale
-}
-model {
-  y ~ normal(Q_ast * theta + alpha, sigma);  // likelihood
-}
-generated quantities {
-  vector[K] beta;
-  beta = R_ast_inverse * theta; // coefficients on x
-}
+\theta$. In that case, the previous Stan program is transformed to `QR_regression.stan` in [simple_linear_regression/](https://github.com/stan-dev/docs/tree/footnote/src/stan-users-guide/example_code/simple_linear_regression): 
+```{r echo=FALSE}
+print_file('example_code/simple_linear_regression/QR_regression.stan')
 ```
 
 Since this Stan program generates equivalent predictions for $y$ and
@@ -243,10 +192,7 @@ then you are better off reparameterizing your model so that the
 regression coefficients are a generated quantity. In that case, it
 usually does not matter much what prior is used on on the
 reparameterized regression coefficients and almost any weakly
-informative prior that scales with the outcome will do.
-
-
-
+informative prior that scales with the outcome will do. A centered/scaled version is `centered_scaled_linear_regression.stan` in [simple_linear_regression/](https://github.com/stan-dev/docs/tree/footnote/src/stan-users-guide/example_code/simple_linear_regression).
 
 ## Robust Noise Models
 
@@ -255,7 +201,7 @@ term $\epsilon$ as having a normal distribution.  From Stan's
 perspective, there is nothing special about normally distributed
 noise.  For instance, robust regression can be accommodated by giving
 the noise term a Student-$t$ distribution.  To code this in Stan, the
-sampling distribution is changed to the following.
+sampling distribution is changed as shown below with complete code in `student_t_regression.stan` in the folder [student_t_regression/]( https://github.com/stan-dev/docs/tree/footnote/src/stan-users-guide/example_code/student_t_regression).
 
 
 ```
@@ -280,23 +226,9 @@ $(-\infty,\infty)$ to probability values in $(0,1)$.  Their respective
 link functions, the logistic function and the standard normal cumulative distribution
 function, are both sigmoid functions (i.e., they are both *S*-shaped).
 
-A logistic regression model with one predictor and an intercept is coded as
-follows.
-
-
-```
-data {
-  int<lower=0> N;
-  vector[N] x;
-  int<lower=0,upper=1> y[N];
-}
-parameters {
-  real alpha;
-  real beta;
-}
-model {
-  y ~ bernoulli_logit(alpha + beta * x);
-}
+A logistic regression model with one predictor and an intercept is coded in `logistic_regression.stan` in the folder  [simple_logistic_regression](https://github.com/stan-dev/docs/tree/footnote/src/stan-users-guide/example_code/simple_logistic_regression): 
+```{r echo=FALSE}
+print_file('example_code/simple_logistic_regression/logistic_regression.stan')
 ```
 
 The noise parameter is built into the Bernoulli formulation here
@@ -352,21 +284,22 @@ $$
 The cumulative standard normal distribution function $\Phi$ is implemented
 in Stan as the function `Phi`.  The probit regression model
 may be coded in Stan by replacing the logistic model's sampling
-statement with the following.
+statement with the following:
 
 
 ```
-y[n] ~ bernoulli(Phi(alpha + beta * x[n]));
+y ~ bernoulli(Phi(alpha + beta * x));
 ```
+The example file `probit_regression.stan` is in the folder  [simple_probit_regression](https://github.com/stan-dev/docs/tree/footnote/src/stan-users-guide/example_code/simple_probit_regression).
 
 A fast approximation to the cumulative standard normal distribution
 function $\Phi$ is implemented in Stan as the function
 `Phi_approx`.^[The `Phi_approx` function is a rescaled version of the inverse logit function, so while the scale is roughly the same $\Phi$, the tails do not match.]
 The approximate probit regression model may
-be coded with the following.
+be coded with the following:
 
 ```
-y[n] ~ bernoulli(Phi_approx(alpha + beta * x[n]));
+y ~ bernoulli(Phi_approx(alpha + beta * x));
 ```
 
 ## Multi-Logit Regression {#multi-logit.section}

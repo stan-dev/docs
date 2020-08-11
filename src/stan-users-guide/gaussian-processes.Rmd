@@ -1155,10 +1155,26 @@ The code for fitting a linear model in Stan with a Gaussian Process is almost in
 
 ### The Periodic Covariance Function
 
-The periodic covariance function is used to interpolate periodic trends in data, and can be used to model anything that follows a periodic pattern, such as seasonal trends or oscillations in time. The parameterization of the periodic covariance function is similar to that of the squared expontential, but with the addition of one more parameter, a period parameter. It's common to fix the period based on application, and is difficult to estimate. For example, the period could be fixed to days in a year. The periodic covariance function, with times $t, t'$ as:
+The periodic covariance function is used to interpolate periodic trends in data, and can be used to model anything that follows a periodic pattern, such as seasonal trends or oscillations in time. The parameterization of the periodic covariance function is similar to that of the squared expontential, but with the addition of one more parameter, a period parameter. It's common to fix the period based on application, and is difficult to estimate. For example, the period could be fixed to days in a year. The periodic covariance function, with times $t, t'$ as
 
 $$
-%K(x, x' \mid \sigma, l, \rho) = \sigma^2 \exp\left(-\dfrac{||x - x'||_2^2}{2 l^2}\right).
+K(t, t' \mid \sigma, l, \rho) = \sigma^2 \exp\left(\dfrac{-2 sin^2(\pi(t - t')/ \rho)}{2 l^2}\right).
 $$
 
-Here's an example of the periodic function interpolating a sine wave with noise, 
+For $\sigma > 0$, $l > 0$ , and $\rho > 0$. We use $t$ since it is common to see the periodic covariance function used in time series application. Typically, $t$ will denote points measured in time. If data is measured at evenly spaced time points, we might set $t$ as $\mathbf{t}=[1,2,3,...,T]'$ where $T$ is the maximum number of measured time points, $\mathbf{t}$ is a column vector and the apostrophe indictaces the transpose. If $t$ isn't measured at evenly spaced time points, $t$ need not necessarily be such that $t_i-t_{i+1}$ for  all $i=1,2,3,...,T$. It is common to rescale $\mathbf{t}$ so that the integral to approximate is compatible with Stan's sampler. In order to approximate the periodic function well, we might instead set $t$ as $s(t) = t \space mod \space \rho$, where $mod$ is the modulus operator. In that case the periodic covariance function becomes
+
+$$
+K(t, t' \mid \sigma, l, \rho) = \sigma^2 \exp\left(\dfrac{-2 sin^2(\pi(s(t) - s(t'))/ \rho)}{2 l^2}\right).
+$$
+
+Calls of the periodic covariance function for a training covariance matrix and cross covariance matrix in Stan, respectively, look like
+
+```
+matrix[N, N] K = gp_periodic_cov(x, sigma, l, rho);
+matrix[N, N_pred] K_cross = gp_periodic_cov(x, x_pred, sigma, l, rho);
+```
+
+Here's an example of the periodic function interpolating a simulated sine wave with gaussian noise:
+
+
+

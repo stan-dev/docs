@@ -586,6 +586,30 @@ model {
   y ~ normal(f, sigma);
 }
 ```
+### Noise in Gaussian Process Regression
+
+Previously, we have only considered a noiseless gaussian process. That is, we've fixed $\delta$ to a small constant not less than zero. In gaussian process regression, an identically distributed independent noise is equivalent to having $\delta$, for example, be normally distributed. Specifically, we can set
+
+$$
+\delta \sim normal(0, 1)_+
+$$
+In Stan, we can simulate a GP model with noise by declaring $\delta$ as a parameter and setting $\delta$ to be normally distributed, as above. In Stan code,
+
+```
+parameters {
+  ...
+  real<lower=0> delta;
+}
+transformed parameters {
+  matrix[N, N] L_K;
+  {
+    matrix[N, N] K = gp_exp_quad_cov(x, sigma, );
+    K = add_diag(K, square(delta));
+    L_K = cholesky_decompose(K);
+  }
+}
+
+```
 
 
 ### Priors for Gaussian Process Parameters {#priors-gp.section}

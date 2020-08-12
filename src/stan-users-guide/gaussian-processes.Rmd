@@ -593,7 +593,7 @@ Previously, we have only considered a noiseless gaussian process. That is, we've
 $$
 \delta \sim normal(0, 1)_+
 $$
-In Stan, we can simulate a GP model with noise by declaring $\delta$ as a parameter and setting $\delta$ to be normally distributed, as above. In Stan code,
+In Stan, we can simulate a GP model with noise by declaring $\delta$ as a parameter and setting $\delta$ to be normally distributed, as above. For a Gaussian likelihood, function, a Stan snippet would be
 
 ```
 parameters {
@@ -603,12 +603,19 @@ parameters {
 transformed parameters {
   matrix[N, N] L_K;
   {
-    matrix[N, N] K = gp_exp_quad_cov(x, sigma, );
+    matrix[N, N] K = gp_exp_quad_cov(x, sigma, l);
     K = add_diag(K, square(delta));
     L_K = cholesky_decompose(K);
   }
 }
-
+model {
+  sigma ~ normal(0, 3);
+  l ~ normal(1, 3);
+  
+  delta ~ normal(0, 1);
+  
+  y ~ multi_normal_cholesky(mu, L_K);
+}
 ```
 
 

@@ -586,7 +586,7 @@ model {
   y ~ normal(f, sigma);
 }
 ```
-### Noise in Gaussian Process Regression
+### Noise in Gaussian Process Regression Models
 
 Previously, we have only considered a noiseless gaussian process. That is, we've fixed $\delta$ to a small constant not less than zero. In gaussian process regression, an identically distributed independent noise is equivalent to having $\delta$, for example, be normally distributed. Specifically, we can set
 
@@ -617,6 +617,24 @@ model {
   y ~ multi_normal_cholesky(mu, L_K);
 }
 ```
+
+Here's what a Gaussian Process regression fit looks like when the true noise standard deviation is 1:
+
+//////////////GRAPHIC
+
+Unfortunately, this is not always the case, and instead, we could have noise for which that standard deviation is not exactly 1. Here's an example of a fit on simulated data when the noise model is misspecified:
+
+//////////////GRAPHIC
+
+In this case, we can use a slightly more sophisticated method and estimate the noise for the Gaussian Process regression model hierarchically. To do this, we assign a simple hyper prior to the noise of the Gaussian Process. Since the prior has a prior, we call this a hierarchy, and hence a hierarchical prior. Probabilistically, we define the noise model as follows:
+
+$$
+\delta_0 \sim normal_+(0, 100)\\
+\delta \sim normal_+(0, \delta_0)
+$$
+
+We set the prior for the noise more diffuse, and then the noise for the Gaussian Process is estimated from the data. Beware, however, since the hyper prior is more diffuse and the true noise is likely less diffuse, this sub-model has potential to funnel and sample slowly.
+
 
 
 ### Priors for Gaussian Process Parameters {#priors-gp.section}
@@ -1131,6 +1149,8 @@ K(x, x' \mid \sigma, l) = \sigma^2 \exp\left(-\dfrac{||x - x'||_2^2}{2 l^2}\righ
 $$
 for $\sigma,l \geq 0$, where $||\cdot||_2^2$ is the squared l-2 norm, and $x$ and $x'$ are observations of design matrix $X$. The $K_{i,j}$ will then be the covariance computed between rows $i$ and $j$ of the design matrix. Here's what draws from the squared exponential kernel look like, before and after being conditioned on data, with fixed hyper priors for the magntitude parameter $\sigma^2$ and length-scale parameter $l$:
 
+//////////////GRAPHIC
+
 We can sample from a multivariate gaussian distribution in Stan by first instantiating a covariance matrix, for example for `vector[D] x[N]`, and parameters `real<lower=0> sigma` and `real<lower=0> length_scale` as
 
 ```
@@ -1181,6 +1201,7 @@ matrix[N, N_pred] K gp_dot_prod_cov(x_pred, x, sigma0)
 
 Fixing the bias parameter, we can generate samples from the linear kernel (left) and the linear kernel fitting a linear function:
 
+//////////////GRAPHIC
 
 The code for fitting a linear model in Stan with a Gaussian Process is almost indenticle to that of fitting a GP regression with a squared exponential kernel, but instead replacing every instance of `gp_exp_quad_cov` with `gp_dot_prod_cov` and declaring and using parameteres for the dot product kernel, accordingly.
 
@@ -1207,5 +1228,5 @@ matrix[N, N_pred] K_cross = gp_periodic_cov(x, x_pred, sigma, l, rho);
 
 Here's an example of the periodic function interpolating a simulated sine wave with gaussian noise:
 
-
+//////////////GRAPHIC
 

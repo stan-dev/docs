@@ -57,21 +57,15 @@ covariance matrix.  The mean function $m : \mathbb{R}^{N \times D}
 $K : \mathbb{R}^{N \times D} \rightarrow \mathbb{R}^{N \times N}$ must produce
 a positive-definite matrix for any input $x$.^[Gaussian processes can be extended to covariance functions producing positive semi-definite matrices, but Stan does not support inference in the resulting models because the resulting distribution does not have unconstrained support.]
 
-A popular covariance function, which will be used in the implementations later
-in this chapter, is an exponentiated quadratic function,
+A popular covariance function, is an exponentiated quadratic function, also known as a radial basis function, or a gaussian kernel, and will be used for implementations later in this chapter.
 $$
-  K(x \mid \alpha, \rho, \sigma)_{i, j}
-= \alpha^2
+  K(x, x' \mid \sigma, l)
+= \sigma^2
 \exp \left(
-- \dfrac{1}{2 \rho^2} \sum_{d=1}^D (x_{i,d} - x_{j,d})^2
-\right)
-+ \delta_{i, j} \sigma^2,
+- \dfrac{||x - x'||_2^2}{2 l^2} \right)
 $$
-where $\alpha$, $\rho$, and $\sigma$ are hyperparameters defining the
-covariance function and where $\delta_{i, j}$ is the Kronecker delta
-function with value 1 if $i = j$ and value 0 otherwise; this
-test is between the indexes $i$ and $j$, not between values $x_i$ and
-$x_j$. This kernel is obtained through a convolution of two
+where $\sigma$ and $l$ are hyperparameters defining the
+covariance function. This kernel is obtained through a convolution of two
 independent Gaussian processes, $f_1$ and $f_2$, with kernels
 $$
   K_1(x \mid \alpha, \rho)_{i, j}

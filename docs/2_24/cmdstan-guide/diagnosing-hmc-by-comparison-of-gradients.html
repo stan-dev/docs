@@ -210,10 +210,11 @@
 </ul></li>
 <li class="chapter" data-level="20" data-path="json.html"><a href="json.html"><i class="fa fa-check"></i><b>20</b> JSON Format for CmdStan</a>
 <ul>
-<li class="chapter" data-level="20.1" data-path="json.html"><a href="json.html#json-syntax-summary"><i class="fa fa-check"></i><b>20.1</b> JSON Syntax Summary</a></li>
-<li class="chapter" data-level="20.2" data-path="json.html"><a href="json.html#stan-data-types-in-json-notation"><i class="fa fa-check"></i><b>20.2</b> Stan Data Types in JSON Notation</a>
+<li class="chapter" data-level="20.1" data-path="json.html"><a href="json.html#creating-json-files"><i class="fa fa-check"></i><b>20.1</b> Creating JSON Files</a></li>
+<li class="chapter" data-level="20.2" data-path="json.html"><a href="json.html#json-syntax-summary"><i class="fa fa-check"></i><b>20.2</b> JSON Syntax Summary</a></li>
+<li class="chapter" data-level="20.3" data-path="json.html"><a href="json.html#stan-data-types-in-json-notation"><i class="fa fa-check"></i><b>20.3</b> Stan Data Types in JSON Notation</a>
 <ul>
-<li class="chapter" data-level="20.2.1" data-path="json.html"><a href="json.html#empty-arrays-in-json"><i class="fa fa-check"></i><b>20.2.1</b> Empty arrays in JSON</a></li>
+<li class="chapter" data-level="20.3.1" data-path="json.html"><a href="json.html#empty-arrays-in-json"><i class="fa fa-check"></i><b>20.3.1</b> Empty arrays in JSON</a></li>
 </ul></li>
 </ul></li>
 <li class="chapter" data-level="21" data-path="rdump.html"><a href="rdump.html"><i class="fa fa-check"></i><b>21</b> RDump Format for CmdStan</a>
@@ -257,14 +258,26 @@
             <section class="normal" id="section-">
 <div id="diagnosing-hmc-by-comparison-of-gradients" class="section level1">
 <h1><span class="header-section-number">13</span> Diagnosing HMC by Comparison of Gradients</h1>
-<p>CmdStan has a basic diagnostic feature that will calculate gradients of the
-initial state and compare them with those calculated with finite differences.
-If there are discrepancies, there is a problem with the model or initial states
-(or a bug in Stan). To run on the different platforms, use one of the following.</p>
+<p>CmdStan has a basic diagnostic feature that will calculate the gradients of the
+initial state and compare them with gradients calculated by finite differences.
+Discrepancies between the two indicate that there is a problem with the model or initial states
+or else there is a bug in Stan.</p>
+<p>To allow for the possibility of adding other kinds of diagnostic tests, the <code>diagnose</code> method
+argument configuration has subargument <code>test</code> which currently only takes value <code>gradient</code>.
+There are two available gradient test configuration arguments:</p>
+<ul>
+<li><p><code>epsilon</code> - The finite difference step size.
+Must be a positive real number. Default value is <span class="math inline">\(1^{-6}\)</span></p></li>
+<li><p><code>error</code> - The error threshold.
+Must be a positive real number. Default value is <span class="math inline">\(1^{-6}\)</span></p></li>
+</ul>
+<p>To run on the different platforms with the default configuration, use one of the following.</p>
 <p>Mac OS and Linux</p>
 <pre><code>&gt; ./my_model diagnose data file=my_data</code></pre>
 <p>Windows</p>
 <pre><code>&gt; my_model diagnose data file=my_data</code></pre>
+<p>To relax the test threshold, specify the <code>error</code> argument as follows:</p>
+<pre><code>&gt; ./my_model diagnose test=gradient error=0.0001 data file=my_data</code></pre>
 <p>To see how this works, we run diagnostics on the example bernoulli model:</p>
 <pre><code>&gt; ./bernoulli diagnose data file=bernoulli.data.R</code></pre>
 <p>Executing this command prints output to the console and as a series of

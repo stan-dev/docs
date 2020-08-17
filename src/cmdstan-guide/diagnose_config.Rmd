@@ -1,9 +1,21 @@
 # Diagnosing HMC by Comparison of Gradients
 
-CmdStan has a basic diagnostic feature that will calculate gradients of the
-initial state and compare them with those calculated with finite differences.
-If there are discrepancies, there is a problem with the model or initial states
-(or a bug in Stan). To run on the different platforms, use one of the following.
+CmdStan has a basic diagnostic feature that will calculate the gradients of the
+initial state and compare them with gradients calculated by finite differences.
+Discrepancies between the two indicate that there is a problem with the model or initial states
+or else there is a bug in Stan.
+
+To allow for the possibility of adding other kinds of diagnostic tests, the `diagnose` method
+argument configuration has subargument `test` which currently only takes value `gradient`.
+There are two available gradient test configuration arguments:
+
+- `epsilon` - The finite difference step size.
+Must be a positive real number. Default value is $1^{-6}$
+
+- `error` - The error threshold.
+Must be a positive real number. Default value is $1^{-6}$
+
+To run on the different platforms with the default configuration, use one of the following.
 
 Mac OS and Linux
 ```
@@ -13,6 +25,12 @@ Mac OS and Linux
 Windows
 ```
 > my_model diagnose data file=my_data
+```
+
+To relax the test threshold, specify the `error` argument as follows:
+
+```
+> ./my_model diagnose test=gradient error=0.0001 data file=my_data
 ```
 
 To see how this works, we run diagnostics on the example bernoulli model:

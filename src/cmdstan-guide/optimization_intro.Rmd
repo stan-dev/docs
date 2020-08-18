@@ -32,7 +32,7 @@ method = optimize
     algorithm = lbfgs (Default)
       lbfgs
         init_alpha = 0.001 (Default)
-        tol_obj = 9.9999999999999998e-13 (Default)
+        tol_obj = 1e-12 (Default)
         tol_rel_obj = 10000 (Default)
         tol_grad = 1e-08 (Default)
         tol_rel_grad = 10000000 (Default)
@@ -45,7 +45,7 @@ data
   file = bernoulli.data.json
 init = 2 (Default)
 random
-  seed = 3316231346 (Default)
+  seed = 87122538 (Default)
 output
   file = output.csv (Default)
   diagnostic_file =  (Default)
@@ -60,13 +60,13 @@ This is, not surprisingly, far fewer iterations than required
 for sampling; even fewer iterations would be used with less stringent
 user-specified convergence tolerances.
 The `alpha` value is for step size used. 
-In the final state the change in parameters was roughly 0.0002
-and the length of the gradient roughly 9e-8.
+In the final state the change in parameters was roughly $0.002$
+and the length of the gradient roughly 3e-05 ($0.00003$).
 
 ```
-Initial log joint probability = -5.26908
+Initial log joint probability = -6.85653
     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
-       5      -5.00402   0.000172451   9.39034e-08           1           1        8   
+       5      -5.00402    0.00184936   3.35074e-05           1           1        8   
 Optimization terminated normally: 
   Convergence detected: relative gradient magnitude is below tolerance
 ```
@@ -92,7 +92,7 @@ the CSV headers and the recorded values:
 
 ```
 lp__,theta
--5.00402,0.2
+-5.00402,0.200003
 ```
 
 Note that everything is a comment other than a line for the header,
@@ -108,3 +108,25 @@ Because the prior was uniform, the result 0.20 represents the maximum
 likelihood estimate (MLE) for the very simple Bernoulli model. Note
 that no uncertainty is reported.
 
+All of the optimizers stream per-iteration intermediate approximations to the command line console.
+The sub-argument `save_iterations` specifies whether or not to save
+the intermediate iterations to the output file.
+Allowed values are $0$ or $1$, corresponding to `False` and `True` respectively.
+The default value is $0$, i.e., intermediate iterations are not saved to the output file.
+Running the optimizer with `save_iterations=1` writes both
+the initial log joint probability and values for all iterations to the output CSV file.
+
+Running the example model with option `save_iterations=1`, i.e., the command
+```
+> ./bernoulli optimize save_iterations=1 data file=bernoulli.data.json
+```
+produces CSV file output rows:
+```
+lp__,theta
+-6.85653,0.493689
+-6.10128,0.420936
+-5.02953,0.22956
+-5.00517,0.206107
+-5.00403,0.200299
+-5.00402,0.200003
+```

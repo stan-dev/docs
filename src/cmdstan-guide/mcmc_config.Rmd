@@ -373,7 +373,35 @@ To initialize some or all parameters to good starting points on the constrained 
 a data file in JSON or Rdump format, use the keyword-value argument `init=<filepath>`:
 ```
 ./my_model sample init=my_param_inits.json data file=my_model.data.json \
-            output file=output_${i}.csv
+           output file=output_${i}.csv
+```
+
+To verify that the specified values will be used by the sampler, you can
+run the sampler with option `algorithm=fixed_param`, so that the initial values
+are used to generate the sample.  Since this generates a set of idential draws,
+setting `num_warmp=0` and `num_samples=1` will save unnecessary iterations.
+As the output values are also on the constrained scale, the set of reported values
+will match the set of specified initial values.
+
+For example, if we run the example Bernoulli model with specified initial value
+for parameter "theta":
+```
+{ "theta" : 0.5 }
+```
+via command:
+```
+./bernoulli sample algorithm=fixed_param num_warmup=0 num_samples=1 \
+            init=bernoulli.init.json data file=bernoulli.data.json
+```
+The resulting output CSV file contains a single draw:
+```
+lp__,accept_stat__,theta
+0,0,0.5
+# 
+#  Elapsed Time: 0 seconds (Warm-up)
+#                0 seconds (Sampling)
+#                0 seconds (Total)
+# 
 ```
 
 ### Specifying the metric and stepsize

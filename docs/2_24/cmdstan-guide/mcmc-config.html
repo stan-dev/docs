@@ -322,8 +322,7 @@ reported for each parameter and the desired precision of your estimates.
 An EFF of at least 100 is required to make a viable estimate. The precision of your
 estimate is <span class="math inline">\(\sqrt{N}\)</span>; therefore every additional decimal place of accuracy increases
 this by a factor of 10.</p>
-<p>Argument <code>save_warmup</code> takes the value of either <span class="math inline">\(0\)</span> or <span class="math inline">\(1\)</span>, which correspond to
-<code>False</code> and <code>True</code> respectively.
+<p>Argument <code>save_warmup</code> takes values <span class="math inline">\(0\)</span> or <span class="math inline">\(1\)</span>, corresponding to <code>False</code> and <code>True</code> respectively.
 The default value is <span class="math inline">\(0\)</span>, i.e., warmup draws are not saved to the output file.
 When the value is <span class="math inline">\(1\)</span>, the warmup draws are written to the CSV output file
 directly after the CSV header line.</p>
@@ -581,7 +580,27 @@ to random draws from a uniform distribution over the range <span class="math inl
 To initialize some or all parameters to good starting points on the constrained scale from
 a data file in JSON or Rdump format, use the keyword-value argument <code>init=&lt;filepath&gt;</code>:</p>
 <pre><code>./my_model sample init=my_param_inits.json data file=my_model.data.json \
-            output file=output_${i}.csv</code></pre>
+           output file=output_${i}.csv</code></pre>
+<p>To verify that the specified values will be used by the sampler, you can
+run the sampler with option <code>algorithm=fixed_param</code>, so that the initial values
+are used to generate the sample. Since this generates a set of idential draws,
+setting <code>num_warmp=0</code> and <code>num_samples=1</code> will save unnecessary iterations.
+As the output values are also on the constrained scale, the set of reported values
+will match the set of specified initial values.</p>
+<p>For example, if we run the example Bernoulli model with specified initial value
+for parameter “theta”:</p>
+<pre><code>{ &quot;theta&quot; : 0.5 }</code></pre>
+<p>via command:</p>
+<pre><code>./bernoulli sample algorithm=fixed_param num_warmup=0 num_samples=1 \
+            init=bernoulli.init.json data file=bernoulli.data.json</code></pre>
+<p>The resulting output CSV file contains a single draw:</p>
+<pre><code>lp__,accept_stat__,theta
+0,0,0.5
+# 
+#  Elapsed Time: 0 seconds (Warm-up)
+#                0 seconds (Sampling)
+#                0 seconds (Total)
+# </code></pre>
 </div>
 <div id="specifying-the-metric-and-stepsize" class="section level3">
 <h3><span class="header-section-number">9.5.5</span> Specifying the metric and stepsize</h3>

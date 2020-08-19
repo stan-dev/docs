@@ -1,0 +1,142 @@
+# Compiling a Stan Program
+
+A Stan program must be in a file with extension `.stan`.
+The CmdStan makefile rules specify all necessary steps to
+translate files with suffix `.stan` to a CmdStan executable program.
+This is a two-stage process:
+
+- first the Stan program is translated to C++ by the `stanc` compiler
+- then the C++ compiler compiles all C++ sources and links them together
+with the CmdStan interface program and the Stan and math libraries.
+
+## Invoking the Make Utility
+
+To compile Stan programs, you must invoke the Make program from
+the `<cmdstan-home>` directory.
+The Stan program can be in a different directory, but the directory path
+names cannot contain spaces - this limitation is imposed by Make.
+```
+> cd <cmdstan_home>
+```
+
+In the call to the Make program, the target is name of the CmdStan executable
+corresponding to the Stan program file.
+On Mac and Linux, this is the name of the Stan program with the `.stan`
+omitted. On Windows, replace `.stan` with `.exe`, and make
+sure that the path is given with slashes and not backslashes.
+To build the Bernoulli example, on Mac and Linux:
+```
+> make examples/bernoulli/bernoulli
+```
+On Windows, the command is the same with the addition of `.exe`
+at the end of the target (_note the use of forward slashes_):
+```
+> make examples/bernoulli/bernoulli.exe
+```
+The generated C++ code (`bernoulli.hpp`), object file (`bernoulli.o`)
+and the compiled executable will be placed in the same directory as the Stan program.
+
+The compiled executable consists of the Stan model and the CmdStan command line interface
+which provides inference algorithms to do MCMC sampling, optimization, and variational inference.
+The following sections provide examples of doing inference using each method
+on the example model and data file.
+
+## Dependencies
+
+When executing a Make target, all its dependencies are checked
+to see if they are up to date, and if they are not, they are rebuilt.
+If the you call Make with target `bernoulli` twice in a row, without any
+editing `bernoulli.stan` or otherwise changing the system,
+on the second invocation, Make will determine that the executable is already newer
+than the Stan source file and will not recompile the program:
+```
+> make examples/bernoulli/bernoulli
+make: `examples/bernoulli/bernoulli' is up to date.
+```
+If the file containing the Stan program is updated,
+the next call to `make` will rebuild the CmdStan executable.
+
+
+## Compiler Errors
+
+The Stan probabilistic programming language is a programming language with a rich syntax,
+as such, it is often the case that a carefully written program contains errors.
+
+The simplest class of errors are simple syntax errors such as forgetting
+the semi-colon statement termination marker at the end of a line,
+or typos such as a misspelled variable name.
+For example, if in the `bernoulli.stan` program, we introduce a typo on line $9$
+by writing `thata` instead of `theta`, the Make command fails with the following
+```
+--- Translating Stan model to C++ code ---
+bin/stanc  --o=bernoulli.hpp bernoulli.stan
+
+Semantic error in 'bernoulli.stan', line 9, column 2 to column 7:
+   -------------------------------------------------
+     7:  } 
+     8:  model {
+     9:    thata ~ beta(1,1);  // uniform prior on interval 0,1
+           ^
+    10:    y ~ bernoulli(theta);
+    11:  }
+   -------------------------------------------------
+
+Identifier 'thata' not in scope.
+
+make: *** [bernoulli.hpp] Error 1
+```
+
+Stan is a [strongly-typed language](https://mc-stan.org/docs/reference-manual/data-types-chapter.html);
+and the compiler will throw an error if statements or expressions violate the type rules.
+The following trivial program `foo.stan` contains an illegal assignment statement:
+```
+data {
+  real x;
+}
+transformed data {
+  int y = x;
+}
+```
+The Make command fails with the following:
+```
+Semantic error in 'foo.stan', line 5, column 2 to column 12:
+   -------------------------------------------------
+     3:  }
+     4:  transformed data {
+     5:    int y = x;
+           ^
+     6:  }
+   -------------------------------------------------
+
+Ill-typed arguments supplied to assignment operator =: lhs has type int and rhs has type real
+```
+
+The [Stan Reference Manual](https://mc-stan.org/docs/reference-manual/language.html#language)
+provides a complete specification of the Stan programming language.
+
+## Troubleshooting C++ Compiler or Linker Errors
+
+If the stanc compiler successfully translates a Stan program to C++,
+the resulting C++ code should be valid C++ which can be
+compiled into an executable.
+The stanc compiler is also a program, and while it has been extensively tested,
+it may still contain errors such that the generated C++ code fails to compile.
+
+The Make command prints the following message to the terminal
+at the point when it compiles and links the C++ file:
+```
+--- Compiling, linking C++ code ---
+```
+If the program fails to compile for any reason,
+the C++ compiler and linker will most likely print a long series
+of error messages to the console.
+
+If this happens, please report the error, together with the Stan program on either
+the [Stan Forums](https://discourse.mc-stan.org/) or on the Stan compiler
+GitHub [issues tracker](https://github.com/stan-dev/stanc3/issues).
+
+
+
+
+
+

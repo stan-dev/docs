@@ -1,0 +1,234 @@
+# `stanc`: Translating Stan to C++ {#stanc}
+
+CmdStan translates Stan programs to C++ using the Stan compiler
+program which is included in the CmdStan release `bin` directory as
+program `stanc`.
+
+As of release 2.22, the CmdStan Stan to C++ compiler is written in
+OCaml. This compiler is called "stanc3" and has has its own
+repository https://github.com/stan-dev/stanc3, from which pre-built
+binaries for Linux, Mac, and Windows can be downloaded.
+
+Prior to release 2.22, the Stan compiler program was compiled from C++
+source code that was part of the core Stan library. This C++ compiler
+is still available as program `bin/stanc2`. This compiler is no
+longer being maintained, i.e., existing bugs will not be fixed and new
+functions and features are only available in the stanc3 compiler. Its
+intended use is as a diagnostic tool and backup for the new stanc3 compiler.
+For some future version, it will be dropped from the release altogether.
+
+## Instantiating the `stanc` Binary
+
+Before the Stan compiler can be used, the binary stanc must be
+created. This can be done using the makefile as follows. For Mac and
+Linux:
+```
+make bin/stanc
+```
+For Windows:
+```
+make bin/stanc.exe
+```
+To build the `bin/stanc2` program, specify:
+```
+make bin/stanc2
+```
+
+## The Stan Compiler Program
+
+The Stan compiler program `stanc` converts Stan programs to C++ concepts.
+If the compiler encounters syntax errors in the program,
+it will provide an error message indicating the location
+in the input where the failure occurred and reason for the failure.
+The following example illustrates a fully qualified call to stanc to
+generate the C++ translation of the example model `bernoulli.stan`.
+For Linux and Mac:
+```
+> cd <cmdstan-home>
+> bin/stanc --o=bernoulli.hpp examples/bernoulli/bernoulli.stan
+```
+For Windows:
+```
+> cd <cmdstan-home>
+> bin/stanc.exe --o=bernoulli.hpp examples/bernoulli/bernoulli.stan
+```
+
+The base name of the Stan program file determines the name of the C++ model class.
+Because this name is the name of a C++ class, it must
+start with an alphabetic character (`a--z` or `A--Z`) and
+contain only alphanumeric characters (`a--z`, `A--Z`, and
+`0--9`) and underscores (`_`) and should not conflict with
+any C++ reserved keyword.
+
+The C++ code implementing the class is written to the file
+`bernoulli.hpp` in the current directory. The final argument,
+`bernoulli.stan`, is the file from which to read the Stan
+program.
+
+In practice, stanc is invoked indirectly, via the GNU Make utility,
+which contains rules that compile a Stan program to its corresponding
+executable. To build the simple Bernoulli model via `make`, we specify
+the name of the target executable file.
+On Mac and Linux, this is the name of the Stan program with the `.stan`
+omitted. On Windows, replace `.stan` with `.exe`, and make
+sure that the path is given with slashes and not backslashes.
+For Linux and Mac:
+```
+> make examples/bernoulli/bernoulli
+```
+For Windows:
+```
+> make examples/bernoulli/bernoulli.exe
+```
+
+The makefile rules first invoke the stanc compiler to translate the
+Stan model to C++ , then compiles and links the C++ code to a binary
+executable. The makefile variable `STANCFLAGS` can be used to to
+override the default arguments to stanc, e.g.,
+```
+> make STANCFLAGS="--include-paths=~/foo" examples/bernoulli/bernoulli
+```
+To use the stanc2 compiler instead of the stanc3 compiler, set the
+make option `STANC2`:
+```
+> make STANC2=TRUE examples/bernoulli/bernoulli
+```
+
+## Command-Line Options for stanc3
+
+The stanc3 compiler has the following command-line syntax:
+
+```
+> stanc (options) <model_file>
+```
+where `<model_file>` is a path to a Stan model
+file ending in suffix `.stan`.
+
+The stanc3 options are:
+
+- `--help` - Displays the complete list of stanc3 options, then exits.
+
+- `--version` - Display stanc version number
+
+- `--name=<model_name>` - Specify the name of the class
+used for the implementation of the Stan model in the generated C++ code.
+
+- `--o=<file_name>` -  Specify the name of the file into
+which the generated C++ is written.
+
+- `--allow-undefined` - Do not throw a parser error
+if there is a function in the Stan program
+that is declared but not defined in the functions block.
+
+- `--include_paths=<dir1,...dirN>` - Takes a comma-separated list
+of directories that may contain a file in an `#include` directive.
+
+- `--use-opencl` - If set, will use additional Stan OpenCL
+features enabled in the Stan-to-C++ compiler.
+
+- `--auto-format` - Pretty prints the program to the console.
+
+- `--print-canonical` - Prints the canonicalized program to the console.
+
+- `--print-cpp` - If set, output the generated C++ Stan model class to stdout.
+
+- `--O` - Allow the compiler to apply all optimizations to the Stan
+code. **WARNING:** _This is currently an experimental feature!_
+
+- `--warn-uninitialized` - Emit warnings about uninitialized variables
+to stderr. Currently an experimental feature.
+
+
+The compiler also provides a number of debug options which are
+primarily of interest to stanc3 developers; use the `--help`
+option to see the full set.
+
+## Command-Line Options for stanc2
+
+The stanc2 compiler has the same command-line syntax as the
+stanc3 compiler, but has fewer options:
+
+- `--help` - Displays the complete list of stanc3 options, then exits.
+
+- `--version` - Display stanc version number
+
+- `--name=<model_name>` - Specify the name of the class
+used for the implementation of the Stan model in the generated C++ code.
+
+- `--o=<file_name>` -  Specify the name of the file into
+which the generated C++ is written.
+
+- `--allow_undefined` - Do not throw a parser error
+if there is a function in the Stan program
+that is declared but not defined in the functions block.
+
+- `--include_paths=<dir1,...dirN>` - Takes a comma-separated list
+of directories that may contain a file in an `#include` directive.
+
+## Using External C++ Code
+
+The `--allow_undefined` flag can be passed to the call to stanc,
+which will allow undefined functions in the Stan language to be parsed
+without an error. We can then include a definition of the function in
+a C++ header file.
+This requires specifying two makefile variables:
+- `STANCFLAGS=--allow_undedefined`
+- `USER_HEADER=<header_file.hpp>`, where `<header_file.hpp>` is the name of a header file that
+defines a function with the same name and signature in a namespace
+that is formed by concatenating the `class_name` argument to
+stanc documented above to the string `_namespace` 
+
+
+As an example, consider the following variant of the Bernoulli example
+
+```
+functions {
+       real make_odds(real theta);
+}
+data {
+       int<lower=0> N;
+       int<lower=0,upper=1> y[N];
+     }
+     parameters {
+       real<lower=0,upper=1> theta;
+}
+model {
+       theta ~ beta(1,1);  // uniform prior on interval 0,1
+       y ~ bernoulli(theta);
+     }
+     generated quantities {
+       real odds;
+       odds = make_odds(theta);
+}
+```
+Here the `make_odds` function is declared but not defined, which
+would ordinarily result in a parser error. However, if you put
+`STANCFLAGS = --allow_undefined` into the `make/local` file
+or into the `stanc` call, then the stanc compiler will translate
+this program to C++, but the generated C++ code will not compile
+unless you write a file
+such as `examples/bernoulli/make_odds.hpp` with the following lines
+```
+namespace bernoulli_model_namespace {
+          template <typename T0__>  inline  typename
+          boost::math::tools::promote_args<T0__>::type  make_odds(const T0__&
+theta, std::ostream* pstream__) {
+       return theta / (1 - theta);  }
+       }
+```
+Given the above, the following `make` invocation should work
+```
+> make STANCFLAGS=--allow_undefined USER_HEADER=examples/bernoulli/make_odds.hpp examples/bernoulli/bernoulli # on Windows add .exe
+```
+Alternatively, you could put `STANCFLAGS` and `USER_HEADER` into the
+`make/local` file instead of specifying them on the command-line.
+
+If the function were more complicated and involved functions in the
+Stan Math Library, then you would need to prefix the function calls
+with `stan::math::`  The `pstream__` argument is mandatory
+in the signature but need not be used if your function does not print
+any output. To see the necessary boilerplate look at the corresponding
+lines in the generated C++ file.
+
+For more details about how to write C++ code using the Stan Math
+Library, see https://arxiv.org/abs/1509.07164.

@@ -13,6 +13,7 @@ mkdir docs/"$directory"_tmp
 python3 link_to_latest.py docs/"$directory"_tmp/stan-users-guide "Stan User's Guide"
 python3 link_to_latest.py docs/"$directory"_tmp/reference-manual "Stan Reference Manual"
 python3 link_to_latest.py docs/"$directory"_tmp/functions-reference "Stan Functions Reference"
+python3 link_to_latest.py docs/"$directory"_tmp/cmdstan-guide "CmdStan User's Guide"
 
 mv docs/"$directory" docs/"$directory"_bak
 mv docs/"$directory"_tmp/ docs/"$directory"

@@ -59,17 +59,25 @@ model {
   y ~ normal(alpha + beta * x, sigma);
 }
 ```
-To generate a replicated data set `x_rep` for this simple model, the
+To generate a replicated data set `y_rep` for this simple model, the
 following generated quantities block suffices.
 ```
 generated quantities {
-  vector[N] y_rep = normal_rng(alpha + beta * x, sigma);
+  real y_rep[N] = normal_rng(alpha + beta * x, sigma);
 }
 ```
-The replicated data variable is declared to be the same shape and size
-as the original data `y`.  The vectorized form of the normal random
+The vectorized form of the normal random
 number generator is used with the original predictors `x` and the
-model parameters `alpha, beta`, and `sigma.` The posterior predictive
+model parameters `alpha, beta`, and `sigma.`
+The replicated data variable `y_rep` is declared to be the same size
+as the original data `y`, but instead of a vector type, it is
+declared to be an array of reals to match
+the return type of the function `normal_rng`.
+Because the vector and real array types have the same dimensions and layout,
+they can be plotted against one another and otherwise compared during
+downstream processing.
+
+The posterior predictive
 sampling for posterior predictive checks is different from usual
 posterior predictive sampling discussed in [the chapter on posterior
 predictions](#posterior-prediction.chapter) in that the original
@@ -118,8 +126,6 @@ statistics of the replicated data, and indicator variables
 `mean_gte` and `sd_gte` for whether the replicated statistic
 is greater than or equal to the statistic applied to the original
 data.
-
-There is a
 
 Now consider generating data $y \sim \textrm{Poisson}(5)$.  The
 resulting small multiples plot shows the original data plotted in the
@@ -191,7 +197,7 @@ generated quantities {
   int<lower = 0, upper = 1> mean_gt;
   int<lower = 0, upper = 1> sd_gt;
   {
-    vector[N] y_rep = normal_rng(alpha + beta * x, sigma);
+    real y_rep[N] = normal_rng(alpha + beta * x, sigma);
     mean_gt = mean(y_rep) > mean(y);
     sd_gt = sd(y_rep) > sd(y);
   }
@@ -480,7 +486,7 @@ model {
 }
 generated quantities {
   // alpha replicated;  mu and sigma not replicated
-  vector[K] alpha_rep
+  real alpha_rep[K]
     = normal_rng(rep_vector(mu, K), sigma);
   int<lower = 0, upper = 1> y_rep[N]
     = bernoulli_logit_rng(alpha_rep[kk]);

@@ -45,7 +45,7 @@ def main():
                         else:
                             print('not a function sig: {}'.format(line))
 
-    outfile_name = 'stan-fuctions-{}_{}.txt'.format(str(stan_major), str(stan_minor))
+    outfile_name = 'stan-functions-{}_{}.txt'.format(str(stan_major), str(stan_minor))
     with open(outfile_name, 'w') as outfile:
         outfile.write('# This file is semicolon delimited\n')
         outfile.write('StanFunction; Arguments; ReturnType\n')

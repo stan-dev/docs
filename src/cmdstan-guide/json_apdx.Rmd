@@ -1,0 +1,159 @@
+# JSON Format for CmdStan {#json}
+
+CmdStan can use JSON format for input data for both model data and
+parameters. Model data is read in by the model constructor. Model
+parameters are used to initialize the sampler and optimizer.
+
+
+## Creating JSON Files
+
+You can create the JSON file yourself using the guidelines below, but a more
+convenient way to create a JSON file for use with CmdStan is to use the
+[`write_stan_json()`](https://mc-stan.org/cmdstanr/reference/write_stan_json) 
+function provided by the CmdStanR interface.
+
+
+## JSON Syntax Summary
+
+JSON is a data interchange notation, defined by an
+\href{http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf}{ECMA
+standard}. JSON data files must in Unicode. JSON data is a series of
+structural tokens, literal tokens, and values:
+
+- Structural tokens are the left and right curly bracket `{}`, left and right
+square bracket `[]`, the semicolon `;`, and the comma `,`.
+
+- Literal tokens must always be in lowercase.
+There are three literal tokens: `true`, `false`, `null`.
+
+- A primitive value is a single token which is
+either a literal, a string, or a number.
+
+- A string consists of zero or more Unicode characters
+enclosed in double quotes, e.g. `"foo"`.
+A backslash is used to escape the double quote
+character as well as the backslash itself.
+JSON allows the use of
+Unicode character escapes, e.g. `"\\uHHHH"` where `HHHH`
+is the Unicode code point in hex.
+
+- All numbers are decimal numbers. Scientific notation is allowed.
+The following are examples of numbers:
+` 17`, `17.2`, `-17.2`, `-17.2e8`, `17.2e-8`.  <br>
+_Note:_ The concepts of positive and negative infinity as well as
+"not a number" cannot be expressed as numbers in JSON, but they can
+be encoded as strings `"+inf"`, `"-inf"`, and `"NaN"`, respectively,
+which can be mixed with numbers.
+
+- A JSON array is an ordered, comma-separated list of zero or more
+JSON values enclosed in square brackets. The elements of an array
+can be of any type. The following are examples of arrays:
+`[]`, `[1]`, `[0.2, "-inf", true]`.
+
+- A name-value pair consists of a string followed by a colon followed by a
+value, either primitive or compound.
+
+- A JSON object is a comma-separated series of zero or more
+name-value pairs enclosed in curly brackets.
+Each name-value pair is a member of the object.
+Membership is unordered. Member names are not required to be unique.
+The following are examples of objects:
+`{ }`, `{"foo": null}`, `{"bar" : 17, "baz" : [14,15,16.6] }`.
+
+
+## Stan Data Types in JSON Notation
+
+Stan follows the JSON standard. A Stan input file in JSON notation
+consists of single JSON object which contains zero or more name-value pairs.
+This structure corresponds to a Python data dictionary object.
+The following is an example of JSON data for the simple Bernoulli example
+model:
+```
+{ "N" : 10, "y" : [0,1,0,0,0,0,0,0,0,1] }
+```
+Matrix data and multi-dimensional arrays are indexed in row-major order.
+For a Stan program which has data block:
+```
+data {
+  int d1;
+  int d2;
+  int d3;
+  int ar[d1, d2, d3];
+}
+```
+the following JSON input would be valid:
+```
+{ "d1" : 2,
+  "d2" : 3,
+  "d3" : 4,
+  "ar" : [[[0,1,2,3], [4,5,6,7], [8,9,10,11]],
+          [[12,13,14,15], [16,17,18,19], [20,21,22,23]]]
+}
+```
+JSON ignores whitespace. In the above examples, the spaces and newlines are
+only used to improve readability and can be omitted.
+
+All data inputs are encoded as name-value pairs. The following table
+provides more examples of JSON data. The left column contains a Stan
+data variable declaration and the right column contains valid JSON
+data inputs.
+```{r table1, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <-  "
+| Stan variable |  JSON data |
+|--------------:|:----------:|
+| `int i` | `\"i\": 17` |
+| `real a` | `\"a\" : 17` |
+|  | `\"a\" : 17.2` |
+|  | `\"a\" : \"NaN\"` |
+|  | `\"a\" : \"+inf\"` |
+|  | `\"a\" : \"-inf\"` |
+| | |
+| `int a[5]` | `\"a\" : [1, 2, 3, 4, 5]` |
+| | |
+| `real a[5]` | `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]` |
+| `vector[5] a` | `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]` |
+| `row_vector[5] a` | `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]` |
+| `real a[5]` | `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]` |
+| | |
+| `matrix[2,3] a` | `\"a\" : [ [ 1, 2, 3 ], [ 4, 5, 6] ]` |
+"
+cat(tabl)
+```
+
+### Empty arrays in JSON
+
+JSON notation is not able to distinguish between multi-dimensional
+arrays where any dimension is $0$, e.g., a 2-D array with dimensions $(1,0)$,
+i.e., an array which contains a single array which is empty,
+has JSON representation ` [ ] `.
+To see how this works, consider the following Stan program data block:
+```
+data {
+  int d;
+  int ar_1d[d];
+  int ar_2d[d,d];
+  int ar_3d[d,d,d];
+}
+```
+In the case where variable `d` is `1`, all arrays will contain a single value.
+If array variable `ar_d1` contains value `7`,
+2-D array variable `ar_d2` contains (an array which contains) value `8`,
+and 3-D array variable `ar_d3` contains (an array which contains an array which contains) value `9`,
+the JSON representation is:
+```
+{ "ar_d1" : [7],
+  "ar_d2" : [[8]],
+  "ar_d3" : [[[9]]]
+}
+```
+However, in the case where variable `d` is `0`,
+`ar_d1` is empty, i.e., it contains no values,
+as is `ar_d2`, `ar_d3`,
+and the JSON representation is
+```
+{ "d" : 0,
+  "ar_d1" : [ ],
+  "ar_d2" : [ ],
+  "ar_d3" : [ ]
+}
+```

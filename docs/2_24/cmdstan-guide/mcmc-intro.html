@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>4 MCMC Sampling | CmdStan User’s Guide</title>
+  <meta name="description" content="CmdStan user’s guide." />
+  <meta name="generator" content="bookdown 0.20 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="4 MCMC Sampling | CmdStan User’s Guide" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:image" content="img/logo-tm.pdf" />
+  <meta property="og:description" content="CmdStan user’s guide." />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="4 MCMC Sampling | CmdStan User’s Guide" />
+  
+  <meta name="twitter:description" content="CmdStan user’s guide." />
+  <meta name="twitter:image" content="img/logo-tm.pdf" />
+
+<meta name="author" content="Stan Development Team" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="compiling-a-stan-program.html"/>
+<link rel="next" href="optimization.html"/>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+<script src="libs/accessible-code-block-0.0.1/empty-anchor.js"></script>
+
+
+
+<link rel="stylesheet" href="stan-manual.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li style="font-size:110%; font-weight:400; font-family: Verdana, Helvetica, sans; line-height:1.4; margin: 0.5em 0 0 1em"><a href="https://mc-stan.org/docs/cmdstan-guide/index.html" style="color:#4183C4">CmdStan User's Guide</a></li>
+
+<li class="divider"></li>
+<li><a href="index.html#introduction"><i style='font-size: 110%; color:#990017;'>Introduction</i></a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Stan Home Page</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#licensing"><i class="fa fa-check"></i>Licensing</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#stan-documentation-users-guide-and-reference-manuals"><i class="fa fa-check"></i>Stan Documentation: User’s Guide and Reference Manuals</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#benefits-of-cmdstan"><i class="fa fa-check"></i>Benefits of CmdStan</a></li>
+</ul></li>
+<li><a href="quickstart-guide.html#quickstart-guide"><i style='font-size: 110%; color:#990017;'>QuickStart Guide</i></a></li>
+<li class="chapter" data-level="1" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html"><i class="fa fa-check"></i><b>1</b> CmdStan Installation</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html#installing-the-c-toolchain"><i class="fa fa-check"></i><b>1.1</b> Installing the C++ Toolchain</a>
+<ul>
+<li class="chapter" data-level="1.1.1" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html#linux-g-and-make"><i class="fa fa-check"></i><b>1.1.1</b> Linux: <code>g++</code> and <code>make</code></a></li>
+<li class="chapter" data-level="1.1.2" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html#macos-clang-and-make"><i class="fa fa-check"></i><b>1.1.2</b> MacOS: <code>clang++</code> and <code>make</code></a></li>
+<li class="chapter" data-level="1.1.3" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html#windows-g-and-mingw32-make"><i class="fa fa-check"></i><b>1.1.3</b> Windows: <code>g++</code> and <code>mingw32-make</code></a></li>
+</ul></li>
+<li class="chapter" data-level="1.2" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html#gnu-make"><i class="fa fa-check"></i><b>1.2</b> GNU-Make Utility</a></li>
+<li class="chapter" data-level="1.3" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html#git-clone.section"><i class="fa fa-check"></i><b>1.3</b> Clone the GitHub CmdStan Repository</a></li>
+<li class="chapter" data-level="1.4" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html#building-cmdstan"><i class="fa fa-check"></i><b>1.4</b> Building CmdStan</a></li>
+<li class="chapter" data-level="1.5" data-path="cmdstan-installation.html"><a href="cmdstan-installation.html#trouble-shooting-the-installation"><i class="fa fa-check"></i><b>1.5</b> Trouble-shooting the installation</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="example-model-and-data.html"><a href="example-model-and-data.html"><i class="fa fa-check"></i><b>2</b> Example Model and Data</a></li>
+<li class="chapter" data-level="3" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html"><i class="fa fa-check"></i><b>3</b> Compiling a Stan Program</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#invoking-the-make-utility"><i class="fa fa-check"></i><b>3.1</b> Invoking the Make Utility</a></li>
+<li class="chapter" data-level="3.2" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#dependencies"><i class="fa fa-check"></i><b>3.2</b> Dependencies</a></li>
+<li class="chapter" data-level="3.3" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#compiler-errors"><i class="fa fa-check"></i><b>3.3</b> Compiler Errors</a></li>
+<li class="chapter" data-level="3.4" data-path="compiling-a-stan-program.html"><a href="compiling-a-stan-program.html#troubleshooting-c-compiler-or-linker-errors"><i class="fa fa-check"></i><b>3.4</b> Troubleshooting C++ Compiler or Linker Errors</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="mcmc-intro.html"><a href="mcmc-intro.html"><i class="fa fa-check"></i><b>4</b> MCMC Sampling</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="mcmc-intro.html"><a href="mcmc-intro.html#running-the-sampler"><i class="fa fa-check"></i><b>4.1</b> Running the Sampler</a></li>
+<li class="chapter" data-level="4.2" data-path="mcmc-intro.html"><a href="mcmc-intro.html#running-multiple-chains"><i class="fa fa-check"></i><b>4.2</b> Running Multiple Chains</a></li>
+<li class="chapter" data-level="4.3" data-path="mcmc-intro.html"><a href="mcmc-intro.html#mcmc_output_csv"><i class="fa fa-check"></i><b>4.3</b> Stan CSV Output File</a></li>
+<li class="chapter" data-level="4.4" data-path="mcmc-intro.html"><a href="mcmc-intro.html#summarizing-sampler-outputs-with-stansummary"><i class="fa fa-check"></i><b>4.4</b> Summarizing Sampler Output(s) with <code>stansummary</code></a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="optimization.html"><a href="optimization.html"><i class="fa fa-check"></i><b>5</b> Optimization</a></li>
+<li class="chapter" data-level="6" data-path="variational-inference.html"><a href="variational-inference.html"><i class="fa fa-check"></i><b>6</b> Variational Inference</a></li>
+<li class="chapter" data-level="7" data-path="gc-intro.html"><a href="gc-intro.html"><i class="fa fa-check"></i><b>7</b> Generating Quantities of Interest from a Fitted Model</a></li>
+<li><a href="reference-manual.html#reference-manual"><i style='font-size: 110%; color:#990017;'>Reference Manual</i></a></li>
+<li class="chapter" data-level="8" data-path="command-line-interface-overview.html"><a href="command-line-interface-overview.html"><i class="fa fa-check"></i><b>8</b> Command-Line Interface Overview</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="command-line-interface-overview.html"><a href="command-line-interface-overview.html#input-data-argument"><i class="fa fa-check"></i><b>8.1</b> Input Data Argument</a></li>
+<li class="chapter" data-level="8.2" data-path="command-line-interface-overview.html"><a href="command-line-interface-overview.html#output-control-arguments"><i class="fa fa-check"></i><b>8.2</b> Output Control Arguments</a></li>
+<li class="chapter" data-level="8.3" data-path="command-line-interface-overview.html"><a href="command-line-interface-overview.html#initialize-model-parameters-argument"><i class="fa fa-check"></i><b>8.3</b> Initialize Model Parameters Argument</a></li>
+<li class="chapter" data-level="8.4" data-path="command-line-interface-overview.html"><a href="command-line-interface-overview.html#random-number-generator-arguments"><i class="fa fa-check"></i><b>8.4</b> Random Number Generator Arguments</a></li>
+<li class="chapter" data-level="8.5" data-path="command-line-interface-overview.html"><a href="command-line-interface-overview.html#chain-identifier-argument-id"><i class="fa fa-check"></i><b>8.5</b> Chain Identifier Argument: <code>id</code></a></li>
+<li class="chapter" data-level="8.6" data-path="command-line-interface-overview.html"><a href="command-line-interface-overview.html#command-line-help"><i class="fa fa-check"></i><b>8.6</b> Command Line Help</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="mcmc-config.html"><a href="mcmc-config.html"><i class="fa fa-check"></i><b>9</b> MCMC Sampling using Hamiltonian Monte Carlo</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="mcmc-config.html"><a href="mcmc-config.html#iterations"><i class="fa fa-check"></i><b>9.1</b> Iterations</a></li>
+<li class="chapter" data-level="9.2" data-path="mcmc-config.html"><a href="mcmc-config.html#adaptation"><i class="fa fa-check"></i><b>9.2</b> Adaptation</a>
+<ul>
+<li class="chapter" data-level="9.2.1" data-path="mcmc-config.html"><a href="mcmc-config.html#step-size-optimization-configuration"><i class="fa fa-check"></i><b>9.2.1</b> Step size optimization configuration</a></li>
+<li class="chapter" data-level="9.2.2" data-path="mcmc-config.html"><a href="mcmc-config.html#warmup-schedule-configuration"><i class="fa fa-check"></i><b>9.2.2</b> Warmup schedule configuration</a></li>
+</ul></li>
+<li class="chapter" data-level="9.3" data-path="mcmc-config.html"><a href="mcmc-config.html#algorithm"><i class="fa fa-check"></i><b>9.3</b> Algorithm</a>
+<ul>
+<li class="chapter" data-level="9.3.1" data-path="mcmc-config.html"><a href="mcmc-config.html#samples-from-a-set-of-fixed-parameters"><i class="fa fa-check"></i><b>9.3.1</b> Samples from a set of fixed parameters</a></li>
+<li class="chapter" data-level="9.3.2" data-path="mcmc-config.html"><a href="mcmc-config.html#hmc-samplers"><i class="fa fa-check"></i><b>9.3.2</b> HMC samplers</a></li>
+</ul></li>
+<li class="chapter" data-level="9.4" data-path="mcmc-config.html"><a href="mcmc-config.html#sampler-diag-file"><i class="fa fa-check"></i><b>9.4</b> Sampler Diagnostic File</a></li>
+<li class="chapter" data-level="9.5" data-path="mcmc-config.html"><a href="mcmc-config.html#examples"><i class="fa fa-check"></i><b>9.5</b> Examples</a>
+<ul>
+<li class="chapter" data-level="9.5.1" data-path="mcmc-config.html"><a href="mcmc-config.html#running-multiple-chains-with-a-specified-rng-seed"><i class="fa fa-check"></i><b>9.5.1</b> Running multiple chains with a specified RNG seed</a></li>
+<li class="chapter" data-level="9.5.2" data-path="mcmc-config.html"><a href="mcmc-config.html#changing-the-default-warmup-and-sampling-iterations"><i class="fa fa-check"></i><b>9.5.2</b> Changing the default warmup and sampling iterations</a></li>
+<li class="chapter" data-level="9.5.3" data-path="mcmc-config.html"><a href="mcmc-config.html#saving-warmup-draws"><i class="fa fa-check"></i><b>9.5.3</b> Saving warmup draws</a></li>
+<li class="chapter" data-level="9.5.4" data-path="mcmc-config.html"><a href="mcmc-config.html#initializing-parameters"><i class="fa fa-check"></i><b>9.5.4</b> Initializing parameters</a></li>
+<li class="chapter" data-level="9.5.5" data-path="mcmc-config.html"><a href="mcmc-config.html#specifying-the-metric-and-stepsize"><i class="fa fa-check"></i><b>9.5.5</b> Specifying the metric and stepsize</a></li>
+<li class="chapter" data-level="9.5.6" data-path="mcmc-config.html"><a href="mcmc-config.html#changing-the-nuts-hmc-adaptation-parameters"><i class="fa fa-check"></i><b>9.5.6</b> Changing the NUTS-HMC adaptation parameters</a></li>
+<li class="chapter" data-level="9.5.7" data-path="mcmc-config.html"><a href="mcmc-config.html#increasing-the-tree-depth"><i class="fa fa-check"></i><b>9.5.7</b> Increasing the tree-depth</a></li>
+<li class="chapter" data-level="9.5.8" data-path="mcmc-config.html"><a href="mcmc-config.html#capturing-hamiltonian-diagnostics-and-gradients"><i class="fa fa-check"></i><b>9.5.8</b> Capturing Hamiltonian diagnostics and gradients</a></li>
+<li class="chapter" data-level="9.5.9" data-path="mcmc-config.html"><a href="mcmc-config.html#suppressing-progress-updates-to-the-console"><i class="fa fa-check"></i><b>9.5.9</b> Suppressing progress updates to the console</a></li>
+<li class="chapter" data-level="9.5.10" data-path="mcmc-config.html"><a href="mcmc-config.html#everything-example"><i class="fa fa-check"></i><b>9.5.10</b> Everything Example</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="maximum-likelihood-estimation.html"><a href="maximum-likelihood-estimation.html"><i class="fa fa-check"></i><b>10</b> Maximum Likelihood Estimation</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="maximum-likelihood-estimation.html"><a href="maximum-likelihood-estimation.html#optimization-algorithms"><i class="fa fa-check"></i><b>10.1</b> Optimization Algorithms</a></li>
+<li class="chapter" data-level="10.2" data-path="maximum-likelihood-estimation.html"><a href="maximum-likelihood-estimation.html#the-quasi-newton-optimizers"><i class="fa fa-check"></i><b>10.2</b> The quasi-Newton optimizers</a></li>
+<li class="chapter" data-level="10.3" data-path="maximum-likelihood-estimation.html"><a href="maximum-likelihood-estimation.html#the-newton-optimizer"><i class="fa fa-check"></i><b>10.3</b> The Newton optimizer</a></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="variational-inference-algorithm-advi.html"><a href="variational-inference-algorithm-advi.html"><i class="fa fa-check"></i><b>11</b> Variational Inference Algorithm: ADVI</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="variational-inference-algorithm-advi.html"><a href="variational-inference-algorithm-advi.html#variational-algorithms"><i class="fa fa-check"></i><b>11.1</b> Variational Algorithms</a></li>
+<li class="chapter" data-level="11.2" data-path="variational-inference-algorithm-advi.html"><a href="variational-inference-algorithm-advi.html#configuration"><i class="fa fa-check"></i><b>11.2</b> Configuration</a></li>
+<li class="chapter" data-level="11.3" data-path="variational-inference-algorithm-advi.html"><a href="variational-inference-algorithm-advi.html#csv-output"><i class="fa fa-check"></i><b>11.3</b> CSV Output</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="standalone-generate-quantities.html"><a href="standalone-generate-quantities.html"><i class="fa fa-check"></i><b>12</b> Standalone Generate Quantities</a></li>
+<li class="chapter" data-level="13" data-path="diagnosing-hmc-by-comparison-of-gradients.html"><a href="diagnosing-hmc-by-comparison-of-gradients.html"><i class="fa fa-check"></i><b>13</b> Diagnosing HMC by Comparison of Gradients</a></li>
+<li class="chapter" data-level="14" data-path="parallelization.html"><a href="parallelization.html"><i class="fa fa-check"></i><b>14</b> Parallelization</a></li>
+<li><a href="cmdstan-tools.html#cmdstan-tools"><i style='font-size: 110%; color:#990017;'>CmdStan Tools</i></a></li>
+<li class="chapter" data-level="15" data-path="stanc.html"><a href="stanc.html"><i class="fa fa-check"></i><b>15</b> <code>stanc</code>: Translating Stan to C++</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="stanc.html"><a href="stanc.html#instantiating-the-stanc-binary"><i class="fa fa-check"></i><b>15.1</b> Instantiating the <code>stanc</code> Binary</a></li>
+<li class="chapter" data-level="15.2" data-path="stanc.html"><a href="stanc.html#the-stan-compiler-program"><i class="fa fa-check"></i><b>15.2</b> The Stan Compiler Program</a></li>
+<li class="chapter" data-level="15.3" data-path="stanc.html"><a href="stanc.html#command-line-options-for-stanc3"><i class="fa fa-check"></i><b>15.3</b> Command-Line Options for stanc3</a></li>
+<li class="chapter" data-level="15.4" data-path="stanc.html"><a href="stanc.html#command-line-options-for-stanc2"><i class="fa fa-check"></i><b>15.4</b> Command-Line Options for stanc2</a></li>
+<li class="chapter" data-level="15.5" data-path="stanc.html"><a href="stanc.html#using-external-c-code"><i class="fa fa-check"></i><b>15.5</b> Using External C++ Code</a></li>
+</ul></li>
+<li class="chapter" data-level="16" data-path="stansummary.html"><a href="stansummary.html"><i class="fa fa-check"></i><b>16</b> <code>stansummary</code>: MCMC Output Analysis</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="stansummary.html"><a href="stansummary.html#building-the-stansummary-command"><i class="fa fa-check"></i><b>16.1</b> Building the stansummary Command</a></li>
+<li class="chapter" data-level="16.2" data-path="stansummary.html"><a href="stansummary.html#running-the-stansummary-program"><i class="fa fa-check"></i><b>16.2</b> Running the <code>stansummary</code> Program</a>
+<ul>
+<li class="chapter" data-level="16.2.1" data-path="stansummary.html"><a href="stansummary.html#sampler-parameters"><i class="fa fa-check"></i><b>16.2.1</b> Sampler Parameters</a></li>
+<li class="chapter" data-level="16.2.2" data-path="stansummary.html"><a href="stansummary.html#model-parameters-and-quantities-of-interest"><i class="fa fa-check"></i><b>16.2.2</b> Model Parameters and Quantities of Interest</a></li>
+</ul></li>
+<li class="chapter" data-level="16.3" data-path="stansummary.html"><a href="stansummary.html#command-line-options"><i class="fa fa-check"></i><b>16.3</b> Command-line Options</a></li>
+</ul></li>
+<li class="chapter" data-level="17" data-path="diagnose.html"><a href="diagnose.html"><i class="fa fa-check"></i><b>17</b> <code>diagnose</code>: Diagnosing Biased Hamiltonian Monte Carlo Inferences</a>
+<ul>
+<li class="chapter" data-level="17.1" data-path="diagnose.html"><a href="diagnose.html#building-the-diagnose-command"><i class="fa fa-check"></i><b>17.1</b> Building the diagnose Command</a></li>
+<li class="chapter" data-level="17.2" data-path="diagnose.html"><a href="diagnose.html#running-the-diagnose-command"><i class="fa fa-check"></i><b>17.2</b> Running the diagnose Command</a></li>
+<li class="chapter" data-level="17.3" data-path="diagnose.html"><a href="diagnose.html#diagnose-warnings-and-recommendations"><i class="fa fa-check"></i><b>17.3</b> <code>diagnose</code> Warnings and Recommendations</a>
+<ul>
+<li class="chapter" data-level="17.3.1" data-path="diagnose.html"><a href="diagnose.html#divergent-transitions-after-warmup"><i class="fa fa-check"></i><b>17.3.1</b> Divergent transitions after warmup</a></li>
+<li class="chapter" data-level="17.3.2" data-path="diagnose.html"><a href="diagnose.html#maximum-treedepth-exceeded"><i class="fa fa-check"></i><b>17.3.2</b> Maximum treedepth exceeded</a></li>
+<li class="chapter" data-level="17.3.3" data-path="diagnose.html"><a href="diagnose.html#low-e-bfmi-values---sampler-transitions-hmc-potential-energy."><i class="fa fa-check"></i><b>17.3.3</b> Low E-BFMI values - sampler transitions HMC potential energy.</a></li>
+<li class="chapter" data-level="17.3.4" data-path="diagnose.html"><a href="diagnose.html#low-effective-sample-sizes"><i class="fa fa-check"></i><b>17.3.4</b> Low effective sample sizes</a></li>
+<li class="chapter" data-level="17.3.5" data-path="diagnose.html"><a href="diagnose.html#high-hatr"><i class="fa fa-check"></i><b>17.3.5</b> High <span class="math inline">\(\hat{R}\)</span></a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="18" data-path="print-deprecated-mcmc-output-analysis.html"><a href="print-deprecated-mcmc-output-analysis.html"><i class="fa fa-check"></i><b>18</b> <code>print</code> (deprecated): MCMC Output Analysis</a></li>
+<li><a href="appendices.html#appendices"><i style='font-size: 110%; color:#990017;'>Appendices</i></a></li>
+<li class="chapter" data-level="19" data-path="stan-csv.html"><a href="stan-csv.html"><i class="fa fa-check"></i><b>19</b> Stan CSV File Format</a>
+<ul>
+<li class="chapter" data-level="19.1" data-path="stan-csv.html"><a href="stan-csv.html#csv-column-names-and-order"><i class="fa fa-check"></i><b>19.1</b> CSV Column Names and Order</a></li>
+<li class="chapter" data-level="19.2" data-path="stan-csv.html"><a href="stan-csv.html#mcmc-sampler-csv-output"><i class="fa fa-check"></i><b>19.2</b> MCMC Sampler CSV Output</a>
+<ul>
+<li class="chapter" data-level="19.2.1" data-path="stan-csv.html"><a href="stan-csv.html#sampler-stan-csv-output-file"><i class="fa fa-check"></i><b>19.2.1</b> Sampler Stan CSV output file</a></li>
+<li class="chapter" data-level="19.2.2" data-path="stan-csv.html"><a href="stan-csv.html#diagnostic-csv-output-file"><i class="fa fa-check"></i><b>19.2.2</b> Diagnostic CSV output file</a></li>
+</ul></li>
+<li class="chapter" data-level="19.3" data-path="stan-csv.html"><a href="stan-csv.html#optimization-output"><i class="fa fa-check"></i><b>19.3</b> Optimization Output</a></li>
+<li class="chapter" data-level="19.4" data-path="stan-csv.html"><a href="stan-csv.html#variational-inference-output"><i class="fa fa-check"></i><b>19.4</b> Variational Inference Output</a></li>
+<li class="chapter" data-level="19.5" data-path="stan-csv.html"><a href="stan-csv.html#generate-quantities-outputs"><i class="fa fa-check"></i><b>19.5</b> Generate Quantities Outputs</a></li>
+<li class="chapter" data-level="19.6" data-path="stan-csv.html"><a href="stan-csv.html#diagnose-method-outputs"><i class="fa fa-check"></i><b>19.6</b> Diagnose Method Outputs</a></li>
+</ul></li>
+<li class="chapter" data-level="20" data-path="json.html"><a href="json.html"><i class="fa fa-check"></i><b>20</b> JSON Format for CmdStan</a>
+<ul>
+<li class="chapter" data-level="20.1" data-path="json.html"><a href="json.html#creating-json-files"><i class="fa fa-check"></i><b>20.1</b> Creating JSON Files</a></li>
+<li class="chapter" data-level="20.2" data-path="json.html"><a href="json.html#json-syntax-summary"><i class="fa fa-check"></i><b>20.2</b> JSON Syntax Summary</a></li>
+<li class="chapter" data-level="20.3" data-path="json.html"><a href="json.html#stan-data-types-in-json-notation"><i class="fa fa-check"></i><b>20.3</b> Stan Data Types in JSON Notation</a>
+<ul>
+<li class="chapter" data-level="20.3.1" data-path="json.html"><a href="json.html#empty-arrays-in-json"><i class="fa fa-check"></i><b>20.3.1</b> Empty arrays in JSON</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="21" data-path="rdump.html"><a href="rdump.html"><i class="fa fa-check"></i><b>21</b> RDump Format for CmdStan</a>
+<ul>
+<li class="chapter" data-level="21.1" data-path="rdump.html"><a href="rdump.html#creating-dump-files"><i class="fa fa-check"></i><b>21.1</b> Creating Dump Files</a></li>
+<li class="chapter" data-level="21.2" data-path="rdump.html"><a href="rdump.html#scalar-variables"><i class="fa fa-check"></i><b>21.2</b> Scalar Variables</a></li>
+<li class="chapter" data-level="21.3" data-path="rdump.html"><a href="rdump.html#sequence-variables"><i class="fa fa-check"></i><b>21.3</b> Sequence Variables</a></li>
+<li class="chapter" data-level="21.4" data-path="rdump.html"><a href="rdump.html#array-variables"><i class="fa fa-check"></i><b>21.4</b> Array Variables</a></li>
+<li class="chapter" data-level="21.5" data-path="rdump.html"><a href="rdump.html#matrix--and-vector-valued-variables"><i class="fa fa-check"></i><b>21.5</b> Matrix- and Vector-Valued Variables</a>
+<ul>
+<li class="chapter" data-level="21.5.1" data-path="rdump.html"><a href="rdump.html#vector-dump-format"><i class="fa fa-check"></i><b>21.5.1</b> Vector Dump Format</a></li>
+<li class="chapter" data-level="21.5.2" data-path="rdump.html"><a href="rdump.html#matrix-dump-format"><i class="fa fa-check"></i><b>21.5.2</b> Matrix Dump Format</a></li>
+<li class="chapter" data-level="21.5.3" data-path="rdump.html"><a href="rdump.html#arrays-of-vectors-and-matrices"><i class="fa fa-check"></i><b>21.5.3</b> Arrays of Vectors and Matrices</a></li>
+</ul></li>
+<li class="chapter" data-level="21.6" data-path="rdump.html"><a href="rdump.html#integer--and-real-valued-variables"><i class="fa fa-check"></i><b>21.6</b> Integer- and Real-Valued Variables</a>
+<ul>
+<li class="chapter" data-level="21.6.1" data-path="rdump.html"><a href="rdump.html#scientific-notation"><i class="fa fa-check"></i><b>21.6.1</b> Scientific Notation</a></li>
+<li class="chapter" data-level="21.6.2" data-path="rdump.html"><a href="rdump.html#infinite-and-not-a-number-values"><i class="fa fa-check"></i><b>21.6.2</b> Infinite and Not-a-Number Values</a></li>
+</ul></li>
+<li class="chapter" data-level="21.7" data-path="rdump.html"><a href="rdump.html#quoted-variable-names"><i class="fa fa-check"></i><b>21.7</b> Quoted Variable Names</a></li>
+<li class="chapter" data-level="21.8" data-path="rdump.html"><a href="rdump.html#line-breaks"><i class="fa fa-check"></i><b>21.8</b> Line Breaks</a></li>
+<li class="chapter" data-level="21.9" data-path="rdump.html"><a href="rdump.html#bnf-grammar-for-dump-data"><i class="fa fa-check"></i><b>21.9</b> BNF Grammar for Dump Data</a></li>
+</ul></li>
+<li><a href="bibliography.html#bibliography"><i style='font-size: 110%; color:#990017;'>Bibliography</i></a></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">CmdStan User’s Guide</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="mcmc-intro" class="section level1">
+<h1><span class="header-section-number">4</span> MCMC Sampling</h1>
+<div id="running-the-sampler" class="section level2">
+<h2><span class="header-section-number">4.1</span> Running the Sampler</h2>
+<p>To generate a sample from the posterior distribution of
+the model conditioned on the data,
+we run the executable program with the argument <code>sample</code> or <code>method=sample</code>
+together with the input data.
+The executable can be run from any directory.
+Here, we run it in the directory which contains the Stan program and input data,
+<code>&lt;cmdstan-home&gt;/examples/bernoulli</code>:</p>
+<pre><code>&gt; cd examples/bernoulli</code></pre>
+<p>To execute sampling of the model under Linux or Mac, use:</p>
+<pre><code>&gt; ./bernoulli sample data file=bernoulli.data.json</code></pre>
+<p>In Windows, the <code>./</code> prefix is not needed:</p>
+<pre><code>&gt; bernoulli.exe sample data file=bernoulli.data.json</code></pre>
+<p>The output is the same across all supported platforms. First, the
+configuration of the program is echoed to the standard output:</p>
+<pre><code>method = sample (Default)
+  sample
+    num_samples = 1000 (Default)
+    num_warmup = 1000 (Default)
+    save_warmup = 0 (Default)
+    thin = 1 (Default)
+    adapt
+      engaged = 1 (Default)
+      gamma = 0.050000000000000003 (Default)
+      delta = 0.80000000000000004 (Default)
+      kappa = 0.75 (Default)
+      t0 = 10 (Default)
+      init_buffer = 75 (Default)
+      term_buffer = 50 (Default)
+      window = 25 (Default)
+    algorithm = hmc (Default)
+      hmc
+        engine = nuts (Default)
+          nuts
+            max_depth = 10 (Default)
+        metric = diag_e (Default)
+        metric_file =  (Default)
+        stepsize = 1 (Default)
+        stepsize_jitter = 0 (Default)
+id = 0 (Default)
+data
+  file = bernoulli.data.json
+init = 2 (Default)
+random
+  seed = 3252652196 (Default)
+output
+  file = output.csv (Default)
+  diagnostic_file =  (Default)
+  refresh = 100 (Default)</code></pre>
+<p>After the configuration has been displayed, a short timing message is
+given.</p>
+<pre><code>Gradient evaluation took 1.2e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
+Adjust your expectations accordingly!</code></pre>
+<p>Next, the sampler reports the iteration number, reporting the
+percentage complete.</p>
+<pre><code>Iteration:    1 / 2000 [  0%]  (Warmup)
+....
+Iteration: 2000 / 2000 [100%]  (Sampling)</code></pre>
+<p>Finally, the sampler reports timing information:</p>
+<pre><code> Elapsed Time: 0.007 seconds (Warm-up)
+               0.017 seconds (Sampling)
+               0.024 seconds (Total)</code></pre>
+</div>
+<div id="running-multiple-chains" class="section level2">
+<h2><span class="header-section-number">4.2</span> Running Multiple Chains</h2>
+<p>A Markov chain generates samples from the target distribution only after it has converged to equilibrium.
+In theory, convergence is only guaranteed asymptotically as the number of draws grows without bound.
+In practice, diagnostics must be applied to monitor convergence for the finite number of draws actually available.
+One way to monitor whether a chain has converged to the equilibrium distribution is to compare its behavior
+to other randomly initialized chains.
+For robust diagnostics, we recommend running 4 chains.</p>
+<p>To run multiple chains given a model and data, either sequentially or in parallel,
+we use the Unix or DOS shell <code>for</code> loop to set up index variables needed to identify
+each chain and its outputs.</p>
+<p>On MacOS or Linux, the <a href="https://linuxcourse.rutgers.edu/documents/Bash-Beginners-Guide/sect_09_01.html">for-loop syntax</a>
+for both the bash and zsh interpreters is:</p>
+<pre><code>for NAME [in LIST]; do COMMANDS; done</code></pre>
+<p>The list can be a simple sequence of numbers, or you can use the shell expansion syntax <code>{1..N}</code>
+which expands to the sequence from <span class="math inline">\(1\)</span> to <span class="math inline">\(N\)</span>, e.g. <code>{1..4}</code> expands to <code>1 2 3 4</code>.
+Note that the expression <code>{1..N}</code> cannot contain spaces.</p>
+<p>To run 4 chains for the example bernoulli model on MacOS or Linux:</p>
+<pre><code>&gt; for i in {1..4}
+    do
+      ./bernoulli sample data file=bernoulli.data.json \
+      output file=output_${i}.csv
+    done</code></pre>
+<p>The backslash (<code>\</code>) indicates a line continuation in Unix.
+The expression <code>${i}</code> substitutes in the value of loop index variable <code>i</code>.
+To run chains in parallel, put an ampersand (<code>&amp;</code>) at the end of the nested sampler command:</p>
+<pre><code>&gt; for i in {1..4}
+    do
+      ./bernoulli sample data file=bernoulli.data.json \
+      output file=output_${i}.csv &amp;
+    done</code></pre>
+<p>This pushes each process into the background which allows the loop to continue
+without waiting for the current chain to finish.</p>
+<p>On Windows, the DOS <a href="https://www.windows-commandline.com/windows-for-loop-examples/">for-loop syntax</a> is one of:</p>
+<pre><code>for %i in (SET) do COMMAND COMMAND-ARGUMENTS
+for /l %i in (START, STEP, END) do COMMAND COMMAND-ARGUMENTS</code></pre>
+<p>To run 4 chains in parallel on Windows:</p>
+<pre><code>&gt;for /l %i in (1, 1, 4) do start /b bernoulli.exe sample ^
+                                    data file=bernoulli.data.json my_data ^
+                                    output file=output_%i.csv</code></pre>
+<p>The caret (<code>^</code>) indicates a line continuation in DOS.</p>
+</div>
+<div id="mcmc_output_csv" class="section level2">
+<h2><span class="header-section-number">4.3</span> Stan CSV Output File</h2>
+<p>Each execution of the model results in draws from a single Markov
+chain being written to a file in comma-separated value (CSV) format.
+The default name of the output file is <code>output.csv</code>.</p>
+<p>The first part of the output file records the version of the
+underlying Stan library and the configuration as comments (i.e., lines
+beginning with the pound sign (<code>#</code>)).</p>
+<pre><code># stan_version_major = 2
+# stan_version_minor = 23
+# stan_version_patch = 0
+# model = bernoulli_model
+# method = sample (Default)
+#   sample
+#     num_samples = 1000 (Default)
+#     num_warmup = 1000 (Default)
+...
+# output
+#   file = output.csv (Default)
+#   diagnostic_file =  (Default)
+#   refresh = 100 (Default)</code></pre>
+<p>This is followed by a CSV header indicating the names of the values
+sampled.</p>
+<pre><code>lp__,accept_stat__,stepsize__,treedepth__,n_leapfrog__,divergent__,energy__,theta</code></pre>
+<p>The first output columns report the HMC sampler information:</p>
+<ul>
+<li><code>lp__</code> - the total log probability density (up to an additive constant) at each sample</li>
+<li><code>accept_stat__</code> - the average Metropolis acceptance probability over each simulated Hamiltonian trajectory</li>
+<li><code>stepsize__</code> - integrator step size</li>
+<li><code>treedepth__</code> - depth of tree used by NUTS (NUTS sampler)</li>
+<li><code>n_leapfrog__</code> - number of leapfrog calculations (NUTS sampler)</li>
+<li><code>divergent__</code> - has value <code>1</code> if trajectory diverged, otherwise <code>0</code>. (NUTS sampler)</li>
+<li><code>energy__</code> - value of the Hamiltonian</li>
+<li><code>int_time__</code> - total integration time (static HMC sampler)</li>
+</ul>
+<p>Because the above header is from the NUTS sampler, it has columns <code>treedepth__</code>, <code>n_leapfrog__</code>, and <code>divergent__</code>
+and doesn’t have column <code>int_time__</code>.
+The remaining columns correspond to model parameters. For the
+Bernoulli model, it is just the final column, <code>theta</code>.</p>
+<p>The header line is written to the output file before warmup begins.
+If option <code>save_warmup</code> is set to <code>1</code>, the warmup draws are output directly after the header.
+The total number of warmup draws saved is <code>num_warmup</code> divided by <code>thin</code>, rounded up (i.e., <code>ceiling</code>).</p>
+<p>Following the warmup draws (if any), are comments which record the results of adaptation:
+the stepsize, and inverse mass metric used during sampling:</p>
+<pre><code># Adaptation terminated
+# Step size = 0.884484
+# Diagonal elements of inverse mass matrix:
+# 0.535006</code></pre>
+<p>The default sampler is NUTS with an adapted step size and a diagonal
+inverse mass matrix. For this example, the step size is 0.884484, and
+the inverse mass contains the single entry 0.535006 corresponding to
+the parameter <code>theta</code>.</p>
+<p>Draws from the posterior distribution are printed out next, each line
+containing a single draw with the columns corresponding to the header.</p>
+<pre><code>-6.84097,0.974135,0.884484,1,3,0,6.89299,0.198853
+-6.91767,0.985167,0.884484,1,1,0,6.92236,0.182295
+-7.04879,0.976609,0.884484,1,1,0,7.05641,0.162299
+-6.88712,1,0.884484,1,1,0,7.02101,0.188229
+-7.22917,0.899446,0.884484,1,3,0,7.73663,0.383596
+...</code></pre>
+<p>The output ends with timing details:</p>
+<pre><code>#  Elapsed Time: 0.007 seconds (Warm-up)
+#                0.017 seconds (Sampling)
+#                0.024 seconds (Total)</code></pre>
+</div>
+<div id="summarizing-sampler-outputs-with-stansummary" class="section level2">
+<h2><span class="header-section-number">4.4</span> Summarizing Sampler Output(s) with <code>stansummary</code></h2>
+<p>The <code>stansummary</code> utility processes one or more output files from a run
+or set of runs of Stan’s HMC sampler given a model and data.
+For all columns in the Stan CSV output file <code>stansummary</code> reports a set of statistics
+including mean, standard deviation, percentiles, effective number of samples, and <span class="math inline">\(\hat{R}\)</span> values.</p>
+<p>To run <code>stansummary</code> on the output files generated by the for loop above,
+by the above run of the <code>bernoulli</code> model on Mac or Linux:</p>
+<pre><code>&lt;cmdstan-home&gt;/bin/stansummary output_*.csv</code></pre>
+<p>On Windows, use backslashes to call the <code>stansummary.exe</code>.</p>
+<pre><code>&lt;cmdstan-home&gt;\bin\stansummary.exe output_*.csv</code></pre>
+<p>The stansummary output consists of one row of statistics per column
+in the Stan CSV output file. Therefore, the first rows in the
+stansummary report statistics over the sampler state.
+The final row of output summarizes the estimates of the model variable <code>theta</code>:</p>
+<pre><code>Inference for Stan model: bernoulli_model
+4 chains: each with iter=(1000,1000,1000,1000); warmup=(0,0,0,0); thin=(1,1,1,1); 4000 iterations saved.
+
+Warmup took (0.0070, 0.0070, 0.0070, 0.0070) seconds, 0.028 seconds total
+Sampling took (0.020, 0.017, 0.021, 0.019) seconds, 0.077 seconds total
+
+                Mean     MCSE  StdDev     5%   50%   95%    N_Eff  N_Eff/s    R_hat
+lp__            -7.3  1.8e-02    0.75   -8.8  -7.0  -6.8  1.8e+03  2.4e+04  1.0e+00
+accept_stat__   0.89  2.7e-03    0.17   0.52  0.96   1.0  3.9e+03  5.1e+04  1.0e+00
+stepsize__       1.1  7.5e-02    0.11   0.93   1.2   1.2  2.0e+00  2.6e+01  2.5e+13
+treedepth__      1.4  8.1e-03    0.49    1.0   1.0   2.0  3.6e+03  4.7e+04  1.0e+00
+n_leapfrog__     2.3  1.7e-02    0.98    1.0   3.0   3.0  3.3e+03  4.3e+04  1.0e+00
+divergent__     0.00      nan    0.00   0.00  0.00  0.00      nan      nan      nan
+energy__         7.8  2.6e-02     1.0    6.8   7.5   9.9  1.7e+03  2.2e+04  1.0e+00
+theta           0.25  2.9e-03    0.12  0.079  0.23  0.46  1.7e+03  2.1e+04  1.0e+00
+
+Samples were drawn using hmc with nuts.
+For each parameter, N_Eff is a crude measure of effective sample size,
+and R_hat is the potential scale reduction factor on split chains (at 
+convergence, R_hat=1).</code></pre>
+<p>In this example, we conditioned the model on a dataset consisting of the outcomes of
+10 bernoulli trials, where only 2 trials reported success. The 5%, 50%, and 95%
+percentile values for <code>theta</code> reflect the uncertainty in our estimate, due to the
+small amount of data, given the prior of <code>beta(1, 1)</code></p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="compiling-a-stan-program.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="optimization.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": null,
+"fontsettings": {
+"theme": "white",
+"family": "serif",
+"size": 2
+},
+"edit": null,
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": null,
+"toc": {
+"collapse": "section",
+"scroll_highlight": true
+},
+"search": true,
+"toolbar": {
+"position": "static"
+}
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

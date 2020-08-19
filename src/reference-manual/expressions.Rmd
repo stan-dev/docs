@@ -1102,25 +1102,24 @@ higher-order functions.^[Internally, they are implemented as their own expressio
 
 The higher-order functions and the signature of their argument
 functions are listed in the [higher-order functions
-table](#higher-order-functions-table).
+table](#higher-order-functions-table) and the [variadic higher-order functions
+table](#variadic-higher-order-functions-table).
 
 **Higher-order Functions Table.**
 <a id="higher-order-functions-table"></a>
 *Higher-order functions in Stan with their argument
-function types.  The first group of arguments has no restrictions.
-The second group of arguments, consisting of a real and integer
+function types.  The first group of arguments can be a function of parameters
+or data. The second group of arguments, consisting of a real and integer
 array in all cases, must be expressions involving only data and
 literals.*
 
-  function   |  unrestricted args  |  data args   |  return type
+  function   |  parameter or data args  |  data args   |  return type
 ------------:|:-------------------:|:------------:|:-------------:
 `algebra_solver` | `vector, vector` | `real[], int[]` | `vector`
+`algebra_solver_newton` | `vector, vector` | `real[], int[]` | `vector`
 `integrate_1d`, | `real, real, real[]` | `real[], int[]` | `real`
 `integrate_ode_X`, | `real, real[], real[]` | `real[], int[]` | `real[]`
 `map_rect` | `vector, vector` | `real[], int[]` | `vector`
-`reduce_sum` | ```T[], T1, T2, ...``` | | `real`
-
-`T`, `T1`, `T2`, and the types of `...` can be any Stan type.
 
 For example, the `integrate_ode_rk45` function can be used to integrate
 differential equations in Stan:
@@ -1142,10 +1141,49 @@ real y_hat[T, 2] = integrate_ode_rk45(foo, y0, t0, ts, theta, x_r, x_i);
 ```
 
 The function argument is `foo`, the name of the user-defined
-function;  as shown in the [higher-order functions table](#higher-order-functions), `foo`
-takes a real, three more real arrays, and an integer array as arguments and
-returns a real array.
+function;  as shown in the [higher-order functions table](#higher-order-functions),
+`integrate_ode_rk45` takes a real array, a real, three more real arrays, and
+an integer array as arguments and returns 2D real array.
 
+**Variadic Higher-order Functions Table.**
+<a id="variadic-higher-order-functions-table"></a>
+*Variadic Higher-order functions in Stan with their argument
+function types.  The first group of arguments are restricted in type.
+The sequence of trailing arguments can be of any length with any types.*
+
+  function   |  restricted args  | return type
+------------:|:-------------------:|:-------------:
+`ode_X`, | `vector, real, real[]` | `vector[]`
+`reduce_sum` | ```T[], T1, T2``` | `real`
+
+`T`, `T1`, and `T2` can be any Stan type.
+
+For example, the `ode_rk45` function can be used to integrate
+differential equations in Stan:
+
+```stan
+functions {
+  vector foo(real t, vector y, real theta, vector beta, int[] x_i, int index) {
+    ...
+...
+int<lower=1> T;
+vector[2] y0;
+real t0;
+real ts[T];
+real theta;
+vector[7] beta;
+int x_i[10];
+int index;
+...
+vector[2] y_hat[T] = ode_rk45(foo, y0, t0, ts, theta, beta, x_i, index);
+```
+
+The function argument is `foo`, the name of the user-defined
+function. As shown in the
+[variadic higher-order functions table](#variadic-higher-order-functions),
+`ode_rk45` takes a real, a vector, a real, a real array, and a sequence of
+arguments whos types match those at the end of `foo` and returns an array of
+vectors.
 
 ### Functions Passed by Reference {-}
 
@@ -1153,7 +1191,6 @@ The function argument to higher-order functions is always passed as
 the first argument.  This function argument must be provided as the
 name of a user-defined or built-in function.  No quotes are
 necessary.
-
 
 ### Data-Restricted Arguments {-}
 

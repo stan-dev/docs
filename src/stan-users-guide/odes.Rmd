@@ -1,9 +1,8 @@
 # Ordinary Differential Equations  {#ode-solver.chapter}
 
 Stan provides a built-in mechanism for specifying and solving systems
-of ordinary differential equations (ODEs).  Stan provides three
-different integrators, tuned for solving non-stiff systems and
-for stiff systems.
+of ordinary differential equations (ODEs). Three different solvers,
+tuned for solving non-stiff systems and for stiff systems are available.
 
 * `rk45`: a fourth and fifth order Runge-Kutta method for
   non-stiff systems [@DormandPrince:1980; @AhnertMulansky:2011], and
@@ -17,91 +16,324 @@ for stiff systems.
   [@CohenHindmarsh:1996; @SerbanHindmarsh:2005]
 
 For a discussion of stiff ODE systems, see the [stiff ODE
-section](#stiff-ode.section).  In a nutshell, the stiff solvers are
-slower, but more robust; how much so depends on the system and the
-region of parameter space.  The function signatures for Stan's ODE
+section](#stiff-ode.section). The function signatures for Stan's ODE
 solvers can be found in the reference manual section on ODE solvers.
 
+## Notation
+
+An ODE is defined by a set of differential equations,
+$y(t, \theta)' = f(t, y, \theta)$, and initial conditions,
+$y(t_0, \theta) = y_0$. The function $f(t, y, \theta)$ is called the
+system function. The $\theta$ dependence is included in the notation for
+$y(t, \theta)$ and $f(t, y, \theta)$ as a reminder that the solution is a function of any parameters used
+in the computation.
 
 ## Example: Simple Harmonic Oscillator
 
-As an example of a system of ODEs, consider a harmonic
-oscillator, which is characterized by an equilibrium position and a
-restoring force proportional to the displacement with friction.
-The system state will be a pair $y = (y_1, y_2)$ representing position
-and momentum: a point in phase space.  The change in the system
-with respect to time is given by the following differential equations.^[This example is drawn from the documentation for the Boost Numeric Odeint library [@AhnertMulansky:2011], which Stan uses to implement the `rk45` solver.]
+As an example of a system of ODEs, consider a harmonic oscillator. In a harmonic
+oscillator a particle disturbed from equilibrium is pulled back towards its
+equilibrium position by a force proportional to its displacement from equilibrium.
+The system here additionally has a friction force proportional to particle speed
+which points in the opposite direction of the particle velocity.
+The system state will be a pair $y = (y_1, y_2)$ representing position and
+speed. The change in the system with respect to time is given by the following differential equations.^[This example is drawn from the documentation for the Boost Numeric Odeint library [@AhnertMulansky:2011], which Stan uses to implement the `rk45` solver.]
 
 $$
-\frac{d}{dt} y_1 = y_2
-\qquad
+\frac{d}{dt} y_1 = y_2 \\
 \frac{d}{dt} y_2 = -y_1 - \theta y_2
 $$
 <a name="id:ode-sho.equation"></a>
 
-The state equations implicitly define the system state at a given time
-as a function of an initial state, elapsed time since the initial
-state, and the system parameters.
+The state equations implicitly defines the state at future times
+as a function of an initial state and the system parameters.
 
-### Solutions Given Initial Conditions {-}
+## Coding the ODE System Function
 
-Given a value of the system parameter $\theta$ and an initial state
-$y(t_0)$ at time $t_0$, it is possible to simulate the evolution of
-the solution numerically in order to calculate $y(t)$ for a specified
-sequence of times $t_0 < t_1 < t_2 < \cdots$.
+The first step in coding an ODE system in Stan is defining the ODE system
+function. The system functions require a specific signature so that the solvers
+know how to use them properly.
 
-## Coding an ODE System
+The first argument to the system function is time, passed as a `real`;
+the second argument to the system function is the system state,
+passed as a `vector`, and the return value from the system function are the
+current time derivatives of the state defined as a `vector`. Additional arguments
+can be included in the system function to pass other information
+into the solve (these will be passed through the function that starts the ODE
+integration). These argument can be parameters (in this case, the friction
+coefficient), data, or any quantities that are needed to define the
+differential equation.
 
-A system of ODEs is coded directly in Stan as a function with a
-strictly specified signature.  For example, the simple harmonic
-oscillator can be coded using the following function in Stan (see the
-[user-defined functions chapter](#functions-programming.chapter) for
+The simple harmonic oscillator can be coded using the following function
+in Stan (see the [user-defined functions chapter](#functions-programming.chapter) for
 more information on coding user-defined functions).
 
 ```
-real[] sho(real t,        // time
-           real[] y,      // state
-           real[] theta,  // parameters
-           real[] x_r,    // data (real)
-           int[] x_i) {   // data (integer)
-  real dydt[2];
+vector sho(real t,        // time
+           vector y,      // state
+           real theta) {  // friction parameter
+  vector[2] dydt;
   dydt[1] = y[2];
-  dydt[2] = -y[1] - theta[1] * y[2];
+  dydt[2] = -y[1] - theta * y[2];
   return dydt;
 }
 ```
 
-The function takes in a time `t` (a real value), a a system state
-`y` (a real array), system parameters `theta` (a real array),
-along with real data in variable `x_r` (a real array) and
-integer data in variable `x_i` (an integer array).  The system
-function returns the array of derivatives of the system state with
-respect to time, evaluated at time `t` and state `y`.  The
-simple harmonic oscillator coded here does not have time-sensitive
-equations; that is, `t` does not show up in the definition of
-`dydt`.  The simple harmonic oscillator does not use real or
-integer data, either.  Nevertheless, these unused arguments must be
-included as arguments in the system function with exactly the
-signature shown above.
-
+The function takes in a time `t` (a `real`), the system state
+`y` (a `vector`), and the parameter `theta` (a `real`). The function returns a
+`vector` of time derivatives of the system state at time `t`, state `y`, and
+parameter `theta`. The simple harmonic oscillator coded here does not have
+time-sensitive equations; that is, `t` does not show up in the definition of
+`dydt`, however it is still required.
 
 ### Strict Signature {-}
 
-The function defining the system must have exactly these argument
-types and return type.  This may require passing in zero-length arrays
-for data or parameters if the system does not involve data or
-parameters.  A full example for the simple harmonic oscillator, which
-does not depend on any constant data variables, is provided in the
-simple harmonic oscillator trajectory plot. 
+The types in the ODE system function are strict. The first argument is the time
+passed as a `real`, the second argument is the state passed as a `vector`,
+and the return type is a `vector`. A model that does not have this signature will
+fail to compile. The third argument onwards can be any type, granted all
+the argument types match the types of the respective arguments in the solver
+call.
+
+All of these are possible ODE signatures:
+
+```
+vector myode1(real t, vector y, real a0);
+vector myode2(real t, vector y, int[] a0, vector a1);
+vector myode3(real t, vector y, matrix a0, real[] a1, row_vector a2);
+```
+
+but these are not allowed:
+
+```
+vector myode1(real t, real[] y, real a0); // Second argument is not a vector
+real[] myode2(real t, vector y, real a0); // Return type is not a vector
+vector myode3(vector y, real a0); // First argument is not a real and second is not a vector
+```
+
+## Measurement Error Models
+
+Noisy observations of the ODE state can be used to estimate the parameters
+and/or the initial state of the system.
+
+### Simulating Noisy Measurements {-}
+
+As an example, suppose the simple harmonic oscillator has a parameter
+value of $\theta = 0.15$ and an initial state $y(t = 0, \theta = 0.15) = (1, 0)$.
+Assume the system is measured at 10 time points, $t = 1, 2, \cdots, 10$,
+where each measurement of $y(t, \theta)$ has independent
+$\textsf{normal}(0, 0.1)$ error in both dimensions ($y_1(t, \theta)$
+and $y_2(t, \theta)$).
+
+The following model can be used to generate data like this:
+
+```
+functions {
+  vector sho(real t,
+             vector y,
+             real theta) {
+    vector[2] dydt;
+    dydt[1] = y[2];
+    dydt[2] = -y[1] - theta * y[2];
+    return dydt;
+  }
+}
+data {
+  int<lower=1> T;
+  vector[2] y0;
+  real t0;
+  real ts[T];
+  real theta;
+}
+model {
+}
+generated quantities {
+  vector[2] y_sim[T] = ode_rk45(sho, y0, t0, ts, theta);
+  // add measurement error
+  for (t in 1:T) {
+    y_sim[t, 1] += normal_rng(0, 0.1);
+    y_sim[t, 2] += normal_rng(0, 0.1);
+  }
+}
+```
+<a name="id:sho-sim.figure"></a>
+
+The system parameters `theta` and initial state `y0` are read in as data
+along with the initial time `t0` and observation times `ts`. The ODE is solved
+for the specified times, and then random measurement errors are added to
+produce simulated observations `y_sim`. Because the system is not stiff, the
+`ode_rk45` solver is used.
+
+This program illustrates the way in which the ODE solver is called in
+a Stan program,
+
+```
+vector[2] y_sim[T] = ode_rk45(sho, y0, t0, ts, theta);
+```
+
+this returns the solution of the ODE initial value problem defined
+by system function `sho`, initial state `y0`, initial time `t0`, and
+parameter `theta` at the times `ts`. The call explicitly
+specifies the non-stiff RK45 solver.
+
+The parameter `theta` is passed unmodified
+to the ODE system function. If there were additional arguments that must be
+passed, they could be appended to the end of the ode call here. For instance, if
+the system function took two parameters, $\theta$ and $\beta$, the system
+function definition would look like:
+
+```
+vector sho(real t, vector y, real theta, real beta) { ... }
+```
+
+and the appropriate ODE solver call would be:
+
+```
+ode_rk45(sho, y0, t0, ts, theta, beta);
+```
+
+Any number of additional arguments can be added. They can be any Stan type (as
+long as the types match between the ODE system function and the solver call).
+
+Because all none of the input arguments are a function of parameters, the ODE
+solver is called in the generated quantities block. The random measurement noise
+is added to each of the `T` outputs with `normal_rng`.
+
+```{r  include = TRUE, echo = FALSE, fig.align = "center", fig.cap = "Typical realization of harmonic oscillator trajectory."}
+knitr::include_graphics("./img/sho-ode-trajectory.png", auto_pdf = TRUE)
+```
+<a name="id:sho-trajectory.figure"></a>
+
+### Estimating System Parameters and Initial State {-}
+
+These ten noisy observations of the state can be used to estimate the friction
+parameter, $\theta$, the initial conditions, $y(t_0, \theta)$, and the scale of
+the noise in the problem. The full Stan model is:
+
+\newpage
+```
+functions {
+  vector sho(real t,
+             vector y,
+             real theta) {
+    vector[2] dydt;
+    dydt[1] = y[2];
+    dydt[2] = -y[1] - theta * y[2];
+    return dydt;
+  }
+}
+data {
+  int<lower=1> T;
+  vector[2] y[T];
+  real t0;
+  real ts[T];
+}
+parameters {
+  vector[2] y0;
+  vector<lower=0>[2] sigma;
+  real theta;
+}
+model {
+  vector[2] mu[T] = ode_rk45(sho, y0, t0, ts, theta);
+  sigma ~ normal(0, 2.5);
+  theta ~ std_normal();
+  y0 ~ std_normal();
+  for (t in 1:T)
+    y[t] ~ normal(mu[t], sigma);
+}
+```
+<a name="id:sho-both.figure"></a>
+
+Because the solves are now a function of model parameters, the `ode_rk45`
+call is now made in the model block. There are half-normal priors on the
+measurement error scales `sigma`, and standard normal priors on `theta` and the
+initial state vector `y0`. The solutions to the ODE are assigned to `mu`, which
+is used as the location for the normal observation model.
+
+As with other regression models, it's easy to change the noise
+model to something with heavier tails (e.g., Student-t distributed),
+correlation in the state variables (e.g., with a multivariate
+normal distribution), or both heavy tails and correlation in the state
+variables (e.g., with a multivariate Student-t distribution).
+
+## Stiff ODEs {#stiff-ode.section}
+
+Stiffness is a numerical phenomena that causes some differential equation
+solvers difficulty, notably the Runge-Kutta RK45 solver used in the examples
+earlier. The phenomena is common in chemical reaction systems, which are often
+characterized by having multiple vastly different time-scales. The stiffness of
+a system can also vary between different parts of parameter space, and so a
+typically non-stiff system may exhibit stiffness occasionally. These sorts of
+difficulties can occur more frequently with loose priors or during warmup.
+
+Stan provides a specialized solver for stiff ODEs
+[@CohenHindmarsh:1996; @SerbanHindmarsh:2005].  An ODE system is
+specified exactly the same way with a function of exactly the same
+signature.  The only difference is in the call to the solver the
+`rk45` suffix is replaced with `bdf`, as in
+
+```
+ode_bdf(sho, y0, t0, ts, theta);
+```
+
+Using the stiff (`bdf`) solver on a system that is not stiff
+may be much slower than using the non-stiff (`rk45`) solver because
+each step of the stiff solver takes more time to compute. On the other hand,
+attempting to use the non-stiff solver for a stiff system will cause
+the timestep to become very small, leading the non-stiff solver taking more
+time overall even if each step is easier to compute than for the stiff solver.
+
+If it is not known for sure that an ODE system is stiff, run the model with
+both the `rk45` and `bdf` solvers and see which is faster. If the `rk45`
+solver is faster, then the problem is probably non-stiff, and then it makes
+sense to try the `adams` solver as well. The `adams` solver uses higher order
+methods which can take larger timesteps than the `rk45` solver, though similar
+to the `bdf` solver each of these steps is more expensive to compute.
+
+## Control Parameters for ODE Solving
+
+For additional control of the solves, both the stiff and non-stiff solvers
+have function signatures that makes it possible to specify the
+`relative_tolerance`, `absolute_tolerance`, and `max_num_steps` parameters.
+These are the same as the regular function names but with `_tol` appended to
+the end. All three control arguments must be supplied with this signature (there
+are no defaults).
+
+```
+vector[2] y_sim[T] = ode_bdf_tol(sho, y0, t0, ts,
+                                 relative_tolerance,
+                                 absolute_tolerance,
+                                 max_num_steps,
+                                 theta);
+```
+
+`relative_tolerance` and `absolute_tolerance` control the stepsize by specifying
+a target local error that the solver tries to match, and
+`max_num_steps` specifies the maximum number of steps the solver will
+take between output time points before throwing an error.
+
+The control parameters must be data variables -- they cannot be
+parameters or expressions that depend on parameters, including local
+variables in any block other than transformed data and generated
+quantities. User-defined function arguments may be qualified as only
+allowing data arguments using the `data` qualifier.
+
+For the RK45 solver, the default values for relative and absolute tolerance are
+both $10^{-6}$ and the maximum number of steps between outputs is
+one million. For the BDF and Adams solvers, the relative and absolute
+tolerances are $10^{-10}$ and the maximum number of steps between outputs is
+one hundred million.
 
 ### Discontinuous ODE System Function {-}
 
-The ODE integrator is able to integrate over discontinuities in the
-state function, although the accuracy of points near the discontinuity
-may be problematic (requiring many small steps).  An example of such a
-discontinuity is a lag in a pharmacokinetic model, where a
-concentration is going to be zero for times $0 < t < t'$ for some
-lag-time $t'$, whereas it will be nonzero for times $t \geq t'$.
+If there are discontinuities in the ODE system function, it is best
+to integrate the ODE between the discontinuities, stopping the solver at each
+one, and restarting it on the other side.
+
+Nonetheless, the ODE solvers will attempt to integrate over discontinuities
+they encounters in the state function. The accuracy of the solution near the
+discontinuity may be problematic (requiring many small steps). An example of
+such a discontinuity is a lag in a pharmacokinetic model, where a
+concentration is zero for times $0 < t < t'$ and then positive for $t \geq t'$.
 In this example example, we would use code in the system such as
 
 ```
@@ -111,7 +343,42 @@ else
   ... return non-zero value...;
 ```
 
+In general it is better to integrate up to `t_lag` in one solve and
+then integrate from `t_lag` onwards in another. Mathematically, the
+discontinuity can make the problem ill-defined and the numerical integrator
+may behave erratically around it.
+
+If the location of the discontinuity cannot be controlled precisely, or there is
+some other rapidly change in ODE behavior, it can be useful to tell the ODE
+solver to produce output in the neighborhood. This can help the ODE solver avoid
+indiscriminately stepping over an important feature of the solution.
+
+### Tolerance {-}
+
+The relative and absolute tolerance control the accuracy of the
+solutions generated by the ODE solvers. Relative tolerances are
+relative to the solution value, whereas absolute tolerances is the
+maximum absolute error allowed in a solution. Absolute tolerance is more
+meaningful for ODE solutions that approach zero.
+
+Smaller tolerances produce more accurate solutions, though they require more
+computation time. The tolerances should be small enough so that setting them
+lower does not change the statistical properties of posterior samples generated
+by the Stan program but large enough to avoid unnecessary computation.
+
+### Maximum Number of Steps {-}
+
+The maximum number of steps can be used to stop a runaway simulation.
+This can arise in when MCMC moves to a part of parameter space very far from
+where a differential equation would typically be solved. In particular this
+can happen during warmup.  With the non-stiff solver, this may happen when
+the sampler moves to stiff regions of parameter space, which will requires small
+step sizes.
+
 ## Solving a System of Linear ODEs using a Matrix Exponential
+
+Linear systems of ODEs can be solved using a matrix exponential. This can be
+considerably faster than using one of the ODE solvers.
 
 The solution to $\frac{d}{dt} y = ay$ is $y = y_0e^{at}$, where the constant
 $y_0$ is determined by boundary conditions. We can extend this solution
@@ -141,12 +408,10 @@ $$
 <a name="id:ode.sho_matrix"></a>
 
 The Stan model to simulate noisy observations using a matrix exponential function
-is given below. Because we are performing matrix
-operations, we declare `y0` and `y_hat` as vectors, instead of using arrays,
-as in the previous example code.
+is given below.
 
 In general, computing a matrix exponential will be more efficient than using a numerical
-solver. We can however only apply this technique to systems of \underline{linear} ODEs.
+solver. We can however only apply this technique to systems of linear ODEs.
 
 ```
 data {
@@ -158,15 +423,15 @@ data {
 model {
 }
 generated quantities {
-  vector[2] y_hat[T];
+  vector[2] y_sim[T];
   matrix[2, 2] A = [[ 0,  1],
                     [-1, -theta[1]]]
   for (t in 1:T)
-    y_hat[t] = matrix_exp((t - 1) * A) * y0;
+    y_sim[t] = matrix_exp((t - 1) * A) * y0;
   // add measurement error
   for (t in 1:T) {
-    y_hat[t, 1] += normal_rng(0, 0.1);
-    y_hat[t, 2] += normal_rng(0, 0.1);
+    y_sim[t, 1] += normal_rng(0, 0.1);
+    y_sim[t, 2] += normal_rng(0, 0.1);
   }
 }
 ```
@@ -177,268 +442,6 @@ oscillator.  The system of linear differential equations is coded as a
 matrix. The system parameters `theta` and initial state `y0` are read
 in as data along observation times `ts`.  The generated quantities
 block is used to solve the ODE for the specified times and then add
-random measurement error, producing observations `y_hat`. Because the
+random measurement error, producing observations `y_sim`. Because the
 ODEs are linear, we can use the `matrix_exp` function to solve the
 system.
-
-
-
-## Measurement Error Models
-
-Statistical models or differential equations may be used to estimate
-the parameters and/or initial state of a dynamic system given noisy
-measurements of the system state at a finite number of time points.
-
-For instance, suppose the simple harmonic oscillator has a parameter
-value of $\theta = 0.15$ and initial state $y(t=0) = (1,0)$.  Now
-suppose the system is observed at 10 time points, say $t=1, 2, ...,
-10$, where each measurement of $y(t)$ has independent
-$\textsf{normal}(0, 0.1)$ error in both dimensions ($y_1(t)$ and
-$y_2(t)$).  A plot of such measurements is shown in the simple harmonic
-oscillator trajectory plots.
-
-Trajectory of the simple harmonic oscillator given parameter $\theta=0.15$ and initial condition $y(t=0) = (1,0)$ with additional independent $\textsf{normal}(0,0.1)$ measurement error in both dimensions.
-
-```{r fig.cap="Simple harmonic oscillator trajectory"}
-knitr::include_graphics("img/sho-ode-trajectory.pdf")
-```
-<a name="id:sho-trajectory.figure"></a>
-
-
-### Simulating Noisy Measurements {-}
-
-The data used to make this plot is derived from the Stan model to
-simulate noisy observations given below.
-
-```
-functions {
-  real[] sho(real t,
-             real[] y,
-             real[] theta,
-             real[] x_r,
-             int[] x_i) {
-    real dydt[2];
-    dydt[1] = y[2];
-    dydt[2] = -y[1] - theta[1] * y[2];
-    return dydt;
-  }
-}
-data {
-  int<lower=1> T;
-  real y0[2];
-  real t0;
-  real ts[T];
-  real theta[1];
-}
-transformed data {
-  real x_r[0];
-  int x_i[0];
-}
-model {
-}
-generated quantities {
-  real y_hat[T,2] = integrate_ode_rk45(sho, y0, t0, ts, theta, x_r, x_i);
-  // add measurement error
-  for (t in 1:T) {
-    y_hat[t, 1] += normal_rng(0, 0.1);
-    y_hat[t, 2] += normal_rng(0, 0.1);
-  }
-}
-```
-<a name="id:sho-sim.figure"></a>
-
-The system of differential equations is coded as a function.  The
-system parameters `theta` and initial state `y0` are read in as data
-along with the initial time `t0` and observation times `ts`. The
-generated quantities block is used to solve the ODE for the specified
-times and then add random measurement error, producing observations
-`y_hat`.  Because the system is not stiff, the `rk45` solver is used.
-Note that when the system is linear, it is a good idea to try
-using the matrix exponential function, as the method can, depending
-on the system at hand, yield more efficient results.
-
-
-This program illustrates the way in which the ODE solver is called in
-a Stan program,
-
-```
-y_hat = integrate_ode_rk45(sho, y0, t0, ts, theta, x_r, x_i);
-```
-
-This assigns the solutions to the system defined by function
-`sho`, given initial state `y0`, initial time `t0`,
-requested solution times `ts`, parameters `theta`, real data
-`x`, and integer data `x_int`.  The call explicitly
-specifies the Runge-Kutta solver (for non-stiff systems).
-
-Here, the ODE solver is called in the generated quantities block to
-provide a $10 \times 2$ array of solutions `y_hat` to
-which measurement error is added using the normal pseudo-random number
-generating function `normal_rng`.  The number of rows in the
-solution array is the same as the size of `ts`, the requested
-solution times.
-
-### Data versus Parameters {-}
-
-Unlike other functions, the integration functions for ODEs are limited
-as to the origins of variables in their arguments.  In particular,
-real data `x`, and integer data `x_int` must
-be expressions that only involve data or transformed data variables.
-The initial state `y`, the initial time `t0`, the requested solution
-times `ts`, or the parameters `theta` may involve parameters.
-
-
-### Estimating System Parameters and Initial State {-}
-
-Stan provides statistical inference for unknown initial states and/or
-parameters.  The ODE solver will be used deterministically to produce
-predictions, much like the linear predictor does in a generalized
-linear model.  These states will then be observed with measurement error.
-
-
-```
-functions {
-  real[] sho(real t,
-             real[] y,
-             real[] theta,
-             real[] x_r,
-             int[] x_i) {
-    real dydt[2];
-    dydt[1] = y[2];
-    dydt[2] = -y[1] - theta[1] * y[2];
-    return dydt;
-  }
-}
-data {
-  int<lower=1> T;
-  real y[T,2];
-  real t0;
-  real ts[T];
-}
-transformed data {
-  real x_r[0];
-  int x_i[0];
-}
-parameters {
-  real y0[2];
-  vector<lower=0>[2] sigma;
-  real theta[1];
-}
-model {
-  real y_hat[T,2];
-  sigma ~ cauchy(0, 2.5);
-  theta ~ std_normal();
-  y0 ~ std_normal();
-  y_hat = integrate_ode_rk45(sho, y0, t0, ts, theta, x_r, x_i);
-  for (t in 1:T)
-    y[t] ~ normal(y_hat[t], sigma);
-}
-```
-<a name="id:sho-both.figure"></a>
-
-This Stan program allows estimates of unknown initial conditions `y0`
-and system parameter `theta` for the simple harmonic oscillator with
-independent normal measurement error.
-
-A Stan program that can be used to estimate both the initial state and
-parameter value for the simple harmonic oscillator given noisy
-observations is given above.  Compared to the program for simulation,
-the program to estimate parameters uses the `integrate_ode` function
-in the model block rather than the generated quantities block.  There
-are Cauchy priors on the measurement error scales `sigma` and standard
-normal priors on the components of parameter array `theta` and initial
-state parameter array `y0`.  The solutions to the ODE are then
-assigned to an array `y_hat`, which is then used as the location in
-the observation noise model as follows.
-
-```
-y_hat = integrate_ode_rk45(sho, y0, t0, ts, theta, x_r, x_i);
-for (t in 1:T)
-  y[t] ~ normal(y_hat[t], sigma);
-```
-
-As with other regression-like models, it's easy to change the noise
-model to be robust (e.g., Student-t distributed), to be correlated in
-the state variables (e.g., with a multivariate normal distribution),
-or both (e.g., with a multivariate Student-t distribution).
-
-In this simple model with independent noise scales of 0.10, 10
-observed data points for times $t = 1,\dotsc, 10$ is sufficient to
-reliably estimate the ODE parameter, initial state, and noise scales.
-
-
-## Stiff ODEs {#stiff-ode.section}
-
-A stiff system of ordinary differential equations can be roughly
-characterized as systems presenting numerical difficulties for
-gradient-based stepwise solvers.  Stiffness typically arises due to
-varying curvature in the dimensions of the state, for instance one
-component evolving orders of magnitude more slowly than another.^[Not coincidentally, high curvature in the posterior of a general Stan model poses the same kind of problem for Euclidean Hamiltonian Monte Carlo (HMC) sampling.  The reason is that HMC is based on the leapfrog algorithm, a gradient-based, stepwise numerical differential equation solver specialized for Hamiltonian systems with separable potential and kinetic energy terms.]
-
-
-Stan provides a specialized solver for stiff ODEs
-[@CohenHindmarsh:1996; @SerbanHindmarsh:2005].  An ODE system is
-specified exactly the same way with a function of exactly the same
-signature.  The only difference is in the call to the integrator for
-the solution; the `rk45` suffix is replaced with `bdf`, as in
-
-```
-y_hat = integrate_ode_bdf(sho, y0, t0, ts, theta, x_r, x_i);
-```
-
-
-Using the stiff (`bdf`) integrator on a system that is not stiff
-may be much slower than using the non-stiff (`rk45`) integrator;
-this is because it computes additional Jacobians to guide the
-integrator.  On the other hand, attempting to use the non-stiff
-integrator for a stiff system will fail due to requiring a small step
-size and too many steps.
-
-## Control Parameters for ODE Solving
-
-The calls to the integrators shown above just used the default
-control settings.  Both the non-stiff and stiff integrators allow
-three additional arguments, all of which must be supplied if any of
-them is required.
-
-```
-y_hat = integrate_ode_bdf(sho, y0, t0, ts, theta, x_r, x_i,
-                          rel_tol, abs_tol, max_steps);
-```
-
-The three control arguments are relative tolerance, absolute
-tolerance, and maximum number of steps.   The default values for
-relative and absolute tolerance are both `1e-6` ($10^{-6}$), and
-the default maximum number of steps is `1e6` ($10^6$).
-
-### Data only for control parameters {-}
-
-The control parameters must be data variables---they can not be
-parameters or expressions that depend on parameters, including local
-variables in any block other than transformed data and generated
-quantities.  User-defined function arguments may be qualified as only
-allowing data arguments using the `data` qualifier.
-
-### Tolerance {-}
-
-The relative and absolute tolerance control the accuracy of the
-solutions generated by the integrator.  Relative tolerances are
-relative to the solution value, whereas absolute tolerances is the
-maximum absolute error allowed in a solution.
-
-Smaller tolerances produce more accurate solutions.  Smaller
-tolerances also require more computation time.
-
-#### Sensitivity Analysis {-}
-
-The tolerances should be set low enough that setting them lower does
-not change the statistical properties of posterior samples generated
-by the Stan program.
-
-### Maximum Number of Steps {-}
-
-The maximum number of steps can be used to stop a runaway simulation.
-This can arise in MCMC when a bad jump is taken, particularly during
-warmup.  With the non-stiff solver, this may result in jumping into a
-stiff region of the parameter space, which would require a  small
-step size and  many steps to satisfy even modest tolerances.

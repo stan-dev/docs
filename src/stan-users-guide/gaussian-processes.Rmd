@@ -59,42 +59,28 @@ a positive-definite matrix for any input $x$.^[Gaussian processes can be extende
 
 A popular covariance function, is an exponentiated quadratic function, also known as a radial basis function, or a gaussian kernel, and will be used for implementations later in this chapter.
 $$
-  K(x, x' \mid \sigma, l)
-= \sigma^2
+  K(x, x' \mid \tau, l)
+= \tau^2
 \exp \left(
 - \dfrac{||x - x'||_2^2}{2 l^2} \right)
 $$
-where $\sigma$ and $l$ are hyperparameters defining the
-covariance function. $x$ and $x'$ are different rows, or observations of the input data matrix, or design matrix. This kernel is obtained through a convolution of two
-independent Gaussian processes, $f_1$ and $f_2$, with kernels
-$$
-  K_1(x \mid \alpha, \rho)_{i, j}
-= \alpha^2
-\exp \left(
-- \dfrac{1}{2 \rho^2} \sum_{d=1}^D (x_{i,d} - x_{j,d})^2
-\right)
-$$
-and
-$$
-  K_2(x \mid \sigma)_{i, j}
-=
- \delta_{i, j} \sigma^2,
-$$
+where $\tau$ and $l$ are hyperparameters defining the
+covariance function. $x$ and $x'$ are different rows, or observations of the input data matrix, or design matrix. 
 
-The addition of $\sigma^2$ on the diagonal is important
+We add $\sigma^2$ on the diagonal
 to ensure the positive definiteness of the resulting matrix in the case of
-two identical inputs $x_i = x_j$.  In statistical terms, $\sigma$ is
-the scale of the noise term in the regression.
+two identical inputs $x_i = x_j$, for the stability of cholesky factorization.
+In statistical terms, $\sigma$ is the scale of the noise term in the regression.
 
-The hyperparameter $\rho$ is the *length-scale*, and corresponds to the
+The hyperparameter $l$ is the *length-scale*, and corresponds to the
 frequency of the functions represented by the Gaussian process prior with
-respect to the domain. Values of $\rho$ closer to zero lead the GP to represent
-high-frequency functions, whereas larger values of $\rho$ lead to low-frequency
-functions. The hyperparameter $\alpha$ is the *marginal standard
+respect to the domain. Values of $l$ closer to zero lead the GP to represent
+high-frequency functions, whereas larger values of $l$ lead to low-frequency
+functions. The hyperparameter $\tau$ is the *marginal standard
 deviation*. It controls the magnitude of the range of the function represented
 by the GP. If you were to take the standard deviation of many draws from the GP
-$f_1$ prior at a single input $x$ conditional on one value of $\alpha$ one
-would recover $\alpha$.
+$f_1$ prior at a single input $x$ conditional on one value of $\tau$ one
+would recover $\tau$.
 
 The only term in the squared exponential covariance function involving
 the inputs $x_i$ and $x_j$ is their vector difference, $x_i - x_j$.

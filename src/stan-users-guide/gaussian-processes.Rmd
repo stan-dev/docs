@@ -110,10 +110,10 @@ The Stan model defines the mean and covariance functions in a
 transformed data block and then samples outputs $y$ in the model using
 a multivariate normal distribution.  To make the model concrete, the
 squared exponential covariance function described in the previous section
-will be used with hyperparameters set to $\alpha^2 = 1$, $\rho^2 = 1$,
+will be used with hyperparameters set to $\tau^2 = 1$, $l^2 = 1$,
 and $\sigma^2 = 0.1$, and the mean function $m$ is defined to always
-return the zero vector, $m(x) = \textbf{0}$.  Consider the following
-implementation of a Gaussian process simulator.
+return the zero vector, $m(x) = \textbf{0}$.  In Stan, we can simulate
+from a Gaussian Process as follows
 
 ```
 data {
@@ -121,16 +121,9 @@ data {
   real x[N];
 }
 transformed data {
-  matrix[N, N] K;
+  matrix[N, N] K = gp_exp_quad_cov(x, 1.0, 1.0);
   vector[N] mu = rep_vector(0, N);
-  for (i in 1:(N - 1)) {
-    K[i, i] = 1 + 0.1;
-    for (j in (i + 1):N) {
-      K[i, j] = exp(-0.5 * square(x[i] - x[j]));
-      K[j, i] = K[i, j];
-    }
-  }
-  K[N, N] = 1 + 0.1;
+  K = add_diag(K, .001);
 }
 parameters {
   vector[N] y;

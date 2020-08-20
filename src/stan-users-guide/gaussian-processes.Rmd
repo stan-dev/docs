@@ -101,19 +101,18 @@ continuous but not smooth.
 
 ## Simulating from a Gaussian Process
 
-It is simplest to start with a Stan model that does nothing more than
-simulate draws of functions $f$ from a Gaussian process.  In practical
-terms, the model will draw values $y_n = f(x_n)$ for finitely many
+It is simplest to start with a Stan model that simulates
+draws of functions $f$ from a Gaussian process. The model
+implemented below will draw values $y_n = f(x_n)$ for finitely many
 input points $x_n$.
 
-The Stan model defines the mean and covariance functions in a
-transformed data block and then samples outputs $y$ in the model using
-a multivariate normal distribution.  To make the model concrete, the
-squared exponential covariance function described in the previous section
-will be used with hyperparameters set to $\tau^2 = 1$, $l^2 = 1$,
-and $\sigma^2 = 0.1$, and the mean function $m$ is defined to always
-return the zero vector, $m(x) = \textbf{0}$.  In Stan, we can simulate
-from a Gaussian Process as follows
+This Stan model first defines the mean and covariance functions in a
+transformed data block. Then, it samples outputs $y$ in the model using
+a multivariate normal distribution. we will use the squared exponential
+covariance function with hyperparameters set to $\tau^2 = 1$, $l^2 = 1$,
+and $\sigma^2 = 0.001$. We set the mean function as the zero vector, $m(x) = \textbf{0}$,
+meaning the functions simulated will always be mean centered.
+In Stan, we can simulate from a Gaussian Process as follows
 
 ```
 data {
@@ -121,9 +120,16 @@ data {
   real x[N];
 }
 transformed data {
-  matrix[N, N] K = gp_exp_quad_cov(x, 1.0, 1.0);
+  matrix[N, N] K;
   vector[N] mu = rep_vector(0, N);
-  K = add_diag(K, .001);
+  for (i in 1:(N - 1)) {
+    K[i, i] = 1 + 0.1;
+    for (j in (i + 1):N) {
+      K[i, j] = exp(-0.5 * square(x[i] - x[j]));
+      K[j, i] = K[i, j];
+    }
+  }
+  K[N, N] = 1 + 0.1;
 }
 parameters {
   vector[N] y;
@@ -142,10 +148,9 @@ data {
   real x[N];
 }
 transformed data {
-  matrix[N, N] K = cov_exp_quad(x, 1.0, 1.0);
+  matrix[N, N] K = gp_exp_quad_cov(x, 1.0, 1.0);
   vector[N] mu = rep_vector(0, N);
-  for (n in 1:N)
-    K[n, n] = K[n, n] + 0.1;
+  K = add_diag(K, .001);
 }
 parameters {
   vector[N] y;

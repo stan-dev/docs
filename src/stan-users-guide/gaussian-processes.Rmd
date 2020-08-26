@@ -208,8 +208,7 @@ $$
   \mu + L\eta \sim \textsf{multivariate normal}(\mu(x), K(x \mid \theta)).
 $$
 
-This transform can be applied directly to Gaussian process
-simulation.
+We can use this transformation to simulate from a Gaussian Process.
 
 This model has the same data declarations for `N` and `x`,
 and the same transformed data definitions of `mu` and
@@ -252,8 +251,8 @@ encoding of the transform described above.
 The full generative model for a GP with a normal outcome,
 $y \in \mathbb{R}^N$, with inputs $x \in \mathbb{R}^N$, for a finite $N$:
 \begin{align*}
-\rho   &\sim \textsf{InvGamma}(5, 5) \\
-\alpha &\sim \textsf{normal}(0, 1) \\
+l   &\sim \textsf{InvGamma}(5, 5) \\
+\tau &\sim \textsf{normal}(0, 1) \\
 \sigma &\sim \textsf{normal}(0, 1) \\
 f      &\sim \textsf{multivariate normal}\left(0, K(x \mid \alpha, \rho)\right) \\
 y_i    &\sim \textsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\}
@@ -261,8 +260,8 @@ y_i    &\sim \textsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\}
 With a normal outcome, it is possible to integrate out the Gaussian
 process $f$, yielding the more parsimonious model:
 \begin{align*}
-\rho   &\sim \textsf{InvGamma}(5, 5) \\
-\alpha &\sim \textsf{normal}(0, 1) \\
+l   &\sim \textsf{InvGamma}(5, 5) \\
+\tau &\sim \textsf{normal}(0, 1) \\
 \sigma &\sim \textsf{normal}(0, 1) \\
 y      &\sim \textsf{multivariate normal}
          \left(0, K(x \mid \alpha, \rho) + \textbf{I}_N \sigma^2\right) \\
@@ -270,7 +269,7 @@ y      &\sim \textsf{multivariate normal}
 
 It can be more computationally efficient when dealing with a normal
 outcome to integrate out the Gaussian process, because this yields a
-lower-dimensional parameter space over which to do inference. We'll fit
+lower-dimensional parameter space over which to integrate. We'll fit
 both models in Stan. The former model will be referred to as the latent
 variable GP, while the latter will be called the marginal likelihood
 GP.
@@ -294,32 +293,33 @@ the transformed data block.
 
 ```
 data {
+  int<lower=1> D;
   int<lower=1> N;
   real x[N];
   vector[N] y;
-}
-transformed data {
-  vector[N] mu = rep_vector(0, N);
+
+  int<lower=1> N_pred;
+  real x_pred[N_pred];
 }
 parameters {
-  real<lower=0> rho;
-  real<lower=0> alpha;
+  real<lower=0> tau;
+  real<lower=0> l;
+  real<lower=0> sigma;
+  
   real<lower=0> sigma;
 }
-model {
+transformed parameters {
   matrix[N, N] L_K;
-  matrix[N, N] K = cov_exp_quad(x, alpha, rho);
-  real sq_sigma = square(sigma);
-
-  // diagonal elements
-  for (n in 1:N)
-    K[n, n] = K[n, n] + sq_sigma;
-
-  L_K = cholesky_decompose(K);
-
-  rho ~ inv_gamma(5, 5);
-  alpha ~ std_normal();
-  sigma ~ std_normal();
+  {
+    matrix[N, N] K = gp_exp_quad_cov(x, magnitude, length_scale);
+    K = add_diag(K, square(sigma));
+    L_K = cholesky_decompose(K);
+  }
+}
+model {
+  magnitude ~ normal(0, 1);
+  length_scale ~ gamma(5, 5);
+  sig ~ normal(0, 1);
 
   y ~ multi_normal_cholesky(mu, L_K);
 }

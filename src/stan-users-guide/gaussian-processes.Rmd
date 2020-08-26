@@ -350,10 +350,8 @@ hyperparameters in non-Gaussian Process models with a few hundred data points in
 
 #### Latent variable GP {-}
 
-We can also explicitly code the latent variable formulation of a GP in Stan.
-This will be useful for when the outcome is not normal. We'll need to add a
-small positive term, $\delta$ to the diagonal of the covariance matrix in order
-to ensure that our covariance matrix remains positive definite.
+Here, we will show how to implement the latent variable formulation of a GP in Stan.
+This is particularly useful for when the likelihood is non-gaussian.
 
 
 ```
@@ -366,8 +364,8 @@ transformed data {
   real delta = 1e-9;
 }
 parameters {
-  real<lower=0> rho;
-  real<lower=0> alpha;
+  real<lower=0> l;
+  real<lower=0> tau;
   real<lower=0> sigma;
   vector[N] eta;
 }
@@ -375,18 +373,15 @@ model {
   vector[N] f;
   {
     matrix[N, N] L_K;
-    matrix[N, N] K = cov_exp_quad(x, alpha, rho);
-
-    // diagonal elements
-    for (n in 1:N)
-      K[n, n] = K[n, n] + delta;
+    matrix[N, N] K = gp_exp_quad_cov(x, tau, l);
+    K = add_diag(K, delta);
 
     L_K = cholesky_decompose(K);
     f = L_K * eta;
   }
 
-  rho ~ inv_gamma(5, 5);
-  alpha ~ std_normal();
+  l ~ inv_gamma(5, 5);
+  tau ~ std_normal();
   sigma ~ std_normal();
   eta ~ std_normal();
 

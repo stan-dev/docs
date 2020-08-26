@@ -390,30 +390,31 @@ model {
 ```
 
 
-Two differences between the latent variable GP and the marginal likelihood GP
-are worth noting. The first is that we have augmented our parameter block with
+There are two differences between the latent variable GP and the marginal likelihood
+GP worth noting. First, we have augmented our parameter block with
 a new parameter vector of length $N$ called `eta`. This is used in the model
 block to generate a multivariate normal vector called $f$, corresponding to the
 latent GP. We put a $\textsf{normal}(0,1)$ prior on `eta` like we did in the
-Cholesky-parameterized GP in the simulation section.  The second difference is
-that our likelihood is now univariate, though we could code $N$ likelihood
-terms as one $N$-dimensional multivariate normal with an identity covariance
+Cholesky-parameterized GP in the simulation section.  Second, our likelihood
+is now univariate, though we could code $N$ likelihood terms as one
+$N$-dimensional multivariate normal with an identity covariance
 matrix multiplied by $\sigma^2$. However, it is more efficient to use the
 vectorized statement as shown above.
 
 ### Discrete outcomes with Gaussian Processes {-}
 
-Gaussian processes can be generalized the same way as standard linear
+Gaussian processes can be generalized the same way as linear
 models by introducing a link function.  This allows them to be used as
-discrete data models.
+discrete data models, in other likelihood functions, or as a prior on a
+parameter.
 
 #### Poisson GP {-}
 
 If we want to model count data, we can remove the $\sigma$ parameter, and use
-`poisson_log`, which implements a log link, for our likelihood rather
-than `normal`. We can also add an overall mean parameter, $a$, which
-will account for the marginal expected value for $y$. We do this because we
-cannot center count data like we would for normally distributed data.
+`poisson_log`, which implements a log link. We can also add an overall
+mean parameter, $a$, which accounts for the marginal expected value
+for $y$. This is because we cannot center count data like we would
+for normally distributed data.
 
 
 ```
@@ -424,15 +425,15 @@ data {
 }
 ...
 parameters {
-  real<lower=0> rho;
-  real<lower=0> alpha;
+  real<lower=0> l;
+  real<lower=0> tau;
   real a;
   vector[N] eta;
 }
 model {
 ...
-  rho ~ inv_gamma(5, 5);
-  alpha ~ std_normal();
+  l ~ inv_gamma(5, 5);
+  tau ~ std_normal();
   a ~ std_normal();
   eta ~ std_normal();
 
@@ -447,11 +448,11 @@ For binary classification problems, the observed outputs $z_n \in
 \{ 0,1 \}$ are binary.  These outputs are modeled using a Gaussian
 process with (unobserved) outputs $y_n$ through the logistic link,
 $$
-z_n \sim \textsf{Bernoulli}(\operatorname{logit}^{-1}(y_n)),
+z_n \sim \textsf{Bernoulli}(\operatorname{logit}^{-1}(y_n))
 $$
-or in other words,
+or equivalently
 $$
-\textsf{Pr}[z_n = 1] = \operatorname{logit}^{-1}(y_n).
+\textsf{Pr}[z_n = 1] = \operatorname{logit}^{-1}(y_n)
 $$
 
 We can extend our latent variable GP Stan program to deal with classification

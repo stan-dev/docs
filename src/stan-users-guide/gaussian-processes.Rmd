@@ -236,7 +236,7 @@ generated quantities {
 }
 ```
 
-The Cholesky decomposition is only computed once, after the data are
+The Cholesky decomposition is only computed once after the data are
 loaded and the covariance matrix `K` computed.  The isotropic
 normal distribution for `eta` is specified as a vectorized
 univariate distribution for efficiency; this specifies that each
@@ -477,41 +477,39 @@ model {
 
 ### Automatic Relevance Determination {-}
 
-If we have multivariate inputs $x \in \mathbb{R}^D$, the squared exponential
-covariance function can be further generalized by fitting a scale
-parameter $\rho_d$ for each dimension $d$,
+If we have multiple inputs $x \in \mathbb{R}^D$, we can fit a scale
+parameter $\mathbf{l} = \{l_1, l_2, ..., l_d\}$ for each dimension $d$,
+
 $$
-  k(x \mid \alpha, \vec{\rho}, \sigma)_{i, j} = \alpha^2 \exp
+  k(x \mid \tau, \mathbf{l}, \sigma)_{i, j} = \tau^2 \exp
 \left(-\dfrac{1}{2}
-\sum_{d=1}^D \dfrac{1}{\rho_d^2} (x_{i,d} - x_{j,d})^2
+\sum_{d=1}^D \dfrac{1}{l_d^2} ||x_{i,d} - x_{j,d}||^2
 \right)
-+ \delta_{i, j}\sigma^2.
 $$
 The estimation of $\rho$ was termed "automatic relevance determination" by
-@Neal:1996, but this is misleading, because the magnitude of the scale of
-the posterior for each $\rho_d$ is dependent on the scaling of the input data
-along dimension $d$. Moreover, the scale of the parameters $\rho_d$ measures
+@Neal:1996, but this is misleading because the magnitude of the scale of
+the posterior for each $l_d$ is dependent on the scale of the input data
+along dimension $d$. Moreover, the scale of the parameters $l_d$ measures
 non-linearity along the $d$-th dimension, rather than "relevance"
 [@PiironenVehtari:2016].
 
-A priori, the closer $\rho_d$ is to zero, the more nonlinear the
+A priori, the closer $l$ is to zero, the more nonlinear the
 conditional mean in dimension $d$ is.  A posteriori, the actual dependencies
 between $x$ and $y$ play a role.  With one covariate $x_1$ having a
 linear effect and another covariate $x_2$ having a nonlinear effect,
-it is possible that $\rho_1 > \rho_2$ even if the predictive relevance
+it is possible that $l_1 > l_2$ even if the predictive relevance
 of $x_1$ is higher [@RasmussenWilliams:2006, page 80].
-The collection of $\rho_d$ (or $1/\rho_d$) parameters can also be
+The collection of $l_d$ (or $1/l_d$) parameters can also be
 modeled hierarchically.
 
-The implementation of automatic relevance determination in Stan is
-straightforward, though it currently requires the user to directly code the
-covariance matrix. We'll write a function to generate the Cholesky of the
-covariance matrix called `L_cov_exp_quad_ARD`.
+We can implement this by first dividing each dimension of the data matrix $\mathbb{x}$
+by the corresponding length-scale parameter, and then computing the squared distance, taking
+the exponential, and multiplying by the magnitude parameter. In Stan code, this is
 
 
 ```
 functions {
-  matrix L_cov_exp_quad_ARD(vector[] x,
+  matrix L_gp_exp_quad_cov_ARD(vector[] x,
                             real alpha,
                             vector rho,
                             real delta) {
@@ -561,6 +559,43 @@ model {
 }
 ```
 
+Equivalently, we can use a call to `gp_exp_quad_cov` but instead specifying the length-scale parameter as a vector of positive real numbers
+
+
+```
+data {
+  int<lower=1> N;
+  int<lower=1> D;
+  vector[D] x[N];
+  vector[N] y;
+}
+transformed data {
+  real delta = 1e-9;
+}
+parameters {
+  vector<lower=0>[D] l;
+  real<lower=0> tau;
+  real<lower=0> sigma;
+  vector[N] eta;
+}
+model {
+  vector[N] f;
+  {
+    matrix[N, N] L_K;
+    matrix[N, N] K = gp_exp_quad_cov(x, tau, l);
+    K = add_diag(K, square(delta));
+    L_K = cholesky_decompose(K);
+    f = L_K * eta;
+  }
+
+  l ~ inv_gamma(5, 5);
+  tau ~ std_normal();
+  sigma ~ std_normal();
+  eta ~ std_normal();
+
+  y ~ normal(f, sigma);
+}
+```
 
 ### Priors for Gaussian Process Parameters {#priors-gp.section}
 

@@ -600,10 +600,10 @@ model {
 ### Priors for Gaussian Process Parameters {#priors-gp.section}
 
 Specifying priors for GP hyperparameters requires the analyst to consider the
-inherent statistical properties of a GP, the GP's purpose in the model, and the
-numerical issues that may arise in Stan when estimating a GP.
+GP's purpose in the model and the numerical issues that may arise in Stan when
+estimating a GP.
 
-Perhaps most importantly, the parameters $l$ and $\tau$ are weakly
+In particular, the parameters $l$ and $\tau$ are weakly
 identified [@zhang-gp:2004]. The ratio of the two
 parameters is well-identified, but in practice we put independent priors on the
 two hyperparameters because these two quantities are more interpretable than
@@ -611,8 +611,8 @@ their ratio.
 
 #### Priors for length-scale {-}
 
-GPs  can represent a wide spectrum of functions.  For length scales below the minimum spacing
-of the covariates, the GP likelihood plateaus.  Unless regularized by a prior, this flat
+GPs can represent a wide spectrum of functions.  For length scales less than the minimum
+distance of the covariates, the GP likelihood plateaus.  Unless regularized by a prior, this flat
 likelihood induces considerable posterior mass at small length scales where the
 observation variance drops to zero and the functions supported by the GP being
 to exactly interpolate between the input data.  The resulting posterior not
@@ -622,7 +622,14 @@ accurately sample using Euclidean HMC.
 We may wish to put further soft constraints on the length-scale, but these are
 dependent on how the GP is used in our statistical model.
 
-If our model consists of only the GP, i.e.:
+If our model is only a GP regression, i.e.
+\begin{align*}
+  y_i &= f(x_i) + \epsilon \\
+  \epsilon &\sim \textsf{normal}(0, \sigma) \\
+  & x \in \mathbb{R}^{N \times D}
+\end{align*}
+
+or equivalently
 \begin{align*}
 f   &\sim \textsf{multivariate normal}\left(0, K(x \mid \tau, l)\right) \\
 y_i &\sim \textsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\} \\
@@ -631,19 +638,19 @@ y_i &\sim \textsf{normal}(f_i, \sigma) \, \forall i \in \{1, \dots, N\} \\
 \end{align*}
 
 we likely don't need constraints beyond penalizing small
-length-scales.  We'd like to allow the GP prior to represent both
-high-frequency and low-frequency functions, so our prior should put
-non-negligible mass on both sets of functions.  In this case, an
-inverse gamma, `inv_gamma_lpdf` in Stan's language, will work well as
-it has a sharp left tail that puts negligible mass on infinitesimal
-length-scales, but a generous right tail, allowing for large
-length-scales. Inverse gamma priors will avoid infinitesimal
-length-scales because the density is zero at zero, so the posterior
-for length-scale will be pushed away from zero. An inverse gamma
-distribution is one of many zero-avoiding or boundary-avoiding
-distributions.^[A boundary-avoiding prior is just one where the limit of the density is zero at the boundary, the result of which is estimates that are pushed away from the boundary.].
+length-scales.  If we'd like to allow the GP prior to represent both
+high-frequency and low-frequency functions, then our prior should put
+non-negligible mass on both sets of functions.  If this is the case, an
+inverse gamma, `inv_gamma_lpdf` in Stan's language, will work well.
+This is because it has a sharp left tail that puts negligible mass on infinitesimally
+small length-scales, but a diffuse right tail, allowing for large
+length-scales. The posterior will be pushed away from zero since 
+the density is zero at zero. An inverse gamma distribution is one
+of many zero-avoiding or boundary-avoiding distributions.^[A boundary-avoiding
+prior is a prior where the limit of the prior density is zero at the boundary,
+so that posterior estimates are pushed away from the boundary.].
 
-If we're using the GP as a component in a larger model that includes an overall
+If we're using the GP as a submodel of a larger model that includes an overall
 mean and fixed effects for the same variables we're using as the domain for the
 GP, i.e.:
 \begin{align*}

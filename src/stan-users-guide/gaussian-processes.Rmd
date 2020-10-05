@@ -627,16 +627,17 @@ If our model is a GP regression, i.e.
   y_i &= f(x_i) + \epsilon_i \\
   \epsilon_i &\sim \textsf{normal}(0, \sigma) \\
  f &\mid x; \tau, l \sim \textsf{multivariate normal}\left(0, K(x \mid \tau, l)\right) \\
-  x &\in \mathbb{R}^{N \times D}, \quad \sigma, \tau, l \in \mathbb{R}^+, i \in \{1, \dots, N\}
+  x &\in \mathbb{R}^{N \times D}, \quad \sigma, \tau, l \in \mathbb{R}^+, 
+  \quad i \in \{1, \dots, N\}
 \end{align*}
 
 we might not need constraints beyond penalizing small
 length-scales.  If we'd like to allow the GP prior to represent both
-high-frequency and low-frequency functions, then our prior should put
-non-negligible mass on both sets of functions.  If this is the case, an
+high-frequency and low-frequency functions, then we can set our prior to 
+put non-negligible mass on both sets of functions.  If this is the case, an
 inverse gamma, `inv_gamma_lpdf` in Stan's language, will work well.
 This is because it has a sharp left tail that puts negligible mass on infinitesimally
-small length-scales, but a diffuse right tail, allowing for large
+small length-scales, but has a diffuse right tail, allowing for large
 length-scales. The posterior will be pushed away from zero since 
 the density is zero at zero. An inverse gamma distribution is one
 of many zero-avoiding or boundary-avoiding distributions.^[A boundary-avoiding
@@ -648,25 +649,29 @@ includes a linear model for the same covariates we're using as the input for the
 GP. That is,
 
 \begin{align*}
+y_i &= \beta_0 + x_i \beta + f(x_i) + \epsilon_i \\
+\epsilon_i &\sim \textsf{normal}(0, \sigma) \\
 f   &\sim \textsf{multivariate normal}\big(0, K(x \mid \tau, l)\big) \\
-y_i &\sim \textsf{normal}\left(\beta_0 + x_i \beta + f_i, \sigma\right), i
-  \in \{1, \dots, N\} \\
     & \beta_0 \in \mathbb{R},\quad
-      \beta \in \mathbb{R}^D,\quad
-      x \in \mathbb{R}^{N \times D},\quad
+      \beta \in \mathbb{R}^D,\quad\\
+      x &\in \mathbb{R}^{N \times D},\quad
+      \sigma, \tau, l \in \mathbb{R}^+, 
+  \quad i \in \{1, \dots, N\}
+      
 \end{align*}
 
 we might want to constrain large length-scales as well.  A length scale
 that is larger than the scale of the data yields a GP posterior that is
-practically linear (with respect to the particular covariate) and increasing
+practically linear (with respect to the particular covariate). Increasing
 the length scale has little impact on the likelihood. This will introduce
-nonidentifiability in our model, as both the fixed effects and the GP will
+nonidentifiability in our model since both the fixed effects and the GP will
 explain similar variation. In order to limit the amount of overlap between the
-GP and the linear regression, we should use a prior with a sharper right tail
+GP and the linear regression, we can use a prior with a sharper right tail
 to limit the GP to higher-frequency functions. We can use a generalized inverse
 Gaussian distribution:
+
 \begin{align*}
-f(x \mid a, b, p) &= \dfrac{\left(a/b\right)^{p/2}}{2K_p\left(\sqrt{ab}\right)} x^{p - 1}\exp\big(-(ax + b
+\pi(x \mid a, b, p) &= \dfrac{\left(a/b\right)^{p/2}}{2K_p\left(\sqrt{ab}\right)} x^{p - 1}\exp\big(-(ax + b
   / x)/2\big) \\
   & x, a, b \in \mathbb{R}^{+},\quad
     p \in \mathbb{Z}

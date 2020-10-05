@@ -738,24 +738,26 @@ $$
 A direct implementation in Stan defines a model in terms of the
 joint distribution of the observed $y$ and unobserved $\tilde{y}$.
 
+
 ```
 data {
-  int<lower=1> N1;
-  real x1[N1];
-  vector[N1] y1;
-  int<lower=1> N2;
-  real x2[N2];
+  int<lower=1> N;
+  real x[N];
+  vector[N] y;
+  
+  int<lower=1> N_pred;
+  real x_pred[N_pred];
 }
 transformed data {
   real delta = 1e-9;
-  int<lower=1> N = N1 + N2;
-  real x[N];
-  for (n1 in 1:N1) x[n1] = x1[n1];
-  for (n2 in 1:N2) x[N1 + n2] = x2[n2];
+  int<lower=1> N_tot = N + N_pred;
+  real x[N_tot];
+  for (n in 1:N) x[n] = x[n];
+  for (n_pred in 1:N_pred) x[N + n_pred] = x_pred[n_pred];
 }
 parameters {
-  real<lower=0> rho;
-  real<lower=0> alpha;
+  real<lower=0> tau;
+  real<lower=0> l;
   real<lower=0> sigma;
   vector[N] eta;
 }
@@ -763,28 +765,26 @@ transformed parameters {
   vector[N] f;
   {
     matrix[N, N] L_K;
-    matrix[N, N] K = cov_exp_quad(x, alpha, rho);
+    matrix[N, N] K = gp_exp_quad_cov(x, tau, l);
 
-    // diagonal elements
-    for (n in 1:N)
-      K[n, n] = K[n, n] + delta;
+    K = add_diag(K, delta);
 
     L_K = cholesky_decompose(K);
     f = L_K * eta;
   }
 }
 model {
-  rho ~ inv_gamma(5, 5);
-  alpha ~ std_normal();
+  l ~ inv_gamma(5, 5);
+  tau ~ std_normal();
   sigma ~ std_normal();
   eta ~ std_normal();
 
-  y1 ~ normal(f[1:N1], sigma);
+  y ~ normal(f[1:N], sigma);
 }
 generated quantities {
-  vector[N2] y2;
-  for (n2 in 1:N2)
-    y2[n2] = normal_rng(f[N1 + n2], sigma);
+  vector[N_pred] y_pred;
+  for (n_pred in 1:N_pred)
+    y_pred[n_pred] = normal_rng(f[N + n_pred], sigma);
 }
 ```
 
@@ -807,6 +807,51 @@ normal sampling statement for `y`.
 The generated quantities block defines the quantity `y2`. We generate
 `y2` by sampling `N2` univariate normals with each mean corresponding
 to the appropriate element in `f`.
+
+
+Equivalently, we can use the predictive equations for the multivariate gaussian distribution:
+```
+data {
+  int<lower=1> D;
+  int<lower=1> N;
+  real x[N];
+  vector[N] y;
+
+  int<lower=1> N_pred;
+  real x_pred[N_pred];
+}
+transformed data {
+  real delta = 1e-9;
+}
+parameters {
+  vector<lower=0>[D] l;
+  real<lower=0> tau;
+  real<lower=0> sigma;
+  vector[N] eta;
+}
+transformed parameters {
+  matrix[N, N] L_K;
+  {
+    matrix[N, N] K = gp_exp_quad_cov(x, tau, l);
+    K = add_diag(K, square(delta));
+    L_K = cholesky_decompose(K);
+    f = L_K * eta;
+  }
+}
+model {
+  tau ~ std_normal();
+  l ~ inv_gamma(5, 5);
+  sigma ~ std_normal();
+  
+  y ~ normal(f, sigma);
+}
+generated quantities {
+  vector[N_pred] f_pred = gp_pred_rng(x_pred, y, x, tau, l, sigma);
+  vector[N_pred] y_pred;
+  for (n in 1:N_pred) y_pred[n] = normal_rng(f_pred[n], sigma);
+}
+
+```
 
 
 #### Predictive Inference in non-Gaussian GPs {-}

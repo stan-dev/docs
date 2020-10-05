@@ -678,8 +678,7 @@ Gaussian distribution:
 \end{align*}
 
 which has an inverse gamma left tail if $p \leq 0$ and an inverse Gaussian
-right tail.  This has not yet been implemented in Stan's math library, but it
-is possible to implement as a user defined function:
+right tail.  This can be implemented as a user-defined function:
 ```
 functions {
   real generalized_inverse_gaussian_lpdf(real x, int p,
@@ -694,15 +693,15 @@ data {
 ...
 ```
 
-If we have high-frequency covariates in our fixed effects, we may wish to
-further regularize the GP away from high-frequency functions, which means we'll
-need to penalize smaller length-scales. Luckily, we have a useful way of
+If we have high-frequency covariates in our linear model, we may want to 
+regularize the GP away from high-frequency functions. We can achieve this
+by penalizing smaller length-scales. Luckily, we have a useful way of
 thinking about how length-scale affects the frequency of the functions
-supported the GP. If we were to repeatedly draw from a zero-mean GP with a
-length-scale of $\rho$ in a fixed-domain $[0,T]$, we would get a distribution
+supported by the GP. If we were to repeatedly draw from a zero-mean GP with a
+length-scale of $l$ in a fixed-domain $[0,T]$, we would get a distribution
 for the number of times each draw of the GP crossed the zero axis. The
-expectation of this random variable, the number of zero crossings, is $T / \pi
-\rho$. You can see that as $\rho$ decreases, the expectation of the number of
+expectation of this random variable, the number of zero crossings, is $\frac{T}{\pi
+l}$. You can see that as $l$ decreases, the expectation of the number of
 upcrossings increases as the GP is representing higher-frequency functions.
 Thus, this is a good statistic to keep in mind when setting a lower-bound for
 our prior on length-scale in the presence of high-frequency covariates.

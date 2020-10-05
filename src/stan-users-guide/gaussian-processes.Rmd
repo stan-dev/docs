@@ -800,50 +800,55 @@ cov(\tilde{f}) &= K_{\tilde{x}, \tilde{x}} - K_{\tilde{x}, x} (K_{x,x}  + \delta
 Here, $K_{x, x}$ is covariance matrix computed with input data and
 $K_{\tilde{x},x}$ is the cross covariance matrix computed with input data 
 and data we'd like to make predictions for. We implement these functions in 
-the Stan `functions` block. The Stan code is then
+Stan's `functions` block.
 
 ```
 functions {
-  vector gp_pred_rng(real[] x_pred,
-                     vector y1, real[] x,
-                     real magnitude, real length_scale,
-                     real sigma) {
-    int N = rows(y1);
+  vector gp_pred_rng(vector[] x_pred,
+                     vector y, vector[] x,
+                     real tau, real[] l, real sigma, real delta) {
+    int N = rows(y);
     int N_pred = size(x_pred);
-    vector[N_pred] f2;
+    vector[N_pred] f_pred;
     {
-      matrix[N, N] K = add_diag(gp_exp_quad_cov(x, magnitude, length_scale),
-                                sigma);
+      matrix[N, N] K =   gp_exp_quad_cov(x, tau, l)
+                         + diag_matrix(rep_vector(square(sigma), N));
       matrix[N, N] L_K = cholesky_decompose(K);
-      vector[N] L_K_div_y1 = mdivide_left_tri_low(L_K, y1);
-      vector[N] K_div_y1 = mdivide_right_tri_low(L_K_div_y1', L_K)';
-      matrix[N, N_pred] k_x_x_pred = gp_exp_quad_cov(x, x_pred, magnitude, length_scale);
-      f2 = (k_x_x_pred' * K_div_y1);
+
+      vector[N] L_K_div_y = mdivide_left_tri_low(L_K, y);
+      vector[N] K_div_y = mdivide_right_tri_low(L_K_div_y', L_K)';
+      matrix[N, N_pred] k_x_x_pred = gp_exp_quad_cov(x, x_pred, tau, l);
+      vector[N_pred] f_pred_mu = (k_x_x_pred' * K_div_y);
+      matrix[N, N_pred] v_pred = mdivide_left_tri_low(L_K, k_x_x_pred);
+      matrix[N_pred, N_pred] cov_f_pred =   gp_exp_quad_cov(x_pred, tau, l) - v_pred' * v_pred
+                              + diag_matrix(rep_vector(delta, N_pred));
+      f_pred = multi_normal_rng(f_pred_mu, cov_f_pred);
     }
-    return f2;
+    return f_pred;
   }
 }
 data {
   int<lower=1> D;
   int<lower=1> N;
-  real x[N];
+  vector[D] x[N];
   vector[N] y;
 
   int<lower=1> N_pred;
-  real x_pred[N_pred];
+  vector[D] x_pred[N_pred];
 }
 transformed data {
-  real delta = 1e-9;
+  real delta = 1e-4;
 }
 parameters {
-  vector<lower=0>[D] l;
+  real<lower=0> l[D];
   real<lower=0> tau;
   real<lower=0> sigma;
   vector[N] eta;
 }
 transformed parameters {
-  matrix[N, N] L_K;
+  vector[N] f;
   {
+    matrix[N, N] L_K;
     matrix[N, N] K = gp_exp_quad_cov(x, tau, l);
     K = add_diag(K, square(delta));
     L_K = cholesky_decompose(K);
@@ -858,11 +863,10 @@ model {
   y ~ normal(f, sigma);
 }
 generated quantities {
-  vector[N_pred] f_pred = gp_pred_rng(x_pred, y, x, tau, l, sigma);
+  vector[N_pred] f_pred = gp_pred_rng(x_pred, y, x, tau, l, sigma, delta);
   vector[N_pred] y_pred;
   for (n in 1:N_pred) y_pred[n] = normal_rng(f_pred[n], sigma);
 }
-
 ```
 
 

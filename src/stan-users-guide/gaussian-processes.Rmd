@@ -767,7 +767,7 @@ transformed parameters {
     matrix[N, N] L_K;
     matrix[N, N] K = gp_exp_quad_cov(x, tau, l);
 
-    K = add_diag(K, delta);
+    K = add_diag(K, square(delta));
 
     L_K = cholesky_decompose(K);
     f = L_K * eta;
@@ -788,35 +788,20 @@ generated quantities {
 }
 ```
 
-Equivalently, we can use the posterior predictive equations for Gaussian process regression:
-
-$$
-
-
-$$
+Equivalently, we can use the posterior predictive mean and variance 
+equations for Gaussian process regression:
 
 
-The input vectors `x1` and `x2` are declared as data, as is the
-observed output vector `y1`.  The unknown output vector `y2`, which
-corresponds to input vector `x2`, is declared in the generated quantities
-block and will be sampled when the model is executed.
+\begin{align*}
+E[\tilde{f}] &= K_{\tilde{x}, x} (K_{x,x}  + \delta_n^2 I)^{-1}y \\
+cov(\tilde{f}) &= K_{\tilde{x}, \tilde{x}} - K_{\tilde{x}, x} (K_{x,x}  + \delta_n^2 I)^{-1}K_{x, \tilde{x}}
+\end{align*}
 
-A transformed data block is used to combine the input vectors
-`x1` and `x2` into a single vector `x`.
+Here, $K_{x, x}$ is covariance matrix computed with input data and
+$K_{\tilde{x},x}$ is the cross covariance matrix computed with input data 
+and data we'd like to make predictions for. We implement these functions in 
+the Stan `functions` block. The Stan code is then
 
-The model block declares and defines a local variable for the combined output
-vector `f`, which consists of the concatenation of the conditional mean
-for known outputs `y1` and unknown outputs `y2`.  Thus the
-combined output vector `f` is aligned with the combined
-input vector `x`.  All that is left is to define the univariate
-normal sampling statement for `y`.
-
-The generated quantities block defines the quantity `y2`. We generate
-`y2` by sampling `N2` univariate normals with each mean corresponding
-to the appropriate element in `f`.
-
-
-Equivalently, we can use the predictive equations for the multivariate gaussian distribution:
 ```
 functions {
   vector gp_pred_rng(real[] x_pred,
@@ -879,6 +864,26 @@ generated quantities {
 }
 
 ```
+
+
+The input vectors `x1` and `x2` are declared as data, as is the
+observed output vector `y1`.  The unknown output vector `y2`, which
+corresponds to input vector `x2`, is declared in the generated quantities
+block and will be sampled when the model is executed.
+
+A transformed data block is used to combine the input vectors
+`x1` and `x2` into a single vector `x`.
+
+The model block declares and defines a local variable for the combined output
+vector `f`, which consists of the concatenation of the conditional mean
+for known outputs `y1` and unknown outputs `y2`.  Thus the
+combined output vector `f` is aligned with the combined
+input vector `x`.  All that is left is to define the univariate
+normal sampling statement for `y`.
+
+The generated quantities block defines the quantity `y2`. We generate
+`y2` by sampling `N2` univariate normals with each mean corresponding
+to the appropriate element in `f`.
 
 
 #### Predictive Inference in non-Gaussian GPs {-}

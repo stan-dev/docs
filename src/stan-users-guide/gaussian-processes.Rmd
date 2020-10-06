@@ -800,7 +800,10 @@ cov(\tilde{f}) &= K_{\tilde{x}, \tilde{x}} - K_{\tilde{x}, x} (K_{x,x}  + \delta
 Here, $K_{x, x}$ is covariance matrix computed with input data and
 $K_{\tilde{x},x}$ is the cross covariance matrix computed with input data 
 and data we'd like to make predictions for. We implement these functions in 
-Stan's `functions` block.
+Stan's `functions` block. The above implementation will be more efficient, in that
+it uses less floating point operations. However, the following implementation can 
+give us more flexibility when visualizing the posterior, if we combine covariarance 
+functions. We will investigate this in a later section.
 
 ```
 functions {
@@ -868,26 +871,6 @@ generated quantities {
   for (n in 1:N_pred) y_pred[n] = normal_rng(f_pred[n], sigma);
 }
 ```
-
-
-The input vectors `x1` and `x2` are declared as data, as is the
-observed output vector `y1`.  The unknown output vector `y2`, which
-corresponds to input vector `x2`, is declared in the generated quantities
-block and will be sampled when the model is executed.
-
-A transformed data block is used to combine the input vectors
-`x1` and `x2` into a single vector `x`.
-
-The model block declares and defines a local variable for the combined output
-vector `f`, which consists of the concatenation of the conditional mean
-for known outputs `y1` and unknown outputs `y2`.  Thus the
-combined output vector `f` is aligned with the combined
-input vector `x`.  All that is left is to define the univariate
-normal sampling statement for `y`.
-
-The generated quantities block defines the quantity `y2`. We generate
-`y2` by sampling `N2` univariate normals with each mean corresponding
-to the appropriate element in `f`.
 
 
 #### Predictive Inference in non-Gaussian GPs {-}

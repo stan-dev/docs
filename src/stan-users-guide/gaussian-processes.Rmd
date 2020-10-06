@@ -802,7 +802,7 @@ $K_{\tilde{x},x}$ is the cross covariance matrix computed with input data
 and data we'd like to make predictions for. We implement these functions in 
 Stan's `functions` block. The above implementation will be more efficient, in that
 it uses less floating point operations. However, the following implementation can 
-give us more flexibility when visualizing the posterior, if we combine covariarance 
+give us more flexibility when visualizing the posterior if we combine covariarance 
 functions. We will investigate this in a later section.
 
 ```
@@ -873,62 +873,65 @@ generated quantities {
 ```
 
 
-#### Predictive Inference in non-Gaussian GPs {-}
+#### Predictive Inference GPs with non Gaussian Response Distributions {-}
 
-We can do predictive inference in non-Gaussian GPs in much the
-same way as we do with Gaussian GPs.
+We can do predictive inference in non-Gaussian likelihoods GPs similarly 
+to how we do predictive inference with Gaussian likelihoods.
 
-Consider the following full model for prediction using logistic Gaussian
-process regression.
+Consider the following model for prediction using logistic regression with a 
+Gaussian process prior on the log-odds probability that $z = 1$
 
+\begin{align*}
+f(x) &\sim GP(\mu(x), K(x)) \\
+p(k \mid \alpha_0, \alpha) &\sim logit^{-1}(\alpha_0 + f)^z (1 - logit^{-1}(\alpha_0 + f))^{1-z} \\
+z &\in \{0,1\}
+\end{align*}
+
+where we include an intercept term, $\alpha_0$ to improve fit.
+
+$$
 
 ```
 data {
-  int<lower=1> N1;
-  real x1[N1];
-  int<lower=0, upper=1> z1[N1];
-  int<lower=1> N2;
-  real x2[N2];
+  int<lower=1> N;
+  real x[N];
+  int<lower=0, upper=1> z[N];
+  
+  int<lower=1> N_pred;
+  real x_pred[N_pred];
 }
 transformed data {
-  real delta = 1e-9;
-  int<lower=1> N = N1 + N2;
-  real x[N];
-  for (n1 in 1:N1) x[n1] = x1[n1];
-  for (n2 in 1:N2) x[N1 + n2] = x2[n2];
+  real delta = 1e-4;
 }
 parameters {
-  real<lower=0> rho;
-  real<lower=0> alpha;
-  real a;
+  real<lower=0> l;
+  real<lower=0> tau;
+  real alpha0;
   vector[N] eta;
 }
 transformed parameters {
   vector[N] f;
   {
     matrix[N, N] L_K;
-    matrix[N, N] K = cov_exp_quad(x, alpha, rho);
-
-    // diagonal elements
-    for (n in 1:N)
-      K[n, n] = K[n, n] + delta;
+    matrix[N, N] K = cov_exp_quad(x, tau, l);
+    K = add_diag(K, square(delta));
 
     L_K = cholesky_decompose(K);
     f = L_K * eta;
   }
 }
 model {
-  rho ~ inv_gamma(5, 5);
-  alpha ~ std_normal();
+  l ~ inv_gamma(5, 5);
+  tau ~ std_normal();
   a ~ std_normal();
   eta ~ std_normal();
 
-  z1 ~ bernoulli_logit(a + f[1:N1]);
+  z ~ bernoulli_logit(a + f);
 }
 generated quantities {
-  int z2[N2];
+  int z_pred[N2];
   for (n2 in 1:N2)
-    z2[n2] = bernoulli_logit_rng(a + f[N1 + n2]);
+    z2[n2] = bernoulli_logit_rng(a + f;
 }
 ```
 

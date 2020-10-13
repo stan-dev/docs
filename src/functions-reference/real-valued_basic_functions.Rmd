@@ -127,6 +127,160 @@ with the same number of elements as `n2`.  For example,
 It would be illegal to try to assign `exp(n1)` to an array of
 integers; the return type is a real array.
 
+### Binary Function Vectorization
+
+Like the unary functions, many of Stan's binary functions have been
+vectorized, and can be applied elementwise to combinations of both
+scalars or container types.
+
+#### Scalar and Scalar array arguments
+
+When applied to two scalar values, the result is a scalar value.  When
+applied to two arrays, or combination of a scalar value and an array,
+vectorized functions like `pow()` are defined elementwise.  For example,
+
+```
+ // declare some variables for arguments
+ real x00;
+ real x01;
+ real x10[5];
+ real x11[5];
+ real x20[4, 7];
+ real x21[4, 7];
+ ...
+ // declare some variables for results
+ real y0;
+ real y1[5];
+ real y2[4, 7];
+ ...
+ // calculate and assign results
+ y0 = pow(x00, x01);
+ y1 = pow(x10, x11);
+ y2 = pow(x20, x21);
+```
+
+When `pow` is applied to two arrays, it applies elementwise.  For
+example, the statement above,
+
+```
+ y2 = pow(x20, x21);
+```
+
+produces the same result for `y2` as the explicit loop
+
+```
+ for (i in 1:4)
+   for (j in 1:7)
+     y2[i, j] = pow(x20[i, j], x21[i, j]);
+```
+
+Alternatively, if a combination of an array and a scalar are
+provided, the scalar value is broadcast to be applied to each
+value of the array. For example, the following statement:
+```
+y2 = pow(x20, x00);
+```
+
+produces the same result for `y2` as the explicit loop:
+```
+ for (i in 1:4)
+   for (j in 1:7)
+     y2[i, j] = pow(x20[i, j], x00);
+```
+
+#### Vector and matrix arguments
+
+Vectorized binary functions also apply elementwise to vectors and matrices,
+and to combinations of these with scalar values.
+For example,
+
+```
+ real x00;
+ vector[5] xv00;
+ vector[5] xv01;
+ row_vector[7] xrv;
+ matrix[10, 20] xm;
+ 
+ vector[5] yv;
+ row_vector[7] yrv;
+ matrix[10, 20] ym;
+ 
+ yv = pow(xv00, xv01);
+ yrv = pow(xrv, x00);
+ ym = pow(x00, xm);
+```
+
+Arrays of vectors and matrices work the same way.  For example,
+
+```
+ matrix[17, 93] u[12];
+ 
+ matrix[17, 93] z[12];
+ 
+ z = pow(u, x00);
+```
+
+After this has been executed, `z[i, j, k]` will be equal to `pow(u[i,
+j, k], x00)`.
+
+#### Input & Return Types
+
+Vectorised binary functions require that both inputs, unless one is a real,
+be containers of the same type and size. For example, the following statements
+are legal:
+```
+ vector[5] xv;
+ row_vector[7] xrv;
+ matrix[10, 20] xm;
+ 
+ vector[5] yv = pow(xv, xv)
+ row_vector[7] yrv = pow(xrv, xrv)
+ matrix[10, 20] = pow(xm, xm)
+```
+
+But the following statements are not:
+```
+ vector[5] xv;
+ vector[7] xv2;
+ row_vector[5] xrv;
+ 
+ // Cannot mix different types
+ vector[5] yv = pow(xv, xrv)
+
+ // Cannot mix different sizes of the same type
+ vector[5] yv = pow(xv, xv2)
+```
+
+While the vectorized binary functions generally require the same input types,
+the only exception to this is for binary functions that require one input to be
+an integer and the other to be a real (e.g., `bessel_first_kind`). For these
+functions, one argument can be a container of any type while the other can be
+an integer array, as long as the dimensions of both are the same. For example,
+the following statements are legal:
+
+```
+ vector[5] xv;
+ matrix[5, 5] xm;
+ int xi[5];
+ int xii[5, 5];
+ 
+ vector[5] yv = bessel_first_kind(xi, xv);
+ matrix[5, 5] ym = bessel_first_kind(xii, xm);
+```
+
+Whereas these are not:
+```
+ vector[5] xv;
+ matrix[5, 5] xm;
+ int xi[7];
+
+ // Dimensions of containers do not match
+ vector[5] yv = bessel_first_kind(xi, xv);
+
+ // Function requires first argument be an integer type
+ matrix[5, 5] ym = bessel_first_kind(xm, xm);
+```
+
 ## Mathematical Constants {#built-in-constants}
 
 Constants are represented as functions with no arguments and must be
@@ -520,6 +674,11 @@ greater than y and 0 otherwise; see warning above.
 \[ \text{fdim}(x,y) = \begin{cases} x-y &
 \text{if } x \geq y \\ 0 & \text{otherwise} \end{cases} \]
 
+<!-- R; fdim; (T1 x, T2 y); -->
+\index{{\tt \bfseries fdim }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`fdim`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `fdim` function
 ### Bounds Functions
 
 <!-- real; fmin; (real x, real y); -->
@@ -530,6 +689,11 @@ Return the minimum of x and y; see warning above.
 \[ \text{fmin}(x,y) = \begin{cases} x &
 \text{if } x \leq y \\ y & \text{otherwise} \end{cases} \]
 
+<!-- R; fmin; (T1 x, T2 y); -->
+\index{{\tt \bfseries fmin }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`fmin`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `fmin` function
 <!-- real; fmax; (real x, real y); -->
 \index{{\tt \bfseries fmax }!{\tt (real x, real y): real}|hyperpage}
 
@@ -538,6 +702,11 @@ Return the maximum of x and y; see warning above.
 \[ \text{fmax}(x,y) = \begin{cases} x &
 \text{if } x \geq y \\ y & \text{otherwise} \end{cases} \]
 
+<!-- R; fmax; (T1 x, T2 y); -->
+\index{{\tt \bfseries fmax }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`fmax`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `fmax` function
 ### Arithmetic Functions
 
 <!-- real; fmod; (real x, real y); -->
@@ -548,6 +717,11 @@ Return the real value remainder after dividing x by y; see warning above.
 \[ \text{fmod}(x,y) = x - \left\lfloor \frac{x}{y} \right\rfloor \, y \]
 The operator $\lfloor u \rfloor$ is the floor operation; see below.
 
+<!-- R; fmod; (T1 x, T2 y); -->
+\index{{\tt \bfseries fmod }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`fmod`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `fmod` function
 ### Rounding Functions
 
 _**Warning:**_  Rounding functions convert real values to integers.
@@ -648,6 +822,11 @@ base-10 logarithm of x
 `real` **`pow`**`(real x, real y)`<br>\newline
 Return x raised to the power of y. \[ \text{pow}(x,y) = x^y \]
 
+<!-- R; pow; (T1 x, T2 y); -->
+\index{{\tt \bfseries pow }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`pow`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `pow` function
 <!-- R; inv; (T x); -->
 \index{{\tt \bfseries inv }!{\tt (T x): R}|hyperpage}
 
@@ -676,6 +855,11 @@ Return the length of the hypotenuse of a right triangle with sides of
 length x and y. \[ \text{hypot}(x,y) = \begin{cases} \sqrt{x^2+y^2} &
 \text{if } x,y\geq 0 \\ \textrm{NaN} & \text{otherwise} \end{cases} \]
 
+<!-- R; hypot; (T1 x, T2 y); -->
+\index{{\tt \bfseries hypot }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`hypot`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `hypot` function
 <!-- R; cos; (T x); -->
 \index{{\tt \bfseries cos }!{\tt (T x): R}|hyperpage}
 
@@ -836,6 +1020,12 @@ for boolean outcome $y \in \{0,1\}$. \[
 \text{if } y = 0\\ -\log (1 - \hat{y}) & \text{otherwise} \end{cases}
 \]
 
+<!-- R; binary_log_loss; (T1 x, T2 y); -->
+\index{{\tt \bfseries binary\_log\_loss }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`binary_log_loss`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `binary_log_loss` function
+
 <!-- real; owens_t; (real h, real a); -->
 \index{{\tt \bfseries owens\_t }!{\tt (real h, real a): real}|hyperpage}
 
@@ -845,7 +1035,28 @@ and $0<Y<aX$ where X and Y are independent standard normal random
 variables. \[ \mathrm{owens\_t}(h,a) = \frac{1}{2\pi} \int_0^a
 \frac{\exp(-\frac{1}{2}h^2(1+x^2))}{1+x^2}dx \]
 
+<!-- R; owens_t; (T1 x, T2 y); -->
+\index{{\tt \bfseries owens\_t }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`owens_t`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `owens_t` function
+
 ## Combinatorial Functions {#betafun}
+
+<!-- real; beta; (real alpha, real beta); -->
+\index{{\tt \bfseries beta }!{\tt (real alpha, real beta): real}|hyperpage}
+
+`real` **`beta`**`(real alpha, real beta)`<br>\newline
+Return the beta function applied to alpha and beta. The beta function,
+$\text{B}(\alpha,\beta)$, computes the normalizing constant for the beta
+distribution, and is defined for $\alpha > 0$ and $\beta > 0$. See section
+[appendix](#beta-appendix) for definition of $\text{B}(\alpha, \beta)$.
+
+<!-- R; beta; (T1 x, T2 y); -->
+\index{{\tt \bfseries beta }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`beta`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `beta` function
 
 <!-- real; inc_beta; (real alpha, real beta, real x); -->
 \index{{\tt \bfseries inc\_beta }!{\tt (real alpha, real beta, real x): real}|hyperpage}
@@ -864,6 +1075,12 @@ normalizing constant for the beta distribution, and is defined for
 $\alpha > 0$ and $\beta > 0$. \[ \text{lbeta}(\alpha,\beta) = \log
 \Gamma(a) + \log \Gamma(b) - \log \Gamma(a+b) \] See section
 [appendix](#beta-appendix) for definition of $\text{B}(\alpha, \beta)$.
+
+<!-- R; lbeta; (T1 x, T2 y); -->
+\index{{\tt \bfseries lbeta }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`lbeta`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `lbeta` function
 
 <!-- R; tgamma; (T x); -->
 \index{{\tt \bfseries tgamma }!{\tt (T x): R}|hyperpage}
@@ -907,6 +1124,12 @@ $\Gamma_n$ with n dimensions applied to x. \[ \text{lmgamma}(n,x) =
 \{\dots,-3,-2,-1,0\}\\ \textrm{error} & \text{otherwise} \end{cases}
 \]
 
+<!-- R; lmgamma; (T1 x, T2 y); -->
+\index{{\tt \bfseries lmgamma }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`lmgamma`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `lmgamma` function
+
 <!-- real; gamma_p; (real a, real z); -->
 \index{{\tt \bfseries gamma\_p }!{\tt (real a, real z): real}|hyperpage}
 
@@ -915,6 +1138,12 @@ Return the normalized lower incomplete gamma function of a and z
 defined for positive a and nonnegative z. \[ \mathrm{gamma\_p}(a,z) =
 \begin{cases} \frac{1}{\Gamma(a)}\int_0^zt^{a-1}e^{-t}dt & \text{if }
 a > 0, z \geq 0 \\ \textrm{error} & \text{otherwise} \end{cases} \]
+
+<!-- R; gamma_p; (T1 x, T2 y); -->
+\index{{\tt \bfseries gamma\_p }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`gamma_p`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `gamma_p` function
 
 <!-- real; gamma_q; (real a, real z); -->
 \index{{\tt \bfseries gamma\_q }!{\tt (real a, real z): real}|hyperpage}
@@ -925,6 +1154,12 @@ defined for positive a and nonnegative z. \[ \mathrm{gamma\_q}(a,z) =
 \begin{cases} \frac{1}{\Gamma(a)}\int_z^\infty t^{a-1}e^{-t}dt &
 \text{if } a > 0, z \geq 0 \\[6pt] \textrm{error} & \text{otherwise}
 \end{cases} \]
+
+<!-- R; gamma_q; (T1 x, T2 y); -->
+\index{{\tt \bfseries gamma\_q }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`gamma_q`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `gamma_q` function
 
 <!-- real; binomial_coefficient_log; (real x, real y); -->
 \index{{\tt \bfseries binomial\_coefficient\_log }!{\tt (real x, real y): real}|hyperpage}
@@ -938,6 +1173,12 @@ This function generalizes to real numbers using the gamma function.
 For $0 \leq y \leq x$, \[ \mathrm{binomial\_coefficient\_log}(x,y) =
 \log\Gamma(x+1) - \log\Gamma(y+1) - \log\Gamma(x-y+1). \]
 
+<!-- R; binomial_coefficient_log; (T1 x, T2 y); -->
+\index{{\tt \bfseries binomial\_coefficient\_log }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`binomial_coefficient_log`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `binomial_coefficient_log` function
+
 <!-- int; choose; (int x, int y); -->
 \index{{\tt \bfseries choose }!{\tt (int x, int y): int}|hyperpage}
 
@@ -950,6 +1191,12 @@ non-zero decimal places. For $0 \leq y \leq x$, the binomial
 coefficient function can be defined via the factorial function \[
 \text{choose}(x,y) = \frac{x!}{\left(y!\right)\left(x - y\right)!}. \]
 
+<!-- R; choose; (T1 x, T2 y); -->
+\index{{\tt \bfseries choose }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`choose`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `choose` function
+
 <!-- real; bessel_first_kind; (int v, real x); -->
 \index{{\tt \bfseries bessel\_first\_kind }!{\tt (int v, real x): real}|hyperpage}
 
@@ -958,6 +1205,12 @@ Return the Bessel function of the first kind with order v applied to
 x. \[ \mathrm{bessel\_first\_kind}(v,x) = J_v(x), \] where \[
 J_v(x)=\left(\frac{1}{2}x\right)^v \sum_{k=0}^\infty
 \frac{\left(-\frac{1}{4}x^2\right)^k}{k!\, \Gamma(v+k+1)} \]
+
+<!-- R; bessel_first_kind; (T1 x, T2 y); -->
+\index{{\tt \bfseries bessel\_first\_kind }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`bessel_first_kind`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `bessel_first_kind` function
 
 <!-- real; bessel_second_kind; (int v, real x); -->
 \index{{\tt \bfseries bessel\_second\_kind }!{\tt (int v, real x): real}|hyperpage}
@@ -969,6 +1222,12 @@ x defined for positive x and v. For $x,v > 0$, \[
 x > 0 \\ \textrm{error} & \text{otherwise} \end{cases} \] where \[
 Y_v(x)=\frac{J_v(x)\cos(v\pi)-J_{-v}(x)}{\sin(v\pi)} \]
 
+<!-- R; bessel_second_kind; (T1 x, T2 y); -->
+\index{{\tt \bfseries bessel\_second\_kind }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`bessel_second_kind`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `bessel_second_kind` function
+
 <!-- real; modified_bessel_first_kind; (int v, real z); -->
 \index{{\tt \bfseries modified\_bessel\_first\_kind }!{\tt (int v, real z): real}|hyperpage}
 
@@ -978,6 +1237,12 @@ applied to z defined for all z and v. \[
 \mathrm{modified\_bessel\_first\_kind}(v,z) = I_v(z) \] where \[
 {I_v}(z) = \left(\frac{1}{2}z\right)^v\sum_{k=0}^\infty
 \frac{\left(\frac{1}{4}z^2\right)^k}{k!\Gamma(v+k+1)} \]
+
+<!-- R; modified_bessel_first_kind; (T1 x, T2 y); -->
+\index{{\tt \bfseries modified\_bessel\_first\_kind }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`modified_bessel_first_kind`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `modified_bessel_first_kind` function
 
 <!-- real; modified_bessel_second_kind; (int v, real z); -->
 \index{{\tt \bfseries modified\_bessel\_second\_kind }!{\tt (int v, real z): real}|hyperpage}
@@ -990,6 +1255,12 @@ applied to z defined for positive z and v. \[
 \] where \[ {K_v}(z) = \frac{\pi}{2}\cdot\frac{I_{-v}(z) -
 I_{v}(z)}{\sin(v\pi)} \]
 
+<!-- R; modified_bessel_second_kind; (T1 x, T2 y); -->
+\index{{\tt \bfseries modified\_bessel\_second\_kind }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`modified_bessel_second_kind`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `modified_bessel_second_kind` function
+
 <!-- real; falling_factorial; (real x, real n); -->
 \index{{\tt \bfseries falling\_factorial }!{\tt (real x, real n): real}|hyperpage}
 
@@ -998,6 +1269,12 @@ Return the falling factorial of x with power n defined for positive x
 and real n. \[ \mathrm{falling\_factorial}(x,n) = \begin{cases} (x)_n
 & \text{if } x > 0 \\ \textrm{error} & \text{if } x \leq 0 \end{cases}
 \] where \[ (x)_n=\frac{\Gamma(x+1)}{\Gamma(x-n+1)} \]
+
+<!-- R; falling_factorial; (T1 x, T2 y); -->
+\index{{\tt \bfseries falling\_factorial }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`falling_factorial`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `falling_factorial` function
 
 <!-- real; lchoose; (real x, real y); -->
 \index{{\tt \bfseries lchoose }!{\tt (real x, real y): real}|hyperpage}
@@ -1028,6 +1305,12 @@ and integer n. \[ \mathrm{rising\_factorial}(x,n) = \begin{cases} x^{(n)}
 & \text{if } x > 0 \\ \textrm{error} & \text{if } x \leq 0 \end{cases}
 \] where \[ x^{(n)}=\frac{\Gamma(x+n)}{\Gamma(x)} \]
 
+<!-- R; rising_factorial; (T1 x, T2 y); -->
+\index{{\tt \bfseries rising\_factorial }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`rising_factorial`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `rising_factorial` function
+
 <!-- real; log_rising_factorial; (real x, real n); -->
 \index{{\tt \bfseries log\_rising\_factorial }!{\tt (real x, real n): real}|hyperpage}
 
@@ -1036,6 +1319,12 @@ Return the log of the rising factorial of x with power n defined for
 positive x and real n. \[ \mathrm{log\_rising\_factorial}(x,n) =
 \begin{cases} \log x^{(n)} & \text{if } x > 0 \\ \textrm{error} &
 \text{if } x \leq 0 \end{cases} \]
+
+<!-- R; log_rising_factorial; (T1 x, T2 y); -->
+\index{{\tt \bfseries log\_rising\_factorial }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`log_rising_factorial`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `log_rising_factorial` function
 
 ## Composed Functions {#composed-functions}
 
@@ -1067,6 +1356,12 @@ _**Warning:**_ This function is deprecated and should be replaced with
 0 \\ x \log y & \text{if } x, y \neq 0 \\ \text{NaN} &
 \text{otherwise} \end{cases} \]
 
+<!-- R; multiply_log; (T1 x, T2 y); -->
+\index{{\tt \bfseries multiply\_log }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`multiply_log`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `multiply_log` function
+
 <!-- real; lmultiply; (real x, real y); -->
 \index{{\tt \bfseries lmultiply }!{\tt (real x, real y): real}|hyperpage}
 
@@ -1075,6 +1370,12 @@ Return the product of x and the natural logarithm of y. \[
 \text{lmultiply}(x,y) = \begin{cases} 0 & \text{if } x = y = 0 \\ x
 \log y & \text{if } x, y \neq 0 \\ \text{NaN} & \text{otherwise}
 \end{cases} \]
+
+<!-- R; lmultiply; (T1 x, T2 y); -->
+\index{{\tt \bfseries lmultiply }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`lmultiply`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `lmultiply` function
 
 <!-- R; log1p; (T x); -->
 \index{{\tt \bfseries log1p }!{\tt (T x): R}|hyperpage}
@@ -1109,6 +1410,12 @@ exponentiation of x and the natural exponentiation of y. \[
 \mathrm{log\_diff\_exp}(x,y) = \begin{cases} \log(\exp(x)-\exp(y)) &
 \text{if } x > y \\[6pt] \textrm{NaN} & \text{otherwise} \end{cases}
 \]
+
+<!-- R; log_diff_exp; (T1 x, T2 y); -->
+\index{{\tt \bfseries log\_diff\_exp }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`log_diff_exp`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `log_diff_exp` function
 
 <!-- real; log_mix; (real theta, real lp1, real lp2); -->
 \index{{\tt \bfseries log\_mix }!{\tt (real theta, real lp1, real lp2): real}|hyperpage}

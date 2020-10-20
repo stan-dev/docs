@@ -14,7 +14,7 @@ On Windows, `mingw32-make` is installed as part of RTools: https://cran.rstudio.
 
 - The CmdStan C++ source code and libraries.
 
-    + [CmdStan releases](https://github.com/stan-dev/cmdstan/releases)  are available from GitHub as a compressed tarfile containing all C++ source code and libraries.  The most recent CmdStan release is always availabe as https://github.com/stan-dev/cmdstan/releases/latest.
+    + [CmdStan releases](https://github.com/stan-dev/cmdstan/releases)  are available from GitHub as a compressed tarfile containing all C++ source code and libraries.  The most recent CmdStan release is always available as https://github.com/stan-dev/cmdstan/releases/latest.
 
     + To use the current development version you can [clone the GitHub repo](#git-clone.section).
 
@@ -124,7 +124,7 @@ to the `PATH` environment variable.  If you have `Rtools40`, these should be:
 C:\RTools\RTools40\usr\bin
 C:\RTools\RTools40\mingw64\bin
 ```
-If you have and earlier version of RTools, e.g., RTools 3.6, use `RTools36` istead of `RTools40` in the above paths.
+If you have and earlier version of RTools, e.g., RTools 3.6, use `RTools36` instead of `RTools40` in the above paths.
 See [these instructions](https://helpdeskgeek.com/windows-10/add-windows-path-environment-variable/)
 for details on changing the `PATH`.
 
@@ -180,7 +180,7 @@ be preceded by zero or more Makefile variable name=value pairs.
 For example to compile `../my_dir/my_program.stan` for an OpenCL (GPU) machine,
 the makefile variable `STAN_OPENCL` is set to `TRUE`:
 ```
-> make STAN_OPENCL=TRUE ../my_dir/my_program
+> make STAN_OPENCL=TRUE ../my_dir/my_program    # mingw32-make if in Windows
 ```
 Makefile variables can also be set by creating a file named `local` in the
 CmdStan `make` subdirectory which contains a list of `<VARIABLE>=<VALUE>` pairs,
@@ -189,7 +189,7 @@ one per line.  The complete set of Makefile variables can be found in file
 
 When invoked without any arguments at all, Make prints a help message:
 ```
-> make
+> make    # mingw32-make if in Windows
 --------------------------------------------------------------------------------
 CmdStan v2.23.0 help
 
@@ -272,7 +272,7 @@ command line interface and supporting libraries:
 ```
 > git clone https://github.com/stan-dev/cmdstan.git --recursive
 > cd cmdstan
-> make build
+> make build    # mingw32-make if in Windows
 ```
 
 The resulting set of directories should have the same structure as the release:
@@ -319,13 +319,13 @@ and compiles all necessary C++ libraries.
 
 ```
 > cd <cmdstan-home>
-> make build
+> make build    # mingw32-make if in Windows
 ```
 
 If your computer has multiple cores and sufficient ram, the build process
 can be parallelized by providing the `-j` option. For example, to build on 4 cores, type:
 ```
-> make -j4 build
+> make -j4 build    # mingw32-make if in Windows
 ```
 
 When `make build` is successful, the directory `<cmdstan-home>/bin/`
@@ -353,20 +353,20 @@ in order to these setting to take effect.
 absolute path to the Intel TBB library when linking into Stan programs.)
 
 
-## Trouble-shooting the installation
+## Checking the Stan compiler
 
 To check that the CmdStan installation is complete
 and in working order, run the following series of commands:
 
 ```
 # compile the example
-> make examples/bernoulli/bernoulli
+> make examples/bernoulli/bernoulli    # mingw32-make if in Windows
 
 # fit to provided data (results of 10 trials, 2 out of 10 successes)
 > ./examples/bernoulli/bernoulli sample data file=examples/bernoulli/bernoulli.data.json
 
 # default output written to file `output.csv`,
-# default num_samples is 1000, output file should have approx 1050 lines
+# default num_samples is 1000, output file should have approx. 1050 lines
 > ls -l output.csv
 
 # run the `bin/stansummary utility to summarize parameter estimates
@@ -375,14 +375,61 @@ and in working order, run the following series of commands:
 The sample data in file `bernoulli.json.data` specifies 2 out of 10 successes, therefore
 the range `mean(theta)`$\pm$`sd(theta)` should include 0.2.
 
+## Troubleshooting the installation
+
 Updates to CmdStan or changes in compiler options may result in errors
 when trying to compile a Stan program.  In some cases, these can be resolved
-by removing the existing CmdStan build and recompiling.
-The Makefile target `clean-all` should be run before rebuilding CmdStan:
+by removing the existing CmdStan binaries and recompiling.
+
+To do this, you must run the makefile commands from the `<cmdstan-home>` directory:
+
 ```
-> make clean-all
+> cd <cmdstan-home>
+> make clean-all    # mingw32-make if in Windows
 > make build
 ```
+
+### Common problems and how to resolve them
+
+This section contains errors reported on https://discourse.mc-stan.org and the proposed solutions.
+
+- Problem:  model compilation fails, error message about PCH file, e.g.,
+
+```
+error: PCH file uses an older PCH format that is no longer supported
+```
+
+To speed up compilation, the Stan makefile pre-compiles parts of the core Stan library.
+This error message occurs when the compiler tries to use an out-of-date pre-compiled header file,
+(possibly found in a system cache). 
+In this case, clean and rebuild CmdStan, as shown in the previous section.
+
+
+#### Windows-specific errors
+
+- Problem: C++ toolchain installed, call to `mingw32-make` fails with error message:
+
+```
+‘mingw32-make’ is not recognised as an internal or external command
+```
+
+- Solution:  call utility `pacman`:
+
+```
+pacman -Sy mingw-w64-x86_64-make
+```
+
+See: https://discourse.mc-stan.org/t/cmdstan-installation-on-windows/11287/6
+
+
+- Problem: compilation fails with message:
+
+```
+‘cut’ is not recognized as an internal or external command, operable program or batch file.
+```
+
+- Solution:  add `mingw_64/bin` directory to the user `PATH` environment variable, discussion here:
+https://discourse.mc-stan.org/t/errors-when-using-cmdstan-model/14984/21?
 
 
 [^1]:

@@ -389,31 +389,32 @@ To do this, you must run the makefile commands from the `<cmdstan-home>` directo
 > make build
 ```
 
-### Common problems and how to resolve them
+### Common problems
 
-This section contains errors reported on https://discourse.mc-stan.org and the proposed solutions.
+This section contains solutions to problems reported on https://discourse.mc-stan.org
 
-- Problem:  model compilation fails, error message about PCH file, e.g.,
+**Compiler error message about PCH file**
+
+To speed up compilation, the Stan makefile pre-compiles parts of the core Stan library.
+If these pre-compiled files are out of sync with the compiled model, the compiler will complain, e.g.:
 
 ```
 error: PCH file uses an older PCH format that is no longer supported
 ```
 
-To speed up compilation, the Stan makefile pre-compiles parts of the core Stan library.
-This error message occurs when the compiler tries to use an out-of-date pre-compiled header file,
-(possibly found in a system cache). 
 In this case, clean and rebuild CmdStan, as shown in the previous section.
 
 
-#### Windows-specific errors
+**Windows: ‘mingw32-make’ is not recognised**
 
-- Problem: C++ toolchain installed, call to `mingw32-make` fails with error message:
+If the C++ toolchain has been installed but no properly registered,
+the call to `mingw32-make` will fail with the error message:
 
 ```
 ‘mingw32-make’ is not recognised as an internal or external command
 ```
 
-- Solution:  call utility `pacman`:
+The solution is to call utility `pacman` as follows:
 
 ```
 pacman -Sy mingw-w64-x86_64-make
@@ -422,14 +423,17 @@ pacman -Sy mingw-w64-x86_64-make
 See: https://discourse.mc-stan.org/t/cmdstan-installation-on-windows/11287/6
 
 
-- Problem: compilation fails with message:
+**Windows: compiler error message ‘cut’ is not recognized**
+
+The CmdStan makefile uses a few shell utilities which might not be present in Windows,
+resulting in the error message:
 
 ```
 ‘cut’ is not recognized as an internal or external command, operable program or batch file.
 ```
 
-- Solution:  add `mingw_64/bin` directory to the user `PATH` environment variable, discussion here:
-https://discourse.mc-stan.org/t/errors-when-using-cmdstan-model/14984/21?
+The solution is to add `mingw_64/bin` directory to the user `PATH` environment variable.  See:
+https://discourse.mc-stan.org/t/errors-when-using-cmdstan-model/14984/21
 
 
 [^1]:

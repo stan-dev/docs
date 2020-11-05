@@ -15,11 +15,10 @@ as pre-generated HTML instead of trying to run [jekyll](https://jekyllrb.com).
 
 ## Directory Structure
 
-* `src` : directory of source files for Stan manuals and book, each in its own named subdirectory.
+* `src` : directory of source files for Stan and CmdStan guides and reference manuals, each in its own named subdirectory.
 
 * `docs`: the directory `docs` on branch `master` is the [publishing source](https://help.github.com/articles/configuring-a-publishing-source-for-github-pages/) for the project pages site.  Whenever a verified member of the Stan organization pushes to `docs` on branch `master`,
 GitHub (re)builds and (re)deploys the website.
-
   
 * `build.py`: python script which compiles markdown files under `src` to html and pdf and populates the `docs` dir with the generated documentation.
 
@@ -33,9 +32,9 @@ GitHub (re)builds and (re)deploys the website.
 
 ## Generating the static site
 
-1. Install R packages:  bookdown, arm
+1. Install R packages:  bookdown, arm, kableExtra, rstan, bayesplot
 
-2. Install on OS and ensure on PATH: pandoc, pandoc-citeproc, pdflatex
+2. Install on OS and ensure on PATH: pandoc (version at 2.3 or later), pandoc-citeproc, pdflatex
 
 3. Run `python build.py <MAJOR> <MINOR> (<document> (<format>))`
 

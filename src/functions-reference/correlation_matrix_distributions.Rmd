@@ -59,8 +59,7 @@ practice.
 
 `y ~ ` **`lkj_corr`**`(eta)`
 
-Increment target log probability density with `lkj_corr_lpdf(y | eta)`
-dropping constant additive terms.
+Increment target log probability density with `lkj_corr_lupdf(y | eta)`.
 <!-- real; lkj_corr ~; -->
 \index{{\tt \bfseries lkj\_corr }!sampling statement|hyperpage}
 
@@ -71,10 +70,17 @@ dropping constant additive terms.
 
 `real` **`lkj_corr_lpdf`**`(matrix y | real eta)`<br>\newline
 The log of the LKJ density for the correlation matrix y given
-nonnegative shape eta. The only reason to use this density function is
-if you want the code to run slower and consume more memory with more
-risk of numerical errors. Use its Cholesky factor as described in the
-next section.
+nonnegative shape eta. `lkj_corr_cholesky_lpdf` is faster, more numerically
+stable, uses less memory, and should be preferred to this.
+
+<!-- real; lkj_corr_lupdf; (matrix y | real eta); -->
+\index{{\tt \bfseries lkj\_corr\_lupdf }!{\tt (matrix y \textbar\ real eta): real}|hyperpage}
+
+`real` **`lkj_corr_lupdf`**`(matrix y | real eta)`<br>\newline
+The log of the LKJ density for the correlation matrix y given
+nonnegative shape eta dropping constant additive terms.
+`lkj_corr_cholesky_lupdf` is faster, more numerically stable, uses less memory,
+and should be preferred to this.
 
 <!-- matrix; lkj_corr_rng; (int K, real eta); -->
 \index{{\tt \bfseries lkj\_corr\_rng }!{\tt (int K, real eta): matrix}|hyperpage}
@@ -91,7 +97,7 @@ rather than the explicit parameterization in the previous section. For
 example, if `L` is a Cholesky factor of a correlation matrix, then
 
 ```
- L ~ lkj_corr_cholesky(2.0); # implies L * L' ~ lkj_corr(2.0); 
+ L ~ lkj_corr_cholesky(2.0); # implies L * L' ~ lkj_corr(2.0);
 ```
 
 Because Stan requires models to have support on all valid constrained
@@ -104,7 +110,7 @@ would then require Jacobian adjustments to imply the intended
 posterior.
 
 ```
- parameters {   cholesky_factor_corr[K] L;   # rather than corr_matrix[K] Sigma;   // ... 
+ parameters {   cholesky_factor_corr[K] L;   # rather than corr_matrix[K] Sigma;   // ...
 ```
 
 ### Probability Density Function
@@ -127,8 +133,7 @@ unit Euclidean length.
 
 `L ~ ` **`lkj_corr_cholesky`**`(eta)`
 
-Increment target log probability density with `lkj_corr_cholesky_lpdf(L | eta)`
-dropping constant additive terms.
+Increment target log probability density with `lkj_corr_cholesky_lupdf(L | eta)`.
 <!-- real; lkj_corr_cholesky ~; -->
 \index{{\tt \bfseries lkj\_corr\_cholesky }!sampling statement|hyperpage}
 
@@ -139,7 +144,14 @@ dropping constant additive terms.
 
 `real` **`lkj_corr_cholesky_lpdf`**`(matrix L | real eta)`<br>\newline
 The log of the LKJ density for the lower-triangular Cholesky factor L
-of a correlation matrix given shape eta.
+of a correlation matrix given shape eta
+
+<!-- real; lkj_corr_cholesky_lupdf; (matrix L | real eta); -->
+\index{{\tt \bfseries lkj\_corr\_cholesky\_lupdf }!{\tt (matrix L \textbar\ real eta): real}|hyperpage}
+
+`real` **`lkj_corr_cholesky_lupdf`**`(matrix L | real eta)`<br>\newline
+The log of the LKJ density for the lower-triangular Cholesky factor L
+of a correlation matrix given shape eta dropping constant additive terms
 
 <!-- matrix; lkj_corr_cholesky_rng; (int K, real eta); -->
 \index{{\tt \bfseries lkj\_corr\_cholesky\_rng }!{\tt (int K, real eta): matrix}|hyperpage}
@@ -148,4 +160,3 @@ of a correlation matrix given shape eta.
 Generate a random Cholesky factor of a correlation matrix of order K
 that is distributed LKJ with shape eta; may only be used in transformed data
 and generated quantities blocks
-

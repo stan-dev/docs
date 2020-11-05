@@ -50,6 +50,7 @@ pipeline {
                 sh "python add_redirects.py $major_version $minor_version functions-reference"
                 sh "python add_redirects.py $major_version $minor_version reference-manual"
                 sh "python add_redirects.py $major_version $minor_version stan-users-guide"
+                sh "python add_redirects.py $major_version $minor_version cmdstan-guide"
 
                 /* Link docs to latest */
                 sh "ls -lhart docs"

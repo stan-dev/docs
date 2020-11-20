@@ -1446,15 +1446,16 @@ prior with an equivalent Cholesky factorized prior is as follows.
 
 ```
 data {
-  matrix[J, L] u;
+  matrix[K, N] x;              // individual predictors
+  matrix[J, L] u;              // group predictors
   ...
 parameters {
-  matrix[J, K] z;
+  matrix[K, J] z;
   cholesky_factor_corr[K] L_Omega;
   ...
 transformed parameters {
-  matrix[J, K] beta;
-  beta = u * gamma + z * diag_post_multiply(L_Omega,tau);
+  matrix[K, J] beta;
+  beta = u * gamma + diag_pre_multiply(tau, L_Omega) * z;
 }
 model {
   to_vector(z) ~ std_normal();
@@ -1479,45 +1480,50 @@ factor of the final covariance matrix,
 ```
 Sigma_beta
   = quad_form_diag(Omega, tau)
-  = diag_post_multiply(L_Omega,tau) * diag_post_multiply(L_Omega,tau)'
+  = diag_pre_multiply(tau, L_Omega) * diag_pre_multiply(tau, L_Omega)'
 ```
 
-where the diagonal post-multiply compound operation is defined by
+where the diagonal pre-multiply compound operation is defined by
 
 ```
-diag_post_multiply(a, b) = a * diag_matrix(b)
+diag_pre_multiply(a, b) = diag_matrix(a) * b
 ```
 
 The new variable `z` is declared as a matrix, the entries of
 which are given independent standard normal priors; the `to_vector`
 operation turns the matrix into a vector so that it can be used as a
-vectorized argument to the univariate normal density.  Multiplying the
-Cholesky factor of the covariance matrix by `z` and adding the
-mean `(u * gamma)'` produces a `beta` distributed as in
-the original model.
+vectorized argument to the univariate normal density.  This results in every
+column of `z` being a $K$-variate normal random vector with the identity as
+covariance matrix.  Therefore, multiplying `z` by the Cholesky factor of the
+covariance matrix and adding the mean `(u * gamma)'` produces a `beta`
+distributed as in the original model, since
 
-Omitting the data declarations, which are the same as before, the
+$$
+\mathbb{V}[\beta] = \mathrm{diag}(\tau)\,\Omega_L\,\mathbb{V}[z]\,(\mathrm{diag}(\tau)\,\Omega_L)' = \mathrm{diag}(\tau)\,\Omega\,\mathrm{diag}(\tau)' = \Sigma.
+$$
+
+Omitting the remaining data declarations, which are the same as before, the
 optimized model is as follows.
 
 ```
 parameters {
-  matrix[J, K] z;
+  matrix[K, J] z;
   cholesky_factor_corr[K] L_Omega;
   vector<lower=0,upper=pi()/2>[K] tau_unif;
-  matrix[L, K] gamma;                         // group coeffs
-  real<lower=0> sigma;                       // prediction error scale
+  matrix[L, K] gamma;                                         // group coeffs
+  real<lower=0> sigma;                                        // prediction error scale
 }
 transformed parameters {
-  matrix[J, K] beta;
-  vector<lower=0>[K] tau;     // prior scale
+  matrix[K, J] beta;
+  vector<lower=0>[K] tau;                                     // prior scale
   for (k in 1:K) tau[k] = 2.5 * tan(tau_unif[k]);
-  beta = u * gamma + z * diag_post_multiply(L_Omega,tau);
+  beta = u * gamma + z * diag_pre_multiply(tau, L_Omega) * z;
 }
 model {
   to_vector(z) ~ std_normal();
   L_Omega ~ lkj_corr_cholesky(2);
   to_vector(gamma) ~ normal(0, 5);
-  y ~ normal(rows_dot_product(beta[jj] , x), sigma);
+  y ~ normal(columns_dot_product(beta[, jj] , x), sigma);
 }
 ```
 

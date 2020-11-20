@@ -1454,7 +1454,7 @@ parameters {
   ...
 transformed parameters {
   matrix[J, K] beta;
-  beta = u * gamma + z * diag_post_multiply(L_Omega,tau);
+  beta = u * gamma + z * diag_post_multiply(L_Omega', tau);
 }
 model {
   to_vector(z) ~ std_normal();
@@ -1479,13 +1479,13 @@ factor of the final covariance matrix,
 ```
 Sigma_beta
   = quad_form_diag(Omega, tau)
-  = diag_post_multiply(L_Omega,tau) * diag_post_multiply(L_Omega,tau)'
+  = diag_pre_multiply(tau, L_Omega) * diag_pre_multiply(tau, L_Omega)'
 ```
 
-where the diagonal post-multiply compound operation is defined by
+where the diagonal pre-multiply compound operation is defined by
 
 ```
-diag_post_multiply(a, b) = a * diag_matrix(b)
+diag_pre_multiply(a, b) = diag_matrix(a) * b
 ```
 
 The new variable `z` is declared as a matrix, the entries of
@@ -1511,7 +1511,7 @@ transformed parameters {
   matrix[J, K] beta;
   vector<lower=0>[K] tau;     // prior scale
   for (k in 1:K) tau[k] = 2.5 * tan(tau_unif[k]);
-  beta = u * gamma + z * diag_post_multiply(L_Omega,tau);
+  beta = u * gamma + z * diag_post_multiply(L_Omega', tau);
 }
 model {
   to_vector(z) ~ std_normal();

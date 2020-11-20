@@ -4,22 +4,26 @@ When evaluating a likelihood or prior as part of the log density computation in
 MCMC, variational inference, or optimization, it is usually only necessary to
 compute the functions up to a proportionality constant (or similarly compute
 log densities up to an additive constant). In MCMC this comes from the fact that
-the distribution being sampled does not need to be normalized (similarly
-the distribution does not need normalized to perform variational inference or
-do optimizations).
+the distribution being sampled does not need to be normalized (and so it is the
+normalization constant that is ignored). Similarly the distribution does not
+need normalized to perform variational inference or do optimizations. The advantage
+of working with unnormalized distributions is they can make computation quite a
+bit cheaper.
 
 There are three different syntaxes to work with distributions in Stan. The way
 to select between them is by determining if the proportionality constants are
-necessary.
+necessary. If performance is not a problem, it is always safe to use the normalized
+densities.
 
-The first two syntaxes drop proportionality constants:
+The first two syntaxes use unnormalized densities (dropping proportionality
+constants):
 
 ```
 x ~ normal(0, 1);
-target += normal_lupdf(x | 0, 1);
+target += normal_lupdf(x | 0, 1); // the 'u' is for unnormalized
 ```
 
-The final syntax computes the full log density (dropping no constants):
+The final syntax uses the full normalized density (dropping no constants):
 
 ```
 target += normal_lpdf(x | 0, 1);
@@ -109,16 +113,18 @@ necessary.
 
 ## User-defined Distributions
 
-While it is possible to define custom distributions in Stan, it is not yet
-possible to define unnormalized distributions directly (any attempt will result
-in an error). However, when a custom `_lpdf` or `_lpmf` function is defined,
-the compiler will automatically make available a `_lupdf` or `_lupmf` version
-of the function. The difference in the normalized and unnormalized versions
-of custom probability functions is that unnormalized function calls will be
-replaced with their normalized equivalents if the normalized version of the
-custom distribution is called.
+When a custom `_lpdf` or `_lpmf` function is defined, the compiler will
+automatically make available a `_lupdf` or `_lupmf` version of the function.
+It is only possible to define custom distributions in the normalized
+form in Stan. Any attempt to define an unnormalized distribution directly will
+result in an error.
 
-For instance, the following code demonstrates the different behaviors:
+The difference in the normalized and unnormalized versions of custom probability
+functions is how probability functions are treated inside these functions. Any
+internal unnormalized probability function call will be replaced with its normalized
+equivalent if the normalized version of the parent custom distribution is called.
+
+The following code demonstrates the different behaviors:
 
 ```
 functions {

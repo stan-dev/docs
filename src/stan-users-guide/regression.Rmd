@@ -1446,15 +1446,16 @@ prior with an equivalent Cholesky factorized prior is as follows.
 
 ```
 data {
-  matrix[J, L] u;              // group predictors
+  matrix[L, J] u;              // group predictors transposed
   ...
 parameters {
   matrix[K, J] z;
   cholesky_factor_corr[K] L_Omega;
+  matrix[K, L] gamma;
   ...
 transformed parameters {
   matrix[K, J] beta;
-  beta = u * gamma + diag_pre_multiply(tau, L_Omega) * z;
+  beta = gamma * u + diag_pre_multiply(tau, L_Omega) * z;
 }
 model {
   to_vector(z) ~ std_normal();
@@ -1464,9 +1465,10 @@ model {
 
 The data variable `u` was originally an array of vectors, which
 is efficient for access; here it is redeclared as a matrix in order to
-use it in matrix arithmetic.  The new parameter `L_Omega` is
-the Cholesky factor of the original correlation matrix `Omega`,
-so that
+use it in matrix arithmetic.  Moreover, it is transposed, along with
+`gamma` and `beta`, to minimize the number of transposition operations.
+The new parameter `L_Omega` is the Cholesky factor of the original
+correlation matrix `Omega`, so that
 
 ```
 Omega = L_Omega * L_Omega'
@@ -1501,28 +1503,30 @@ $$
 \mathbb{V}[\beta] = \mathrm{diag}(\tau)\,\Omega_L\,\mathbb{V}[z]\,(\mathrm{diag}(\tau)\,\Omega_L)' = \mathrm{diag}(\tau)\,\Omega\,\mathrm{diag}(\tau) = \Sigma.
 $$
 
-Omitting the remaining data declarations, which are the same as before, the
-optimized model is as follows.
+Omitting the remaining data declarations, which are the same as before
+with the exception of `u`, the optimized model is as follows.
 
 ```
 parameters {
   matrix[K, J] z;
   cholesky_factor_corr[K] L_Omega;
-  vector<lower=0,upper=pi()/2>[K] tau_unif;
-  matrix[L, K] gamma;                                         // group coeffs
-  real<lower=0> sigma;                                        // prediction error scale
+  vector<lower=0,upper=pi()/2>[K] tau_unif;  // prior scale
+  matrix[K, L] gamma;                        // group coeffs
+  real<lower=0> sigma;                       // prediction error scale
 }
 transformed parameters {
-  matrix[K, J] beta;
-  vector<lower=0>[K] tau;                                     // prior scale
-  for (k in 1:K) tau[k] = 2.5 * tan(tau_unif[k]);
-  beta = u * gamma + diag_pre_multiply(tau, L_Omega) * z;
+  vector<lower=0>[K] tau = 2.5 * tan(tau_unif);
+  matrix[K, J] beta = gamma * u + diag_pre_multiply(tau, L_Omega) * z;
 }
 model {
+  vector[N] mu;
+  for(n in 1:N) {
+    mu[n] = x[n, ] * beta[, jj[n]];
+  }
   to_vector(z) ~ std_normal();
   L_Omega ~ lkj_corr_cholesky(2);
   to_vector(gamma) ~ normal(0, 5);
-  y ~ normal(columns_dot_product(x', beta[, jj]), sigma);
+  y ~ normal(mu, sigma);
 }
 ```
 

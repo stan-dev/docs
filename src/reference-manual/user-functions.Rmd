@@ -40,7 +40,6 @@ and `sigma`, but that is not part of the declaration.  Two
 user-defined functions may *not* have the same name even if they have
 different sequences of argument types.
 
-
 ## Calling Functions
 
 All function arguments are mandatory---there are no default values.
@@ -67,8 +66,7 @@ accumulator, printing, or raising exceptions.
 Functions whose name ends in `_lpdf` or `_lpmf` (density
 and mass functions) may be used as probability functions and may be
 used in place of parameterized distributions on the right-hand-side of
-sampling statements.  There is no restriction on where such functions
-may be used.
+sampling statements.
 
 
 ### Restrictions on Placement {-}
@@ -76,13 +74,19 @@ may be used.
 Functions of certain types are restricted on scope of usage.
 Functions whose names end in `_lp` assume access to the log
 probability accumulator and are only available in the transformed
-parameter and model blocks.  Functions whose names end in `_rng`
+parameter and model blocks.
+
+Functions whose names end in `_rng`
 assume access to the random number generator and may only be used
 within the generated quantities block, transformed data block, and
-within user-defined functions ending in `_rng`.  See
-the [section on function bodies](#function-bodies.section) for more information on these two special
-types of function.
+within user-defined functions ending in `_rng`.
 
+Functions whose names end in `_lpdf` and `_lpmf` can be used anywhere.
+However, `_lupdf` and `_lupmf` functions can only be used in the model
+block or user-defined probability functions.
+
+See the [section on function bodies](#function-bodies.section) for more
+information on these special types of function.
 
 ## Argument Types and Qualifiers
 
@@ -223,24 +227,52 @@ real foo_lpdf(real y, vector theta) { ... }
 ```
 
 Note that for function definitions, the comma is used rather than the
-vertical bar.  Then the shorthand
+vertical bar.
+
+For every custom `_lpdf` and `_lpmf` defined there is a corresponding
+`_lupdf` and `_lupmf` defined automatically. The `_lupdf` and `_lupmf`
+versions of the functions cannot be defined directly (to do so will
+produce an error). The difference in the
+`_lpdf` and `_lpmf` and the corresponding `_lupdf` and `_lupmf` functions
+is that if any other unnormalized density functions are used
+inside the user-defined function, the `_lpdf` and `_lpmf` forms of the
+user-defined function will change these densities to be normalized.
+The `_lupdf` and `_lupmf` forms of the user-defined functions will
+instead allow other unnormalized density functions to drop additive
+constants.
+
+The sampling shorthand
 
 ```stan
 z ~ foo(phi);
 ```
 
-will have exactly the same effect
+will have the same effect as incrementing the target with the log
+of the unnormalized density:
 
 ```stan
+target += foo_lupdf(z | phi);
+```
+
+Other `_lupdf` and `_lupmf` functions used in the definition of
+`foo_lpdf` will drop additive constants. If there are no `_lupdf`
+or `_lupmf` functions used in the definition of `foo_lpdf`, then
+there will be no difference between a `foo_lpdf` or `foo_lupdf` call.
+
+If there are `_lupdf` and `_lupmf` functions used inside `foo_lpdf`,
+then using the `_lpdf` version of the function will force the internal
+distributions to normalize:
+
+```
 target += foo_lpdf(z | phi);
 ```
 
-Unlike built-in probability functions, user-defined
-probability functions like the example `foo` above will not
-automatically drop constant terms.
+The unnormalized `_lupdf` and `_lupmf` functions can only be used in
+the model block or in user-defined probability functions (those ending in
+`_lpdf` or `_lpmf`).
 
-The same syntax and shorthand works for log probability mass functions
-with suffixes `_lpmf`.
+The same syntax and shorthand that works for `_lpdf` also works for log
+probability mass functions with suffixes `_lpmf`.
 
 A function that is going to be accessed as distributions must return
 the log of the density or mass function it defines.

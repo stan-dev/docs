@@ -20,7 +20,7 @@ This section translates the presentation of HMC by
 @Betancourt-Girolami:2013 into the notation of @GelmanEtAl:2013.
 
 
-### Target Density {-}
+### Target density {-}
 
 The goal of sampling is to draw from a density $p(\theta)$ for
 parameters $\theta$.  This is typically a Bayesian posterior
@@ -28,7 +28,7 @@ $p(\theta|y)$ given data $y$, and in particular, a Bayesian posterior
 coded as a Stan program.
 
 
-### Auxiliary Momentum Variable {-}
+### Auxiliary momentum variable {-}
 
 HMC introduces auxiliary momentum variables $\rho$ and draws from a
 joint density
@@ -80,7 +80,7 @@ is called the "potential energy."  The potential energy is specified
 by the Stan program through its definition of a log density.
 
 
-### Generating Transitions {-}
+### Generating transitions {-}
 
 Starting from the current value of the parameters $\theta$, a
 transition to a new state is generated in two stages before being
@@ -135,7 +135,7 @@ $$
 \end{array}
 $$
 
-### Leapfrog Integrator {-}
+### Leapfrog integrator {-}
 
 The last section leaves a two-state differential equation to solve.
 Stan, like most other HMC implementations, uses the leapfrog
@@ -180,7 +180,7 @@ including a derivation of the error bound for the leapfrog
 integrator.
 
 
-### Metropolis Accept Step {-}
+### Metropolis accept step {-}
 
 If the leapfrog integrator were perfect numerically, there would no
 need to do any more randomization per transition than generating a
@@ -202,7 +202,7 @@ If the proposal is not accepted, the previous parameter value is
 returned for the next draw and used to initialize the next iteration.
 
 
-### Algorithm Summary {-}
+### Algorithm summary {-}
 
 The Hamiltonian Monte Carlo algorithm starts at a specified initial
 set of parameters $\theta$; in Stan, this value is either
@@ -215,7 +215,7 @@ applied, and a decision is made whether to update to the new state
 $(\theta^{*}, \rho^{*})$ or keep the existing state.
 
 
-## HMC Algorithm Parameters
+## HMC algorithm parameters
 
 The Hamiltonian Monte Carlo algorithm has three parameters which must
 be set,
@@ -242,7 +242,7 @@ If the inverse metric $M^{-1}$ is a poor estimate of the posterior covariance,
 the step size $\epsilon$ must be kept small to maintain arithmetic
 precision. This would lead to a large $L$ to compensate.
 
-### Integration Time {-}
+### Integration time {-}
 
 The actual integration time is $L \, \epsilon$, a function of number
 of steps.  Some interfaces to Stan set an approximate integration time
@@ -256,7 +256,7 @@ $$
 and the actual integration time will still be $L \, \epsilon$.
 
 
-### Automatic Parameter Tuning {-}
+### Automatic parameter tuning {-}
 
 Stan is able to automatically optimize $\epsilon$ to match an
 acceptance-rate target, able to estimate $M$ based on warmup
@@ -315,7 +315,7 @@ parameters, all of which must be positive integers:
 *window*         | initial width of slow adaptation interval |  25
 
 
-### Discretization-Interval Adaptation Parameters {-}
+### Discretization-interval adaptation parameters {-}
 
 Stan's HMC algorithms utilize dual averaging @Nesterov:2009 to
 optimize the step size.^[This optimization of step size during adaptation of the sampler should not be confused with running Stan's optimization method.]
@@ -350,7 +350,7 @@ will also allow some models that would otherwise get stuck to overcome
 their blockages.
 
 
-### Step-Size Jitter {-}
+### Step-size jitter {-}
 
 All implementations of HMC use numerical integrators requiring a step
 size (equivalently, discretization time interval). Stan allows the
@@ -371,7 +371,7 @@ Hamiltonian dynamics calculation. See @Neal:2011 for further
 discussion of step-size jittering.
 
 
-### Euclidean Metric {-}
+### Euclidean metric {-}
 
 All HMC implementations in Stan utilize quadratic kinetic energy
 functions which are specified up to the choice of a symmetric,
@@ -404,7 +404,7 @@ Variances or covariances are estimated using Welford accumulators
 to avoid a loss of precision over many floating point operations.
 
 
-#### Warmup Times and Estimating the Metric {-}
+#### Warmup times and estimating the metric {-}
 
 The metric can compensate for linear (i.e. global) correlations
 in the posterior which can dramatically improve the performance of HMC
@@ -435,7 +435,7 @@ chicken-and-egg scenario;  in order to estimate an appropriate metric
 for sampling, convergence is required, and in order to
 converge, an appropriate metric is required.
 
-#### Dense vs. Diagonal Metrics {-}
+#### Dense vs. diagonal metrics {-}
 
 Statistical models for which sampling is problematic are not typically
 dominated by linear correlations for which a dense metric can
@@ -443,7 +443,7 @@ adjust.  Rather, they are governed by more complex nonlinear
 correlations that are best tackled with better parameterizations or
 more advanced algorithms, such as Riemannian HMC.
 
-#### Warmup Times and Curvature {-}
+#### Warmup times and curvature {-}
 
 MCMC convergence time is roughly equivalent to the autocorrelation
 time.  Because HMC (and NUTS) chains tend to be lowly autocorrelated
@@ -464,7 +464,7 @@ addressed with modeling efforts such as tighter priors or
 reparameterizations.
 
 
-### NUTS and its Configuration {-}
+### NUTS and its configuration {-}
 
 The no-U-turn sampler (NUTS) automatically selects an appropriate
 number of leapfrog steps in each iteration in order to allow the
@@ -526,7 +526,7 @@ specified and a large number of steps is necessary, the maximum depth
 should be increased to ensure that that the NUTS tree can grow as
 large as necessary.
 
-## Sampling without Parameters
+## Sampling without parameters
 
 In some situations, such as pure forward data simulation in a directed
 graphical model (e.g., where you can work down generatively from known
@@ -565,7 +565,7 @@ user-specified values). For example, `theta` in the example above
 could be declared as a parameter and initialized as a parameter.
 
 
-## General Configuration Options {#general-config.section}
+## General configuration options {#general-config.section}
 
 Stan's interfaces provide a number of configuration options that are
 shared among the MCMC algorithms (this chapter), the [optimization
@@ -573,7 +573,7 @@ algorithms chapter](#optimization-algorithms.chapter), and the
 [diagnostics chapter](#diagnostic-algorithms.chapter).
 
 
-### Random Number Generator {-}
+### Random number generator {-}
 
 The random-number generator's behavior is fully determined by the
 unsigned seed (positive integer) it is started with. If a seed is not
@@ -609,14 +609,14 @@ parameters must be given initial values or Stan will abort with an
 error message.
 
 
-#### User-Defined Initialization {-}
+#### User-defined initialization {-}
 
 If the user specifies initial values, they must satisfy the
 constraints declared in the model (i.e., they are on the constrained
 scale).
 
 
-#### System Constant Zero Initialization {-}
+#### System constant zero initialization {-}
 
 It is also possible to provide an initialization of 0, which causes
 all variables to be initialized with zero values on the unconstrained
@@ -628,7 +628,7 @@ between 0 and 1, a symmetric (uniform) vector for simplexes, unit
 matrices for both correlation and covariance matrices, and so on.
 
 
-#### System Random Initialization {-}
+#### System random initialization {-}
 
 Random initialization by default initializes the parameter values with
 values drawn at random from a $\mathsf{Uniform}(-2, 2)$ distribution.
@@ -645,7 +645,7 @@ initialized roughly in $(0.14, 7.4)$, variables constrained to fall
 between 0 and 1 are initialized with values roughly in $(0.12, 0.88)$.
 
 
-## Divergent Transitions
+## Divergent transitions
 
 The Hamiltonian Monte Carlo algorithms (HMC and NUTS) simulate the
 trajectory of a fictitious particle representing parameter values when
@@ -703,7 +703,7 @@ depth in NUTS); if the step size is too large, the Hamiltonian
 simulation diverges.
 
 
-### Diagnosing and Eliminating Divergences {-}
+### Diagnosing and eliminating divergences {-}
 
 In some cases, simply lowering the initial step size and increasing
 the target acceptance rate will keep the step size small enough that

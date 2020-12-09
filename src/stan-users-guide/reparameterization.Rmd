@@ -294,13 +294,17 @@ example is the lognormal distribution, which is the distribution of a
 variable $y > 0$ whose logarithm $\log y$ has a normal distribution.
 The distribution is being assigned to $\log y$.
 
-The change of variables requires an adjustment to the probability to
-account for the distortion caused by the transform.  For this to work,
-univariate changes of variables must be monotonic and differentiable
-everywhere in their support.
+The change of variables requires an adjustment to the probability to 
+account for the distortion caused by the transform. For this to work, 
+univariate changes of variables must be monotonic and differentiable 
+everywhere in their support. Multivariate changes of variables must 
+be injective and differentiable everywhere in their support, and they 
+must map $\mathbb{R}^N \rightarrow \mathbb{R}^N$.
 
-For univariate changes of variables, the resulting probability must be
-scaled by the absolute derivative of the transform.
+The probability must be scaled by a *Jacobian adjustment* equal to 
+the absolute determinant of the Jacobian of the transform. In the 
+univariate case, the Jacobian adjustment is simply the absolute 
+derivative of the transform.
 
 In the case of log normals, if $y$'s logarithm is normal with mean
 $\mu$ and deviation $\sigma$, then the distribution of $y$ is given by
@@ -426,10 +430,10 @@ $$
 
 ### Multivariate changes of variables {-}
 
-In the case of a multivariate transform, the log of the Jacobian of
-the transform must be added to the log probability accumulator.  In
-Stan, this can be coded as follows in the general case where the
-Jacobian is not a full matrix.
+In the case of a multivariate transform, the log of the absolute 
+determinant of the Jacobian of the transform must be added to the 
+log probability accumulator.  In Stan, this can be coded as 
+follows in the general case where the Jacobian is not a full matrix.
 
 ```
 parameters {
@@ -447,9 +451,10 @@ model {
   ...
 ```
 
-If the Jacobian is known analytically, it will be more
-efficient to apply it directly than to call the determinant function,
-which is neither efficient nor particularly stable numerically.
+If the determinant of the Jacobian is known analytically, it will be 
+more efficient to apply it directly than to call the determinant 
+function, which is neither efficient nor particularly stable 
+numerically.
 
 In many cases, the Jacobian matrix will be triangular, so that only
 the diagonal elements will be required for the determinant

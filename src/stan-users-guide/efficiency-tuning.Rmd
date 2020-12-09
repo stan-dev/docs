@@ -8,7 +8,7 @@ practical applied statistical modeling, we are mainly concerned with
 reducing wall time (how long a program takes as measured by a clock on
 the wall) and keeping memory requirements within available bounds.
 
-## What is Efficiency?
+## What is efficiency?
 
 The standard algorithm analyses in computer science measure efficiency
 asymptotically as a function of problem size (such as data, number of
@@ -22,7 +22,7 @@ asymptotic efficiency factors (such as using linear algorithms instead
 of quadratic algorithms in loops).
 
 
-## Efficiency for Probabilistic Models and Algorithms
+## Efficiency for probabilistic models and algorithms
 
 Stan programs express models which are intrinsically statistical in
 nature.  The algorithms applied to these models may or may not
@@ -58,7 +58,7 @@ rate in order to target a lower step size.  This is because smaller
 step sizes allow Stan's gradient-based algorithms to better follow the
 curvature in the density or penalized maximum likelihood being fit.
 
-## Statistical vs.\  Computational Efficiency
+## Statistical vs.\  computational efficiency
 
 There is a difference between pure computational efficiency and
 statistical efficiency for Stan programs fit with sampling-based
@@ -72,7 +72,7 @@ behaved.  The typical way to do this is by applying a change of
 variables (i.e., reparameterization) so that sampling algorithms mix
 better or optimization algorithms require less adaptation.
 
-## Model Conditioning and Curvature
+## Model conditioning and curvature
 
 Because Stan's algorithms (other than Riemannian Hamiltonian Monte
 Carlo) rely on step-based gradient-based approximations of the density
@@ -96,7 +96,7 @@ For pure penalized maximum likelihood problems, the posterior log
 density $\log p(\theta \mid y)$ is replaced by the penalized likelihood
 function $\mathcal{L}(\theta) = \log p(y \mid \theta) - \lambda(\theta)$.
 
-### Condition Number and Adaptation {-}
+### Condition number and adaptation {-}
 
 A good gauge of how difficult a problem the curvature presents is
 given by the condition number of the Hessian matrix $H$, which is the
@@ -109,7 +109,7 @@ log densities or penalized likelihood functions, it is easier for
 Stan's adaptation, especially the diagonal adaptations that are used
 as defaults.
 
-### Unit Scales without Correlation {-}
+### Unit scales without correlation {-}
 
 Ideally, all parameters should be programmed so that they have unit
 scale and so that posterior correlation is reduced; together, these
@@ -120,7 +120,7 @@ as it is where the algorithm initializes.  Riemannian Hamiltonian
 Monte Carlo performs this conditioning on the fly at every step, but
 such conditioning is  expensive computationally.
 
-### Varying Curvature {-}
+### Varying curvature {-}
 
 In all but very simple models (such as multivariate normals), the
 Hessian will vary as $\theta$ varies (an extreme example is Neal's
@@ -155,7 +155,7 @@ run long enough can be measured by comparing the adaptation parameters
 derived from a set of diffuse initial parameter values.
 
 
-### Reparameterizing with a Change of Variables {-}
+### Reparameterizing with a change of variables {-}
 
 Improving statistical efficiency is achieved by reparameterizing the
 model so that the same result may be calculated using a density or
@@ -170,7 +170,7 @@ result if the Jacobian term is inadvertently included in the revised
 likelihood model.
 
 
-## Well-Specified Models
+## Well-specified models
 
 Model misspecification, which roughly speaking means using a model
 that doesn't match the data, can be a major source of slow code.  This
@@ -192,7 +192,7 @@ the fixed prior with a hierarchical prior such as `normal(mu,
 their own hyperpriors, can be beneficial.
 
 
-## Avoiding Validation
+## Avoiding validation
 
 Stan validates all of its data structure constraints.  For example,
 consider a transformed parameter defined to be a covariance matrix and
@@ -238,7 +238,7 @@ dramatically increase effective sample size for the same number of
 iterations or even make programs that would not converge well
 behaved.
 
-### Example: Neal's Funnel {- #funnel.figure}
+### Example: Neal's funnel {- #funnel.figure}
 In this section, we discuss a general transform from a centered to a
 non-centered parameterization [@papa-et-al:2007].^[This parameterization came to be known on our mailing lists as the "Matt trick" after Matt Hoffman, who independently came up with it while fitting hierarchical models in Stan.]
 
@@ -413,7 +413,7 @@ some time checking that that `beta_unif` is between
 `-pi()/2` and `pi()/2`, but this condition is guaranteed by
 the constraints in the declaration of `beta_unif`.
 
-### Reparameterizing a Student-t Distribution {-}
+### Reparameterizing a Student-t distribution {-}
 
 One thing that sometimes works when you're having trouble with the
 heavy-tailedness of Student-t distributions is to use the
@@ -507,7 +507,7 @@ higher; when `nu` is 1, the result is a Cauchy distribution with
 distribution approaches a normal distribution.  Thus the parameter
 `nu` characterizes the heaviness of the tails of the model.
 
-### Hierarchical Models and the Non-Centered Parameterization {-}
+### Hierarchical models and the non-centered parameterization {-}
 
 Unfortunately, the usual situation in applied Bayesian modeling
 involves complex geometries and interactions that are not known
@@ -551,7 +551,7 @@ parameterization is more efficient.  See
 centering in hierarchical models fit with Hamiltonian Monte Carlo.
 
 
-### Non-Centered Parameterization {-}
+### Non-centered parameterization {-}
 
 Sometimes the group-level effects do not constrain the hierarchical
 distribution tightly.  Examples arise when there are not many groups,
@@ -616,7 +616,7 @@ parameters just to obtain one transformed parameter to use in a model.
 
 
 
-### Multivariate Reparameterizations {-}
+### Multivariate reparameterizations {-}
 
 The benefits of reparameterization are not limited to univariate
 distributions. A parameter with a multivariate normal prior distribution
@@ -881,7 +881,7 @@ model {
 
 ## Vectorization
 
-### Gradient Bottleneck {-}
+### Gradient bottleneck {-}
 
 Stan spends the vast majority of its time computing the gradient of
 the log probability function, making gradients the obvious target for
@@ -890,7 +890,7 @@ differentiation require a template expression to be allocated
 and constructed for each subexpression of a Stan program involving
 parameters or transformed parameters.^[Stan uses its own arena-based allocation, so allocation and deallocation are faster than with a raw call to `new`.]  This section defines optimization strategies based on vectorizing these subexpressions to reduce the work done during algorithmic differentiation.
 
-### Vectorizing Summations {-}
+### Vectorizing summations {-}
 
 Because of the gradient bottleneck described in the previous section,
 it is more efficient to collect a sequence of summands into a vector
@@ -930,7 +930,7 @@ it will also use substantially less memory overall than incrementing
 `total` within the loop.
 
 
-### Vectorization through Matrix Operations {-}
+### Vectorization through matrix operations {-}
 
 The following program directly encodes a linear regression with fixed
 unit noise using a two-dimensional array `x` of predictors, an
@@ -1049,7 +1049,7 @@ will be more efficient in their encapsulated forms.  Rather than
 performing a sequence of row-vector/vector multiplications, it is
 better to encapsulate it as a single matrix/vector multiplication.
 
-### Vectorized Probability Functions {-}
+### Vectorized probability functions {-}
 
 The final and most efficient version replaces the loops and
 transformed parameters by using the vectorized form of the normal
@@ -1083,7 +1083,7 @@ arguments are the same dimensionality.  In the example above, `y` is a
 vector of size `N`, `x * beta` is a vector of size `N`, and `1` is a
 scalar.
 
-### Reshaping Data for Vectorization {-}
+### Reshaping data for vectorization {-}
 
 Sometimes data does not arrive in a shape that is ideal for
 vectorization, but can be put into such shape with some munging
@@ -1129,7 +1129,7 @@ faster, but for moderate to large sized groups, the full expansion
 should be faster.
 
 
-## Exploiting Sufficient Statistics
+## Exploiting sufficient statistics
 
 In some cases, models can be recoded to exploit sufficient statistics
 in estimation.  This can lead to large efficiency gains compared to an
@@ -1190,7 +1190,7 @@ the same likelihood.  For efficiency, the frequencies `f[k]`
 should be counted once in the transformed data block and stored.
 
 
-## Aggregating Common Subexpressions
+## Aggregating common subexpressions
 
 If an expression is calculated once, the value should be saved and
 reused wherever possible.  That is, rather than using
@@ -1212,7 +1212,7 @@ for (i in 1:size(a))
 Then the sum can be replaced with `a_b[ii[n], jj[n]]`.
 
 
-## Exploiting Conjugacy
+## Exploiting conjugacy
 
 Continuing the model from the previous section, the conjugacy of the
 beta prior and binomial sampling distribution allow the model to be
@@ -1226,7 +1226,7 @@ To make the model even more efficient, a transformed data variable
 defined to be `sum(y)` could be used in the place of `sum(y)`.
 
 
-## Standardizing Predictors and Outputs
+## Standardizing predictors and outputs
 
 Stan programs will run faster if the input is standardized to have a
 zero sample mean and unit sample variance.  This section illustrates
@@ -1408,7 +1408,7 @@ the transformed model, to
 y_std ~ normal(alpha_std + beta_std * x_std, sigma_std);
 ```
 
-### Standard Normal Distribution {-}
+### Standard normal distribution {-}
 
 For many applications on the standard scale, normal distributions with
 location zero and scale one will be used.  In these cases, it is more
@@ -1427,7 +1427,7 @@ y ~ normal(0, 1);
 because the subtraction of the location and division by the scale
 cancel, as does subtracting the log of the scale.
 
-## Using Map-Reduce
+## Using map-reduce
 
 The map-reduce operation, even without multi-core MPI support, can be
 used to make programs more scalable and also more efficient.  See the

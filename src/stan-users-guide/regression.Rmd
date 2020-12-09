@@ -3,7 +3,7 @@
 Stan supports regression models from simple linear regressions to
 multilevel generalized linear models.
 
-## Linear Regression
+## Linear regression
 
 The simplest linear regression model is the following, with a single
 predictor and a slope and intercept coefficient, and normally
@@ -49,7 +49,7 @@ There are `N` observations and for each observation, $n \in N$,  we have predict
 distributed noise term with scale `sigma`.  This model has
 improper priors for the two regression coefficients.
 
-### Matrix Notation and Vectorization {- #vectorization.section}
+### Matrix notation and vectorization {- #vectorization.section}
 
 The sampling statement in the previous model is vectorized, with
 
@@ -126,7 +126,7 @@ With Stan's matrix indexing scheme, `x[n]` picks out row `n`
 of the matrix `x`;  because `beta` is a column vector,
 the product `x[n] * beta` is a scalar of type `real`.
 
-#### Intercepts as Inputs {-}
+#### Intercepts as inputs {-}
 
 In the model formulation
 
@@ -144,7 +144,7 @@ singled out because there's one fewer multiplications; it should not
 make that much of a difference to speed, though, so the choice should
 be based on clarity.
 
-## The QR Reparameterization {#QR-reparameterization.section}
+## The QR reparameterization {#QR-reparameterization.section}
 
 In the previous example, the linear predictor can be written as $\eta
 = x \beta$, where $\eta$ is a $N$-vector of predictions, $x$ is a $N
@@ -226,7 +226,7 @@ distribution of $\theta$ or $\beta$ but does affect $\alpha$ and
 allows you to interpret $\alpha$ as the expectation of $y$ in a linear
 model.
 
-## Priors for Coefficients and Scales {#regression-priors.section}
+## Priors for coefficients and scales {#regression-priors.section}
 
 See our [general discussion of priors](https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations)
 for tips on priors for parameters in regression models.
@@ -248,7 +248,7 @@ informative prior that scales with the outcome will do.
 
 
 
-## Robust Noise Models
+## Robust noise models
 
 The standard approach to linear regression is to model the noise
 term $\epsilon$ as having a normal distribution.  From Stan's
@@ -271,7 +271,7 @@ model {
 
 The degrees of freedom constant `nu` is specified as data.
 
-## Logistic and Probit Regression {#logistic-probit-regression.section}
+## Logistic and probit regression {#logistic-probit-regression.section}
 
 For binary outcomes, either of the closely related logistic or probit
 regression models may be used.  These generalized linear models vary
@@ -369,7 +369,7 @@ be coded with the following.
 y[n] ~ bernoulli(Phi_approx(alpha + beta * x[n]));
 ```
 
-## Multi-Logit Regression {#multi-logit.section}
+## Multi-logit regression {#multi-logit.section}
 
 Multiple outcome forms of logistic regression can be coded directly in
 Stan.  For instance, suppose there are $K$ possible outcomes for each
@@ -425,7 +425,7 @@ y[n] ~ categorical(softmax(x[n] * beta));
 
 
 
-#### Constraints on Data Declarations {-}
+#### Constraints on data declarations {-}
 
 The data block in the above model is defined without constraints on
 sizes `K`, `N`, and `D` or on the outcome array
@@ -512,7 +512,7 @@ this will cause the maximum likelihood solutions to be different and
 also the posteriors to be slightly different when taking priors
 centered around zero, as is typical for regression coefficients.
 
-## Parameterizing Centered Vectors
+## Parameterizing centered vectors
 
 It is often convenient to define a parameter vector $\beta$ that is
 centered in the sense of satisfying the sum-to-zero constraint,
@@ -528,7 +528,7 @@ the [item-response model section](item-response-models.section) for
 details).
 
 
-### $K-1$ Degrees of Freedom {-}
+### $K-1$ degrees of freedom {-}
 
 There is more than one way to enforce a sum-to-zero constraint on a
 parameter vector, the most efficient of which is to define the $K$-th
@@ -574,7 +574,7 @@ the resulting `beta` may be scaled by some factor `sigma` and
 translated to some new location `mu`.
 
 
-### QR Decomposition {-}
+### QR decomposition {-}
 
 Aaron Goodman, on the Stan forums, also provided this approach, which
 calculates a QR decomposition in the transformed data block, then uses
@@ -603,7 +603,7 @@ This produces a marginal standard normal distribution on the values of
 `beta`, which will sum to zero by construction of the QR decomposition.
 
 
-### Translated and Scaled Simplex {-}
+### Translated and scaled simplex {-}
 
 An alternative approach that's less efficient, but amenable to a
 symmetric prior, is to offset and scale a simplex.
@@ -631,7 +631,7 @@ With this parameterization, a Dirichlet prior can be placed on
 `beta_scale`, typically for "shrinkage."
 
 
-### Soft Centering {-}
+### Soft centering {-}
 
 Adding a prior such as $\beta \sim \textsf{normal}(0,\sigma)$ will provide a kind
 of soft centering of a parameter vector $\beta$ by preferring, all
@@ -642,7 +642,7 @@ another vector $\alpha$ being transformed to $\alpha - c$, as in the
 IRT models).  This is another way of achieving a symmetric prior.
 
 
-## Ordered Logistic and Probit Regression {#ordered-logistic.section}
+## Ordered logistic and probit regression {#ordered-logistic.section}
 
 Ordered regression for an outcome $y_n \in \{ 1, \dotsc, k \}$ with
 predictors $x_n \in \mathbb{R}^D$ is determined by a single coefficient
@@ -653,7 +653,7 @@ $c_k$, assuming $c_0 = -\infty$ and $c_K = \infty$.  The noise term is
 fixed by the form of regression, with examples for ordered logistic
 and ordered probit models.
 
-### Ordered Logistic Regression {-}
+### Ordered logistic regression {-}
 
 The ordered logistic model can be coded in Stan using the
 `ordered` data type for the cutpoints and the built-in
@@ -688,7 +688,7 @@ compute the effect of the constraint on the normalizing term because
 the probability is needed only up to a proportion.
 
 
-#### Ordered Probit {-}
+#### Ordered probit {-}
 
 An ordered probit model could be coded in exactly the same way by
 swapping the cumulative logistic (`inv_logit`) for the cumulative
@@ -728,7 +728,7 @@ stable.  A small efficiency gain could be achieved by computing the
 values `Phi(eta - c[k])` once and storing them for re-use.
 
 
-## Hierarchical Logistic Regression
+## Hierarchical logistic regression
 
 The simplest multilevel model is a hierarchical model in which the
 data are grouped into $L$ distinct categories (or levels).  An extreme
@@ -788,7 +788,7 @@ informative or at least weakly informative priors for all parameters;
 see the [regression priors section](#regression-priors.section) for
 recommendations on priors for regression coefficients and scales.
 
-#### Optimizing the Model {-}
+#### Optimizing the model {-}
 
 Where possible, vectorizing sampling statements leads to faster log
 probability and derivative evaluations.  The speed boost is not
@@ -852,7 +852,7 @@ the model and only work on optimizations when the simpler formulation
 has been debugged.
 
 
-## Hierarchical Priors {#hierarchical-priors.section}
+## Hierarchical priors {#hierarchical-priors.section}
 
 Priors on priors, also known as "hyperpriors," should be treated the
 same way as priors on lower-level parameters in that as much prior
@@ -862,7 +862,7 @@ care must be taken to ensure the posterior is both proper and not
 overly sensitive either statistically or computationally to wide tails
 in the priors.
 
-### Boundary-Avoiding Priors for MLE in Hierarchical Models {-}
+### Boundary-avoiding priors for MLE in hierarchical models {-}
 
 The fundamental problem with maximum likelihood estimation (MLE) in
 the hierarchical model setting is that as the hierarchical variance
@@ -892,7 +892,7 @@ $$
 for a reasonably large value of $A$, such as $A = 10$.
 
 
-## Item-Response Theory Models {#item-response-models.section}
+## Item-response theory models {#item-response-models.section}
 
 Item-response theory (IRT) models the situation in which a number of
 students each answer one or more of a group of test questions.  The
@@ -904,7 +904,7 @@ introduction to hierarchical IRT models and @Curtis:2010 for
 encodings of a range of IRT models in BUGS.
 
 
-### Data Declaration with Missingness {-}
+### Data declaration with missingness {-}
 
 The data provided for an IRT model may be declared as follows
 to account for the fact that not every student is required to answer
@@ -931,7 +931,7 @@ The prior hyperparameters will be hard coded in the rest of this
 section for simplicity, though they could be coded as data in
 Stan for more flexibility.
 
-### 1PL (Rasch) Model {-}
+### 1PL (Rasch) model {-}
 
 The 1PL item-response model, also known as the Rasch model, has one
 parameter (1P) for questions and uses the logistic link function (L).
@@ -1001,7 +1001,7 @@ priors should be fit hierarchically along with the other parameters,
 as described in the next section.
 
 
-### Multilevel 2PL Model {-}
+### Multilevel 2PL model {-}
 
 The simple 1PL model described in the previous section is generalized
 in this section with the addition of a discrimination parameter to
@@ -1111,9 +1111,9 @@ declarations.
 
 
 
-## Priors for Identifiability {#priors-for-identification.section}
+## Priors for identifiability {#priors-for-identification.section}
 
-### Location and Scale Invariance {-}
+### Location and scale invariance {-}
 
 One application of (hierarchical) priors is to identify the scale
 and/or location of a group of parameters. For example, in the IRT
@@ -1162,7 +1162,7 @@ well-behaved sampling.
 
 
 
-## Multivariate Priors for Hierarchical Models {#multivariate-hierarchical-priors.section}
+## Multivariate priors for hierarchical models {#multivariate-hierarchical-priors.section}
 
 In hierarchical regression models (and other situations), several
 individual-level variables may be assigned hierarchical priors.  For
@@ -1176,7 +1176,7 @@ as well as an intercept might be allowed to vary by state.
 Furthermore, there might be state-level predictors, such as average
 state income and unemployment level.
 
-### Multivariate Regression Example {-}
+### Multivariate regression example {-}
 
 @GelmanHill:2007 [, Chapter 13, Chapter 17] provide a discussion of a
 hierarchical model with $N$ individuals organized into $J$ groups.
@@ -1197,7 +1197,7 @@ y_n \sim \textsf{normal}(x_n \, \beta_{jj[n]}, \, \sigma)
 $$
 
 
-#### Coefficient Prior {-}
+#### Coefficient prior {-}
 
 Gelman and Hill model the coefficient vectors $\beta_j$ as being drawn
 from a multivariate distribution with mean vector $\mu$ and
@@ -1292,7 +1292,7 @@ correlation among the parameters $\beta_j$.  For a discussion of
 decomposing a covariance prior into a prior on correlation matrices
 and an independent prior on scales, see @barnard-mcculloch-meng:2000.
 
-#### Group-Level Predictors for Prior Mean {-}
+#### Group-level predictors for prior mean {-}
 
 To complete Gelman and Hill's model, suppose each group $j \in \{ 1, \dotsc, J \}$
 is supplied with an $L$-dimensional row-vector of group-level
@@ -1312,7 +1312,7 @@ As usual, information about the group-level means should be
 incorporated into this prior.
 
 
-#### Coding the Model in Stan {-}
+#### Coding the model in Stan {-}
 
 The Stan code for the full hierarchical model with multivariate priors
 on the group-level coefficients and group-level prior means follows
@@ -1362,7 +1362,7 @@ zeroes off diagonal; the version using `quad_form_diag` should be
 faster.  For details on these and other matrix arithmetic operators and
 functions, see the function reference manual.
 
-#### Optimization through Vectorization {-}
+#### Optimization through vectorization {-}
 
 The code in the Stan program above can be sped up dramatically by replacing:
 
@@ -1432,7 +1432,7 @@ as a local variable so as not to have to repeat the quadratic form
 computation $J$ times.  This vectorization can be combined with the
 Cholesky-factor optimization in the next section.
 
-#### Optimization through Cholesky Factorization {-}
+#### Optimization through Cholesky factorization {-}
 
 The multivariate normal density and LKJ prior on correlation matrices
 both require their matrix parameters to be factored.  Vectorizing, as
@@ -1532,7 +1532,7 @@ model {
 
 This model also reparameterizes the prior scale `tau` to avoid potential problems with the heavy tails of the Cauchy distribution. The statement `tau_unif ~ uniform(0,pi()/2)` can be omitted from the model block because Stan increments the log posterior for parameters with uniform priors without it.
 
-## Prediction, Forecasting, and Backcasting
+## Prediction, forecasting, and backcasting
 
 Stan models can be used for "predicting" the values of arbitrary
 model unknowns.  When predictions are about the future, they're called
@@ -1541,7 +1541,7 @@ reconstruction or cosmology, they are sometimes called "backcasts"
 (or "aftcasts" or "hindcasts" or "antecasts," depending on the
 author's feelings about the opposite of "fore").
 
-### Programming Predictions {-}
+### Programming predictions {-}
 
 As a simple example, the following linear regression provides the same
 setup for estimating the coefficients `beta` as in our very first
@@ -1580,7 +1580,7 @@ model {
 ```
 
 
-### Predictions as Generated Quantities {-}
+### Predictions as generated quantities {-}
 
 Where possible, the most efficient way to generate predictions is to
 use the generated quantities block.  This provides proper Monte Carlo
@@ -1609,7 +1609,7 @@ declared as a generated quantity, and the prediction model is
 removed from the model and replaced by a pseudo-random draw from a
 normal distribution.
 
-#### Overflow in Generated Quantities {-}
+#### Overflow in generated quantities {-}
 
 It is possible for values to overflow or underflow in generated
 quantities.  The problem is that if the result is NaN, then any
@@ -1623,7 +1623,7 @@ reimplementing the random number generator using real values rather
 than integers, which are upper-bounded by $2^{31} - 1$ in Stan.
 
 
-## Multivariate Outcomes
+## Multivariate outcomes
 
 Most regressions are set up to model univariate observations (be they
 scalar, boolean, categorical, ordinal, or count).  Even multinomial
@@ -1636,7 +1636,7 @@ This section considers two cases, seemingly unrelated regressions for
 continuous multivariate quantities and multivariate probit regression
 for boolean multivariate quantities.
 
-### Seemingly Unrelated Regressions {-}
+### Seemingly unrelated regressions {-}
 
 The first model considered is the "seemingly unrelated" regressions
 (SUR) of econometrics where several linear regressions share
@@ -1723,7 +1723,7 @@ reconstructed from their Cholesky factors in the generated quantities
 block.
 
 
-### Multivariate Probit Regression {-}
+### Multivariate probit regression {-}
 
 The multivariate probit model generates sequences of boolean variables
 by applying a step function to the output of a seemingly unrelated
@@ -1902,7 +1902,7 @@ generated quantities {
 The same could be done for the seemingly unrelated
 regressions in the previous section.
 
-## Applications of Pseudorandom Number Generation
+## Applications of pseudorandom number generation
 
 The main application of pseudorandom number generator (PRNGs) is for
 posterior inference, including prediction and posterior predictive
@@ -1972,7 +1972,7 @@ means that, for example, the posterior mean for `y_tilde` is the
 estimate of the outcome that minimizes expected square error
 (conditioned on the data and model).
 
-### Posterior Predictive Checks {-}
+### Posterior predictive checks {-}
 
 A good way to investigate the fit of a model to the data, a critical
 step in Bayesian data analysis, is to generate simulated data

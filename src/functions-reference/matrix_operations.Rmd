@@ -1510,40 +1510,33 @@ and positive definite.
 
 #### Generalized Inverse
 
-Computes the generalized inverse of a matrix. For a symmetric matrix `m` 
-the output is equivalent to using `inverse(m)`. When `m` is
-rectangular the `generalized_inverse(m)` satisfies $m m^+ m = m$ where
-$m^+$ is the output of calling `generalized_inverse(m)`. Note that the 
-dimensions of `generalized_inverse(m)` are equivalent to the 
-dimensions of `transpose(m)`. The `generalized_inverse` exists
-for any matrix, so the matrix may be singular or less than full rank.
+The generalized inverse $M^+$ of a matrix $M$ is a matrix that satisfies
+$M M^+ M = M$. For an invertible, square matrix $M$, $M^+$ is equivalent to
+$M^{-1}$. The dimensions of $M^+$ are equivalent to the dimensions of $M^T$.
+The generalized inverse exists for any matrix, so the $M$ may be
+singular or less than full rank.
 
-Even though the `generalized_inverse` exists for
-any arbitrary matrix, the derivatives of this function only exist 
-on matrices of constant rank. When automatric differentiation is applied
-a matrix may change rank in small pertubations around the elements of the
-input matrix. For example, let the matrices, $A$ and a pertubation matrix 
-$E$ be defined as
+Even though the generalized inverse exists for any arbitrary matrix,
+the derivatives of this function only exist on matrices of locally
+constant rank, meaning, the derivatives do not exist if small perturbations
+make the matrix change rank. For example, considered the rank of the matrix
+$A$ as a function of $\epsilon$:
 
 $$
-A =	\left( 
+A = \left( 
 	\begin{array}{cccc} 
-    1 & 2 & 1 \\
+    1 + \epsilon & 2 & 1 \\
     2 & 4 & 2 
     \end{array} 
     \right)
-\: \:
-E = \left( 
-	\begin{array}{cccc} 
-    \epsilon_{11} & \epsilon_{12} & \epsilon_{13} \\
-    \epsilon_{21} & \epsilon_{22} & \epsilon_{23}
-    \end{array} 
-    \right).
 $$
 
-$A$ is of rank 1 since it consists of two linearly dependent columns (and one 
-linearly dependent row). The number of linear dependent rows and columns changes 
-as the elements in $E$ fluctuate. Which means the matrix is not of constant rank.
+When $\epsilon = 0$, $A$ is rank 1 because the second row is twice the first
+(and so there is only one linearly independent row). If $\epsilon \neq 0$, the rows
+are no longer linearly dependent, and the matrix is rank 2. This matrix does
+not have locally constant rank at $\epsilon = 0$, and so the derivatives do
+not exist at zero. Because HMC depends on the derivatives existing, this lack
+of differentiability creates undefined behavior.
 
 <!-- matrix; generalized_inverse; (matrix A); -->
 \index{{\tt \bfseries generalized\_inverse }!{\tt (matrix A): matrix}|hyperpage}

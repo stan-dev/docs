@@ -354,25 +354,26 @@ indiscriminately stepping over an important feature of the solution.
 
 ### Tolerance {-}
 
-The relative and absolute tolerance control the accuracy of the
+The relative tolerance RTOL and absolute tolerance ATOL control the accuracy of the
 numerical solution. Specifically, when solving an ODE with unknowns
-$y=(y_1,\dots,y_n)^T$, the
-solver controls estimated local error $e=(e_1,\dots,e_n)^T$ at
-certain step through its weighted root-mean-square norm $\|\cdot\|$
+$y=(y_1,\dots,y_n)^T$, at every step the
+solver controls estimated local error $e=(e_1,\dots,e_n)^T$ through its weighted root-mean-square norm
+(@SerbanHindmarsh:2005, @hairer:1993)
 
 $$
-\|e\| = \sqrt{\sum_{i=1}^n{\frac{e_i^2}{\text{relative\_tolerance}\times y_i + \text{absolute\_tolerance}}}} < 1,
+\|e\| = \sqrt{\sum_{i=1}^n{\frac{1}{n}\frac{e_i^2}{(\text{RTOL}\times y_i + \text{ATOL})^2}}} < 1
 $$
-<a name="id:ode-local-error.equation"></a>
+by reducing the stepsize when the inequality is not satisfied.
 
-and it reduces the stepsize when the test fails.
-From the above test one can see the role of tolerances by assuming different scales of
-$y$. On one hand, the absolute tolerance has little effect when $y_i \gg 1$, on the other the relative tolerance can
-not affect the norm when $y_i = 0$. It is strongly encouraged choosing the
-tolerance carefully according to the ODE and its application. One can follow
+To understand the roles of the two toleranes it helps to assume $y$ at
+opposite scales in the above expression: on one hand the absolute
+tolerance has little effect when $y_i \gg 1$, on the other the
+relative tolerance can
+not affect the norm when $y_i = 0$. Users are strongly encouraged to carefully choose
+tolerance values according to the ODE and its application. One can follow
 @Brenan:1996 for a rule of thumb:
-let $m$ be the number of significant digits required for $y$, one can set
-$\text{relative\_tolerance}=10^{-(m+1)}$, and set absolute tolerance at
+let $m$ be the number of significant digits required for $y$, set
+$\text{RTOL}=10^{-(m+1)}$, and set ATOL at
 which $y$ becomes insignificant. Note that the same weighted root-mean-square norm
 is used to control nonlinear solver convergence in `bdf` and `adams` solvers,  and the same
 tolerances are used to control forward sensitivity calculation. See

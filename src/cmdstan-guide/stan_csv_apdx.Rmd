@@ -265,6 +265,35 @@ These are the column labels from the file `bernoulli_diagnostic.csv`:
 lp__,accept_stat__,stepsize__,treedepth__,n_leapfrog__,divergent__,energy__,theta,p_theta,g_theta
 ```
 
+### Profiling CSV output file
+
+The profiling information is stored in a plain CSV format with no meta
+information in the comments.
+
+Each row represents timing information collected in a `profile` statement
+for a given thread. It is possible that some `profile` statements have only
+one entry (if they were only executed by one thread) and others have
+multiple entries (if they were executed by multiple threads).
+
+The columns are as follows:
+- name, The name of the `profile` statement that is being timed
+- thread_id, The thread that executed the `profile` statement
+- time_total, The combined time spend executing forward and reverse mode
+calculations
+- forward_time, The time spent executing forward mode calculations. This
+includes calculations with and without autodiff.
+- reverse_time, The time spent executing reverse mode autodiff for
+the `profile` statement
+- chain_stack, The number of autodiff objects allocated on the chaining
+autodiff stack. There is a function call for each of these objects in
+the reverse pass
+- no_chain_stack, The number of autodiff obects allocated on the
+non-chaining autodiff stack.
+- autodiff_calls, The total number of times the `profile` statement was
+executed with autodiff
+- no_autodiff_calls - The total number of times the `profile` statement
+was executed without autodiff
+
 ## Optimization output
 
 - Config as comments

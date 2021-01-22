@@ -1,7 +1,15 @@
 # Parallelization  {#parallelization.chapter}
 
-Stan has two mechanisms for parallelizing calculations used in a
-model: reduce with summation and rectangular map.
+Stan has support for different types of parallelization: 
+multi-threading with Intel Threading Building Blocks (TBB),
+multi-processing with Message Passing Interface (MPI) and 
+manycore processing with OpenCL.
+
+## Multi-threading and multi-processing
+
+Multi-threading in Stan can be used with two mechanisms:
+reduce with summation and rectangular map. The latter can also 
+be used with multi-processing.
 
 The advantages of reduce with summation are:
 
@@ -21,12 +29,16 @@ The actual speedup gained from using these functions will depend on
 many details. It is strongly recommended to only parallelize the
 computationally most expensive operations in a Stan
 program. Oftentimes this is the evaluation of the log likelihood for
-the observed data. Since only portions of a Stan program will run in
+the observed data. When in doubt which parts of the model is the most 
+computationally expensive, we recommend using profiling, which is available
+in Stan 2.26 and newer. 
+
+Since only portions of a Stan program will run in
 parallel, the maximal speedup one can achieve is capped, a phenomen
 described by [Amdahl's
 law](https://en.wikipedia.org/wiki/Amdahl's_law).
 
-## Reduce-sum { #reduce-sum }
+### Reduce-sum { #reduce-sum }
 
 It is often necessary in probabilistic modeling to compute the sum of
 a number of independent function evaluations. This occurs, for instance, when
@@ -149,7 +161,7 @@ for(i in 1:size(x)) {
 }
 ```
 
-### Example: logistic regression
+#### Example: logistic regression
 
 Logistic regression is a useful example to clarify both the syntax
 and semantics of reduce summation and how it can be used to speed up a typical
@@ -257,7 +269,7 @@ model {
 }
 ```
 
-### Picking the grainsize {#reduce-sum-grainsize}
+#### Picking the grainsize {#reduce-sum-grainsize}
 
 The rational for choosing a sensible `grainsize` is based on
 balancing the overhead implied by creating many small tasks versus
@@ -294,7 +306,7 @@ best, and it is difficult to predict this behavior.  Without doing
 these halvings until performance actually gets worse, it is easy to
 miss this.
 
-## Map-rect
+### Map-rect
 
 Map-reduce allows large calculations (e.g., log likelihoods) to be
 broken into components which may be calculated modularly (e.g., data
@@ -315,7 +327,7 @@ are summation (with the return being a single value) or sorting (with
 the return being a sorted sequence).  The combination of mapping and
 reducing is so common it has its own name, _map-reduce_.
 
-### Map function
+#### Map function
 
 In order to generalize the form of functions and results that are
 possible and accommodate both parameters (which need derivatives) and
@@ -362,7 +374,7 @@ Although `f` will often return a vector of size one, the built-in
 flexibility allows general multivariate functions to be mapped, even
 raggedly.
 
-#### Map function semantics {-}
+##### Map function semantics {-}
 
 Stan's map function applies the function `f` to the shared
 parameters along with one element each of the job parameters, real
@@ -382,13 +394,13 @@ of each application of `f` is a vector, and the sequence of
 `N` vectors is concatenated together to return a single vector.
 
 
-### Example: logistic regression
+#### Example: logistic regression
 
 An example should help to clarify both the syntax and semantics of the
 mapping operation and how it may be combined with reductions built
 into Stan to provide a map-reduce implementation.
 
-#### Unmapped logistic regression {-}
+##### Unmapped logistic regression {-}
 
 Consider the following simple logistic regression model, which is
 coded unconventionally to accomodate direct translation to a mapped
@@ -418,7 +430,7 @@ because the argument is on the logit scale---it implicitly applies the
 inverse logit function to map the argument to a probability.
 
 
-#### Mapped logistic regression {-}
+##### Mapped logistic regression {-}
 
 The unmapped logistic regression model described in the previous
 subsection may be implemented using Stan's rectangular mapping
@@ -490,7 +502,7 @@ shared across shards.  There are no shard-specific parameters, so
 the array of job-specific parameters `theta` contains only empty
 vectors.
 
-### Example: hierarchical logistic regression
+#### Example: hierarchical logistic regression
 
 Consider a hierarchical model of American presidential voting behavior
 based on state of residence.^[This example is a simplified form of the model
@@ -514,7 +526,7 @@ The slopes and intercepts get hierarchical priors,
 \beta_k  &\sim \textsf{normal}(\mu_{\beta}, \sigma_{\beta})
 \end{align*}
 
-#### Unmapped implementation {-}
+##### Unmapped implementation {-}
 
 This model can be coded up in Stan directly as follows.
 
@@ -557,7 +569,7 @@ for (n in 1:N)
   y[n] ~ bernoulli_logit(beta[kk[n], 1] + beta[kk[n], 2] * x[n]);
 ```
 
-#### Mapped implementation {-}
+##### Mapped implementation {-}
 
 The mapped version of the model will map over the states `K`.
 This means the group-level parameters, real data, and integer-data
@@ -660,13 +672,13 @@ parallelization with the version that leaves the prior in the model
 block.
 
 
-### Ragged inputs and outputs
+#### Ragged inputs and outputs
 
 The previous examples included rectangular data structures and single
 outputs.  Despite the name, this is not technically required by
 `map_rect`.
 
-#### Ragged inputs {-}
+##### Ragged inputs {-}
 
 If each group has a different number of observations, then the
 rectangular data structures for predictors and outcomes will need to
@@ -675,7 +687,7 @@ structure will need to be passed as integer data. This holds for
 shards with varying numbers of parameters as well as varying numbers
 of data points.
 
-#### Ragged outputs {-}
+##### Ragged outputs {-}
 
 The output of each mapped function is concatenated in order of inputs
 to produce the output of `map_rect`.  When every shard returns a singleton

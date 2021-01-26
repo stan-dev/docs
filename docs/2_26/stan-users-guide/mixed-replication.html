@@ -1,15 +1,14 @@
 <!DOCTYPE html>
-<html >
-
+<html lang="" xml:lang="">
 <head>
 
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Stan User’s Guide</title>
-  <meta name="description" content="Stan user’s guide with examples and programming techniques.">
-  <meta name="generator" content="bookdown 0.7 and GitBook 2.6.7">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>26.6 Mixed predictive replication for hierarchical models | Stan User’s Guide</title>
+  <meta name="description" content="Stan user’s guide with examples and programming techniques." />
+  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Stan User’s Guide" />
+  <meta property="og:title" content="26.6 Mixed predictive replication for hierarchical models | Stan User’s Guide" />
   <meta property="og:type" content="book" />
   
   <meta property="og:image" content="img/logo-tm.pdf" />
@@ -17,28 +16,30 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Stan User’s Guide" />
+  <meta name="twitter:title" content="26.6 Mixed predictive replication for hierarchical models | Stan User’s Guide" />
   
   <meta name="twitter:description" content="Stan user’s guide with examples and programming techniques." />
   <meta name="twitter:image" content="img/logo-tm.pdf" />
 
-<meta name="author" content="Stan Development Team">
+<meta name="author" content="Stan Development Team" />
 
 
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="example-of-prior-predictive-checks.html">
-<link rel="next" href="joint-model-representation.html">
+<link rel="prev" href="example-of-prior-predictive-checks.html"/>
+<link rel="next" href="joint-model-representation.html"/>
 <script src="libs/jquery/jquery.min.js"></script>
 <link href="libs/gitbook/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook/css/plugin-bookdown.css" rel="stylesheet" />
 <link href="libs/gitbook/css/plugin-highlight.css" rel="stylesheet" />
 <link href="libs/gitbook/css/plugin-search.css" rel="stylesheet" />
 <link href="libs/gitbook/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook/css/plugin-clipboard.css" rel="stylesheet" />
 
 
 
@@ -46,7 +47,12 @@
 
 
 
+
+
+<link href="libs/anchor-sections/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections/anchor-sections.js"></script>
 <script src="libs/kePrint/kePrint.js"></script>
+<link href="libs/lightable/lightable.css" rel="stylesheet" />
 
 
 
@@ -494,10 +500,12 @@
 </ul></li>
 <li class="chapter" data-level="23.2" data-path="map-rect.html"><a href="map-rect.html"><i class="fa fa-check"></i><b>23.2</b> Map-rect</a><ul>
 <li class="chapter" data-level="23.2.1" data-path="map-rect.html"><a href="map-rect.html#map-function"><i class="fa fa-check"></i><b>23.2.1</b> Map function</a></li>
+<li class="chapter" data-level="" data-path="map-rect.html"><a href="map-rect.html#map-function-signature"><i class="fa fa-check"></i>Map function signature</a></li>
 <li class="chapter" data-level="23.2.2" data-path="map-rect.html"><a href="map-rect.html#example-logistic-regression-1"><i class="fa fa-check"></i><b>23.2.2</b> Example: logistic regression</a></li>
 <li class="chapter" data-level="23.2.3" data-path="map-rect.html"><a href="map-rect.html#example-hierarchical-logistic-regression"><i class="fa fa-check"></i><b>23.2.3</b> Example: hierarchical logistic regression</a></li>
 <li class="chapter" data-level="23.2.4" data-path="map-rect.html"><a href="map-rect.html#ragged-inputs-and-outputs"><i class="fa fa-check"></i><b>23.2.4</b> Ragged inputs and outputs</a></li>
 </ul></li>
+<li class="chapter" data-level="23.3" data-path="opencl.html"><a href="opencl.html"><i class="fa fa-check"></i><b>23.3</b> OpenCL</a></li>
 </ul></li>
 <li><a href="meta-models-part.html#meta-models.part"><i style="font-size: 110%; color:#990017;">Part 3. Posterior Inference &amp; Model Checking</i></a></li>
 <li class="chapter" data-level="24" data-path="posterior-prediction-chapter.html"><a href="posterior-prediction-chapter.html"><i class="fa fa-check"></i><b>24</b> Posterior Predictive Sampling</a><ul>
@@ -759,11 +767,13 @@ generated quantities {
   </div>
 <script src="libs/gitbook/js/app.min.js"></script>
 <script src="libs/gitbook/js/lunr.js"></script>
+<script src="libs/gitbook/js/clipboard.min.js"></script>
 <script src="libs/gitbook/js/plugin-search.js"></script>
 <script src="libs/gitbook/js/plugin-sharing.js"></script>
 <script src="libs/gitbook/js/plugin-fontsettings.js"></script>
 <script src="libs/gitbook/js/plugin-bookdown.js"></script>
 <script src="libs/gitbook/js/jquery.highlight.js"></script>
+<script src="libs/gitbook/js/plugin-clipboard.js"></script>
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
@@ -774,6 +784,14 @@ gitbook.start({
 "size": 2
 },
 "edit": null,
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
 "download": null,
 "toc": {
 "collapse": "section",
@@ -793,9 +811,10 @@ gitbook.start({
     var script = document.createElement("script");
     script.type = "text/javascript";
     var src = "true";
-    if (src === "" || src === "true") src = "https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML";
-    if (location.protocol !== "file:" && /^https?:/.test(src))
-      src = src.replace(/^https?:/, '');
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
     script.src = src;
     document.getElementsByTagName("head")[0].appendChild(script);
   })();

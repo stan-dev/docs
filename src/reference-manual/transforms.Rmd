@@ -660,18 +660,22 @@ $$
 x = \frac{y}{\Vert y \Vert}.
 $$
 
-To generate a unit vector, Stan generates points at random in
-$\mathbb{R}^n$ with independent unit normal distributions, which are then
-standardized by dividing by their Euclidean length.
-@Marsaglia:1972 showed this generates points uniformly at random
-on $S^{n-1}$.  That is, if we draw $y_n \sim \mathsf{Normal}(0, 1)$
+Stan samples from the unconstrained space prior to transformations.
+A unit vector, as discussed below, does not have a unique
+one-to-one mapping. However, to generate a random unit-vector
+@Marsaglia:1972 showed that if we draw $y_n \sim \mathsf{Normal}(0, 1)$
 for $n \in 1{:}n$, then $x = \frac{y}{\Vert y \Vert}$ has a uniform
 distribution over $S^{n-1}$.  This allows us to use an $n$-dimensional
 basis for $S^{n-1}$ that preserves local neighborhoods in that points
 that are close to each other in $\mathbb{R}^n$ map to points near each
-other in $S^{n-1}$.  The mapping is not perfectly distance preserving,
+other in $S^{n-1}$. The mapping is not perfectly distance preserving,
 because there are points arbitrarily far away from each other in
-$\mathbb{R}^n$ that map to identical points in $S^{n-1}$.
+$\mathbb{R}^n$ that map to identical points in $S^{n-1}$. 
+
+The program adjusts the target posterior so that the original
+unconstrained values are transformed to those from a standard
+multivariate normal with $n$ independent dimensions. The adjustment
+is on the log scale and is $-0.5 y^\top y$. 
 
 
 #### Warning: undefined at zero! {-}
@@ -684,7 +688,7 @@ is to initialize from a very small interval around zero, which is an
 option built into all of the Stan interfaces.
 
 
-### Absolute Jacobian determinant of the unit vector inverse transform {-}
+### No absolute Jacobian determinant of the unit vector inverse transform {-}
 
 The Jacobian matrix relating the input vector $y$ to the output vector
 $x$ is singular because $x^\top x = 1$ for any non-zero input vector

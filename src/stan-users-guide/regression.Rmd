@@ -1497,12 +1497,21 @@ vectorized argument to the univariate normal density.  This results in every
 column of `z` being a $K$-variate normal random vector with the identity as
 covariance matrix.  Therefore, multiplying `z` by the Cholesky factor of the
 covariance matrix and adding the mean `(u * gamma)'` produces a `beta`
-distributed as in the original model, where the mean is $\gamma u$ and the variance,
+distributed as in the original model, where the mean is $\gamma u$ and the variance is, 
+letting $L = \mathrm{diag}(\tau)\,\Omega_L$,
 
 $$
-\mathbb{E}[\beta \beta^\top] ={V}[\beta] = \mathrm{diag}(\tau)\,\Omega_L\,\mathbb{V}[z]\,(\mathrm{diag}(\tau)\,\Omega_L)' = \mathrm{diag}(\tau)\,\Omega\,\mathrm{diag}(\tau) = \Sigma,
+\begin{aligned}
+\mathbb{V}[\beta] &= \mathbb{E}\big((L \, z)(L \, z)^\top) \\
+&= \mathbb{E}\big((L \, z \, z^\top \, L^\top) \\
+&= L \, \mathbb{E}(z \, z^\top) \, L^\top \\ 
+&= L \, L^\top =(\mathrm{diag}(\tau)\,\Omega_L)\,(\mathrm{diag}(\tau)\,\Omega_L)^\top \\
+&= \mathrm{diag}(\tau)\,\Omega\,\mathrm{diag}(\tau) = \Sigma.
+\end{aligned}
 $$
-is the same. Where we have used the fact that $\mathbb{V}[z] = I$.
+Where we have used the linearity of expectations (line 2 to 3),
+the definition of $\Omega = \Omega_L \, \Omega_L^\top$, and the
+fact that $\mathbb{E}(z \, z^\top) = I$ since $v \sim \mathcal{N}(0, I)$.
 
 Omitting the remaining data declarations, which are the same as before
 with the exception of `u`, the optimized model is as follows.

@@ -4,29 +4,34 @@ Stan provides four different methods for solving systems of ordinary
 differential equations (ODEs). All of these methods will adaptively
 refine their solutions in order to satisfy the given tolerances.
 
-The upside to this is that as long as reasonable tolerances are provided
-and an ODE solver well-suited to the problem is chosen, the choice of timestep
-can be abstracted away. The downside is that it is not always clear from the
-outset what reasonable tolerances are, or which ODE solver is best suited
-to each problem. Additionally, in the course of working with an ODE model in
-Stan the correct answer may change (for instance, the ODE may change).
+Each solver has a simple interface with default tolerances and then an advanced
+one that allows the tolerances to be modified. If components of the solution
+need to be solved with high precision or if the solution goes very near zero,
+then the advanced interface may be useful. Picking tolerances is important
+for making any of the solvers work well. However, the tolerances themselves
+should be picked primarily with consideration to the scales of the solutions
+and how these solutions are used in the model. For instance, if a solution component
+slowly varies between 3.0 and 5.0 and measurements of the ODE state are noisy, then
+perhaps the tolerances do not need to be as tight as for a situation where the
+solutions vary between 3.0 and 3.1 and very high precision measurements of the
+ODE state are available. For information on choosing tolerances, see the
+[control parameters section](#control-ode.section).
+
+The upside to adaptive solvers is that as long as reasonable tolerances are provided
+and an ODE solver well-suited to the problem is chosen, the technical details
+of solving the ODE can be abstracted away. The catch is that it is not always
+clear from the outset what reasonable tolerances are or which ODE solver is
+best suited to each problem. Additionally, as changes are made to an ODE
+model, the optimal solver and tolerances may change.
 
 With this in mind, the four solvers are `rk45`, `bdf`, `adams`, and
-`ckrk`. Knowing nothing about the ODE, start with the `rk45` solver. There
-is a list below with more information on when each solver is useful.
+`ckrk`. Knowing nothing about the ODE, start with the `rk45` solver. The
+list below has information on when each solver is useful.
 
 If there is any uncertainty about which solver is the best, it can be
 expedient to measure the performance of all the interesting solvers
 using `profile` statements. It is difficult to always know exactly what
 solver is the best in all situations, but a `profile` can provide a quick check.
-
-Each solver has a simple interface with default tolerances and then an advanced
-one that allows the tolerances to be modified. If components of the solution
-need to be solved with high precision or if the solution goes very near zero,
-then the advanced interface may be useful. For information on choosing
-tolerances, see the [control parameters section](#control-ode.section).
-
-The four solvers in Stan are:
 
 * `rk45`: a fourth and fifth order Runge-Kutta method for
   non-stiff systems [@DormandPrince:1980; @AhnertMulansky:2011]. `rk45` is
@@ -60,8 +65,8 @@ An ODE is defined by a set of differential equations,
 $y(t, \theta)' = f(t, y, \theta)$, and initial conditions,
 $y(t_0, \theta) = y_0$. The function $f(t, y, \theta)$ is called the
 system function. The $\theta$ dependence is included in the notation for
-$y(t, \theta)$ and $f(t, y, \theta)$ as a reminder that the solution is a function of any parameters used
-in the computation.
+$y(t, \theta)$ and $f(t, y, \theta)$ as a reminder that the solution is
+a function of any parameters used in the computation.
 
 ## Example: simple harmonic oscillator
 

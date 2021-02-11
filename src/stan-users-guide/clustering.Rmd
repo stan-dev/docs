@@ -11,7 +11,7 @@ Nevertheless, they can be implemented in Stan like any other mixture
 model by marginalizing out the discrete parameters (see
 the [mixture modeling chapter](#mixture-modeling.chapter)).
 
-## Relation to Finite Mixture Models
+## Relation to finite mixture models
 
 As mentioned in the [clustering section](#clustering-mixture.section),
 clustering models and finite mixture models are really just two sides
@@ -20,7 +20,7 @@ section is a normal mixture model (with varying assumptions about
 covariance in higher dimensions leading to variants of $K$-means).
 Latent Dirichlet allocation is a mixed-membership multinomial mixture.
 
-## Soft *K*-Means
+## Soft *K*-means
 
 $K$-means clustering is a method of clustering data represented as
 $D$-dimensional vectors.  Specifically, there will be $N$ items to be
@@ -28,7 +28,7 @@ clustered, each represented as a vector $y_n \in \mathbb{R}^D$.  In the
 "soft" version of $K$-means, the assignments to clusters will be
 probabilistic.
 
-### Geometric Hard  *K*-Means Clustering
+### Geometric hard *K*-means clustering
 
 $K$-means clustering is typically described geometrically in terms of
 the following algorithm, which assumes the number of clusters $K$ and
@@ -43,7 +43,7 @@ data vectors $y$ as input.
 
 This algorithm is guaranteed to terminate.
 
-### Soft *K*-Means Clustering
+### Soft *K*-means clustering
 
 Soft $K$-means clustering treats the cluster assignments as
 probability distributions over the clusters.  Because of the
@@ -85,7 +85,7 @@ The spatial perspective on $K$-means arises by noting that the inner
 term is just half the negative Euclidean distance from the cluster
 mean $\mu_k$ to the data point $y_n$.
 
-### Stan Implementation of Soft *K*-Means {-}
+### Stan implementation of soft *K*-means {-}
 
 Consider the following Stan program for implementing $K$-means
 clustering.
@@ -133,7 +133,7 @@ can be converted back to a normalized simplex using the softmax
 function (see the functions reference manual), either externally or
 within the model's generated quantities block.
 
-### Generalizing Soft *K*-Means {-}
+### Generalizing soft *K*-means {-}
 
 The multivariate normal distribution with unit covariance matrix
 produces a log probability density proportional to Euclidean distance
@@ -154,7 +154,7 @@ situation, a hierarchical prior may be used for the covariance matrices.
 
 
 
-## The Difficulty of Bayesian Inference for Clustering
+## The difficulty of Bayesian inference for clustering
 
 Two problems make it pretty much impossible to perform full Bayesian
 inference for clustering models, the lack of parameter identifiability
@@ -163,7 +163,7 @@ discussion related to the non-identifiability due to label switching
 in the [label switching
 section](#label-switching-problematic.section).
 
-### Non-Identifiability {-}
+### Non-identifiability {-}
 
 Cluster assignments are not identified---permuting the cluster mean
 vectors `mu` leads to a model with identical likelihoods.  For
@@ -198,7 +198,7 @@ maximization or variational Bayes, which can be much more efficient
 than sampling-based approaches.
 
 
-## Naive Bayes Classification and Clustering
+## Naive Bayes classification and clustering
 
 Naive Bayes is a kind of mixture model that can be used for
 classification or for clustering (or a mix of both), depending on
@@ -245,7 +245,7 @@ The parameters $\theta$ and $\phi$ are typically given symmetric
 Dirichlet priors.  The prevalence $\theta$ is sometimes fixed to
 produce equal probabilities for each category $k \in \{1,\dotsc,K\}$.
 
-### Coding Ragged Arrays {-}
+### Coding ragged arrays {-}
 
 The specification for naive Bayes in the previous sections have used a ragged
 array notation for the words $w$.  Because Stan does not support
@@ -277,7 +277,7 @@ The relevant variables for the program are `N`, the total number
 of words in all the documents, the word array `w`, and the
 document identity array `doc`.
 
-### Estimation with Category-Labeled Training Data {-}
+### Estimation with category-labeled training data {-}
 
 
 A naive Bayes model for estimating the simplex parameters given
@@ -318,7 +318,7 @@ The topic identifiers $z_m$ are declared as data and the
 latent category assignments are included as part of the likelihood
 function.
 
-### Estimation without Category-Labeled Training Data {-}
+### Estimation without category-labeled training data {-}
 
 Naive Bayes models can be used in an unsupervised fashion to cluster
 multinomial-structured data into a fixed number $K$ of categories.
@@ -384,7 +384,7 @@ transformed parameter block, its sampled values would be saved by
 Stan.  The normalized posterior probabilities could also be defined as
 generated quantities.
 
-### Full Bayesian Inference for Naive Bayes {-}
+### Full Bayesian inference for naive Bayes {-}
 
 Full Bayesian posterior predictive inference for the naive Bayes model
 can be implemented in Stan by combining the models for labeled and
@@ -407,7 +407,7 @@ once.  Similarly, there is only one set of parameters.  Then the model
 contains a single set of statements for the prior, a set of statements
 for the labeled data, and a set of statements for the unlabeled data.
 
-### Prediction without Model Updates {-}
+### Prediction without model updates {-}
 
 An alternative to full Bayesian inference involves estimating a model
 using labeled data, then applying it to unlabeled data without
@@ -419,7 +419,7 @@ they no longer jointly contribute to the estimation of the model
 parameters.
 
 
-## Latent Dirichlet Allocation
+## Latent Dirichlet allocation
 
 Latent Dirichlet allocation (LDA) is a mixed-membership multinomial
 clustering model [@BleiNgJordan:2003] that generalizes naive
@@ -458,7 +458,7 @@ $$
 
 where $\beta$ is a fixed $V$-vector of positive values.
 
-### Summing out the Discrete Parameters {-}
+### Summing out the discrete parameters {-}
 
 Although Stan does not (yet) support discrete sampling, it is possible
 to calculate the marginal distribution over the continuous parameters
@@ -531,7 +531,7 @@ model {
 As in the other mixture models, the log-sum-of-exponents function is
 used to stabilize the numerical arithmetic.
 
-### Correlated Topic Model {-}
+### Correlated topic model {-}
 
 To account for correlations in the distribution of topics for
 documents, @BleiLafferty:2007 introduced a variant of LDA in
@@ -545,7 +545,7 @@ does not (yet) support maximum a posteriori estimation, so the mean and
 covariance of the multivariate logistic normal must be specified as
 data.
 
-#### Fixed Hyperparameter Correlated Topic Model {-}
+#### Fixed hyperparameter correlated topic model {-}
 
 The Stan model in the previous section can be modified to implement
 the correlated topic model by replacing the Dirichlet topic prior
@@ -581,7 +581,7 @@ model {
 }
 ```
 
-#### Full Bayes Correlated Topic Model {-}
+#### Full Bayes correlated topic model {-}
 
 By adding a prior for the mean and covariance, Stan supports full
 Bayesian inference for the correlated topic model.  This requires

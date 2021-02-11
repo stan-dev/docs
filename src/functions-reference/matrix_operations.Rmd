@@ -10,6 +10,7 @@ cat(' * <a href="dot-products-and-specialized-products.html">Dot Products and Sp
 cat(' * <a href="reductions.html">Reductions</a>\n')
 cat(' * <a href="matrix-broadcast.html">Broadcast Functions</a>\n')
 cat(' * <a href="diagonal-matrix-functions.html">Diagonal Matrix Functions</a>\n')
+cat(' * <a href="container-construction.html">Container Construction Functions</a>\n')
 cat(' * <a href="slicing-and-blocking-functions.html">Slicing and Blocking Functions</a>\n')
 cat(' * <a href="matrix-concatenation.html">Matrix Concatenation</a>\n')
 cat(' * <a href="softmax.html">Special Matrix Functions</a>\n')
@@ -20,7 +21,7 @@ cat(' * <a href="reverse-functions.html">Reverse Functions</a>\n')
 }
 ```
 
-## Integer-Valued Matrix Size Functions
+## Integer-valued matrix size functions
 
 <!-- int; num_elements; (vector x); -->
 \index{{\tt \bfseries num\_elements }!{\tt (vector x): int}|hyperpage}
@@ -77,13 +78,32 @@ The number of columns in the row vector x
 `int` **`cols`**`(matrix x)`<br>\newline
 The number of columns in the matrix x
 
-## Matrix Arithmetic Operators {#matrix-arithmetic-operators}
+<!-- int; size; (vector x); -->
+\index{{\tt \bfseries size }!{\tt (vector x): int}|hyperpage}
+
+`int` **`size`**`(vector x)`<br>\newline
+The size of `x`, i.e., the number of elements
+
+<!-- int; size; (row_vector x); -->
+\index{{\tt \bfseries size }!{\tt (row\_vector x): int}|hyperpage}
+
+`int` **`size`**`(row_vector x)`<br>\newline
+The size of `x`, i.e., the number of elements
+
+<!-- int; size; (matrix x); -->
+\index{{\tt \bfseries size }!{\tt (matrix x): int}|hyperpage}
+
+`int` **`size`**`(matrix x)`<br>\newline
+The size of the matrix `x`.  For example, if `x` is a
+$5 \times 3$ matrix, then `size(x)` is 15
+
+## Matrix arithmetic operators {#matrix-arithmetic-operators}
 
 Stan supports the basic matrix operations using infix, prefix and
 postfix operations.  This section lists the operations supported by
 Stan along with their argument and result types.
 
-### Negation Prefix Operators
+### Negation prefix operators
 
 <!-- vector; operator-; (vector x); -->
 \index{{\tt \bfseries operator\_subtract }!{\tt (vector x): vector}|hyperpage}
@@ -103,7 +123,7 @@ The negation of the row vector x.
 `matrix` **`operator-`**`(matrix x)`<br>\newline
 The negation of the matrix x.
 
-### Infix Matrix Operators
+### Infix matrix operators
 
 <!-- vector; operator+; (vector x, vector y); -->
 \index{{\tt \bfseries operator\_add }!{\tt (vector x, vector y): vector}|hyperpage}
@@ -207,7 +227,7 @@ The product of the matrix x and vector y
 `matrix` **`operator*`**`(matrix x, matrix y)`<br>\newline
 The product of the matrices x and y
 
-### Broadcast Infix Operators
+### Broadcast infix operators
 
 <!-- vector; operator+; (vector x, real y); -->
 \index{{\tt \bfseries operator\_add }!{\tt (vector x, real y): vector}|hyperpage}
@@ -300,7 +320,35 @@ The result of dividing each entry in the row vector x by y
 `matrix` **`operator/`**`(matrix x, real y)`<br>\newline
 The result of dividing each entry in the matrix x by y
 
-### Elementwise Arithmetic Operations
+## Transposition operator
+
+Matrix transposition is represented using a postfix operator.
+
+<!-- matrix; operator'; (matrix x); -->
+\index{{\tt \bfseries operator\_transpose }!{\tt (matrix x): matrix}|hyperpage}
+
+`matrix` **`operator'`**`(matrix x)`<br>\newline
+The transpose of the matrix x, written as `x'`
+
+<!-- row_vector; operator'; (vector x); -->
+\index{{\tt \bfseries operator\_transpose }!{\tt (vector x): row\_vector}|hyperpage}
+
+`row_vector` **`operator'`**`(vector x)`<br>\newline
+The transpose of the vector x, written as `x'`
+
+<!-- vector; operator'; (row_vector x); -->
+\index{{\tt \bfseries operator\_transpose }!{\tt (row\_vector x): vector}|hyperpage}
+
+`vector` **`operator'`**`(row_vector x)`<br>\newline
+The transpose of the row vector x, written as `x'`
+
+## Elementwise functions
+
+Elementwise functions apply a function to each element of a vector or
+matrix, returning a result of the same shape as the argument.  There
+are many functions that are vectorized in addition to the ad hoc cases
+listed in this section; see section [function vectorization](#fun-vectorization) for the
+general cases.
 
 <!-- vector; operator.*; (vector x, vector y); -->
 \index{{\tt \bfseries operator\_elt\_multiply }!{\tt (vector x, vector y): vector}|hyperpage}
@@ -428,37 +476,7 @@ The elementwise power of y and x
 `matrix` **`operator.^`**`(real x, matrix y)`<br>\newline
 The elementwise power of y and x
 
-## Transposition Operator
-
-Matrix transposition is represented using a postfix operator.
-
-<!-- matrix; operator'; (matrix x); -->
-\index{{\tt \bfseries operator\_transpose }!{\tt (matrix x): matrix}|hyperpage}
-
-`matrix` **`operator'`**`(matrix x)`<br>\newline
-The transpose of the matrix x, written as `x'`
-
-<!-- row_vector; operator'; (vector x); -->
-\index{{\tt \bfseries operator\_transpose }!{\tt (vector x): row\_vector}|hyperpage}
-
-`row_vector` **`operator'`**`(vector x)`<br>\newline
-The transpose of the vector x, written as `x'`
-
-<!-- vector; operator'; (row_vector x); -->
-\index{{\tt \bfseries operator\_transpose }!{\tt (row\_vector x): vector}|hyperpage}
-
-`vector` **`operator'`**`(row_vector x)`<br>\newline
-The transpose of the row vector x, written as `x'`
-
-## Elementwise Functions
-
-Elementwise functions apply a function to each element of a vector or
-matrix, returning a result of the same shape as the argument.  There
-are many functions that are vectorized in addition to the ad hoc cases
-listed in this section;  see section [function vectorization](#fun-vectorization)for the
-general cases.
-
-## Dot Products and Specialized Products
+## Dot products and specialized products
 
 <!-- real; dot_product; (vector x, vector y); -->
 \index{{\tt \bfseries dot\_product }!{\tt (vector x, vector y): real}|hyperpage}
@@ -568,7 +586,7 @@ The dot product of the rows of x with themselves
 `vector` **`rows_dot_self`**`(matrix x)`<br>\newline
 The dot product of the rows of x with themselves
 
-### Specialized Products
+### Specialized products
 
 <!-- matrix; tcrossprod; (matrix x); -->
 \index{{\tt \bfseries tcrossprod }!{\tt (matrix x): matrix}|hyperpage}
@@ -684,7 +702,7 @@ from the the row vector `rv`, i.e., `m * diag_matrix(rv)`.
 
 ## Reductions
 
-### Log Sum of Exponents
+### Log sum of exponents
 
 <!-- real; log_sum_exp; (vector x); -->
 \index{{\tt \bfseries log\_sum\_exp }!{\tt (vector x): real}|hyperpage}
@@ -707,7 +725,7 @@ in x
 The natural logarithm of the sum of the exponentials of the elements
 in x
 
-### Minimum and Maximum
+### Minimum and maximum
 
 <!-- real; min; (vector x); -->
 \index{{\tt \bfseries min }!{\tt (vector x): real}|hyperpage}
@@ -745,7 +763,7 @@ The maximum value in x, or $-\infty$ if x is empty
 `real` **`max`**`(matrix x)`<br>\newline
 The maximum value in x, or $-\infty$ if x is empty
 
-### Sums and Products
+### Sums and products
 
 <!-- real; sum; (vector x); -->
 \index{{\tt \bfseries sum }!{\tt (vector x): real}|hyperpage}
@@ -783,7 +801,7 @@ The product of the values in x, or 1 if x is empty
 `real` **`prod`**`(matrix x)`<br>\newline
 The product of the values in x, or 1 if x is empty
 
-### Sample Moments
+### Sample moments
 
 Full definitions are provided for sample moments in section
 [array reductions](#array-reductions).
@@ -851,7 +869,7 @@ The sample standard deviation of the values in x; see section
 The sample standard deviation of the values in x; see section
 [array reductions](#array-reductions) for details.
 
-## Broadcast Functions {#matrix-broadcast}
+## Broadcast functions {#matrix-broadcast}
 
 The following broadcast functions allow vectors, row vectors and
 matrices to be created by copying a single element into all of their
@@ -905,7 +923,16 @@ broadcasting behave similarly.
 There are no integer vector or matrix types, so integer values are
 automatically promoted.
 
-## Diagonal Matrix Functions
+### Symmetrization
+
+<!-- matrix; symmetrize_from_lower_tri; (matrix A); -->
+\index{{\tt \bfseries symmetrize\_from\_lower\_tri }!{\tt (matrix A): matrix}|hyperpage}
+
+`matrix` **`symmetrize_from_lower_tri`**`(matrix A)`<br>\newline
+
+Construct a symmetric matrix from the lower triangle of A.
+
+## Diagonal matrix functions
 
 <!-- matrix; add_diag; (matrix m, row_vector d); -->
 \index{{\tt \bfseries add\_diag }!{\tt (matrix m, row\_vector d): matrix}|hyperpage}
@@ -958,12 +985,126 @@ v)` (and similarly for pre-multiplication). By the same token, it is
 better to use `quad_form_diag(m, v)` rather than `quad_form(m,
 diag_matrix(v))`.
 
-## Slicing and Blocking Functions
+<!-- matrix; identity_matrix; (int k); -->
+\index{{\tt \bfseries identity\_matrix\_matrix }!{\tt (int k): matrix}|hyperpage}
+
+`matrix` **`identity_matrix`**`(int k)`<br>\newline
+Create an identity matrix of size $k \times k$
+
+
+
+## Container construction functions {#container-construction}
+
+<!-- real[]; linspaced_array; (int n, data real lower, data real upper); -->
+\index{{\tt \bfseries linspaced\_array }!{\tt (int n, data real lower, data real upper): real[]}|hyperpage}
+
+`real[]` **`linspaced_array`**`(int n, data real lower, data real upper)`<br>\newline
+Create a real array of length `n` of equidistantly-spaced elements between `lower` and `upper`
+
+<!-- real[]; linspaced_int_array; (int n, int lower, int upper); -->
+\index{{\tt \bfseries linspaced\_int\_array }!{\tt (int n, int lower, int upper): real[]}|hyperpage}
+
+`real[]` **`linspaced_int_array`**`(int n, int lower, int upper)`<br>\newline
+Create a regularly spaced, increasing integer array of length `n` between `lower` and `upper`, inclusively.
+If `(upper - lower) / (n - 1)` is less than one, repeat each output `(n - 1) / (upper - lower)` times.
+If neither `(upper - lower) / (n - 1)` or `(n - 1) / (upper - lower)` are integers, `upper` is reduced until one of these is true.
+
+<!-- vector; linspaced_vector; (int n, data real lower, data real upper); -->
+\index{{\tt \bfseries linspaced\_vector }!{\tt (int n, data real lower, data real upper): vector}|hyperpage}
+
+`vector` **`linspaced_vector`**`(int n, data real lower, data real upper)`<br>\newline
+Create an `n`-dimensional vector of equidistantly-spaced elements between `lower` and `upper`
+
+<!-- row_vector; linspaced_row_vector; (int n, data real lower, data real upper); -->
+\index{{\tt \bfseries linspaced\_row\_vector }!{\tt (int n, data real lower, data real upper): row\_vector}|hyperpage}
+
+`row_vector` **`linspaced_row_vector`**`(int n, data real lower, data real upper)`<br>\newline
+Create an `n`-dimensional row-vector of equidistantly-spaced elements between `lower` and `upper`
+
+<!-- int[]; one_hot_int_array; (int n, int k); -->
+\index{{\tt \bfseries one\_hot\_int\_array }!{\tt (int n, int k): int[]}|hyperpage}
+
+`int[]` **`one_hot_int_array`**`(int n, int k)`<br>\newline
+Create a one-hot encoded int array of length `n` with `array[k] = 1`
+
+<!-- real[]; one_hot_array; (int n, int k); -->
+\index{{\tt \bfseries one\_hot\_array }!{\tt (int n, int k): real[]}|hyperpage}
+
+`real[]` **`one_hot_array`**`(int n, int k)`<br>\newline
+Create a one-hot encoded real array of length `n` with `array[k] = 1`
+
+<!-- vector; one_hot_vector; (int K, int k); -->
+\index{{\tt \bfseries one\_hot\_vector }!{\tt (int n, int k): vector}|hyperpage}
+
+`vector` **`one_hot_vector`**`(int n, int k)`<br>\newline
+Create an `n`-dimensional one-hot encoded vector with `vector[k] = 1`
+
+<!-- row_vector; one_hot_row_vector; (int n, int k); -->
+\index{{\tt \bfseries one\_hot\_row\_vector }!{\tt (int n, int k): row\_vector}|hyperpage}
+
+`row_vector` **`one_hot_row_vector`**`(int n, int k)`<br>\newline
+Create an `n`-dimensional one-hot encoded row-vector  with `row_vector[k] = 1`
+
+<!-- int[]; ones_int_array; (int n); -->
+\index{{\tt \bfseries ones\_int\_array }!{\tt (int n): int[]}|hyperpage}
+
+`int[]` **`ones_int_array`**`(int n)`<br>\newline
+Create an int array of length `n` of all ones
+
+<!-- real[]; ones_array; (int n); -->
+\index{{\tt \bfseries ones\_array }!{\tt (int n): real[]}|hyperpage}
+
+`real[]` **`ones_array`**`(int n)`<br>\newline
+Create a real array of length `n` of all ones
+
+<!-- vector; ones_vector; (int n); -->
+\index{{\tt \bfseries ones\_vector }!{\tt (int n): vector}|hyperpage}
+
+`vector` **`ones_vector`**`(int n)`<br>\newline
+Create an `n`-dimensional vector of all ones
+
+<!-- row_vector; ones_row_vector; (int n); -->
+\index{{\tt \bfseries ones\_row\_vector }!{\tt (int n): row\_vector}|hyperpage}
+
+`row_vector` **`ones_row_vector`**`(int n)`<br>\newline
+Create an `n`-dimensional row-vector of all ones
+
+<!-- int[]; zeros_int_array; (int n); -->
+\index{{\tt \bfseries zeros\_int\_array }!{\tt (int n): int[]}|hyperpage}
+
+`int[]` **`zeros_int_array`**`(int n)`<br>\newline
+Create an int array of length `n` of all zeros
+
+<!-- real[]; zeros_array; (int n); -->
+\index{{\tt \bfseries zeros\_array }!{\tt (int n): real[]}|hyperpage}
+
+`real[]` **`zeros_array`**`(int n)`<br>\newline
+Create a real array of length `n` of all zeros
+
+<!-- vector; zeros_row_vector; (int n); -->
+\index{{\tt \bfseries zeros\_vector }!{\tt (int n): vector}|hyperpage}
+
+`vector` **`zeros_vector`**`(int n)`<br>\newline
+Create an `n`-dimensional vector of all zeros
+
+<!-- row_vector; zeros_row_vector; (int n); -->
+\index{{\tt \bfseries zeros\_row\_vector }!{\tt (int n): row\_vector}|hyperpage}
+
+`row_vector` **`zeros_row_vector`**`(int n)`<br>\newline
+Create an `n`-dimensional row-vector of all zeros
+
+<!-- vector; uniform_simplex; (int n); -->
+\index{{\tt \bfseries uniform\_simplex }!{\tt (int n): vector}|hyperpage}
+
+`vector` **`uniform_simplex`**`(int n)`<br>\newline
+Create an `n`-dimensional simplex with elements `vector[i] = 1 / n` for all $i \in 1, \dots, n$ 
+
+## Slicing and blocking functions
 
 Stan provides several functions for generating slices or blocks or
 diagonal entries for matrices.
 
-### Columns and Rows
+### Columns and rows
 
 <!-- vector; col; (matrix x, int n); -->
 \index{{\tt \bfseries col }!{\tt (matrix x, int n): vector}|hyperpage}
@@ -984,9 +1125,9 @@ notation `x[m]` is just an alternative way of writing `row(x,m)`.  The
 `col` function may **not**, be used as an lvalue, nor is there an
 indexing based shorthand for it.
 
-### Block Operations
+### Block operations
 
-#### Matrix Slicing Operations
+#### Matrix slicing operations
 
 Block operations may be used to extract a sub-block of a matrix.
 
@@ -1014,7 +1155,7 @@ extends n_rows rows and 1 column.
 Return the sub-row of x that starts at row i and column j and extends
 1 row and n_cols columns.
 
-#### Vector and Array Slicing Operations
+#### Vector and array slicing operations
 
 The head operation extracts the first $n$ elements of a vector and the
 tail operation the last.  The segment operation extracts an arbitrary
@@ -1080,7 +1221,7 @@ Return the array consisting of the n elements of sv starting at i;
 i.e., elements i through through i + n - 1. Applies to up to
 three-dimensional arrays containing any type of elements `T`.
 
-## Matrix Concatenation {#matrix-concatenation}
+## Matrix concatenation {#matrix-concatenation}
 
 Stan's matrix concatenation operations `append_col` and `append_row`
 are like the operations `cbind` and `rbind` in R.
@@ -1181,7 +1322,7 @@ Append x to the top of y, returning another vector.
 `vector` **`append_row`**`(vector x, real y)`<br>\newline
 Append y to the bottom of x, returning another vector.
 
-## Special Matrix Functions {#softmax}
+## Special matrix functions {#softmax}
 
 ### Softmax
 
@@ -1214,7 +1355,7 @@ The softmax of x
 `vector` **`log_softmax`**`(vector x)`<br>\newline
 The natural logarithm of the softmax of x
 
-### Cumulative Sums
+### Cumulative sums
 
 The cumulative sum of a sequence $x_1,\ldots,x_N$ is the sequence
 $y_1,\ldots,y_N$, where \[ y_n = \sum_{m = 1}^{n} x_m. \]
@@ -1237,7 +1378,7 @@ The cumulative sum of v
 `row_vector` **`cumulative_sum`**`(row_vector rv)`<br>\newline
 The cumulative sum of rv
 
-## Covariance Functions {#covariance}
+## Covariance functions {#covariance}
 
 ### Exponentiated quadratic covariance function
 
@@ -1298,9 +1439,9 @@ x2.
 The covariance matrix with an exponentiated quadratic kernel of x1 and
 x2.
 
-## Linear Algebra Functions and Solvers
+## Linear algebra functions and solvers
 
-### Matrix Division Operators and Functions
+### Matrix division operators and functions
 
 In general, it is much more efficient and also more arithmetically
 stable to use matrix division than to multiply by an inverse.  There
@@ -1419,7 +1560,7 @@ The right division of B by the symmetric, positive-definite matrix A;
 algebraically equivalent to the less efficient and stable form `B *
 inverse(A)`.
 
-### Matrix Exponential
+### Matrix exponential
 
 The exponential of the matrix $A$ is formally defined by the
 convergent power series: \[ e^A = \sum_{n=0}^{\infty} \dfrac{A^n}{n!}
@@ -1445,7 +1586,7 @@ algebraically equivalent to the less efficient form `matrix_exp(A) * B`.
 The multiplication of matrix exponential of tA and matrix B;
 algebraically equivalent to the less efficient form `matrix_exp(t * A) * B`.
 
-### Matrix Power
+### Matrix power
 
 Returns the nth power of the specific matrix: \[ M^n = M_1 * ... * M_n \]
 
@@ -1455,7 +1596,7 @@ Returns the nth power of the specific matrix: \[ M^n = M_1 * ... * M_n \]
 `matrix` **`matrix_power`**`(matrix A, int B)`<br>\newline
 Matrix A raised to the power B.
 
-### Linear Algebra Functions
+### Linear algebra functions
 
 #### Trace
 
@@ -1498,15 +1639,58 @@ function, which returns `1 / m[i, j]` for each element.
 \index{{\tt \bfseries inverse }!{\tt (matrix A): matrix}|hyperpage}
 
 `matrix` **`inverse`**`(matrix A)`<br>\newline
-The inverse of A
+Compute the inverse of A
 
 <!-- matrix; inverse_spd; (matrix A); -->
 \index{{\tt \bfseries inverse\_spd }!{\tt (matrix A): matrix}|hyperpage}
 
 `matrix` **`inverse_spd`**`(matrix A)`<br>\newline
-The inverse of A where A is symmetric, positive definite. This version
+Compute the inverse of A where A is symmetric, positive definite. This version
 is faster and more arithmetically stable when the input is symmetric
 and positive definite.
+
+<!-- matrix; chol2inv; (matrix L); -->
+\index{{\tt \bfseries chol2inv }!{\tt (matrix L): matrix}|hyperpage}
+
+`matrix` **`chol2inv`**`(matrix L)`<br>\newline
+Compute the inverse of the matrix whose cholesky factorization is L.
+That is, for $A = L L^T$, return $A^{-1}$.
+
+#### Generalized Inverse
+
+The generalized inverse $M^+$ of a matrix $M$ is a matrix that satisfies
+$M M^+ M = M$. For an invertible, square matrix $M$, $M^+$ is equivalent to
+$M^{-1}$. The dimensions of $M^+$ are equivalent to the dimensions of $M^T$.
+The generalized inverse exists for any matrix, so the $M$ may be
+singular or less than full rank.
+
+Even though the generalized inverse exists for any arbitrary matrix,
+the derivatives of this function only exist on matrices of locally
+constant rank [@GolubPereyra:1973], meaning, the derivatives do not exist if small perturbations
+make the matrix change rank. For example, considered the rank of the matrix
+$A$ as a function of $\epsilon$:
+
+$$
+A = \left( 
+	\begin{array}{cccc} 
+    1 + \epsilon & 2 & 1 \\
+    2 & 4 & 2 
+    \end{array} 
+    \right)
+$$
+
+When $\epsilon = 0$, $A$ is rank 1 because the second row is twice the first
+(and so there is only one linearly independent row). If $\epsilon \neq 0$, the rows
+are no longer linearly dependent, and the matrix is rank 2. This matrix does
+not have locally constant rank at $\epsilon = 0$, and so the derivatives do
+not exist at zero. Because HMC depends on the derivatives existing, this lack
+of differentiability creates undefined behavior.
+
+<!-- matrix; generalized_inverse; (matrix A); -->
+\index{{\tt \bfseries generalized\_inverse }!{\tt (matrix A): matrix}|hyperpage}
+
+`matrix` **`generalized_inverse`**`(matrix A)`<br>\newline
+The generalized inverse of A
 
 #### Eigendecomposition
 
@@ -1537,7 +1721,7 @@ inverses, and thus known as "ill conditioned."  The ratio can even be
 infinite in the case of singular matrices (i.e., those with
 eigenvalues of 0).
 
-#### QR Decomposition {#QR-decomposition}
+#### QR decomposition {#QR-decomposition}
 
 <!-- matrix; qr_thin_Q; (matrix A); -->
 \index{{\tt \bfseries qr\_thin\_q }!{\tt (matrix A): matrix}|hyperpage}
@@ -1582,7 +1766,7 @@ necessary. Also, these QR  decomposition algorithms do not utilize
 pivoting and thus may be  numerically unstable on input matrices that
 have less than full rank.
 
-#### Cholesky Decomposition
+#### Cholesky decomposition
 
 Every symmetric, positive-definite matrix (such as a correlation or
 covariance matrix) has a Cholesky decomposition.  If $\Sigma$ is a
@@ -1596,10 +1780,12 @@ lower-triangular vector $L$ such that \[ \Sigma = L \, L^{\top}. \]
 The lower-triangular Cholesky factor of the symmetric
 positive-definite matrix A
 
-#### Singular Value Decomposition
+#### Singular value decomposition
 
-Stan only provides functions for the singular values, not for the
-singular vectors involved in a singular value decomposition (SVD).
+The matrix A can be decomposed into a diagonal matrix of singular values, D, and
+matrices of its left and right singular vectors, U and V, \[ A = U D V^T. \]
+The matrices of singular vectors here are thin. That is for an $N$ by $P$ input A,
+$M = min(N, P)$, U is size $N$ by $M$ and V is size $P$ by $M$.
 
 <!-- vector; singular_values; (matrix A); -->
 \index{{\tt \bfseries singular\_values }!{\tt (matrix A): vector}|hyperpage}
@@ -1607,7 +1793,19 @@ singular vectors involved in a singular value decomposition (SVD).
 `vector` **`singular_values`**`(matrix A)`<br>\newline
 The singular values of A in descending order
 
-## Sort Functions
+<!-- vector; svd_U; (matrix A); -->
+\index{{\tt \bfseries svd\_U }!{\tt (matrix A): vector}|hyperpage}
+
+`vector` **`svd_U`**`(matrix A)`<br>\newline
+The left-singular vectors of A
+
+<!-- vector; svd_V; (matrix A); -->
+\index{{\tt \bfseries svd\_V }!{\tt (matrix A): vector}|hyperpage}
+
+`vector` **`svd_V`**`(matrix A)`<br>\newline
+The right-singular vectors of A
+
+## Sort functions
 
 See the [sorting functions section](#sorting-functions) for examples of how
 the functions work.
@@ -1676,7 +1874,7 @@ Number of components of v less than v[s]
 `int` **`rank`**`(row_vector v, int s)`<br>\newline
 Number of components of v less than v[s]
 
-## Reverse Functions {#reverse-functions}
+## Reverse functions {#reverse-functions}
 
 <!-- vector; reverse; (vector v); -->
 \index{{\tt \bfseries reverse }!{\tt (vector v): vector}|hyperpage}

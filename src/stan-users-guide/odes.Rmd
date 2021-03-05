@@ -1,11 +1,48 @@
 # Ordinary Differential Equations  {#ode-solver.chapter}
 
-Stan provides a built-in mechanism for specifying and solving systems
-of ordinary differential equations (ODEs). Three different solvers,
-tuned for solving non-stiff systems and for stiff systems are available.
+Stan provides four different methods for solving systems of ordinary
+differential equations (ODEs). All of these methods adaptively
+refine their solutions in order to satisfy the given tolerances.
+
+Two interfaces are provided for each solver: one with default tolerances and default max
+number of steps, and one
+that allows these controls to be modified. Choosing tolerances is important
+for making any of the solvers work well -- the defaults will not work everywhere.
+The tolerances should be chosen primarily with consideration to the
+scales of the solutions, the accuracy needed for the solutions,
+and how the solutions are used in the model. For
+instance, if a solution component slowly varies between 3.0 and 5.0 and
+measurements of the ODE state are noisy, then perhaps the tolerances do not
+need to be as tight as for a situation where the solutions vary between 3.0
+and 3.1 and very high precision measurements of the ODE state are available.
+It is also often useful to reduce the absolute tolerance when
+a component of the solution is expected to approach zero. For information on choosing
+tolerances, see the [control parameters section](#control-ode.section).
+
+The advantage of adaptive solvers is that as long as reasonable tolerances are
+provided and an ODE solver well-suited to the problem is chosen the technical
+details of solving the ODE can be abstracted away. The catch is that it is not
+always clear from the outset what reasonable tolerances are or which ODE solver
+is best suited to a problem. In addition, as changes are made to an ODE
+model, the optimal solver and tolerances may change.
+
+With this in mind, the four solvers are `rk45`, `bdf`, `adams`, and
+`ckrk`. If no other information about the ODE is available, start with the
+`rk45` solver. The list below has information on when each solver is useful.
+
+If there is any uncertainty about which solver is the best, it can be
+useful to measure the performance of all the interesting solvers
+using `profile` statements. It is difficult to always know exactly what
+solver is the best in all situations, but a `profile` can provide a quick check.
 
 * `rk45`: a fourth and fifth order Runge-Kutta method for
-  non-stiff systems [@DormandPrince:1980; @AhnertMulansky:2011], and
+  non-stiff systems [@DormandPrince:1980; @AhnertMulansky:2011]. `rk45` is
+  the most generic solver and should be tried first.
+
+* `bdf`: a variable-step, variable-order,
+  backward-differentiation formula implementation for stiff systems
+  [@CohenHindmarsh:1996; @SerbanHindmarsh:2005]. `bdf` is often useful
+  for ODEs modeling chemical reactions.
 
 * `adams`: a variable-step, variable-order,
   Adams-Moulton formula implementation for non-stiff systems
@@ -14,13 +51,17 @@ tuned for solving non-stiff systems and for stiff systems are available.
   desired for a very smooth solution,
   such as in modeling celestial mechanics and orbital dynamics [@montenbrucksatellite:2000].
 
-* `bdf`: a variable-step, variable-order,
-  backward-differentiation formula implementation for stiff systems
-  [@CohenHindmarsh:1996; @SerbanHindmarsh:2005]
+* `ckrk`: a fourth and fifth order explicit Runge-Kutta method for
+  non-stiff and semi-stiff systems [@cashvariable:1990; @mazziatest:2012].
+  The difference between `ckrk` and `rk45` is that `ckrk` should perform
+  better for systems that exhibit rapidly varying solutions. Often in
+  those situations the derivatives become large or even nearly
+  discontinuous, and `ckrk` is designed to address such problems.
 
 For a discussion of stiff ODE systems, see the [stiff ODE
 section](#stiff-ode.section). The function signatures for Stan's ODE
-solvers can be found in the reference manual section on ODE solvers.
+solvers can be found in the function reference manual section on ODE
+solvers.
 
 ## Notation
 
@@ -28,8 +69,8 @@ An ODE is defined by a set of differential equations,
 $y(t, \theta)' = f(t, y, \theta)$, and initial conditions,
 $y(t_0, \theta) = y_0$. The function $f(t, y, \theta)$ is called the
 system function. The $\theta$ dependence is included in the notation for
-$y(t, \theta)$ and $f(t, y, \theta)$ as a reminder that the solution is a function of any parameters used
-in the computation.
+$y(t, \theta)$ and $f(t, y, \theta)$ as a reminder that the solution is
+a function of any parameters used in the computation.
 
 ## Example: simple harmonic oscillator
 
@@ -292,7 +333,7 @@ sense to try the `adams` solver as well. The `adams` solver uses higher order
 methods which can take larger timesteps than the `rk45` solver, though similar
 to the `bdf` solver each of these steps is more expensive to compute.
 
-## Control parameters for ODE solving
+## Control parameters for ODE solving {#control-ode.section}
 
 For additional control of the solves, both the stiff and non-stiff solvers
 have function signatures that makes it possible to specify the

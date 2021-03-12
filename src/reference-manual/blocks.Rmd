@@ -5,7 +5,7 @@ bodies of which consist of variable declarations, followed in the case
 of some blocks with statements.
 
 
-## Overview of Stan's Program Blocks
+## Overview of Stan's program blocks
 
 The full set of named program blocks is exemplified in the following
 skeletal Stan program.
@@ -47,7 +47,7 @@ based on parameters, data, and optionally (pseudo) random number
 generation.
 
 
-### Optionality and Ordering {-}
+### Optionality and ordering {-}
 
 All of the blocks are optional.  A consequence of this is that the
 empty string is a valid Stan program, although it will trigger a
@@ -58,7 +58,7 @@ optional, subject to the  restriction that the declarations come
 before the statements.
 
 
-### Variable Scope {-}
+### Variable scope {-}
 
 The variables declared in each block have scope over all subsequent
 statements.  Thus a variable declared in the transformed data block
@@ -75,7 +75,7 @@ function definition's body, and may not be assigned to (they are
 constant).
 
 
-### Function Scope {-}
+### Function scope {-}
 
 Functions defined in the function block may be used in any appropriate
 block.  Most functions can be used in any block and applied to a
@@ -93,7 +93,7 @@ Density functions defined in the program may be used in sampling
 statements.
 
 
-### Automatic Variable Definitions {-}
+### Automatic variable definitions {-}
 
 The variables declared in the `data` and `parameters` block
 are treated differently than other variables in that they are
@@ -110,7 +110,7 @@ parameters are instantiated to the values for which the model defines
 a log probability function.
 
 
-### Transformed Variables {-}
+### Transformed variables {-}
 
 The `transformed data` and `transformed parameters` block
 behave similarly to each other.  Both allow new variables to be
@@ -134,7 +134,7 @@ declared and their defining statements executed once per leapfrog
 step.
 
 
-### Generated Quantities {-}
+### Generated quantities {-}
 
 The generated quantity variables are defined once per sample after all
 the leapfrog steps have been completed.  These may be random
@@ -142,7 +142,7 @@ quantities, so the block must be rerun even if the Metropolis
 adjustment of HMC or NUTS rejects the update proposal.
 
 
-### Variable Read, Write, and Definition Summary {-}
+### Variable read, write, and definition summary {-}
 
 A table summarizing the point at which variables are read, written, and
 defined is given in the [block actions table](#block-actions-table).
@@ -200,7 +200,7 @@ The rest of this chapter provides full details on when and how the
 variables and statements in each block are executed.
 
 
-## Statistical Variable Taxonomy
+## Statistical variable taxonomy
 
 **Statistical Variable Taxonomy Table.**
 <a id="variable-kinds-table"></a>
@@ -319,13 +319,13 @@ Finally, the variable `n` is used as a loop index in the
 `model` block.
 
 
-## Program Block: `data`
+## Program block: `data`
 
 The rest of this chapter will lay out the details of each block in
 order, starting with the `data` block in this section.
 
 
-### Variable Reads and Transformations {-}
+### Variable reads and transformations {-}
 
 The `data` block is for the declaration of variables that are
 read in as data.  With the current model executable, each Markov chain
@@ -343,7 +343,7 @@ guides and interface documentation for PyStan, RStan, and CmdStan for details.
 The `data` block does not allow statements.
 
 
-### Variable Constraint Checking {-}
+### Variable constraint checking {-}
 
 Each variable's value is validated against its declaration as it is
 read.  For example, if a variable `sigma` is declared as
@@ -353,13 +353,13 @@ possible.  Similarly, attempts to provide data of the wrong size for a
 compound data structure will also raise an error.
 
 
-## Program Block: `transformed data`
+## Program block: `transformed data`
 
 The `transformed data` block is for declaring and defining
 variables that do not need to be changed when running the program.
 
 
-### Variable Reads and Transformations {-}
+### Variable reads and transformations {-}
 
 For the `transformed data` block, variables are all declared in
 the variable declarations and defined in the statements.  There is no
@@ -384,7 +384,7 @@ Variables declared in the `data` block may be used in statements
 in the `transformed data` block.
 
 
-#### Restriction on Operations in `transformed data` {-}
+#### Restriction on operations in `transformed data` {-}
 
 The statements in the transformed data block are designed to be
 executed once and have a deterministic result.  Therefore, log
@@ -392,7 +392,7 @@ probability is not accumulated and sampling statements may not be
 used.
 
 
-### Variable Constraint Checking {-}
+### Variable constraint checking {-}
 
 Any constraints on variables declared in the `transformed data`
 block are checked after the statements are executed.  If any defined
@@ -400,7 +400,7 @@ variable violates its constraints, Stan will halt with a diagnostic
 error message.
 
 
-## Program Block: `parameters`
+## Program block: `parameters`
 
 The variables declared in the `parameters` program block
 correspond directly to the variables being sampled by Stan's samplers
@@ -420,7 +420,7 @@ HMC or NUTS samplers, and a bit more computation along with writes
 involved for saving the parameter values corresponding to a sample.
 
 
-### Constraining Inverse Transform {-}
+### Constraining inverse transform {-}
 
 Stan's two samplers, standard Hamiltonian Monte Carlo (HMC) and the
 adaptive No-U-Turn sampler (NUTS), are most easily (and often most
@@ -455,7 +455,7 @@ block.  The details of the specific transformations are provided in
 the [variable transforms chapter](#variable-transforms).
 
 
-### Gradient Calculation {-}
+### Gradient calculation {-}
 
 Hamiltonian Monte Carlo requires the gradient of the (unnormalized)
 log probability function with respect to the unconstrained parameters
@@ -474,7 +474,7 @@ unconstrained parameters, but this is usually dwarfed by the gradient
 calculations.
 
 
-### Writing Draws {-}
+### Writing draws {-}
 
 In the basic Stan compiled program, there is a file to which the
 values of variables are written for each draw.  The constrained
@@ -484,7 +484,7 @@ transformed parameter, model, and generated quantities statements must
 also be executed.
 
 
-## Program Block: `transformed parameters`
+## Program block: `transformed parameters`
 
 The `transformed parameters` program block consists of optional
 variable declarations followed by statements.  After the statements
@@ -498,7 +498,7 @@ Defining such quantities in the transformed parameters block is legal,
 but much less efficient than defining them as transformed data.
 
 
-### Constraints are for Error Checking {-}
+### Constraints are for error checking {-}
 
 Like the constraints on data, the constraints on transformed
 parameters is meant to catch programming errors as well as convey
@@ -511,7 +511,7 @@ ad hoc constraints in Stan programs.   See the [section on reject statements](#r
 for further discussion of the behavior of reject statements.
 
 
-## Program Block: `model`
+## Program block: `model`
 
 The `model` program block consists of optional variable
 declarations followed by statements.  The variables in the model block
@@ -527,7 +527,7 @@ allowed.  These are typically used when programming in the BUGS idiom
 to define the probability model.
 
 
-## Program Block: `generated quantities`
+## Program block: `generated quantities`
 
 The `generated quantities` program block is rather different than
 the other blocks.  Nothing in the generated quantities block affects

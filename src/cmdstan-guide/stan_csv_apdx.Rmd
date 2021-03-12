@@ -19,7 +19,7 @@ In addition to initial and final comment rows,
 some methods also put comment rows in the middle of the data table,
 which makes it difficult to use many of the commonly used CSV parser packages.
 
-## CSV Column Names and Order
+## CSV column names and order
 
 The data table is laid out with zero or more method-specific columns followed by
 the Stan program variables declared in the parameter block,
@@ -59,7 +59,7 @@ The final 6 columns will be labeled:
 foo.2.2.3, foo.2.2.4, foo.2.3.1, foo.2.3.2, foo.2.3.3, foo.2.3.4
 ```
 
-## MCMC Sampler CSV Output
+## MCMC sampler CSV output
 
 The sample method produces both a Stan CSV output file and a [diagnostic file](#sampler-diag-file)
 which contains the sampler parameters together with the gradients on the unconstrained scale and
@@ -265,13 +265,45 @@ These are the column labels from the file `bernoulli_diagnostic.csv`:
 lp__,accept_stat__,stepsize__,treedepth__,n_leapfrog__,divergent__,energy__,theta,p_theta,g_theta
 ```
 
-## Optimization Output
+### Profiling CSV output file
+
+The profiling information is stored in a plain CSV format with no meta
+information in the comments.
+
+Each row represents timing information collected in a `profile` statement
+for a given thread. It is possible that some `profile` statements have only
+one entry (if they were only executed by one thread) and others have
+multiple entries (if they were executed by multiple threads).
+
+The columns are as follows:
+
+- `name`, The name of the `profile` statement that is being timed
+- `thread_id`, The thread that executed the `profile` statement
+- `total_time`, The combined time spent executing statements inside the
+`profile` which includes calculation with and without automatic
+differentiation
+- `forward_time`, The time spent in the `profile` statement during the
+forward pass of a reverse mode automatic differentiation calculation or during
+a cauculation without automatic differentiation
+- `reverse_time`, The time spent in the `profile` statement during the reverse
+(backward) pass of reverse mode automatic differentiation
+- `chain_stack`, The number of objects allocated on the chaining automatic
+differentiation stack. There is a function call for each of these objects in
+the reverse pass
+- `no_chain_stack`, The number of objects allocated on the non-chaining
+automatic differentiation stack
+- `autodiff_calls`, The total number of times the `profile` statement was
+executed with automatic differentiation
+- `no_autodiff_calls` - The total number of times the `profile` statement was
+executed without automatic differentiation
+
+## Optimization output
 
 - Config as comments
 - Header row
 - Penalized maximum likelihood estimate
 
-## Variational Inference Output
+## Variational inference output
  
 
 - Config as comments
@@ -280,12 +312,12 @@ lp__,accept_stat__,stepsize__,treedepth__,n_leapfrog__,divergent__,energy__,thet
 - Variational estimate
 - Sample draws from estimate of the posterior
 
-## Generate Quantities Outputs
+## Generate quantities outputs
 
 - Header row
 - Quantities of interest
 
-## Diagnose Method Outputs
+## Diagnose method outputs
 
 - Header row
 - Gradients

@@ -11,13 +11,13 @@ This chapter covers the syntax, typing, and usage of the various forms
 of expressions in Stan.
 
 
-## Numeric Literals
+## Numeric literals
 
 The simplest form of expression is a literal that denotes a primitive
 numerical value.
 
 
-### Integer Literals {-}
+### Integer literals {-}
 
 Integer literals represent integers of type `int`.  Integer
 literals are written in base 10 without any separators.  Integer
@@ -38,7 +38,7 @@ expressions `1.` and `1.0` are of type `real` and may
 not be used where a value of type `int` is required.
 
 
-### Real Literals {-}
+### Real literals {-}
 
 A number written with a period or with scientific notation is assigned
 to a the continuous numeric type `real`.  Real literals are
@@ -75,7 +75,7 @@ Unlike in R and BUGS, variable identifiers in Stan may not contain
 a period character.
 
 
-### Reserved Names {-}
+### Reserved names {-}
 
 Stan reserves many strings for internal use and these may not be used
 as the name of a variable.  An attempt to name a variable after an
@@ -84,7 +84,7 @@ error message indicating which reserved name was used and its location
 in the model code.
 
 
-#### Model Name {-}
+#### Model name {-}
 
 The name of the model cannot be used as a variable within the model.
 This is usually not a problem because the default in `bin/stanc`
@@ -96,13 +96,13 @@ model specification.  For example, if the model is in file
 match the model.
 
 
-#### User-Defined Function Names {-}
+#### User-defined function names {-}
 
 User-defined function names cannot be used as a variable within the
 model.
 
 
-#### Reserved Words from Stan Language {-}
+#### Reserved words from Stan language {-}
 
 The following list contains reserved words for Stan's programming
 language.  Not all of these features are implemented in Stan yet, but
@@ -136,7 +136,7 @@ target, lower, upper, offset, multiplier
 ```
 
 
-#### Reserved Names from Stan Implementation {-}
+#### Reserved names from Stan implementation {-}
 
 Some variable names are reserved because they are used within
 Stan's C++ implementation.  These are
@@ -147,7 +147,7 @@ STAN_MATH_MAJOR, STAN_MATH_MINOR, STAN_MATH_PATCH
 ```
 
 
-#### Reserved Function and Distribution Names {-}
+#### Reserved function and distribution names {-}
 
 Variable names will conflict with the names of predefined functions
 other than constants.  Thus a variable may not be named `logit`
@@ -156,14 +156,16 @@ or `add`, but it may be named `pi` or `e`.
 Variable names will also conflict with the names of distributions
 suffixed with `_lpdf`, `_lpmf`, `_lcdf`, and `_lccdf`, `_cdf`, and
 `_ccdf`, such as `normal_lcdf_log`; this also holds for the deprecated
-forms `_log`, `_cdf_log`, and `_ccdf_log`.
+forms `_log`, `_cdf_log`, and `_ccdf_log`. No user-defined variable
+can take a name ending in `_lupdf` or `_lupmf` even if a corresponding
+`_lpdf` or `_lpmf` is not defined.
 
 Using any of these variable names causes the `stanc` translator
 to halt and report the name and location of the variable causing the
 conflict.
 
 
-#### Reserved Names from C++ {-}
+#### Reserved names from C++ {-}
 
 Finally, variable names, including the names of models, should not
 conflict with any of the C++ keywords.
@@ -184,7 +186,7 @@ virtual, void, volatile, wchar_t, while, xor, xor_eq
 ```
 
 
-### Legal Characters {-}
+### Legal characters {-}
 
 The legal characters for variable identifiers are given in the
 [identifier characters table](#identifier-characters-table).
@@ -207,14 +209,14 @@ compatible with Latin-1 or UTF-8 encodings of these characters, which
 are byte-for-byte identical to ASCII.
 
 
-#### Comments Allow ASCII-Compatible Encoding {-}
+#### Comments allow ASCII-compatible encoding {-}
 
 Within comments, Stan can work with any ASCII-compatible character
 encoding, such as ASCII itself, UTF-8, or Latin1.  It is up to user
 shells and editors to display them properly.
 
 
-## Vector, Matrix, and Array Expressions {#vector-matrix-array-expressions.section}
+## Vector, matrix, and array expressions {#vector-matrix-array-expressions.section}
 
 Expressions for the Stan container objects arrays, vectors, and
 matrices can be constructed via a sequence of expressions
@@ -222,7 +224,7 @@ enclosed in either curly braces for arrays, or square brackets for
 vectors and matrices.
 
 
-### Vector Expressions {-}
+### Vector expressions {-}
 
 Square brackets may be wrapped around a sequence of comma separated
 primitive expressions to produce a row vector expression.   For
@@ -243,7 +245,7 @@ or variable names,  so it is legal to write
 and `y` are primitive variables.
 
 
-### Matrix Expressions {-}
+### Matrix expressions {-}
 
 A matrix expression consists of square brackets wrapped
 around a sequence of comma separated row vector expressions.
@@ -271,7 +273,7 @@ allowed and similarly expressions such as `[ [ ] ]` or
 `[ [ ], [ ] ]` are not allowed.
 
 
-### Array Expressions {-}
+### Array expressions {-}
 
 Curly braces may be wrapped around a sequence of expressions to
 produce an array expression.  For example, the expression
@@ -304,7 +306,7 @@ int b[2, 3] = { { 1, 2, 3 },
 ```
 
 
-### Array Expression Types {-}
+### Array expression types {-}
 
 Any type of expression may be used within braces to form an array
 expression.  In the simplest case, all of the elements will be of the
@@ -327,7 +329,7 @@ real b[2] = { 1, 1.9 };
 ```
 
 
-### Restrictions on Values {-}
+### Restrictions on values {-}
 
 There are some restrictions on how array expressions may be used that
 arise from their types being calculated bottom up and the basic data
@@ -392,7 +394,7 @@ real a[2] = { -3.0, 12.0 };
 Now the types match and the assignment is allowed.
 
 
-## Parentheses for Grouping
+## Parentheses for grouping
 
 Any expression wrapped in parentheses is also an expression. Like in
 C++, but unlike in R, only the round parentheses, `(` and
@@ -408,7 +410,7 @@ parentheses, this grouping may be made explicit with the expression
   3` has `1 + 2` as a subexpression and evaluates to 9.
 
 
-## Arithmetic and Matrix Operations on Expressions {#arithmetic-expressions.section}
+## Arithmetic and matrix operations on expressions {#arithmetic-expressions.section}
 
 For integer and real-valued expressions, Stan supports the basic
 binary arithmetic operations of addition (`+`), subtraction
@@ -501,7 +503,7 @@ Exponentiation is right associative, so the expression `2 ^ 3 ^ 4`
 is equivalent to the fully specified form `2 ^ (3 ^ 4)`.
 
 
-### Operator Precedence and Associativity {-}
+### Operator precedence and associativity {-}
 
 The precedence and associativity of operators, as well as built-in
 syntax such as array indexing and function application is given in
@@ -569,10 +571,10 @@ For vectors, row vectors, and matrices,
 For integer and reals, `-n ^ 3` is interpreted as `-(n ^ 3)`.
 
 
-## Conditional Operator {#conditional-operator.section}
+## Conditional operator {#conditional-operator.section}
 
 
-### Conditional Operator Syntax {-}
+### Conditional operator syntax {-}
 
 The ternary conditional operator is unique in that it takes three
 arguments and uses a mixed syntax.  If `a` is an expression of
@@ -591,7 +593,7 @@ other cases, the arguments have to be of the same underlying Stan type
 (i.e., constraints don't count, only the shape) and the conditional
 expression is of that type.
 
-#### Conditional Operator Precedence {-}
+#### Conditional operator precedence {-}
 
 The conditional operator is the most loosely binding operator, so its
 arguments rarely require parentheses for disambiguation.  For example,
@@ -609,7 +611,7 @@ is equivalent to the explicitly grouped version
 The latter is easier to read even if the parentheses are not strictly
 necessary.
 
-#### Conditional Operator Associativity {-}
+#### Conditional operator associativity {-}
 
 The conditional operator is right associative, so that
 
@@ -626,7 +628,7 @@ a ? b : (c ? d : e)
 Again, the explicitly grouped version is easier to read.
 
 
-### Conditional Operator Semantics {-}
+### Conditional operator semantics {-}
 
 Stan's conditional operator works very much like its C++ analogue.
 The first argument must be an expression denoting an integer.
@@ -639,7 +641,7 @@ evaluates to false (i.e., zero).  In the example above, the value
 and `c` is returned if the condition evaluates to zero.
 
 
-#### Lazy Evaluation of Results {-}
+#### Lazy evaluation of results {-}
 
 The key property of the conditional operator that makes it so useful
 in high-performance computing is that it only evaluates the returned
@@ -650,7 +652,7 @@ saving is mostly in the derivatives that do not get computed rather
 than the unnecessary function evaluation itself.
 
 
-#### Promotion to Parameter {-}
+#### Promotion to parameter {-}
 
 If one return expression is a data value (an expression involving only
 constants and variables defined in the data or transformed data
@@ -704,7 +706,7 @@ brackets.  If `x` is of type `real[ , ]`, a two-dimensional
 array, then `x[2,501]` is of type `real`.
 
 
-### Accessing Subarrays {-}
+### Accessing subarrays {-}
 
 The subscripting operator also returns subarrays of arrays.  For
 example, if `x` is of type `real[ , , ]`, then `x[2]`
@@ -713,14 +715,14 @@ is of type `real[ , ]`, and `x[2,3]` is of type
 `x[2][3]` have the same meaning.
 
 
-### Accessing Matrix Rows {-}
+### Accessing matrix rows {-}
 
 If `Sigma` is a variable of type `matrix`, then
 `Sigma[1]` denotes the first row of `Sigma` and has the
 type `row_vector`.
 
 
-### Mixing Array and Vector/Matrix Indexes {-}
+### Mixing array and vector/matrix indexes {-}
 
 Stan supports mixed indexing of arrays and their vector, row vector
 or matrix values.  For example, if `m` is of type
@@ -736,7 +738,7 @@ third row and fourth column of the matrix that is found at the first
 row and second column of the array `m`.
 
 
-## Multiple Indexing and Range Indexing {#language-multi-indexing.section}
+## Multiple indexing and range indexing {#language-multi-indexing.section}
 
 In addition to single integer indexes, as described in
 [the language indexing section](#language-indexing.section), Stan supports multiple indexing.
@@ -760,7 +762,7 @@ all | `a[:]` | `a[1]`, ..., `a[N]`
 all | `a[]` | `a[1]`, ..., `a[N]`
 
 
-### Multiple Index Semantics {-}
+### Multiple index semantics {-}
 
 The fundamental semantic rule for dealing with multiple indexes is the
 following.  If `idxs` is a multiple index, then it produces an
@@ -817,7 +819,7 @@ Evaluation of arrays of matrices and arrays of vectors or row vectors
 is defined recursively, beginning with the array dimensions.
 
 
-## Function Application {#function-application.section}
+## Function application {#function-application.section}
 
 Stan provides a range of built in mathematical and statistical
 functions, which are documented in the built-in function documentation.
@@ -832,7 +834,7 @@ Syntactically, function application has higher precedence than any of
 the other operators, so that `y + log(x)` is interpreted as
 `y + (log(x))`.
 
-### Type Signatures and Result Type Inference {-}
+### Type signatures and result type inference {-}
 
 Each function has a type signature which determines the allowable type
 of its arguments and its return type.  For instance, the function
@@ -872,7 +874,7 @@ represented as nullary functions named `pi()` and `e()`.
 See the [built-in constants section](#built-in-constants.section) for a list of built-in constants.
 
 
-### Type Promotion and Function Resolution {-}
+### Type promotion and function resolution {-}
 
 Because of integer to real type promotion, rules must be established
 for which function is called given a sequence of argument types.  The
@@ -929,7 +931,7 @@ others, as with `bar(1,1)` given the two declarations above,
 the Stan compiler will flag the expression as illegal.
 
 
-### Random-Number Generating Functions {-}
+### Random-number generating functions {-}
 
 For most of the distributions supported by Stan, there is a
 corresponding random-number generating function.  These random number
@@ -940,7 +942,7 @@ here a location (0) and scale (1) are specified because the variate is
 generated.
 
 
-#### Random-Number Generators Locations {-}
+#### Random-number generators locations {-}
 
 The use of random-number generating functions is restricted to the
 transformed data and generated quantities blocks; attempts to use them
@@ -953,7 +955,7 @@ simulation in general, and for Bayesian posterior predictive checking
 in particular.
 
 
-#### Posterior Predictive Checking {-}
+#### Posterior predictive checking {-}
 
 Posterior predictive checks typically use the parameters of the model
 to generate simulated data (at the individual and optionally at the
@@ -964,13 +966,13 @@ Chapter 6 of [@GelmanEtAl:2013] for more information on
 posterior predictive checks.
 
 
-## Type Inference
+## Type inference
 
 Stan is strongly statically typed, meaning that the implementation
 type of an expression can be resolved at compile time.
 
 
-### Implementation Types {-}
+### Implementation types {-}
 
 The primitive implementation types for Stan are
 
@@ -1028,7 +1030,7 @@ indices first, followed by the matrix indices, with `a[i, j, k]`
 being a matrix and `a[i, j, k, m]` being a row vector.
 
 
-### Type Inference Rules {-}
+### Type inference rules {-}
 
 Stan's type inference rules define the implementation type of an
 expression based on a background set of variable declarations.  The
@@ -1072,7 +1074,7 @@ expression of primitive type `int`.  Then
   `row_vector`.
 
 
-#### Function Application {-}
+#### Function application {-}
 
 If `f` is the name of a function and `e1,...,eN` are
 expressions for $N \geq 0$, then `f(e1,...,eN)` is an expression
@@ -1095,7 +1097,7 @@ example, `row_vector * vector` returns a value of type
 as `real operator*(row_vector,vector)`.
 
 
-## Higher-Order Functions
+## Higher-order functions
 
 There are several expression constructions in Stan that act as
 higher-order functions.^[Internally, they are implemented as their own expression types because Stan doesn't have object-level functional types (yet).]
@@ -1185,14 +1187,14 @@ function. As shown in the
 arguments whos types match those at the end of `foo` and returns an array of
 vectors.
 
-### Functions Passed by Reference {-}
+### Functions passed by reference {-}
 
 The function argument to higher-order functions is always passed as
 the first argument.  This function argument must be provided as the
 name of a user-defined or built-in function.  No quotes are
 necessary.
 
-### Data-Restricted Arguments {-}
+### Data-restricted arguments {-}
 
 Some of the arguments to higher-order functions are restricted to
 data.  This means they must be expressions containing only data
@@ -1206,7 +1208,7 @@ to the type to restrict the argument to data-only variables.
 
 
 
-## Chain Rule and Derivatives
+## Chain rule and derivatives
 
 Derivatives of the log probability function defined by a model are
 used in several ways by Stan.  The Hamiltonian Monte Carlo samplers,
@@ -1214,7 +1216,7 @@ including NUTS, use gradients to guide updates.  The BFGS optimizers
 also use gradients to guide search for posterior modes.
 
 
-### Errors Due to Chain Rule {-}
+### Errors due to chain rule {-}
 
 Unlike evaluations in pure mathematics, evaluation of derivatives in
 Stan is done by applying the chain rule on an expression-by-expression
@@ -1267,7 +1269,7 @@ expressions like `sqrt(x - x)` for which the chain rule produces
 not-a-number values.
 
 
-### Diagnosing Problems with Derivatives {-}
+### Diagnosing problems with derivatives {-}
 
 The best way to diagnose whether something is going wrong with the
 derivatives is to use the test-gradient option to the sampler or

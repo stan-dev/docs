@@ -5,7 +5,7 @@ a simplified version of that used in C and C++.  This chapter
 specifies how functions are declared, defined, and used in Stan.
 
 
-## Function-Definition Block
+## Function-definition block
 
 User-defined functions appear in a special function-definition block
 before all of the other program blocks.
@@ -24,7 +24,7 @@ to the condition that a function must be declared before it is used.
 order to support recursive functions.
 
 
-## Function Names
+## Function names
 
 The rules for function naming and function-argument naming are the
 same as for other variables; see the [section on variables](#variables.section) for more
@@ -41,19 +41,19 @@ user-defined functions may *not* have the same name even if they have
 different sequences of argument types.
 
 
-## Calling Functions
+## Calling functions
 
 All function arguments are mandatory---there are no default values.
 
 
-### Functions as Expressions {-}
+### Functions as expressions {-}
 
 Functions with non-void return types are called just like any other
 built-in function in Stan---they are applied to appropriately typed
 arguments to produce an expression, which has a value when executed.
 
 
-### Functions as Statements {-}
+### Functions as statements {-}
 
 Functions with void return types may be applied to arguments and used
 as statements.  These act like sampling statements or print
@@ -62,29 +62,34 @@ through side effects, such as incrementing the log probability
 accumulator, printing, or raising exceptions.
 
 
-### Probability Functions in Sampling Statements {-}
+### Probability functions in sampling statements {-}
 
 Functions whose name ends in `_lpdf` or `_lpmf` (density
 and mass functions) may be used as probability functions and may be
 used in place of parameterized distributions on the right-hand-side of
-sampling statements.  There is no restriction on where such functions
-may be used.
+sampling statements.
 
 
-### Restrictions on Placement {-}
+### Restrictions on placement {-}
 
 Functions of certain types are restricted on scope of usage.
 Functions whose names end in `_lp` assume access to the log
 probability accumulator and are only available in the transformed
-parameter and model blocks.  Functions whose names end in `_rng`
+parameter and model blocks.
+
+Functions whose names end in `_rng`
 assume access to the random number generator and may only be used
 within the generated quantities block, transformed data block, and
-within user-defined functions ending in `_rng`.  See
-the [section on function bodies](#function-bodies.section) for more information on these two special
-types of function.
+within user-defined functions ending in `_rng`.
 
+Functions whose names end in `_lpdf` and `_lpmf` can be used anywhere.
+However, `_lupdf` and `_lupmf` functions can only be used in the model
+block or user-defined probability functions.
 
-## Argument Types and Qualifiers
+See the [section on function bodies](#function-bodies.section) for more
+information on these special types of function.
+
+## Argument types and qualifiers
 
 Stan's functions all have declared types for both arguments and
 returned value.  As with built-in functions, user-defined functions are
@@ -97,7 +102,7 @@ The type `void` may not be used as an argument type, only a
 return type for a function with side effects.
 
 
-### Base Variable Type Declaration {-}
+### Base variable type declaration {-}
 
 The base variable types are `integer`, `real`,
 `vector`, `row_vector`, and `matrix`.  No lower-bound
@@ -106,7 +111,7 @@ illegal).  Specialized types are also not allowed (e.g.,
 `simplex` is illegal) .
 
 
-### Dimensionality Declaration {-}
+### Dimensionality declaration {-}
 
 Arguments and return types may be arrays, and these are indicated with
 optional brackets and commas as would be used for indexing.  For
@@ -125,7 +130,7 @@ dimensions.  The type declaration `matrix[ , ] b` specifies that
 indexing dimensions, with `b[1, 1, 1, 1]` picking out a real value.
 
 
-### Dimensionality Checks and Exceptions {-}
+### Dimensionality checks and exceptions {-}
 
 Function argument and return types are not themselves checked for
 dimensionality.  A matrix of any size may be passed in as a matrix
@@ -142,7 +147,7 @@ return type mismatches are simply passed on;  this typically results
 in a warning message and rejection of a proposal during sampling or
 optimization.
 
-### Data-only Qualifiers {-}
+### Data-only qualifiers {-}
 
 Some of Stan's built-in functions, like the differential equation
 solvers, have arguments that must be data.  Such data-only arguments
@@ -166,7 +171,7 @@ the body of the function so that, for example, the variable may be
 used as a data-only argument to a built-in function.
 
 
-## Function Bodies {#function-bodies.section}
+## Function bodies {#function-bodies.section}
 
 The body of a function is between an open curly brace (`{`) and
 close curly brace (`}`).  The body may contain local variable declarations at the
@@ -178,7 +183,7 @@ and determine whether the log probability accumulator or random
 number generators are available;  see the rest of this section for details.
 
 
-### Random Number Generating Functions {-}
+### Random number generating functions {-}
 
 Functions that call random number generating functions in their bodies
 must have a name that ends in `_rng`; attempts to use
@@ -192,7 +197,7 @@ user-defined functions ending in `_rng`.  An attempt to use such
 a function elsewhere results in a compile-time error.
 
 
-### Log Probability Access in Functions {-}
+### Log probability access in functions {-}
 
 Functions that include sampling statements or log probability
 increment statements must have a name that ends in `_lp`.
@@ -207,7 +212,7 @@ attempt to use such a function elsewhere results in a compile-time
 error.
 
 
-### Defining Probability Functions for Sampling Statements {-}
+### Defining probability functions for sampling statements {-}
 
 Functions whose names end in `_lpdf` and `_lpmf` (density
 and mass functions) can be used as probability functions in sampling
@@ -223,30 +228,61 @@ real foo_lpdf(real y, vector theta) { ... }
 ```
 
 Note that for function definitions, the comma is used rather than the
-vertical bar.  Then the shorthand
+vertical bar.
+
+For every custom `_lpdf` and `_lpmf` defined there is a corresponding
+`_lupdf` and `_lupmf` defined automatically. The `_lupdf` and `_lupmf`
+versions of the functions cannot be defined directly (to do so will
+produce an error). The difference in the
+`_lpdf` and `_lpmf` and the corresponding `_lupdf` and `_lupmf` functions
+is that if any other unnormalized density functions are used
+inside the user-defined function, the `_lpdf` and `_lpmf` forms of the
+user-defined function will change these densities to be normalized.
+The `_lupdf` and `_lupmf` forms of the user-defined functions will
+instead allow other unnormalized density functions to drop additive
+constants.
+
+The sampling shorthand
 
 ```stan
 z ~ foo(phi);
 ```
 
-will have exactly the same effect
+will have the same effect as incrementing the target with the log
+of the unnormalized density:
 
 ```stan
+target += foo_lupdf(z | phi);
+```
+
+Other `_lupdf` and `_lupmf` functions used in the definition of
+`foo_lpdf` will drop additive constants when `foo_lupdf` is called and
+will not drop additive constants when `foo_lpdf` is called.
+
+If there are `_lupdf` and `_lupmf` functions used inside the following
+call to `foo_lpdf`, they will be forced to normalize (return the equivalent
+of their `_lpdf` and `_lpmf` forms):
+
+```
 target += foo_lpdf(z | phi);
 ```
 
-Unlike built-in probability functions, user-defined
-probability functions like the example `foo` above will not
-automatically drop constant terms.
+If there are no `_lupdf` or `_lupmf` functions used in the definition of
+`foo_lpdf`, then there will be no difference between a `foo_lpdf`
+or `foo_lupdf` call.
 
-The same syntax and shorthand works for log probability mass functions
-with suffixes `_lpmf`.
+The unnormalized `_lupdf` and `_lupmf` functions can only be used in
+the model block or in user-defined probability functions (those ending in
+`_lpdf` or `_lpmf`).
+
+The same syntax and shorthand that works for `_lpdf` also works for log
+probability mass functions with suffixes `_lpmf`.
 
 A function that is going to be accessed as distributions must return
 the log of the density or mass function it defines.
 
 
-## Parameters are Constant
+## Parameters are constant
 
 Within function definition bodies, the parameters may be used like any
 other variable.  But the parameters are constant in the sense that
@@ -259,7 +295,7 @@ Local variables may be declared at the top of the function block and
 scope as usual.
 
 
-## Return Value
+## Return value
 
 Non-void functions must have a return statement that returns an
 appropriately typed expression.   If the expression in a return
@@ -269,7 +305,7 @@ the function, a compile-time error is raised.
 Void functions may use `return` only without an argument, but
 return statements are not mandatory.
 
-### Return Guarantee Required {-}
+### Return guarantee required {-}
 
 Unlike C++, Stan enforces a syntactic guarantee for non-void
 functions that ensures control will leave a non-void function through
@@ -332,7 +368,7 @@ return as its final statement.
 
 ## Void Functions as Statements
 
-### Void Functions {-}
+### Void functions {-}
 
 A function can be declared without a return value by using `void`
 in place of a return type.  Note that the type `void` may only be
@@ -340,7 +376,7 @@ used as a return type---arguments may not be declared to be of type
 `void`.
 
 
-### Usage as Statement {-}
+### Usage as statement {-}
 
 A void function may be used as a statement after the function is
 declared;  see the [section on forward declarations](#forward-declarations.section) for rules on declaration.
@@ -350,7 +386,7 @@ such as incrementing the log probability function, printing, or
 raising an error.
 
 
-### Special Return Statements {-}
+### Special return statements {-}
 
 In a return statement within a void function's definition, the
 `return` keyword is followed immediately by a semicolon
@@ -387,7 +423,7 @@ rules together ensure that all the declared functions are eventually
 defined.
 
 
-### Recursive Functions {-}
+### Recursive functions {-}
 
 Forward declarations allow the definition of self-recursive or
 mutually recursive functions.  For instance, consider the following

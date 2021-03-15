@@ -446,7 +446,7 @@ feasible to build a hierarchical model with only two cases.
 A sex predictor is straightforward to add to the data block; it takes
 on values 1 or 2 for each of the `N` data points.
 ```
-  int<lower = 1, upper = 2>[N] sex;
+  int<lower = 1, upper = 2> sex[N];
 ```
 Then add a single regression coefficient as a parameter,
 ```
@@ -454,23 +454,24 @@ Then add a single regression coefficient as a parameter,
 ```
 In the log odds calculation, introduce a new term
 ```
-{epsilon, -epsilon}[sex];
+[epsilon, -epsilon][sex]';
 ```
 That is, the likelihood will now look like
 ```
   y ~ bernoulli_logit(alpha + beta[age] + gamma[income] + delta[state]
-                      + {epsilon, -epsilon}[sex]);
+                      + [epsilon, -epsilon][sex]');
 ```
 
-For data point `n`, the expression `{epsilon, -epsilon}[sex]` takes on
-value `{epsilon, -epsilon}[sex][n]`, which with Stan's multi-indexing
-reduces to `{epsilon, -epsilon}[sex[n]]`.  This term evaluates to
+For data point `n`, the expression `[epsilon, -epsilon][sex]` takes on
+value `[epsilon, -epsilon][sex][n]`, which with Stan's multi-indexing
+reduces to `[epsilon, -epsilon][sex[n]]`.  This term evaluates to
 `epsilon` if `sex[n]` is 1 and to `-epsilon` if `sex[n]` is 2.  The
 result is effectively a sum-to-zero constraint on two sex
-coefficients.
+coefficients. The `'` at the end transposes `[epsilon, -epsilon][sex]`
+which is a `row_vector` into a `vector` that can be added to the other
+variables.
 
-Finally, a prior is needed for
-the coefficient in the model block,
+Finally, a prior is needed for the coefficient in the model block,
 ```
 epsilon ~ normal(0, 2);
 ```

@@ -8,7 +8,7 @@ fundamentally very different approaches are available in Stan. These
 have very different computational cost depending on the number of ODE
 states $N$ and the number of parameters $M$ being used:
 
-* *Forward ODE* solvers expand the base ODE system with $N$ states
+* *Forward ODE* solvers expand the base ODE system 
   by additional ODE equations for the sensitivities of the
   solution. For each parameter $M$ an additional full set of $N$
   sensitivity states are required such that the total numerical cost
@@ -113,7 +113,11 @@ equilibrium position by a force proportional to its displacement from equilibriu
 The system here additionally has a friction force proportional to particle speed
 which points in the opposite direction of the particle velocity.
 The system state will be a pair $y = (y_1, y_2)$ representing position and
-speed. The change in the system with respect to time is given by the following differential equations.^[This example is drawn from the documentation for the Boost Numeric Odeint library [@AhnertMulansky:2011], which Stan uses to implement the `rk45` solver.]
+speed. The change in the system with respect to time is given by the
+following differential equations.^[This example is drawn from the
+documentation for the Boost Numeric Odeint library
+[@AhnertMulansky:2011], which Stan uses to implement the `rk45` and
+`ckrk` solver.]
 
 $$
 \frac{d}{dt} y_1 = y_2 \\
@@ -368,12 +372,13 @@ to the `bdf` solver each of these steps is more expensive to compute.
 
 ## Control parameters for ODE solving {#control-ode.section}
 
-For additional control of the solves, both the stiff and non-stiff solvers
-have function signatures that makes it possible to specify the
-`relative_tolerance`, `absolute_tolerance`, and `max_num_steps` parameters.
-These are the same as the regular function names but with `_tol` appended to
-the end. All three control arguments must be supplied with this signature (there
-are no defaults).
+For additional control of the solves, both the stiff and non-stiff
+forward ODE solvers have function signatures that makes it possible to
+specify the `relative_tolerance`, `absolute_tolerance`, and
+`max_num_steps` parameters.  These are the same as the regular
+function names but with `_tol` appended to the end. All three control
+arguments must be supplied with this signature (there are no
+defaults).
 
 ```
 vector[2] y_sim[T] = ode_bdf_tol(sho, y0, t0, ts,
@@ -414,7 +419,7 @@ In this example example, we would use code in the system such as
 
 ```
 if (t < t_lag)
-  return 0;
+  return [0, 0]';
 else
   ... return non-zero value...;
 ```
@@ -467,7 +472,64 @@ step sizes.
 
 ## Adjoint ODE solver {#adjoint-ode.section}
 
-Scales much better!
+The adjoint ODE solver method differs mathematically from the forward
+ODE solvers in the way gradients of the ODE solution are obtained. The
+forward ODE approach augments the original ODE system with $N$ states
+by an additional $N$ sensitivity states for each parameter for which
+gradients are needed. This may result in very large ODE systems and it
+leads to a multiplicative scaling of the computational effort
+needed. In particular, the computational cost scales with $N \cdot
+(M + 1)$ when gradients for $M$ parameters are needed for the forward
+ODE approach. The adjoint ODE method in contrast performs a forward
+ODE integration and then proceeds by integrating an adjoint ODE
+problem backwards in time. During the backward integration the
+solution of the forward pass is required, which is why the CVODES
+solver uses a checkpointing scheme during the forward ODE solve in
+order to save the forward solver state after a pre-configured number
+of steps. This allows to approximate the solution of the forward
+problem as a continuous function used during the backward
+solve. CVODES can use two different polynomial approximations for
+representing the forward ODE solution (Hermite or polynomial base
+functions). Along with the backward integration of the adjoint ODE
+problem one quadrature problem per parameter for which a gradient is
+required is solved. The computational effort of the adjoint ODE method
+is therefore proportional to $2 \cdot N + M$.
+
+Each phase of the adjoint ODE method can be controlled through the
+Stan function call. Note that the absolute tolerance for the forward
+and backward ODE integration phase need to be set for each ODE state
+separately. The harmonic oscillator example call from above becomes
+
+```
+vector[2] y_sim[T]
+    = ode_adjoint_tol_ctl(sho, y0, t0, ts,
+                          relative_tolerance/9.0,                # forward tolerance
+                          rep_vector(absolute_tolerance/9.0, 2), # forward tolerance
+                          relative_tolerance/3.0,                # backward tolerance
+                          rep_vector(absolute_tolerance/3.0, 2), # backward tolerance
+                          relative_tolerance,                    # quadrature tolerance
+                          absolute_tolerance,                    # quadrature tolerance
+                          max_num_steps,
+                          150,                                   # number of steps between checkpoints
+                          1,                                     # interpolation polynomial: 1=Hermite, 2=polynomial
+                          2,                                     # solver for forward phase, 1=Adams, 2=BDF 
+                          2,                                     # solver for backward phase, 1=Adams, 2=BDF 
+                          theta);
+```
+
+For a detailed reference please refer to link to reference.
+
+The above settings ensure that later stages of the adjoint method can
+use ODE solutions with better tolerance targets. This has shown to be
+useful in a number of problems, but does not in general extend to all
+problems. Furthermore it is possible to use different solvers for the
+forward and backward integration pass. As a starting point the BDF
+option is recommended to use as this will result in greater numerical
+stability. However, in a number of problems the use of a non-stiff
+Adams solver for the backward integration phase has shown to speedup
+the ODE integration. In case the ODE is non-stiff itself, the use of
+Adams for the forward integration phase is beneficial as well.
+
 
 ## Solving a system of linear ODEs using a matrix exponential
 

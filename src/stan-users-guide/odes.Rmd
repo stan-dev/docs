@@ -10,7 +10,7 @@ solvers must not only provide the solution to the ODE itself, but also
 the gradient of the ODE solution with respect to parameters (the
 sensitivities). Two fundamentally very different approaches are available
 in Stan to solve this problem, each having very different
-computationals cost depending on the number of ODE
+computational cost depending on the number of ODE
 states $N$ and the number of parameters $M$ being used:
 
 * A *forward sensitivity* solver expands the base ODE system 
@@ -26,13 +26,17 @@ states $N$ and the number of parameters $M$ being used:
   There is additionally one quadrature problem solved for every
   parameter.
 
-The scaling of the adjoint sensitivuty problem is much better than the
-forward sensitivity problem. However, the adjoint problem is harder to
-configure and the overhead for small problems actually makes it slower
-than solving the full forward sensitivity system. With that in mind,
-the rest of this introduction focuses on the forward sensitivity
-interfaces. For information on the adjoint sensitivity interface
-see the [Adjoint ODE solver](#adjoint-ode.section)
+The scaling of the computational cost with ODE states and parameters
+of the adjoint sensitivity approach is far better than the forward
+sensitivity approach. Whereas the computational cost of the forward
+approach scales multiplicatively in the number of ODE states $N$ and
+parameters $M$, the adjoint sensitivity approach scales linear in
+states $N$ and parameters $M$. However, the adjoint problem is harder
+to configure and the overhead for small problems actually makes it
+slower than solving the full forward sensitivity system. With that in
+mind, the rest of this introduction focuses on the forward sensitivity
+interfaces. For information on the adjoint sensitivity interface see
+the [Adjoint ODE solver](#adjoint-ode.section)
 
 Two interfaces are provided for each forward sensitivity solver: one
 with default tolerances and default max number of steps, and one
@@ -422,7 +426,7 @@ In this example example, we would use code in the system such as
 if (t < t_lag)
   return [0, 0]';
 else
-  ... return non-zero value...;
+  ... return non-zero vector...;
 ```
 
 In general it is better to integrate up to `t_lag` in one solve and
@@ -482,7 +486,7 @@ to compute the solution with sensitivities. This can result in very
 large ODE systems through the multiplicative scaling of the computational
 effort needed.
 
-In contrast, the adjoint ODE solver integrates forwarded in time a
+In contrast, the adjoint ODE solver integrates forward in time a
 system of $N$ equations to compute the ODE solution and then integrates
 backwards in time another system of $N$ equations to get the sensitivities.
 Additionally, for $M$ parameters there are $M$ additional equations
@@ -519,8 +523,8 @@ vector[2] y_sim[T]
                           max_num_steps,
                           150,                                   # number of steps between checkpoints
                           1,                                     # interpolation polynomial: 1=Hermite, 2=polynomial
-                          2,                                     # solver for forward phase, 1=Adams, 2=BDF 
-                          2,                                     # solver for backward phase, 1=Adams, 2=BDF 
+                          2,                                     # solver for forward phase: 1=Adams, 2=BDF 
+                          2,                                     # solver for backward phase: 1=Adams, 2=BDF 
                           theta);
 ```
 

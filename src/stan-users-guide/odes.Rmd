@@ -1,62 +1,61 @@
 # Ordinary Differential Equations  {#ode-solver.chapter}
 
-Stan provides adaptive ordinary differential equation (ODE)
-solvers. As Stan requires gradient information for sampling, the ODE
-solvers must not only provide the solution to the ODE itself, but in
-addition the gradient of the ODE wrt to parameters are required. Two
-fundamentally very different approaches are available in Stan. These
-have very different computational cost depending on the number of ODE
+Stan provides a number of different methods for solving systems of
+ordinary differential equations (ODEs). All of these methods adaptively
+refine their solutions in order to satisfy given tolerances, but
+internally they handle calculations quite a bit differently.
+
+Because Stan requires gradient information for sampling, the ODE
+solvers must not only provide the solution to the ODE itself, but also
+the gradient of the ODE solution with respect to parameters (the
+sensitivities). Two fundamentally very different approaches are available
+in Stan to solve this problem, each having very different
+computationals cost depending on the number of ODE
 states $N$ and the number of parameters $M$ being used:
 
-* *Forward ODE* solvers expand the base ODE system 
-  by additional ODE equations for the sensitivities of the
-  solution. For each parameter $M$ an additional full set of $N$
-  sensitivity states are required such that the total numerical cost
-  scales with $$N \, + N \cdot M.$$
+* A *forward sensitivity* solver expands the base ODE system 
+  with additional ODE equations for the gradients of the solution.
+  For each parameter, an additional full set of $N$
+  sensitivity states are added meaning that the full ODE solved has
+  $$N \, + N \cdot M$$ states.
   
-* *Adjoint ODE* solvers start by solving the base ODE system *forward*
-  in time and then solve a so-called adjoint ODE system *backward* in
-  time. During the backward integration an approximation of the
-  forward solution is required and one quadrature problem per
-  parameter is being solved along. The numerical effort for this
-  approach scales with $$ 2\cdot N + M . $$
+* An *adjoint sensitivity* solver starts by solving the base ODE system
+  forward in time to get the ODE solution and then solves
+  another ODE system (the adjoint) backward in time to get the
+  gradients. The forward and reverse solves both have $N$ states each.
+  There is additionally one quadrature problem solved for every
+  parameter.
 
-It is important to note that the overhead of the adjoint ODE method is
-considerably larger as compared to the forward method. This is due to
-the increased numerical complexity involved. However, it is apparent
-from the scaling properties that the adjoint ODE method can handle
-problems with many parameters more efficiently given that the
-numerical cost does not increase by a factor of $N$ with each
-additional parameter. Nonetheless, as the adjoint ODE method is rather
-involved numerically it is only recommended for advanced users and is
-only made available with an interface requiring the user to specify
-all numerical tuning parameters. These are discussed in the [adjoint
-ODE solver](#adjoint-ode.section) section.
+The scaling of the adjoint sensitivuty problem is much better than the
+forward sensitivity problem. However, the adjoint problem is harder to
+configure and the overhead for small problems actually makes it slower
+than solving the full forward sensitivity system. With that in mind,
+the rest of this introduction focuses on the forward sensitivity
+interfaces. For information on the adjoint sensitivity interface
+see the [Adjoint ODE solver](#adjoint-ode.section)
 
-All solvers used are adaptive in the sense that they iteratively
-refine their solutions in order to satisfy given tolerance
-targets. Two interfaces are provided for each forward solver: one with
-default tolerances and default maximal number of steps, and one that
-allows these controls to be modified. Choosing tolerances is important
-for making any of the solvers work well -- the defaults will not work
-everywhere. The tolerances should be chosen primarily with
-consideration to the scales of the solutions, the accuracy needed for
-the solutions, and how the solutions are used in the model. For
-instance, if a solution component slowly varies between 3.0 and 5.0
-and measurements of the ODE state are noisy, then perhaps the
-tolerances do not need to be as tight as for a situation where the
-solutions vary between 3.0 and 3.1 and very high precision
-measurements of the ODE state are available.  It is also often useful
-to reduce the absolute tolerance when a component of the solution is
-expected to approach zero. For information on choosing tolerances, see
-the [control parameters section](#control-ode.section).
+Two interfaces are provided for each forward sensitivity solver: one
+with default tolerances and default max number of steps, and one
+that allows these controls to be modified. Choosing tolerances is
+important for making any of the solvers work well -- the defaults
+will not work everywhere. The tolerances should be chosen primarily
+with consideration to the scales of the solutions, the accuracy
+needed for the solutions, and how the solutions are used in the model. For
+instance, if a solution component slowly varies between 3.0 and 5.0 and
+measurements of the ODE state are noisy, then perhaps the tolerances do not
+need to be as tight as for a situation where the solutions vary between 3.0
+and 3.1 and very high precision measurements of the ODE state are available.
+It is also often useful to reduce the absolute tolerance when
+a component of the solution is expected to approach zero. For information on choosing
+tolerances, see the [control parameters section](#control-ode.section).
 
-The advantage of adaptive solvers is that as long as reasonable tolerances are
-provided and an ODE solver well-suited to the problem is chosen the technical
-details of solving the ODE can be abstracted away. The catch is that it is not
-always clear from the outset what reasonable tolerances are or which ODE solver
-is best suited to a problem. In addition, as changes are made to an ODE
-model, the optimal solver and tolerances may change.
+The advantage of adaptive solvers is that as long as reasonable tolerances
+are provided and an ODE solver well-suited to the problem is chosen the
+technical details of solving the ODE can be abstracted away. The catch
+is that it is not always clear from the outset what reasonable tolerances
+are or which ODE solver is best suited to a problem. In addition, as
+changes are made to an ODE model, the optimal solver and tolerances
+may change.
 
 With this in mind, the four forward solvers are `rk45`, `bdf`,
 `adams`, and `ckrk`. If no other information about the ODE is
@@ -92,9 +91,11 @@ solver is the best in all situations, but a `profile` can provide a quick check.
   discontinuous, and `ckrk` is designed to address such problems.
 
 For a discussion of stiff ODE systems, see the [stiff ODE
-section](#stiff-ode.section). The function signatures for Stan's ODE
-solvers can be found in the function reference manual section on ODE
-solvers.
+section](#stiff-ode.section). For information on the adjoint
+sensitivity interface see the
+[Adjoint ODE solver section](#adjoint-ode.section).
+The function signatures for Stan's ODE solvers can be found in
+the function reference manual section on ODE solvers.
 
 ## Notation
 
@@ -474,31 +475,37 @@ step sizes.
 
 The adjoint ODE solver method differs mathematically from the forward
 ODE solvers in the way gradients of the ODE solution are obtained. The
-forward ODE approach augments the original ODE system with $N$ states
-by an additional $N$ sensitivity states for each parameter for which
-gradients are needed. This may result in very large ODE systems and it
-leads to a multiplicative scaling of the computational effort
-needed. In particular, the computational cost scales with $N \cdot
-(M + 1)$ when gradients for $M$ parameters are needed for the forward
-ODE approach. The adjoint ODE method in contrast performs a forward
-ODE integration and then proceeds by integrating an adjoint ODE
-problem backwards in time. During the backward integration the
-solution of the forward pass is required, which is why the CVODES
-solver uses a checkpointing scheme during the forward ODE solve in
-order to save the forward solver state after a pre-configured number
-of steps. This allows to approximate the solution of the forward
-problem as a continuous function used during the backward
-solve. CVODES can use two different polynomial approximations for
-representing the forward ODE solution (Hermite or polynomial base
-functions). Along with the backward integration of the adjoint ODE
-problem one quadrature problem per parameter for which a gradient is
-required is solved. The computational effort of the adjoint ODE method
-is therefore proportional to $2 \cdot N + M$.
+forward ODE approach augments the original ODE system with $N$ additional
+states for each parameter for which gradients are needed. If there are $M$
+parameters, and ODE system with $N \cdot (M + 1)$ states must be solved
+to compute the solution with sensitivities. This can result in very
+large ODE systems through the multiplicative scaling of the computational
+effort needed.
 
-Each phase of the adjoint ODE method can be controlled through the
-Stan function call. Note that the absolute tolerance for the forward
-and backward ODE integration phase need to be set for each ODE state
-separately. The harmonic oscillator example call from above becomes
+In contrast, the adjoint ODE solver integrates forwarded in time a
+system of $N$ equations to compute the ODE solution and then integrates
+backwards in time another system of $N$ equations to get the sensitivities.
+Additionally, for $M$ parameters there are $M$ additional equations
+to integrate during the backwards solve. Because of this the adjoint
+sensitivity problem scales better in parameters than the forward
+sensitivity problem. The adjoint solver in Stan uses CVODES (the same
+as the `bdf` and `adams` forward sensivitity interfaces).
+
+The solution computed in the forward integration is required during the
+backward integration. CVODES uses a checkpointing scheme that saves the
+forward solver state regularly. The number of steps between saving
+checkpoints is configurable in the interface. These checkpoints are
+then interpolated during the backward solve using one of two
+interpolation schemes.
+
+The solver type (either `bdf` or `adams`) can be individually set for
+both the forward and backward solves.
+
+The tolerances for each phase of the solve must be specified in the
+interface. Note that the absolute tolerance for the forward and
+backward ODE integration phase need to be set for each
+ODE state separately. The harmonic oscillator example call from above
+becomes:
 
 ```
 vector[2] y_sim[T]
@@ -517,19 +524,8 @@ vector[2] y_sim[T]
                           theta);
 ```
 
-For a detailed reference please refer to link to reference.
-
-The above settings ensure that later stages of the adjoint method can
-use ODE solutions with better tolerance targets. This has shown to be
-useful in a number of problems, but does not in general extend to all
-problems. Furthermore it is possible to use different solvers for the
-forward and backward integration pass. As a starting point the BDF
-option is recommended to use as this will result in greater numerical
-stability. However, in a number of problems the use of a non-stiff
-Adams solver for the backward integration phase has shown to speedup
-the ODE integration. In case the ODE is non-stiff itself, the use of
-Adams for the forward integration phase is beneficial as well.
-
+For a detailed information on each argument please see the
+Stan function reference manual.
 
 ## Solving a system of linear ODEs using a matrix exponential
 

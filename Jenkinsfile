@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 pipeline {
-    agent { label 'gelman-group-linux' }
+    agent { label 'linux' }
     options {
         skipDefaultCheckout()
         preserveStashes(buildCount: 5)

@@ -60,13 +60,24 @@ section) can be made into an array type by declaring array arguments.
 For example,
 
 ```stan
-real x[10];
-matrix[3, 3] m[6, 7];
+array[10] real x;
+array[6,7] matrix[3, 3] m;
 ```
 
 declares `x` to be a one-dimensional array of size 10 containing
 real values, and declares `m` to be a two-dimensional array of
 size $6 \times 7$ containing values that are $3 \times 3$ matrices.
+
+Prior to 2.26 Stan models used a different syntax, with the array
+dimensions defined after the variable identifier. 
+Equivalent declarations of `x` and `m` with the pre-2.26 syntax:
+
+```stan
+real x[10];
+matrix[3, 3] m[6, 7];
+```
+
+Using the syntax with the `array` keyword is advised.
 
 ### Constrained data types {-}
 
@@ -393,7 +404,7 @@ defined at the point the constraint is used.  For instance,
 ```stan
 data {
    int<lower=1> N;
-   real y[N];
+   array[N] real y;
 }
 parameters {
    real<lower=min(y), upper=max(y)> phi;
@@ -870,52 +881,70 @@ For constructing arrays in Stan, see [Vector, Matrix, and Array Expressions](#ve
 
 ### Declaring array variables {-}
 
-Arrays are declared by enclosing the dimensions in square brackets
-following the name of the variable.
+Arrays are declared with the keyword `array` followed by the dimensions
+enclosed in square brackets, the element type, and the name of the variable.
 
 The variable `n` is declared as an array of five integers as follows.
 
 ```stan
-int n[5];
+array[5] int n;
 ```
 
 A two-dimensional array of real values with three rows and four columns is
 declared with the following.
 
 ```stan
-real a[3, 4];
+array[3, 4] real a;
 ```
 
 A three-dimensional array `z` of positive reals with five rows, four
 columns, and two shelves can be declared as follows.
 
 ```stan
-real<lower=0> z[5, 4, 2];
+array[5, 4, 2] real<lower=0> z;
 ```
 
 
 Arrays may also be declared to contain vectors.  For example,
 
 ```stan
-vector[7] mu[3];
+array[3] vector[7] mu;
 ```
 
 declares `mu` to be an array of size 3 containing vectors with 7
 elements.  Arrays may also contain matrices.  The example
 
 ```stan
-matrix[7, 2] mu[15, 12];
+array[15, 12] matrix[7, 2] mu;
 ```
 
 declares a 15 by 12 array of $7 \times 2$ matrices.  Any of the
 constrained types may also be used in arrays, as in the declaration
 
 ```stan
-cholesky_factor_cov[5, 6] mu[2, 3, 4];
+array[2, 3, 4] cholesky_factor_cov[5, 6] mu;
 ```
 
 of a $2 \times 3 \times 4$ array of $5 \times 6$ Cholesky factors of
 covariance matrices.
+
+#### Array syntax before Stan 2.26
+
+Before Stan 2.26, arrays were declared by enclosing the dimensions
+in square brackets following the name of the variable.
+
+The pre-Stan 2.26 array syntax for the above examples is as follows.
+
+```stan
+int n[5];
+real a[3, 4];
+real<lower=0> z[5, 4, 2];
+vector[7] mu[3];
+matrix[7, 2] mu[15, 12];
+cholesky_factor_cov[5, 6] mu[2, 3, 4];
+```
+
+Both syntaxes can be used, though the `array` keyword syntax is recommended.
 
 ### Accessing array elements and subarrays {-}
 
@@ -940,9 +969,9 @@ variables.  Similar to the behavior of matrices, Stan allows blocks
 such as
 
 ```stan
-real w[9, 10, 11];
-real x[10, 11];
-real y[11];
+array[9, 10, 11] real w;
+array[10, 11] real x;
+array[11] real y;
 real z;
 // ...
 x = w[5];
@@ -958,8 +987,8 @@ Arrays of vectors and matrices are accessed in the same way as arrays
 of doubles.  Consider the following vector and scalar declarations.
 
 ```stan
-vector[5] a[3, 4];
-vector[5] b[4];
+array[3, 4] vector[5] a;
+array[4] vector[5] b;
 vector[5] c;
 real x;
 ```
@@ -981,8 +1010,8 @@ behave the same way in terms of indexing.
 Consider the following matrix, vector and scalar declarations.
 
 ```stan
-matrix[6, 5] d[3, 4];
-matrix[6, 5] e[4];
+array[3,4] matrix[6, 5] d;
+array[4] matrix[6, 5] e;
 matrix[6, 5] f;
 row_vector[5] g;
 real x;
@@ -1013,9 +1042,9 @@ Subarrays of arrays may be assigned by indexing on the left-hand side
 of an assignment statement.  For example, the following is legal.
 
 ```stan
-real x[I,J,K];
-real y[J,K];
-real z[K];
+array[I,J,K] real x;
+array[J,K] real y;
+array[K] real z;
 // ...
 x[1] = y;
 x[1,1] = z;
@@ -1043,9 +1072,9 @@ follows the assignment rules).
 For example, vectors cannot be assigned to arrays or vice-versa.
 
 ```stan
-real a[4];
+array[4] real a;
 vector[4] b;
-row_vector c[4];
+row_vector[4] c;
 // ...
 a = b; // illegal assignment of vector to array
 b = a; // illegal assignment of array to vector
@@ -1058,8 +1087,8 @@ c = a; // illegal assignment of array to row vector
 It is not even legal to assign row vectors to column vectors or vice
 versa.
 ```stan
-vector b[4];
-row_vector c[4];
+vector[4] b;
+row_vector[4] c;
 // ...
 b = c; // illegal assignment of row vector to column vector
 c = b; // illegal assignment of column vector to row vector
@@ -1072,7 +1101,7 @@ The same holds for matrices, where 2-dimensional arrays may not be
 assigned to matrices or vice-versa.
 
 ```stan
-real a[3,4];
+array[3,4] real a;
 matrix[3,4] b;
 // ...
 a = b;  // illegal assignment of matrix to array
@@ -1116,7 +1145,7 @@ If any of an array's dimensions is size zero, the entire array will be
 of size zero.  That is, if we declare
 
 ```stan
-real a[3, 0];
+array[3, 0] real a;
 ```
 
 then the resulting size of `a` is zero and querying any of its
@@ -1125,7 +1154,7 @@ above, `a[1]` will be a size-zero one-dimensional array.  For
 comparison, declaring
 
 ```stan
-real b[0, 3];
+array[0, 3] real b;
 ```
 
 also produces an array with an overall size of zero, but in this case,
@@ -1145,7 +1174,7 @@ underlying type and dimensionality of the variable.
 The size associated with a given variable is not part of its data
 type.  For example, declaring a variable using
 ```stan
-real a[3];
+array[3] real a;
 ```
 
 declares the variable `a` to be an array.  The fact that it was

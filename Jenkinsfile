@@ -43,6 +43,9 @@ pipeline {
                     """
                 }
 
+                /* Install R requirements */
+                sh "Rscript -e 'install.packages(\"bookdown\")"
+
                 /* Build docs */
                 sh "python build.py $major_version $minor_version"
 

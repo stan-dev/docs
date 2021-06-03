@@ -43,7 +43,7 @@ pipeline {
                     """
                 }
 
-                sh "Rscript -e \"install.packages(c('bookdown', 'arm'))\""
+                sh "Rscript -e \"install.packages(c('bookdown', 'arm'), repos = 'http://cran.us.r-project.org')\""
                 /* Build docs */
                 sh "python build.py $major_version $minor_version"
 

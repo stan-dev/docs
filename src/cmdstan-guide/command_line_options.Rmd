@@ -21,7 +21,7 @@ to obtain new quantities of interest.
 
 - `init` - specifies initial values for the model parameters, if any.
 
-- `random` - specifies the seed for the psuedo-random number.
+- `random` - specifies the seed for the pseudo-random number.
 
 The remainder of this chapter covers the general configuration options used for all processing.
 The following chapters cover the per-inference configuration options.
@@ -38,8 +38,8 @@ The keyword `data` must be followed directly by the keyword-value pair `file=<fi
 If the model doesn't declare any data variables, this argument is ignored.
 
 The input data file must contain definitions for all data variables declared in the data block.
-If one or more data block variables are missing from the input data file, the program will
-print and error message to the terminal.
+If one or more data block variables are missing from the input data file, the program prints
+an error message to stderr and returns a non-zero return code.
 For example, the model `bernoulli.stan` defines two data variables `N` and `y`.
 If the input data file doesn't include both variables, or if the data variable
 doesn't match the declared type and dimensions, the program will exit with an error message
@@ -108,7 +108,7 @@ a symmetric (uniform) vector for simplexes; unit matrices for both correlation a
 
 - filepath - A data file in JSON or Rdump format containing initial parameters values for some or all of the model parameters.
 User specified initial values must satisfy the constraints declared in the model (i.e., they are on the constrained scale).
-Parameters which aren't explicitly initializied will be initialized randomly over the range $[-2, 2]$.
+Parameters which aren't explicitly initialized will be initialized randomly over the range $[-2, 2]$.
 
 ## Random number generator arguments
 
@@ -180,3 +180,25 @@ Additional configuration available by specifying
 
 See ./bernoulli <arg1> [ help | help-all ] for details on individual arguments.
 ```
+
+## Error messages and return codes
+
+CmdStan executables and utility programs use streams standard output (stdout) and
+standard error (stderr) to report information and error messages, respectively.
+Some methods also generate warning messages when the algorithm
+detects potential problems with the inference.  Depending on the method,
+these messages are sent to either standard out or standard error.
+
+All program executables provide a return code between 0 and 255:
+
+- 0 - Program ran to termination as expected.
+
+- value in range [1 : 125] - Method invoked could not run due to problems with model or data.
+
+- value > 128 - Fatal error during execution, process terminated by signal.  To determine the signal number,
+subtract 128 from the return value, e.g. return code 139 results from termination signal 11 (segmentation violation).
+
+A non-zero return code or outputs sent to stderr indicate problems with the inference.
+However, a return code of zero and absense of error messages doesn't necessarily mean
+that the inference is valid, it is still necessary to validate the inferences using all
+available summary and diagnostic techniques.

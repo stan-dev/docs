@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 pipeline {
-    agent { label 'gelman-group-linux' }
+    agent { label 'linux' }
     options {
         skipDefaultCheckout()
         preserveStashes(buildCount: 5)
@@ -43,6 +43,7 @@ pipeline {
                     """
                 }
 
+                sh "Rscript -e \"install.packages(c('bookdown', 'arm'), repos = 'http://cran.us.r-project.org')\""
                 /* Build docs */
                 sh "python build.py $major_version $minor_version"
 

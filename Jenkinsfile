@@ -43,7 +43,6 @@ pipeline {
                     """
                 }
 
-                sh "Rscript -e \"install.packages(c('bookdown', 'arm'), repos = 'http://cran.us.r-project.org')\""
                 /* Build docs */
                 sh "python build.py $major_version $minor_version"
 
@@ -107,12 +106,20 @@ pipeline {
                     def new_version_underscore = major_version + "_" + minor_version
                     def new_version_dot = major_version + "." + minor_version
 
-                    sh """
-                        sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/documentation/index.md
-                        sed -i 's/$last_version_dot/$new_version_dot/g' users/documentation/index.md
+                    /* Linux Version */
+                    //sh """
+                        //sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/documentation/index.md
+                        //sed -i 's/$last_version_dot/$new_version_dot/g' users/documentation/index.md
+                        //sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/interfaces/cmdstan.md
+                        //sed -i 's/$last_version_dot/$new_version_dot/g' users/interfaces/cmdstan.md
+                    //"""
 
-                        sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/interfaces/cmdstan.md
-                        sed -i 's/$last_version_dot/$new_version_dot/g' users/interfaces/cmdstan.md
+                    /* Mac Version */
+                    sh """
+                        sed -i.bak 's/$last_docs_version_dir/$new_version_underscore/g' users/documentation/index.md
+                        sed -i.bak 's/$last_version_dot/$new_version_dot/g' users/documentation/index.md
+                        sed -i.bak 's/$last_docs_version_dir/$new_version_underscore/g' users/interfaces/cmdstan.md
+                        sed -i.bak 's/$last_version_dot/$new_version_dot/g' users/interfaces/cmdstan.md
                     """
 
                 }

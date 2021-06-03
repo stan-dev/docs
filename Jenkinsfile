@@ -43,6 +43,7 @@ pipeline {
                     """
                 }
 
+                Rscript -e "install.packages('bookdown', 'arm')"
                 /* Build docs */
                 sh "python build.py $major_version $minor_version"
 

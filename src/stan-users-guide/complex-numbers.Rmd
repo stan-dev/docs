@@ -1,4 +1,4 @@
-# Complex Numbers {#complex.chapter}
+# Complex Numbers
 
 Stan supports complex number variables as well as standard functions.
 In the present release, it is not yet possible to define vectors or
@@ -69,7 +69,7 @@ powers `pow(z1, z2)`, as well as all of the trig and hyperbolic
 trigonometric functions and their inverse, such as `sin(z)`,
 `acos(z)`, `tanh(z)` and `asinh(z)`.
 
-Promotion also works for complex-valued function argumentss, which may
+Promotion also works for complex-valued function arguments, which may
 be passed integer or real values, which will be promoted before the
 function is evaluated.  For example, the following user-defined
 complex function will accept integer, real, or complex arguments.
@@ -133,7 +133,9 @@ model {
 ```
 
 The question remains of how to fill in the error distribution and
-there are several alternatives.
+there are several alternatives.  We consider only two simple
+alternatives, and do not consider penalizing the absolute value of the
+error.
 
 
 ### Independent real and imaginary error
@@ -169,7 +171,7 @@ working with a multivariate covariance matrix, as we do here.
 
 ```stan
 parameters {
-  corr_cholesky[2] L_Omega;  // correlation matrix
+  cholesky_factor_corr[2] L_Omega;  // correlation matrix
   vector[2] sigma;           // real, imag error scales
   ...
 }
@@ -177,7 +179,7 @@ parameters {
 model {
   eps_n ~ multi_normal_cholesky([0, 0]',
                                 diag_pre_multiply(sigma, L_Omega));
-  L_Omega ~ lkj_cholesky(4);  // shrink toward diagonal corrleation
+  L_Omega ~ lkj_cholesky(4);  // shrink toward diagonal correlation
   sigma ~ ... hyperprior ...
 ```
 
@@ -187,49 +189,4 @@ a multivariate normal distribution with zero mean and a Cholesky
 factor representation of covariance, consisting of a scale vector
 `sigma` and a Cholesky factor or a correlation matrix, `L_Omega`.
 The prior on the correlations is concentrated loosely around diagonal
-covariance, and the prior onthe scales is left open.
-
-
-### Absolute error
-
-A third alternative for complex regression is to provide a
-distribution for the magnitude of the complex error. This can be done
-as follows.
-
-```stan
-parameters {
-  real<lower = 0> sigma;
-  ...
-model {
-  abs(eps_n) ~ normal(0, sigma);  // error distribution
-  // log Jacobian adjustment of abs(x + yi) = sqrt(x^2 + y^2)
-  target += log(fabs(get_real(eps_n) / abs_eps_n));
-```
-
-The mapping of a complex number to its absolute value can be viewed as
-a two-argument function of the real and imaginary components of the
-number $z = x + yi$, the absolute value of which is $\sqrt{x^2 +
-y^2}$.  Because this transform is non-linear, it requires Jacobian
-adjustment for the change of variables in order to induce the right
-distributions on $x$ and $y$.  The transform maps a two-dimensional
-input to a single value, so we can complete it to provide full rank in
-a way that simplifies the determinant as
-\[
-f(x, y)
-= \begin{bmatrix}
-    \sqrt{x^2 + y^2} & y
-  \end{bmatrix}$.
-\]
-This transform has a triangular Jacobians, so its determinant is the
-product of the diagonal entries, which are
-\[
-J_{1, 1} = \frac{\partial}{\partial x} \sqrt{x^2 + y^2}
-= \frac{x}{\textrm{abs}(x + yi)}
-\]
-and
-\[
-J_{2, 2} = \frac{\partial}{\partial y} y = 1,
-\]
-so that the determinant is equal to $J_{1, 1}$.  The log of the
-resulting absolute value of the determinant is added to the target as
-a change of variables adjustment.
+covariance, and the prior on the scales is left open.

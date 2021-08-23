@@ -69,7 +69,7 @@ real values, and declares `m` to be a two-dimensional array of
 size $6 \times 7$ containing values that are $3 \times 3$ matrices.
 
 Prior to 2.26 Stan models used a different syntax, with the array
-dimensions defined after the variable identifier. 
+dimensions defined after the variable identifier.
 Equivalent declarations of `x` and `m` with the pre-2.26 syntax:
 
 ```stan
@@ -351,7 +351,7 @@ model {
 }
 ```
 
-Recall that the centered parameterization is achieved with the code 
+Recall that the centered parameterization is achieved with the code
 
 ```stan
 parameters {
@@ -1249,7 +1249,18 @@ Similarly, `vector[ , ]` is the type of a two-dimensional array of
 vectors.
 
 
-## Compound variable declaration and definition
+
+## Variable declaration
+
+Variables in Stan are declared by giving a type and a name. For example
+
+```stan
+int j;
+```
+
+declares a variable `j` that is an integer. 
+
+### Compound variable declaration and definition {-}
 
 Stan allows assignable variables to be declared and defined in a
 single statement.  Assignable variables are
@@ -1269,7 +1280,7 @@ int N = 5;
 declares the variable `N` to be an integer scalar type and at the
 same time defines it to be the value of the expression `5`.
 
-### Assignment typing {-}
+#### Assignment typing {-}
 
 The type of the expression on the right-hand side of the assignment
 must be assignable to the type of the variable being declared.  For
@@ -1297,7 +1308,7 @@ formed.  The sizes of matrices are not part of their static typing and
 cannot be validated until run time.
 
 
-### Right-hand side expressions {-}
+#### Right-hand side expressions {-}
 
 The right-hand side may be any expression which has a type which is
 assignable to the variable being declared.  For example,
@@ -1318,9 +1329,49 @@ otherwise expressible as simple expressions (e.g., iterative or
 recursive algorithms).
 
 
-### Scope within expressions {-}
+#### Scope within expressions {-}
 
 Any variable that is in scope and any function that is available in
 the block in which the compound declaration and definition appears may
 be used in the expression on the right-hand side of the compound
 declaration and definition statement.
+
+
+### Declaring multiple variables at once {-}
+
+Stan will interpret multiple comma-separated variable names following a single 
+type as declaring multiple new variables. 
+This is available for all variable declarations in all blocks.
+
+#### Types for multiple declarations {-}
+
+The code:
+
+```stan
+real x, y;
+```
+is equivalent to
+
+```stan
+real x;
+real y;
+```
+
+As a result, all declarations on the same line must be of the same type.
+
+#### Combining with other features {-}
+
+This can be combined with assignments whenever a declare-define is valid, as 
+documented in
+[the previous section](#compound-variable-declaration-and-definition):
+
+```stan
+real x = 3.0, y = 5.6
+```
+
+[Constrained data types](#constrained-data-types) can also be declared 
+together, so long as the constraint for each variable is the same:
+
+```stan
+real<lower=0> x, y;
+```

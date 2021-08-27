@@ -10,34 +10,56 @@ associativity.
 
 ### Syntactic conventions {-}
 
-In the following BNF grammars, literal strings are indicated in
-single quotes (`'`).  Grammar non-terminals are unquoted strings.
-A prefix question mark (`?A`) indicates optionality of `A`.
+In the following BNF grammars, tokens are represented in ALLCAPS.
+Grammar non-terminals are surrounded by `<` and `>`.
+A square brackets (`[A]`) indicates optionality of `A`.
 A postfixed Kleene star (`A*`) indicates zero or more occurrences
-of `A`.  The notation `A % B`, following the Boost Spirit
-parser library's notation, is shorthand for `?(A (B A)*)`, i.e.,
-any number of `A` (including zero), separated by `B`.  A
-postfixed, curly-braced number indicates a fixed number of repetitions;
-e.g., `A{6}` is equivalent to a sequence of six copies of `A`.
+of `A`. 
+Parenthesis can be used to group symbols together in productions.
 
+Finally, this grammar uses the concept of "parameterized nonterminals"
+as used in the parsing library 
+[Menhir](http://gallium.inria.fr/~fpottier/menhir/manual.html#sec30).
+A rule like `<list(x)> ::= x (COMMA x)*` declares a generic list rule,
+which can later be applied to others by the symbol `<list(<expression>)>`.
 
+The following representation is constructed directly from the OCaml
+[reference 
+parser](https://github.com/stan-dev/stanc3/blob/release/v2.27.0/src/frontend/parser.mly)
+using a tool called [Obelisk](https://github.com/Lelio-Brun/Obelisk). 
+The raw output is available [here](grammar.txt).
+
+<!-- This is the direct output of `obelisk -i parser.mly` 
+     copied and pasted into reasonable section distinctions.
+     Additionally, items which exist only for error messaging
+     were removed, like allowing FUNCTIONBLOCK as a decl identifier
+-->
 ### Programs {-}
 
 \fontsize{9pt}{9.2}\selectfont
 
 ```
-program ::= ?functions ?data ?tdata ?params ?tparams ?model ?generated
+<program> ::= [<function_block>] [<data_block>] [<transformed_data_block>]
+              [<parameters_block>] [<transformed_parameters_block>]
+              [<model_block>] [<generated_quantities_block>] EOF
 
-functions ::= 'functions' function_decls
-data ::= 'data' var_decls
-tdata ::= 'transformed data' var_decls_statements
-params ::= 'parameters' var_decls
-tparams ::= 'transformed parameters' var_decls_statements
-model ::= 'model' var_decls_statements
-generated ::= 'generated quantities' var_decls_statements
-function_decls ::= '{' function_decl* '}'
-var_decls ::= '{' var_decl* '}'
-var_decls_statements ::= '{' var_decl* statement* '}'
+<function_block> ::= FUNCTIONBLOCK LBRACE <function_def>* RBRACE
+
+<data_block> ::= DATABLOCK LBRACE <top_var_decl_no_assign>* RBRACE
+
+<transformed_data_block> ::= TRANSFORMEDDATABLOCK LBRACE
+                             <top_vardecl_or_statement>* RBRACE
+
+<parameters_block> ::= PARAMETERSBLOCK LBRACE <top_var_decl_no_assign>*
+                       RBRACE
+
+<transformed_parameters_block> ::= TRANSFORMEDPARAMETERSBLOCK LBRACE
+                                   <top_vardecl_or_statement>* RBRACE
+
+<model_block> ::= MODELBLOCK LBRACE <vardecl_or_statement>* RBRACE
+
+<generated_quantities_block> ::= GENERATEDQUANTITIESBLOCK LBRACE
+                                 <top_vardecl_or_statement>* RBRACE
 ```
 \normalsize
 
@@ -47,14 +69,25 @@ var_decls_statements ::= '{' var_decl* statement* '}'
 \fontsize{9pt}{9.2}\selectfont
 
 ```
-function_decl ::= return_type identifier '(' parameter_decl % ',' ')'
-                  statement
+<function_def> ::= <return_type> <decl_identifier> LPAREN [<arg_decl> (COMMA
+                   <arg_decl>)*] RPAREN <statement>
 
-return_type ::= 'void' | unsized_type
-parameter_decl ::= ?'data' unsized_type identifier
-unsized_type ::= basic_type ?unsized_dims
-basic_type ::= 'int' | 'real' | 'vector' | 'row_vector' | 'matrix'
-unsized_dims ::= '['  ','*  ']'
+<return_type> ::= VOID
+                | <unsized_type>
+
+<arg_decl> ::= [DATABLOCK] <unsized_type> <decl_identifier>
+
+<unsized_type> ::= ARRAY <unsized_dims> <basic_type>
+                 | <basic_type> [<unsized_dims>]
+
+<basic_type> ::= INT
+               | REAL
+               | VECTOR
+               | ROWVECTOR
+               | MATRIX
+
+<unsized_dims> ::= LBRACK COMMA* RBRACK
+
 ```
 \normalsize
 
@@ -63,40 +96,81 @@ unsized_dims ::= '['  ','*  ']'
 \fontsize{9pt}{9.2}\selectfont
 
 ```
-var_decl ::= var_type variable ?dims ?('=' expression) ';'
+<identifier> ::= IDENTIFIER
+               | TRUNCATE
+               | OFFSET
+               | MULTIPLIER
+               | LOWER
+               | UPPER
+               | ARRAY
 
-var_type ::= 'int' range_constraint
-           | 'real' constraint
-           | 'vector' constraint '[' expression ']'
-           | 'ordered' '[' expression ']'
-           | 'positive_ordered' '[' expression ']'
-           | 'simplex' '[' expression ']'
-           | 'unit_vector' '[' expression ']'
-           | 'row_vector' constraint '[' expression ']'
-           | 'matrix' constraint '[' expression ',' expression ']'
-           | 'cholesky_factor_corr' '[' expression ']'
-           | 'cholesky_factor_cov' '[' expression ?(',' expression) ']'
-           | 'corr_matrix' '[' expression ']'
-           | 'cov_matrix' '[' expression ']'
+<decl_identifier> ::= <identifier>
 
-constraint ::= range_constraint | '<' offset_multiplier '>')
+<no_assign> ::= UNREACHABLE
 
-range_constraint ::= ?('<' range '>')
+<optional_assignment(rhs)> ::= [ASSIGN rhs]
 
-range ::= 'lower' '=' constr_expression ',' 'upper' = constr_expression
-        | 'lower' '=' constr_expression
-        | 'upper' '=' constr_expression
+<id_and_optional_assignment(rhs)> ::= <decl_identifier>
+                                      <optional_assignment(rhs)>
 
-offset_multiplier ::= 'offset' '=' constr_expression ','
-                      'multiplier' = constr_expression
-            | 'offset' '=' constr_expression
-            | 'multiplier' '=' constr_expression
+<decl(type_rule, rhs)> ::= type_rule <decl_identifier> <dims>
+                           <optional_assignment(rhs)> SEMICOLON
+                         | [<lhs>] type_rule
+                           <id_and_optional_assignment(rhs)> (COMMA
+                           <id_and_optional_assignment(rhs)>)* SEMICOLON
 
-dims ::= '['  expressions ']'
+<var_decl> ::= <decl(<sized_basic_type>, <expression>)>
 
-variable ::= identifier
+<top_var_decl> ::= <decl(<top_var_type>, <expression>)>
 
-identifier ::= [a-zA-Z] [a-zA-Z0-9_]*
+<top_var_decl_no_assign> ::= <decl(<top_var_type>, <no_assign>)>
+
+<vardecl_or_statement> ::= <statement>
+                         | <var_decl>
+
+<top_vardecl_or_statement> ::= <statement>
+                             | <top_var_decl>
+
+<sized_basic_type> ::= INT
+                     | REAL
+                     | VECTOR LBRACK <expression> RBRACK
+                     | ROWVECTOR LBRACK <expression> RBRACK
+                     | MATRIX LBRACK <expression> COMMA <expression> RBRACK
+
+<top_var_type> ::= INT [LABRACK <range> RABRACK]
+                 | REAL <type_constraint>
+                 | VECTOR <type_constraint> LBRACK <expression> RBRACK
+                 | ROWVECTOR <type_constraint> LBRACK <expression> RBRACK
+                 | MATRIX <type_constraint> LBRACK <expression> COMMA
+                   <expression> RBRACK
+                 | ORDERED LBRACK <expression> RBRACK
+                 | POSITIVEORDERED LBRACK <expression> RBRACK
+                 | SIMPLEX LBRACK <expression> RBRACK
+                 | UNITVECTOR LBRACK <expression> RBRACK
+                 | CHOLESKYFACTORCORR LBRACK <expression> RBRACK
+                 | CHOLESKYFACTORCOV LBRACK <expression> [COMMA <expression>]
+                   RBRACK
+                 | CORRMATRIX LBRACK <expression> RBRACK
+                 | COVMATRIX LBRACK <expression> RBRACK
+
+<type_constraint> ::= [LABRACK <range> RABRACK]
+                    | LABRACK <offset_mult> RABRACK
+
+<range> ::= LOWER ASSIGN <constr_expression> COMMA UPPER ASSIGN
+            <constr_expression>
+          | UPPER ASSIGN <constr_expression> COMMA LOWER ASSIGN
+            <constr_expression>
+          | LOWER ASSIGN <constr_expression>
+          | UPPER ASSIGN <constr_expression>
+
+<offset_mult> ::= OFFSET ASSIGN <constr_expression> COMMA MULTIPLIER ASSIGN
+                  <constr_expression>
+                | MULTIPLIER ASSIGN <constr_expression> COMMA OFFSET ASSIGN
+                  <constr_expression>
+                | OFFSET ASSIGN <constr_expression>
+                | MULTIPLIER ASSIGN <constr_expression>
+
+<dims> ::= LBRACK <expression> (COMMA <expression>)* RBRACK
 ```
 \normalsize
 
@@ -106,60 +180,80 @@ identifier ::= [a-zA-Z] [a-zA-Z0-9_]*
 \fontsize{9pt}{9.2}\selectfont
 
 ```
-expressions ::= expression % ','
+<expression> ::= <lhs>
+               | <non_lhs>
 
-expression ::= expression `?` expression `:` expression
-             | expression infixOp expression
-             | prefixOp expression
-             | expression postfixOp
-             | common_expression
+<lhs> ::= <identifier>
+        | <lhs> LBRACK <indexes> RBRACK
 
-constr_expression ::= constr_expression arithmeticInfixOp constr_expression
-                    | prefixOp constr_expression
-                    | constr_expression postfixOp
-                    | constr_expression '[' indexes ']'
-                    | common_expression
+<non_lhs> ::= <expression> QMARK <expression> COLON <expression>
+            | <expression> <infixOp> <expression>
+            | <prefixOp> <expression>
+            | <expression> <postfixOp>
+            | <non_lhs> LBRACK <indexes> RBRACK
+            | <common_expression>
 
-common_expression
-  ::= real_literal
-    | variable
-    | '{' expressions '}'
-    | '[' expressions ']'
-    | function_literal '(' ?expressions ')'
-    | function_literal '(' expression ?('|' expression % ',') ')'
-    | 'integrate_1d' '(' function_literal (',' expression){5|6} ')'
-    | 'integrate_ode' '(' function_literal (',' expression){6} ')'
-    | 'integrate_ode_rk45' '(' function_literal (',' expression){6|9} ')'
-    | 'integrate_ode_bdf' '(' function_literal (',' expression){6|9} ')'
-    | 'algebra_solver' '(' function_literal (',' expression){4|7} ')'
-    | 'algebra_solver_newton' '(' function_leteral (',' expression){4 | 7} ')'
-    | 'map_rect' '(' function_literal (',' expression){4} ')'
-    | '(' expression ')'
+<constr_expression> ::= <constr_expression> <arithmeticBinOp>
+                        <constr_expression>
+                      | <prefixOp> <constr_expression>
+                      | <constr_expression> <postfixOp>
+                      | <constr_expression> LBRACK <indexes> RBRACK
+                      | <common_expression>
+                      | <identifier>
 
-prefixOp ::= ('!' | '-' | '+' | '^')
+<common_expression> ::= INTNUMERAL
+                      | REALNUMERAL
+                      | LBRACE <expression> (COMMA <expression>)* RBRACE
+                      | LBRACK [<expression> (COMMA <expression>)*] RBRACK
+                      | <identifier> LPAREN [<expression> (COMMA
+                        <expression>)*] RPAREN
+                      | TARGET LPAREN RPAREN
+                      | GETLP LPAREN RPAREN
+                      | <identifier> LPAREN <expression> BAR [<expression>
+                        (COMMA <expression>)*] RPAREN
+                      | LPAREN <expression> RPAREN
 
-postfixOp ::= '\''
+<prefixOp> ::= BANG
+             | MINUS
+             | PLUS
 
-infixOp ::= arithmeticInfixOp | logicalInfixOp
+<postfixOp> ::= TRANSPOSE
 
-arithmeticInfixOp ::= ('+' | '-' | '*' | '/' | '%' | '\' | '.*' | './')
+<infixOp> ::= <arithmeticBinOp>
+            | <logicalBinOp>
 
-logicalInfixOp :: ('||' | '&&' | '==' | '!=' | '<' | '<=' | '>' | '>=')
+<arithmeticBinOp> ::= PLUS
+                    | MINUS
+                    | TIMES
+                    | DIVIDE
+                    | IDIVIDE
+                    | MODULO
+                    | LDIVIDE
+                    | ELTTIMES
+                    | ELTDIVIDE
+                    | HAT
+                    | ELTPOW
 
-index ::= ?(expression | expression ':' | ':' expression
-        | expression ':' expression)
+<logicalBinOp> ::= OR
+                 | AND
+                 | EQUALS
+                 | NEQUALS
+                 | LABRACK
+                 | LEQ
+                 | RABRACK
+                 | GEQ
 
-indexes ::= index % ','
+<indexes> ::= epsilon 
+            | COLON
+            | <expression>
+            | <expression> COLON
+            | COLON <expression>
+            | <expression> COLON <expression>
+            | <indexes> COMMA <indexes>
 
-integer_literal ::= [0-9]+
-
-real_literal ::= integer_literal '.' [0-9]* ?exp_literal
-               | '.' [0-9]+ ?exp_literal
-               | integer_literal exp_literal
-
-exp_literal ::= ('e' | 'E') ?('+' | '-') integer_literal
-
-function_literal ::= identifier
+<printables> ::= <expression>
+               | <string_literal>
+               | <printables> COMMA <printables>
 ```
 
 \normalsize
@@ -170,40 +264,76 @@ function_literal ::= identifier
 \fontsize{9pt}{9.2}\selectfont
 
 ```
-statement ::= atomic_statement | nested_statement
+<statement> ::= <atomic_statement>
+              | <nested_statement>
 
-atomic_statement ::=  lhs assignment_op expression ';'
-   | expression '~' identifier '(' expressions ')' ?truncation ';'
-   | function_literal '(' expressions ')' ';'
-   | 'increment_log_prob' '(' expression ')' ';'
-   | 'target' '+=' expression ';'
-   | 'break' ';'
-   | 'continue' ';'
-   | 'print' '(' (expression | string_literal) % ',' ')' ';'
-   | 'reject' '(' (expression | string_literal) % ',' ')' ';'
-   | 'return' expression ';'
-   | ';'
+<atomic_statement> ::= <lhs> <assignment_op> <expression> SEMICOLON
+                     | <identifier> LPAREN [<expression> (COMMA
+                       <expression>)*] RPAREN SEMICOLON
+                     | INCREMENTLOGPROB LPAREN <expression> RPAREN SEMICOLON
+                     | <expression> TILDE <identifier> LPAREN [<expression>
+                       (COMMA <expression>)*] RPAREN [<truncation>] SEMICOLON
+                     | TARGET PLUSASSIGN <expression> SEMICOLON
+                     | BREAK SEMICOLON
+                     | CONTINUE SEMICOLON
+                     | PRINT LPAREN <printables> RPAREN SEMICOLON
+                     | REJECT LPAREN <printables> RPAREN SEMICOLON
+                     | RETURN <expression> SEMICOLON
+                     | RETURN SEMICOLON
+                     | SEMICOLON
 
-assignment_op ::= '<-' | '=' | '+=' | '-=' | '*=' | '/=' | '.*=' | './='
+<assignment_op> ::= ASSIGN
+                  | ARROWASSIGN
+                  | PLUSASSIGN
+                  | MINUSASSIGN
+                  | TIMESASSIGN
+                  | DIVIDEASSIGN
+                  | ELTTIMESASSIGN
+                  | ELTDIVIDEASSIGN
 
-string_literal ::= '"' char* '"'
+<string_literal> ::= STRINGLITERAL
 
-truncation ::= 'T' '[' ?expression ',' ?expression ']'
+<truncation> ::= TRUNCATE LBRACK [<expression>] COMMA [<expression>] RBRACK
 
-lhs ::= identifier ('[' indexes ']')*
-
-nested_statement
-::=
-  | 'if' '(' expression ')' statement
-    ('else' 'if' '(' expression ')' statement)*
-    ?('else' statement)
-  | 'while' '(' expression ')' statement
-  | 'for' '(' identifier 'in' expression ':' expression ')' statement
-  | 'for' '(' identifier 'in' expression ')' statement
-  | '{' var_decl* statement+ '}'
+<nested_statement> ::= IF LPAREN <expression> RPAREN <statement> ELSE
+                       <statement>
+                     | IF LPAREN <expression> RPAREN <statement>
+                     | WHILE LPAREN <expression> RPAREN <statement>
+                     | FOR LPAREN <identifier> IN <expression> COLON
+                       <expression> RPAREN <statement>
+                     | FOR LPAREN <identifier> IN <expression> RPAREN
+                       <statement>
+                     | PROFILE LPAREN <string_literal> RPAREN LBRACE
+                       <vardecl_or_statement>* RBRACE
+                     | LBRACE <vardecl_or_statement>* RBRACE
 ```
 \normalsize
 
+
+## Tokenizing rules
+
+Many of the tokens used in the BNF grammars follow obviously
+from their names: `DATABLOCK` is the literal string 'data', 
+`COMMA` is a single ',' character, etc. The literal representation 
+of each operator is additionally provided in the [operator
+precedence table](#operator-precedence-table).
+
+A few tokens are not so obvious, and are defined here in 
+regular expressions:
+
+```
+IDENTIFIER = [a-zA-Z] [a-zA-Z0-9_]*
+
+STRINGLITERAL = ".*"
+
+INTNUMERAL = [0-9]+ (_ [0-9]+)*
+
+EXPLITERAL = [eE] [+-]? INTNUMERAL
+
+REALNUMERAL = INTNUMERAL \. INTNUMERAL? EXPLITERAL? 
+            | \. INTNUMERAL EXPLITERAL?
+            | INTNUMERAL EXPLITERAL
+```
 
 ## Extra-grammatical constraints
 

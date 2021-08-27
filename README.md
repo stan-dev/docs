@@ -23,6 +23,9 @@ GitHub (re)builds and (re)deploys the website.
 
 The documentation source files are written in [Rmarkdown](https://rmarkdown.rstudio.com)
 and the RStudio's [bookdown package](https://github.com/rstudio/bookdown) converts these to HTML and pdf.
+**Required bookdown version:** 2.23 or higher, cf [the bookdown changelog](https://github.com/rstudio/bookdown/blob/main/NEWS.md#changes-in-bookdown-version-023).
+Reported via [issue #380](https://github.com/stan-dev/docs/issues/380).
+
 
 The conversion engine is [Pandoc](https://pandoc.org).  It is bundled with RStudio.
 To use the build scripts to build the docset,
@@ -38,8 +41,10 @@ which must be [installed manually](https://tex.stackexchange.com/questions/88423
 **`build.py`**
 
 The program `build.py` convert the markdown files under `src` to html and pdf and populates the `docs` dir with the generated documentation.
+Requires Python 3.5 or higher, due to call to `subproces.run`.
   + 2 required argments:  <Major> <minor> Stan version, expecting 2 positive integer arguments, e.g. `2 28`
   + 2 optional arguments:  <document> <format>.  The document name corresponds to the name of the `src` subdirectory or `all`.  The output format is either `html` or `pdf`.
+
 
 **Build script examples**
 
@@ -58,6 +63,21 @@ The release process generates a new documentation set and adds links and redirec
 
 The Stan Functions Reference contains HTML comments which describe the function signature for all functions.  The script `extract_function_sigs.py` is used to scrape these signatures into a plain text file.
 
+## Build a single docset in R:  `bookdown::render_book`
+
+To build a single documet, you must have R or RStudio installed.
+To build a document from the command line, first `cd` to the correct `src` dir,
+then use the `Rscript` utility.
+
+```
+# build html
+> Rscript -e "bookdown::render_book('index.Rmd', output_format='bookdown::gitbook')"
+
+# build pdf
+> Rscript -e "bookdown::render_book('index.Rmd', output_format='bookdown::pdf_book')"
+```
+
+The output will be written to subdirectory `_build`.
 
 ## GitHub Pages
 

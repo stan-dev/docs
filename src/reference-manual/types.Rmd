@@ -48,7 +48,7 @@ values and `int` for integer values.
 
 Stan provides a complex number data type `complex`, where a complex
 number contains both a real and an imaginary component, both of which
-are of type `real`. 
+are of type `real`.
 
 ### Vector and matrix types {-}
 
@@ -74,19 +74,10 @@ size $6 \times 7$ containing values that are $3 \times 3$ matrices,
 and declares `z` to be a $12 \times 8 \times 15$ array of complex numbers.
 
 Prior to 2.26 Stan models used a different syntax, with the array
-dimensions defined after the variable identifier.  The old syntax has
+The old syntax has
 been deprecated and is described in [the deprecated functions
-chapter]{#deprecated-features.appendix}. 
+chapter]{#deprecated-features.appendix}.
 
-Equivalent declarations of `x` and `m` with the pre-2.26 syntax:
-
-```stan
-real x[10];
-matrix[3, 3] m[6, 7];
-```
-
-The old array syntax has been deprecated and the `array` keyword
-should be used going forward.
 
 ### Constrained data types {-}
 
@@ -98,7 +89,7 @@ block, and the transform from unconstrained to constrained space in
 the parameters block.
 
 All of the basic data types other than `complex` may be given lower
-and upper bounds using syntax such as 
+and upper bounds using syntax such as
 
 ```stan
 int<lower = 1> N;
@@ -134,7 +125,7 @@ types:
 <div style="margin:0 2em 0 2em">
 *The model must have support (non-zero density, equivalently finite
 log density) at parameter values that satisfy the declared
-constraints.* 
+constraints.*
 </div>
 
 If this condition is violated with parameter values that satisfy
@@ -257,7 +248,7 @@ real im = get_imag(z);  // im has value -1.3
 
 Expressions of type `real` may be assigned to variables of type
 `complex`.  For example, the following is a valid sequence of Stan
-statements. 
+statements.
 
 ```stan
 real x = 5.0;
@@ -269,7 +260,7 @@ number's real component, with the imaginary component set to zero.
 
 Assignability is transitive, so that expressions of type `int` may
 also be assigned to variables of type `complex`, as in the following
-example. 
+example.
 
 ```stan
 int n = 2;
@@ -415,7 +406,7 @@ model {
 }
 ```
 
-Recall that the centered parameterization is achieved with the code 
+Recall that the centered parameterization is achieved with the code
 
 ```stan
 parameters {
@@ -560,7 +551,7 @@ Vectors and matrices cannot be typed to return integer values.  They
 are restricted to `real` values.^[This may change if Stan is called upon to do complicated integer matrix operations or boolean matrix operations.  Integers are not appropriate inputs for linear algebra functions.]
 
 For constructing vectors and matrices in Stan, see [Vector, Matrix,
-and Array Expressions](#vector-matrix-array-expressions.section). 
+and Array Expressions](#vector-matrix-array-expressions.section).
 
 ### Indexing from 1 {-}
 
@@ -1291,6 +1282,42 @@ Similarly, `vector[ , ]` is the type of a two-dimensional array of
 vectors.
 
 
+
+## Variable declaration
+
+Variables in Stan are declared by giving a type and a name. For example
+
+```stan
+int N;
+vector[N] y;
+array[5] matrix[3, 4] A;
+```
+
+declares a variable `N` that is an integer, a variable `y` that is
+a vector of length `N` (the previously declared variable), and a
+variable `A`, which is a length-5 array where each element is a 3 by 4
+matrix.
+
+There are several different places a variable is declared in Stan. They are
+block variables, like those inside `data`, which can have
+[constraints](#constrained-data-types) and must include sizes for their types,
+like in the above examples. Local variables, like those defined inside loops
+or local blocks cannot be constrained, but still include sizes. Finally,
+variables declared as [function parameters](#argument-types-and-qualifiers)
+are not constrained types and _exclude_ sizes.
+
+```stan
+// valid block variables, but not locals or function parameters
+vector<lower=0>[N] u;
+
+// valid as a block or local variable, but not a function parameter
+array[3] int is;
+
+// function parameters exclude sizes and cannot be constrained
+void pretty_print_tri_lower(matrix x) { ... }
+
+```
+
 ## Compound variable declaration and definition
 
 Stan allows assignable variables to be declared and defined in a
@@ -1366,3 +1393,44 @@ Any variable that is in scope and any function that is available in
 the block in which the compound declaration and definition appears may
 be used in the expression on the right-hand side of the compound
 declaration and definition statement.
+
+
+## Declaring multiple variables at once
+
+Stan will interpret multiple comma-separated variable names following a single
+type as declaring multiple new variables.
+This is available for all variable declarations in all blocks.
+
+### Types for multiple declarations {-}
+
+The code:
+
+```stan
+real x, y;
+```
+is equivalent to
+
+```stan
+real x;
+real y;
+```
+
+As a result, all declarations on the same line must be of the same type.
+
+### Combining with other features {-}
+
+The ability to declare multiple variables can be combined with assignments
+whenever a declare-define is valid, as documented in
+[the section introducing compound declarations and definitions](#compound-variable-declaration-and-definition)
+:
+
+```stan
+real x = 3, y = 5.6
+```
+
+[Constrained data types](#constrained-data-types) can also be declared
+together, so long as the constraint for each variable is the same:
+
+```stan
+real<lower=0> x, y;
+```

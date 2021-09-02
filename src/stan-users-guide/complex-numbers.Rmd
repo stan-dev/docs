@@ -8,11 +8,23 @@ matrices of complex numbers, but those will be available soon.
 
 ### Constructing and accessing complex numbers
 
-Complex numbers can be
-constructed using the `to_complex` function as follows.
+Complex numbers can be constructed using imaginary literals.  For example,
 
 ```stan
-complex z = to_complex(-1.1, 2.3);  // z = -1.1 + 2.3 * i
+complex z = -1.1 + 2.3i;
+```
+
+produces the complex number $-1.1 + 2.3i$.  This only works if the
+real and imaginary components are literal numerals.  To construct a
+complex number out of arbitrary real variables, the `to_complex()`
+function may be used.  For example, the following code will work if
+`x` and `y` are parameters, transformed data, or local variables in a
+function or model block.
+
+```stan
+real x = ...;
+real y = ...;
+complex z = to_complex(x, y);
 ```
 
 The real and imaginary parts of the complex number can be accessed
@@ -26,12 +38,14 @@ real y = get_imag(z);  // y = 2.3
 Complex numbers can be compared using equality (or inequality), but
 not with greater than or less than operators.  For example, after
 running the code above, the following code snippet will print
-"hello". 
+"hello".
 
 ```
-complex z2 = to_complex(x, y);
-if (z == z2) print("hello");
+complex a = 3.2 + 2i;
+complex b = to_complex(3.2, 2);
+if (a == b) print("hello");
 ```
+
 
 ### Complex assignment and promotion
 
@@ -78,7 +92,7 @@ complex function will accept integer, real, or complex arguments.
 complex times_i(complex z) {
   complex i = to_complex(0, 1);
   return i * z;
-}    
+}
 ```
 
 For instance, `times_i(1)` evaluates to the imaginary base $i$, as
@@ -155,7 +169,7 @@ model {
   to_real(eps_n) ~ normal(0, sigma[1]);
   to_imag(eps_n) ~ normal(0, sigma[2]);
   sigma ~ ...hyperprior...
-}  
+}
 ```
 
 A new error scale vector `sigma` is introduced, and it should itself

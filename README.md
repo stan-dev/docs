@@ -41,7 +41,7 @@ which must be [installed manually](https://tex.stackexchange.com/questions/88423
 **`build.py`**
 
 The program `build.py` convert the markdown files under `src` to html and pdf and populates the `docs` dir with the generated documentation.
-Requires Python 3.5 or higher, due to call to `subproces.run`.
+Requires Python 3.7 or higher, due to call to `subprocess.run`, kwarg `capture_output`.
   + 2 required argments:  <Major> <minor> Stan version, expecting 2 positive integer arguments, e.g. `2 28`
   + 2 optional arguments:  <document> <format>.  The document name corresponds to the name of the `src` subdirectory or `all`.  The output format is either `html` or `pdf`.
 

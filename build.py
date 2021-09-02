@@ -35,7 +35,7 @@ def shexec(command):
         raise Exception(returncode)
 
 def check_bookdown_2_23():
-    command = ["/usr/local/bin/Rscript", "-e", "utils::packageVersion(\"bookdown\") > 0.22"]
+    command = ["Rscript", "-e", "utils::packageVersion(\"bookdown\") > 0.22"]
     check = subprocess.run(command, capture_output=True, text=True)
     if not 'TRUE' in check.stdout:
         print("R Package bookdown must be version 2.23, see README for build tools requirements")
@@ -74,6 +74,9 @@ def make_docs(docspath, version, document, formats):
             shutil.rmtree("_book", ignore_errors=True)
 
 def main():
+    if sys.version_info < (3, 7):
+        print('requires Python 3.7 or higher, found {}'.format(sys.version))
+        sys.exit(1)
     check_bookdown_2_23()
     global all_docs
     global all_formats

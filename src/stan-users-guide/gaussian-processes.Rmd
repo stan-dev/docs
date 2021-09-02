@@ -138,7 +138,7 @@ implementation of a Gaussian process simulator.
 ```
 data {
   int<lower=1> N;
-  real x[N];
+  array[N] real x;
 }
 transformed data {
   matrix[N, N] K;
@@ -166,7 +166,7 @@ covariance function that implements the exponentiated quadratic kernel.
 ```
 data {
   int<lower=1> N;
-  real x[N];
+  array[N] real x;
 }
 transformed data {
   matrix[N, N] K = cov_exp_quad(x, 1.0, 1.0);
@@ -198,7 +198,7 @@ The only lines that change from the univariate model above are as follows.
 data {
   int<lower=1> N;
   int<lower=1> D;
-  vector[D] x[N];
+  array[N] vector[D] x;
 }
 transformed data {
 ...
@@ -316,7 +316,7 @@ the transformed data block.
 ```
 data {
   int<lower=1> N;
-  real x[N];
+  array[N] real x;
   vector[N] y;
 }
 transformed data {
@@ -381,7 +381,7 @@ to ensure that our covariance matrix remains positive definite.
 ```
 data {
   int<lower=1> N;
-  real x[N];
+  array[N] real x;
   vector[N] y;
 }
 transformed data {
@@ -559,7 +559,7 @@ functions {
 data {
   int<lower=1> N;
   int<lower=1> D;
-  vector[D] x[N];
+  array[N] vector[D] x;
   vector[N] y;
 }
 transformed data {
@@ -727,15 +727,15 @@ joint distribution of the observed $y$ and unobserved $\tilde{y}$.
 ```
 data {
   int<lower=1> N1;
-  real x1[N1];
+  array[N1] real x1;
   vector[N1] y1;
   int<lower=1> N2;
-  real x2[N2];
+  array[N2] real x2;
 }
 transformed data {
   real delta = 1e-9;
   int<lower=1> N = N1 + N2;
-  real x[N];
+  array[N] real x;
   for (n1 in 1:N1) x[n1] = x1[n1];
   for (n2 in 1:N2) x[N1 + n2] = x2[n2];
 }
@@ -807,15 +807,15 @@ process regression.
 ```
 data {
   int<lower=1> N1;
-  real x1[N1];
+  array[N1] real x1;
   int<lower=0, upper=1> z1[N1];
   int<lower=1> N2;
-  real x2[N2];
+  array[N2] real x2;
 }
 transformed data {
   real delta = 1e-9;
   int<lower=1> N = N1 + N2;
-  real x[N];
+  array[N] real x;
   for (n1 in 1:N1) x[n1] = x1[n1];
   for (n2 in 1:N2) x[N1 + n2] = x2[n2];
 }
@@ -848,7 +848,7 @@ model {
   z1 ~ bernoulli_logit(a + f[1:N1]);
 }
 generated quantities {
-  int z2[N2];
+  array[N2] int z2;
   for (n2 in 1:N2)
     z2[n2] = bernoulli_logit_rng(a + f[N1 + n2]);
 }
@@ -932,10 +932,10 @@ functions {
 }
 data {
   int<lower=1> N1;
-  real x1[N1];
+  array[N1] real x1;
   vector[N1] y1;
   int<lower=1> N2;
-  real x2[N2];
+  array[N2] real x2;
 }
 transformed data {
   vector[N1] mu = rep_vector(0, N1);
@@ -1045,7 +1045,7 @@ $\textsf{LKJCorr}$ for $C(\phi)$, but any positive-definite matrix will do.
 data {
   int<lower=1> N;
   int<lower=1> D;
-  real x[N];
+  array[N] real x;
   matrix[N, D] y;
 }
 transformed data {

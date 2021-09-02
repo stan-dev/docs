@@ -92,17 +92,17 @@ clustering.
 
 ```
 data {
-  int<lower=0> N;  // number of data points
-  int<lower=1> D;  // number of dimensions
-  int<lower=1> K;  // number of clusters
-  vector[D] y[N];  // observations
+  int<lower=0> N;        // number of data points
+  int<lower=1> D;        // number of dimensions
+  int<lower=1> K;        // number of clusters
+  array[N] vector[D] y;  // observations
 }
 transformed data {
   real<upper=0> neg_log_K;
   neg_log_K = -log(K);
 }
 parameters {
-  vector[D] mu[K]; // cluster means
+  array[K] vector[D] mu; // cluster means
 }
 transformed parameters {
   real<upper=0> soft_z[N, K]; // log unnormalized clusters
@@ -301,7 +301,7 @@ data {
 }
 parameters {
   simplex[K] theta;             // topic prevalence
-  simplex[V] phi[K];            // word dist for topic k
+  array[K] simplex[V] phi;      // word dist for topic k
 }
 model {
   theta ~ dirichlet(alpha);
@@ -346,7 +346,7 @@ scale.
 
 ```
 model {
-  real gamma[M, K];
+  array[M, K] real gamma;
   theta ~ dirichlet(alpha);
   for (k in 1:K)
     phi[k] ~ dirichlet(beta);
@@ -511,8 +511,8 @@ data {
   vector<lower=0>[V] beta;      // word prior
 }
 parameters {
-  simplex[K] theta[M];          // topic dist for doc m
-  simplex[V] phi[K];            // word dist for topic k
+  array[M] simplex[K] theta;    // topic dist for doc m
+  array[K] simplex[V] phi;      // word dist for topic k
 }
 model {
   for (m in 1:M)
@@ -520,7 +520,7 @@ model {
   for (k in 1:K)
     phi[k] ~ dirichlet(beta);     // prior
   for (n in 1:N) {
-    real gamma[K];
+    array[K] real gamma;
     for (k in 1:K)
       gamma[k] = log(theta[doc[n], k]) + log(phi[k, w[n]]);
     target += log_sum_exp(gamma);  // likelihood;
@@ -566,11 +566,11 @@ distribution and then transformed using softmax into a simplex.
 
 ```
 parameters {
-  simplex[V] phi[K];     // word dist for topic k
-  vector[K] eta[M];      // topic dist for doc m
+  array[K] simplex[V] phi;     // word dist for topic k
+  array[M] vector[K] eta;      // topic dist for doc m
 }
 transformed parameters {
-  simplex[K] theta[M];
+  array[M] simplex[K] theta;
   for (m in 1:M)
     theta[m] = softmax(eta[m]);
 }
@@ -596,8 +596,8 @@ parameters {
   vector[K] mu;              // topic mean
   corr_matrix[K] Omega;      // correlation matrix
   vector<lower=0>[K] sigma;  // scales
-  vector[K] eta[M];          // logit topic dist for doc m
-  simplex[V] phi[K];         // word dist for topic k
+  array[M] vector[K] eta;    // logit topic dist for doc m
+  array[K] simplex[V] phi;   // word dist for topic k
 }
 transformed parameters {
   ... eta as above ...

@@ -16,7 +16,7 @@ one-dimensional containers, as exemplified by the following
 declarations.
 
 ```
-real a[N];
+array[N] real a;
 vector[N] a;
 row_vector[N] a;
 ```
@@ -33,10 +33,10 @@ The following code fragment shows all four ways to declare a
 two-dimensional container of size $M \times N$.
 
 ```
-real b[M, N];          // b[m] : real[]     (efficient)
-vector[N] b[M];        // b[m] : vector     (efficient)
-row_vector[N] b[M];    // b[m] : row_vector (efficient)
-matrix[M, N] b;        // b[m] : row_vector (inefficient)
+array[M, N] real b;          // b[m] : real[]     (efficient)
+array[M] vector[N] b;        // b[m] : vector     (efficient)
+array[M] row_vector[N] b;    // b[m] : row_vector (efficient)
+matrix[M, N] b;              // b[m] : row_vector (inefficient)
 ```
 
 The main differences among these choices involve efficiency for
@@ -114,7 +114,7 @@ Arrays, on the other hand, should be traversed in row-major order
 (i.e., last index fastest), as in the following example.
 
 ```
-real a[M, N];
+array[M, N] real a;
 // ...
 for (m in 1:M)
   for (n in 1:N)
@@ -128,7 +128,7 @@ This is true even for arrays of matrices.  For example, the ideal
 order in which to traverse a two-dimensional array of matrices is
 
 ```
-matrix[M, N] b[I, J];
+array[I, J] matrix[M, N] b;
 // ...
 for (i in 1:I)
   for (j in 1:J)
@@ -143,7 +143,7 @@ matrices.  If indexing of vectors is needed, it is much better to
 declare an array of vectors.  That is, this
 
 ```
-row_vector[N] b[M];
+array[M] row_vector[N] b;
 // ...
 for (m in 1:M)
    ... do something with row vector b[m] ...
@@ -152,7 +152,7 @@ for (m in 1:M)
 is much more efficient than the pure matrix version
 
 ```
-matrix b[M, N];
+array[M, N] matrix b;
 // ...
 for (m in 1:M)
    // ... do something with row vector b[m] ...
@@ -178,7 +178,7 @@ y_hat = x * beta;
 than it is to do this
 
 ```
-row_vector[K] x[N];    // predictors (aka covariates)
+array[N] row_vector[K] x;    // predictors (aka covariates)
 // ...
 vector[K] beta;   // coeffs
 ...
@@ -240,7 +240,7 @@ vectors in a matrix, it is much better to use an array of row vectors,
 as in the following example.
 
 ```
-row_vector[N] a[M];
+array[M] row_vector[N] a;
 ...
 for (m in 1:M)
   ... do something with row vector a[m] ...
@@ -256,7 +256,7 @@ means a two dimensional array is stored in row-major order.  Thus it
 is efficient to pull out a "row" of a two-dimensional array.
 
 ```
-real a[M, N];
+array[M, N] real a;
 ...
 for (m in 1:M)
   ... do something with a[m] ...

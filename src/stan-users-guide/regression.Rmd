@@ -383,7 +383,7 @@ data {
   int K;
   int N;
   int D;
-  int y[N];
+  array[N] int y;
   matrix[N, D] x;
 }
 parameters {
@@ -666,7 +666,7 @@ data {
   int<lower=0> N;
   int<lower=1> D;
   int<lower=1,upper=K> y[N];
-  row_vector[D] x[N];
+  array[N] row_vector[D] x;
 }
 parameters {
   vector[D] beta;
@@ -701,7 +701,7 @@ data {
   int<lower=0> N;
   int<lower=1> D;
   int<lower=1,upper=K> y[N];
-  row_vector[D] x[N];
+  array[N] row_vector[D] x;
 }
 parameters {
   vector[D] beta;
@@ -762,12 +762,12 @@ data {
   int<lower=1> L;
   int<lower=0,upper=1> y[N];
   int<lower=1,upper=L> ll[N];
-  row_vector[D] x[N];
+  array[N] row_vector[D] x;
 }
 parameters {
-  real mu[D];
+  array[D] real mu;
   real<lower=0> sigma[D];
-  vector[D] beta[L];
+  array[L] vector[D] beta;
 }
 model {
   for (d in 1:D) {
@@ -943,9 +943,9 @@ The model parameters are declared as follows.
 
 ```
 parameters {
-  real delta;         // mean student ability
-  real alpha[J];      // ability of student j - mean ability
-  real beta[K];       // difficulty of question k
+  real delta;            // mean student ability
+  array[J] real alpha;   // ability of student j - mean ability
+  array[K] real beta;    // difficulty of question k
 }
 ```
 
@@ -1326,14 +1326,14 @@ data {
   int<lower=1> L;              // num group predictors
   int<lower=1,upper=J> jj[N];  // group for individual
   matrix[N, K] x;              // individual predictors
-  row_vector[L] u[J];          // group predictors
+  array[J] row_vector[L] u;    // group predictors
   vector[N] y;                 // outcomes
 }
 parameters {
   corr_matrix[K] Omega;        // prior correlation
   vector<lower=0>[K] tau;      // prior scale
   matrix[L, K] gamma;          // group coeffs
-  vector[K] beta[J];           // indiv coeffs by group
+  array[J] vector[K] beta;     // indiv coeffs by group
   real<lower=0> sigma;         // prediction error scale
 }
 model {
@@ -1341,7 +1341,7 @@ model {
   Omega ~ lkj_corr(2);
   to_vector(gamma) ~ normal(0, 5);
   {
-    row_vector[K] u_gamma[J];
+    array[J] row_vector[K] u_gamma;
     for (j in 1:J)
       u_gamma[j] = u[j] * gamma;
     beta ~ multi_normal(u_gamma, quad_form_diag(Omega, tau));
@@ -1675,15 +1675,15 @@ data {
   int<lower=1> K;
   int<lower=1> J;
   int<lower=0> N;
-  vector[J] x[N];
-  vector[K] y[N];
+  array[N] vector[J] x;
+  array[N] vector[K] y;
 }
 parameters {
   matrix[K, J] beta;
   cov_matrix[K] Sigma;
 }
 model {
-  vector[K] mu[N];
+  array[N] vector[K] mu;
   for (n in 1:N)
     mu[n] = beta * x[n];
   y ~ multi_normal(mu, Sigma);
@@ -1708,7 +1708,7 @@ parameters {
   vector<lower=0>[K] L_sigma;
 }
 model {
-  vector[K] mu[N];
+  array[N] vector[K] mu;
   matrix[K, K] L_Sigma;
 
   for (n in 1:N)
@@ -1801,7 +1801,7 @@ data {
   int<lower=1> D;
   int<lower=0> N;
   int<lower=0,upper=1> y[N,D];
-  vector[K] x[N];
+  array[N] vector[K] x;
 }
 ```
 
@@ -1873,7 +1873,7 @@ transformed parameter block to reconstruct $z$.
 
 ```
 transformed parameters {
-  vector[D] z[N];
+  array[N] vector[D] z;
   for (n in 1:N_pos)
     z[n_pos[n], d_pos[n]] = z_pos[n];
   for (n in 1:N_neg)
@@ -1889,7 +1889,7 @@ model {
   L_Omega ~ lkj_corr_cholesky(4);
   to_vector(beta) ~ normal(0, 5);
   {
-    vector[D] beta_x[N];
+    array[N] vector[D] beta_x;
     for (n in 1:N)
       beta_x[n] = beta * x[n];
     z ~ multi_normal_cholesky(beta_x, L_Omega);

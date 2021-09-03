@@ -92,9 +92,9 @@ All of the basic data types other than `complex` may be given lower
 and upper bounds using syntax such as
 
 ```stan
-int<lower = 1> N;
-real<upper = 0> log_p;
-vector<lower = -1, upper = 1>[3] rho;
+int<lower=1> N;
+real<upper=0> log_p;
+vector<lower=-1, upper=1>[3] rho;
 ```
 
 There are also special data types for structured vectors and
@@ -225,24 +225,34 @@ both of which are of type `real`.
 
 ### Constructing and accessing complex numbers
 
-A complex number is constructed with the `to_complex` function as follows.
+Imaginary literals are written in mathematical notation using a
+numeral followed by the suffix `i`.  For example, the following
+example constructs a complex number $2 - 1.3i$ and assigns it to
+the variable `z`.
 
 ```stan
-real re = 2.0;   // real component
-real im = -1.3;  // imaginary component
-complex z = to_complex(re, im);
-```
-
-The real and imaginary components can be extracted using their
-respective getter functions in the following way.
-
-```stan
-complex z = to_complex(2.0, -1.3);
+complex z = 2 - 1.3i;
 real re = get_real(z);  // re has value 2.0
 real im = get_imag(z);  // im has value -1.3
 ```
 
+The getter functions then extract the real and imaginary components of
+`z` and assign them to `re` and `im` respectively.
 
+The function `to_complex` constructs a complex number from its real
+and imaginary components.  The functional form needs to be used
+whenever the components are not literal numerals, as in the following
+example.   
+
+```stan
+vector[K] re;
+vector[K] im;
+...
+for (k in 1:K) {
+  complex z = to_complex(re[k], im[k]);
+  ...
+}    
+```
 
 ### Promoting real to complex
 
@@ -267,9 +277,8 @@ int n = 2;
 complex z = n;
 ```
 
-Function arguments work like assignment, meaning that expressions of
-type `int` or `real` may be passed to a function as an argument of
-type `complex`.
+Function arguments also support promotion of integer or real typed
+expressions to type `complex`.
 
 
 ## Univariate data types and variable declarations
@@ -297,7 +306,7 @@ both.  For instance, to declare `N` to be a positive integer, use
 the following.
 
 ```stan
-int<lower = 1> N;
+int<lower=1> N;
 ```
 
 This illustrates that the bounds are inclusive for integers.
@@ -307,7 +316,7 @@ that is zero or one, a lower and upper bound must be provided, as in
 the following example.
 
 ```stan
-int<lower = 0, upper = 1> cond;
+int<lower=0, upper=1> cond;
 ```
 
 
@@ -333,21 +342,21 @@ boundaries, so they are allowed in Stan.
 The variable `sigma` may be declared to be non-negative as follows.
 
 ```stan
-real<lower = 0> sigma;
+real<lower=0> sigma;
 ```
 
 The following declares the variable `x` to be less than or equal
 to $-1$.
 
 ```stan
-real<upper = -1> x;
+real<upper=-1> x;
 ```
 
 To ensure `rho` takes on values between $-1$ and $1$, use the
 following declaration.
 
 ```stan
-real<lower = -1, upper = 1> rho;
+real<lower=-1, upper=1> rho;
 ```
 
 #### Infinite constraints {-}
@@ -378,20 +387,20 @@ perhaps be viewed as acting as a sort of soft constraint.
 The variable `x` may be declared to have offset $1$ as follows.
 
 ```stan
-real<offset = 1> x;
+real<offset=1> x;
 ```
 
 Similarly, it can be declared to have multiplier $2$ as follows.
 
 ```stan
-real<multiplier = 2> x;
+real<multiplier=2> x;
 ```
 
 Finally, we can combine both declarations to declare a variable with offset
 $1$ and multiplier $2$.
 
 ```stan
-real<offset = 1, multiplier = 2> x;
+real<offset=1, multiplier=2> x;
 ```
 
 As an example, we can give `x` a normal distribution with non-centered
@@ -399,7 +408,7 @@ parameterization as follows.
 
 ```stan
 parameters {
-  real<offset = mu, multiplier = sigma> x;
+  real<offset=mu, multiplier=sigma> x;
 }
 model {
   x ~ normal(mu, sigma);
@@ -421,7 +430,7 @@ or equivalently
 
 ```stan
 parameters {
-  real<offset = 0, multiplier = 1> x;
+  real<offset=0, multiplier=1> x;
 }
 model {
   x ~ normal(mu, sigma);
@@ -445,7 +454,7 @@ data {
  real lb;
 }
 parameters {
-   real<lower = lb> phi;
+   real<lower=lb> phi;
 }
 ```
 
@@ -458,11 +467,11 @@ Variables used in constraints can be any variable that has been
 defined at the point the constraint is used.  For instance,
 ```stan
 data {
-   int<lower = 1> N;
+   int<lower=1> N;
    array[N] real y;
 }
 parameters {
-   real<lower = min(y), upper = max(y)> phi;
+   real<lower=min(y), upper=max(y)> phi;
 }
 ```
 
@@ -479,11 +488,11 @@ following program will work as intended.
 ```
 parameters {
   real a;
-  real<lower = a> b;  // enforces a < b
+  real<lower=a> b;  // enforces a < b
 }
 transformed parameters {
   real c;
-  real<lower = c> d;
+  real<lower=c> d;
   c = a;
   d = b;
 }
@@ -505,7 +514,7 @@ following program fragment.
 
 ```stan
 data {
-  int<lower = 0, upper = 1> include_alpha;
+  int<lower=0, upper=1> include_alpha;
   ...
 parameters {
   vector[include_alpha ? N : 0] alpha;
@@ -577,13 +586,13 @@ Vectors may also be declared with constraints, as in the following
 declaration of a 3-vector of non-negative values.
 
 ```stan
-vector<lower = 0>[3] u;
+vector<lower=0>[3] u;
 ```
 
 Similarly, they may be declared with a offset and/or multiplier, as in the
 following example
 ```stan
-vector<offset = 42, multiplier = 3>[3] u;
+vector<offset=42, multiplier=3>[3] u;
 ```
 
 ### Unit simplexes {-}
@@ -683,12 +692,12 @@ row_vector[1093] u;
 Constraints are declared as for vectors, as in the following example
 of a 10-vector with values between -1 and 1.
 ```stan
-row_vector<lower = -1, upper = 1>[10] u;
+row_vector<lower=-1, upper=1>[10] u;
 ```
 Offset and multiplier are also similar as for the following 3-row-vector with
 offset -42 and multiplier 3.
 ```stan
-row_vector<offset = -42, multiplier = 3>[3] u;
+row_vector<offset=-42, multiplier=3>[3] u;
 ```
 
 Row vectors may not be assigned to column vectors, nor may column
@@ -714,7 +723,7 @@ Matrices may also be declared with constraints, as in this ($3 \times 4$)
 matrix of non-positive values.
 
 ```stan
-matrix<upper = 0>[3, 4] B;
+matrix<upper=0>[3, 4] B;
 ```
 
 Similarly, matrices can be declared to have a set offset and/or multiplier, as in
@@ -732,7 +741,7 @@ assignment statement. For example, this is possible.
 matrix[M, N] a;
 row_vector[N] b;
 // ...
-a[1] = b;
+a[1]=b;
 ```
 
 This copies the values from row vector `b` to `a[1]`, which
@@ -834,7 +843,7 @@ Constrained variables of all types may be assigned to other variables
 of the same unconstrained type and vice-versa.  Matching is interpreted strictly
 as having the same basic type and number of array dimensions.
 Constraints are not considered, but basic data types are. For instance, a
-variable declared to be `real<lower = 0, upper = 1>` could be assigned
+variable declared to be `real<lower=0, upper=1>` could be assigned
 to a variable declared as `real` and vice-versa.  Similarly, a
 variable declared as `matrix[3, 3]` may be assigned to a variable
 declared as `cov_matrix[3]` or
@@ -857,7 +866,7 @@ For example, the following is legal.
 
 ```stan
 data {
-  int<lower = 0> N_observed;    int<lower = 0> N_missing;
+  int<lower=0> N_observed;    int<lower=0> N_missing;
   // ...
 transformed parameters {
   vector[N_observed + N_missing] y;
@@ -951,7 +960,7 @@ A three-dimensional array `z` of positive reals with five rows, four
 columns, and two shelves can be declared as follows.
 
 ```stan
-array[5, 4, 2] real<lower = 0> z;
+array[5, 4, 2] real<lower=0> z;
 ```
 
 
@@ -1080,7 +1089,7 @@ array[J,K] real y;
 array[K] real z;
 // ...
 x[1] = y;
-x[1,1] = z;
+x[1, 1] = z;
 ```
 
 The sizes must match.  Here, `x[1]` is a `J` by `K`

@@ -55,6 +55,37 @@ integer denotes a power of 10 to multiply.  For instance, `2.7e3`
 and `2.7e+3` denote $2.7 \times 10^3$, whereas `-2E-5` denotes $-2 \times
 10^{-5}$.
 
+### Imaginary literals {-}
+
+A number followed by the character `i` denotes an imaginary number and
+is assigned to the numeric type `complex`.  The number preceding `i`
+may be either a real or integer literal and determines the magnitude
+of the imaginary number.  Examples of well-formed imaginary literals
+include the following.
+
+```
+1i, 2i, -325.786i, 1e10i, 2.87e-10i.
+```
+
+Note that the character `i` by itself is _not_ a well-formed imaginary
+literal.  The unit imaginary number must be written as `1i`.
+
+
+### Complex literals {-}
+
+Stan does not include complex literals directly, but a real or integer
+literal can be added to an imaginary literal to derive an expression
+that behaves like a complex literal.  Examples include the following.
+
+```
+1 + 2i, -3.2e9 + 1e10i
+```
+
+These will be assigned the type `complex`, which is the result of
+adding a real or integer and a complex number.  They will also
+function like literals in the sense that the C++ compiler is able to
+reduce them to a single complex constant at compile time.
+
 
 ## Variables {#variables.section}
 
@@ -986,6 +1017,7 @@ primitive types.
 :-----------|:------------------
 `int` | `int`
 `real` | `real`
+`complex` | `complex`
 `matrix` | `matrix`
 `cov_matrix` | `matrix`
 `corr_matrix` | `matrix`
@@ -1027,6 +1059,22 @@ Stan's type inference rules define the implementation type of an
 expression based on a background set of variable declarations.  The
 rules work bottom up from primitive literal and variable expressions
 to complex expressions.
+
+### Promotion
+
+There are two promotion rules.  First, integer expressions of type
+`int` may be used anywhere an expression of type `real` is used.  An
+integer is promoted to real by casting it in the underlying C++.
+
+The second promotion rule is that expressions of type `real` may be
+used anywhere an expression of type `complex` is required.  A real
+value is promoted to a complex number with that real component and a
+zero imaginary component.
+
+Promotion is transitive, so that integers may be promoted to complex
+numbers in two stages, first converting the integer to real, then
+converting the real value to a complex type.
+
 
 
 #### Literals {-}

@@ -23,13 +23,12 @@ The data and parameters blocks do not allow statements of any kind
 because these blocks are solely used to declare the data variables for
 input and the parameter variables for sampling.  All other blocks
 allow statements.  In these blocks, both variable declarations and
-statements are allowed.  The first statement that is not a variable
-declaration ends the list of block variable declarations.  See
-the [blocks chapter](#blocks.chapter) for more information about the block structure of
-Stan programs.
+statements are allowed.  All top-level variables in a block are
+considered block variables. See the [blocks chapter](#blocks.chapter)
+for more information about the block structure of Stan programs.
 
 
-## Assignment statement {#assignment-statement.section}
+## Assignment statements {#assignment-statement.section}
 
 An assignment statement consists of a variable (possibly multivariate
 with indexing information) and an expression.  Executing an
@@ -206,10 +205,9 @@ are also listed in the index prefaced by `operator`, e.g.,
 
 **Compound Arithmetic/Assignment Table.**
 <a id="compound-arithmetic-assign-table"></a>
-*Stan allows compound arithmetic and assignment
-statements of the forms listed in the table above.  The compound
-form is legal whenever the corresponding long form would be legal
-and it has the same effect.*
+_Stan allows compound arithmetic and assignment statements of the
+forms listed in the table.  The compound form is legal whenever the
+corresponding long form would be legal and it has the same effect._
 
  | operation                  | compound  | unfolded     |
  | :------------------------- | :-------- | :----------- |
@@ -317,9 +315,10 @@ and returns the unnormalized density. The same is true for `_lpmf` and `_lupmf`.
 #### Relation to compound addition and assignment {-}
 
 The increment log density statement looks syntactically like compound
-addition and assignment (see the [compound arithmetic/assignment section](#compound-arithmetic-assignment.section), it is treated as a
-primitive statement because `target` is not itself a variable.
-So, even though
+addition and assignment (see the [compound arithmetic/assignment
+section](#compound-arithmetic-assignment.section), it is treated as a
+primitive statement because `target` is not itself a variable. So,
+even though
 
 ```stan
 target += lp;
@@ -353,7 +352,7 @@ Stan supports writing probability statements also in sampling
 notation, such as
 
 ```stan
-y ~ normal(mu,sigma);
+y ~ normal(mu, sigma);
 ```
 
 The name "sampling statement" is meant to be suggestive, not
@@ -411,7 +410,7 @@ y ~ normal(mu, sigma);
 and explicitly incrementing the log probability function, as in
 
 ```stan
-target += normal_lpdf(y | mu,sigma);
+target += normal_lpdf(y | mu, sigma);
 ```
 
 The sampling statement drops all the terms in the log probability
@@ -1000,7 +999,7 @@ can be written as follows.
 
 ```stan
 for (n in 1:N)
-  y[n] ~ normal(mu,sigma);
+  y[n] ~ normal(mu, sigma);
 ```
 
 To put multiple statements inside the body of a for loop, a block is
@@ -1008,7 +1007,7 @@ used, as in the following example.
 
 ```stan
 for (n in 1:N) {
-  lambda[n] ~ gamma(alpha,beta);
+  lambda[n] ~ gamma(alpha, beta);
   y[n] ~ poisson(lambda[n]);
 }
 ```
@@ -1027,7 +1026,7 @@ for (n in 1:N)
 
 The problem is that the body of the for loop is taken to be the
 statement directly following it, which is
-`y[n] ~ normal(mu,sigma)`.  This leaves the probability statement for
+`y[n] ~ normal(mu, sigma)`.  This leaves the probability statement for
 `z[n]` hanging, as is clear from the following equivalent
 program.
 
@@ -1278,6 +1277,15 @@ and a $2 \times 3$-matrix as
 [[1, 2, 3], [4, 5, 6]]
 ```
 
+Complex numbers print as pairs.  For example, the pair of statements
+
+```stan
+complex z = to_complex(1.2, -3.5);
+print(z)
+```
+
+will print as `(1.2,-3.5)`, with no space after the comma or within
+the parentheses.
 
 Printing a more readable version of arrays or matrices can be done
 with loops.  An example is the print statement in the following
@@ -1323,7 +1331,7 @@ String literals begin and end with a double quote character
 (`"`).  The characters between the double quote characters may be
 any byte sequence, with the exception of the double quote character.
 
-The Stan interfaces preserve the byte sequences which they receive. 
+The Stan interfaces preserve the byte sequences which they receive.
 The encoding of these byte sequences as characters and their rendering
 as glyphs will be handled by whatever display mechanism is being used to
 monitor Stan's output (e.g., a terminal, a Jupyter notebook, RStudio, etc.).

@@ -369,8 +369,8 @@ non-rectangular array.
 ```
 
 This may appear to be OK, because it is creating a two-dimensional
-integer array (`int[ , ]`) out of two one-dimensional array
-integer arrays (`int[ ]`).  But it is not allowed because the two
+integer array (`array[,] int`) out of two one-dimensional array
+integer arrays (`array[] int`).  But it is not allowed because the two
 one-dimensional arrays are not the same size.  If the elements are
 array expressions, this can be diagnosed at compile time.  If one or
 both expressions is a variable, then that won't be caught until
@@ -397,11 +397,12 @@ array[0] int a;   // a is fully defined as zero element array
 
 If an array expression contains only integer elements, such as
 `{ 1, 2, 3 }`, then the result type will be an integer array,
-`int[]`.  This means that the following will *not* be
+`array [] real`.  This means that the following will *not* be
 legal.
 
 ```stan
-array[2] real a = { -3, 12 };  // error: int[] can't be assigned to real[]
+array[2] real a = { -3, 12 };  
+// error: array [] real can't be assigned to array [] real
 ```
 
 Integer arrays may not be assigned to real values.  However, this
@@ -717,25 +718,25 @@ derivative calculations.
 
 Stan arrays, matrices, vectors, and row vectors are all accessed
 using the same array-like notation.  For instance, if `x` is a
-variable of type `real[]` (a one-dimensional array of reals)
+variable of type `array [] real` (a one-dimensional array of reals)
 then `x[1]` is the value of the first element of the
 array.
 
 Subscripting has higher precedence than any of the arithmetic
-operations.  For example, `alpha*x[1]` is equivalent to
-`alpha*(x[1])`.
+operations.  For example, `alpha * x[1]` is equivalent to
+`alpha * (x[1])`.
 
 Multiple subscripts may be provided within a single pair of square
-brackets.  If `x` is of type `real[ , ]`, a two-dimensional
+brackets.  If `x` is of type `array[,] real`, a two-dimensional
 array, then `x[2, 501]` is of type `real`.
 
 
 ### Accessing subarrays {-}
 
 The subscripting operator also returns subarrays of arrays.  For
-example, if `x` is of type `real[ , , ]`, then `x[2]`
-is of type `real[ , ]`, and `x[2, 3]` is of type
-`real[]`.  As a result, the expressions `x[2, 3]` and
+example, if `x` is of type `array[,,] real`, then `x[2]`
+is of type `array[,] real`, and `x[2, 3]` is of type
+`array[] real`.  As a result, the expressions `x[2, 3]` and
 `x[2][3]` have the same meaning.
 
 
@@ -773,7 +774,7 @@ all of the indexes.  A complete table of index types is given in the
 
 **Indexing Options Table.** <a id="index-types-table"></a>
 *Types of indexes and examples with one-dimensional containers of size
-  `N` and an integer array `ii` of type `int[]` size `K`.*
+  `N` and an integer array `ii` of type `array [] real` size `K`.*
 
  |  index type   | example  |            value            |
  | :-----------: | :------: | :-------------------------: |
@@ -876,7 +877,7 @@ A function is uniquely determined by its name and its sequence of
 argument types.  For instance, the following two functions are
 different functions.
 
-`real mean(real[]);`
+`real mean(array [] real);`
 
 `real mean(vector);`
 
@@ -1035,8 +1036,8 @@ primitive types.
 A full implementation type consists of a primitive implementation type
 and an integer array dimensionality greater than or equal to zero.
 These will be written to emphasize their array-like nature.  For
-example, `int[]` has an array dimensionality of 1, `int` an
-array dimensionality of 0, and `int[ , ,]` an array dimensionality
+example, `array [] real` has an array dimensionality of 1, `int` an
+array dimensionality of 0, and `array [,,] int` an array dimensionality
 of 3. The implementation type `matrix[ , , ]` has a total of five
 dimensions and takes up to five indices, three from the array and two
 from the matrix.
@@ -1155,20 +1156,24 @@ or data. The second group of arguments, consisting of a real and integer
 array in all cases, must be expressions involving only data and
 literals.*
 
-  |                function | parameter or data args |    data args    | return type |
-  | ----------------------: | :--------------------: | :-------------: | :---------: |
-  |        `algebra_solver` |    `vector, vector`    | `real[], int[]` |  `vector`   |
-  | `algebra_solver_newton` |    `vector, vector`    | `real[], int[]` |  `vector`   |
-  |         `integrate_1d`, |  `real, real, real[]`  | `real[], int[]` |   `real`    |
-  |      `integrate_ode_X`, | `real, real[], real[]` | `real[], int[]` |  `real[]`   |
-  |              `map_rect` |    `vector, vector`    | `real[], int[]` |  `vector`   |
+  |                function |        parameter or data args        |           data args            |   return type   |
+  | ----------------------: | :----------------------------------: | :----------------------------: | :-------------: |
+  |        `algebra_solver` |           `vector, vector`           | `array [] real, array [] real` |    `vector`     |
+  | `algebra_solver_newton` |           `vector, vector`           | `array [] real, array [] real` |    `vector`     |
+  |         `integrate_1d`, |     `real, real, array [] real`      | `array [] real, array [] real` |     `real`      |
+  |      `integrate_ode_X`, | `real, array [] real, array [] real` | `array [] real, array [] real` | `array [] real` |
+  |              `map_rect` |           `vector, vector`           | `array [] real, array [] real` |    `vector`     |
 
 For example, the `integrate_ode_rk45` function can be used to integrate
 differential equations in Stan:
 
 ```stan
 functions {
-  real[] foo(real t, real[] y, real[] theta, real[] x_r, int[] x_i) {
+  array [] real foo(real t, 
+                    array [] real y, 
+                    array [] real theta, 
+                    array [] real x_r, 
+                    array [] real x_i) {
     ...
 ...
 int<lower=1> T;
@@ -1179,7 +1184,8 @@ array[1] real theta;
 array[0] real x_r;
 array[0] int x_i;
 ...
-array[T, 2] real y_hat = integrate_ode_rk45(foo, y0, t0, ts, theta, x_r, x_i);
+array[T, 2] real y_hat = integrate_ode_rk45(foo, y0, t0, 
+                                              ts, theta, x_r, x_i);
 ```
 
 The function argument is `foo`, the name of the user-defined
@@ -1193,10 +1199,10 @@ an integer array as arguments and returns 2D real array.
 function types.  The first group of arguments are restricted in type.
 The sequence of trailing arguments can be of any length with any types.*
 
-  |     function |    restricted args     | return type |
-  | -----------: | :--------------------: | :---------: |
-  |     `ode_X`, | `vector, real, real[]` | `vector[]`  |
-  | `reduce_sum` |   ```T[], T1, T2```    |   `real`    |
+  |     function |        restricted args        | return type |
+  | -----------: | :---------------------------: | :---------: |
+  |     `ode_X`, | `vector, real, array [] real` | `vector[]`  |
+  | `reduce_sum` |    ```array[] T, T1, T2```    |   `real`    |
 
 `T`, `T1`, and `T2` can be any Stan type.
 
@@ -1205,7 +1211,8 @@ differential equations in Stan:
 
 ```stan
 functions {
-  vector foo(real t, vector y, real theta, vector beta, int[] x_i, int index) {
+  vector foo(real t, vector y, real theta, vector beta, 
+            array [] real x_i, int index) {
     ...
 ...
 int<lower=1> T;
@@ -1217,7 +1224,8 @@ vector[7] beta;
 array[10] int x_i;
 int index;
 ...
-vector[2] y_hat[T] = ode_rk45(foo, y0, t0, ts, theta, beta, x_i, index);
+vector[2] y_hat[T] = ode_rk45(foo, y0, t0, ts, theta, 
+                              beta, x_i, index);
 ```
 
 The function argument is `foo`, the name of the user-defined

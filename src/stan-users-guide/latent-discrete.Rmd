@@ -367,7 +367,7 @@ population $N$ marked in the first round.
 data {
   int<lower=0> M;
   int<lower=0> C;
-  int<lower=0, upper=min(M,C)> R;
+  int<lower=0, upper=min(M, C)> R;
 }
 parameters {
   real<lower=(C - R + M)> N;
@@ -611,7 +611,7 @@ captured.^[An alternative would be to compute this on the outside and feed it in
 
 ```stan
 functions {
-  int first_capture(int[] y_i) {
+  int first_capture(array[] int y_i) {
     for (k in 1:size(y_i)) {
       if (y_i[k]) {
         return k;
@@ -619,7 +619,7 @@ functions {
     }
     return 0;
   }
-  int last_capture(int[] y_i) {
+  int last_capture(array[] int y_i) {
     for (k_rev in 0:(size(y_i) - 1)) {
       int k;
       k = size(y_i) - k_rev;
@@ -671,12 +671,12 @@ never be captured again.
 
 ```stan
 parameters {
-  vector<lower=0, upper=1>[T-1] phi;
+  vector<lower=0, upper=1>[T - 1] phi;
   vector<lower=0, upper=1>[T] p;
 }
 transformed parameters {
   vector<lower=0, upper=1>[T] chi;
-  chi = prob_uncaptured(T,p,phi);
+  chi = prob_uncaptured(T, p, phi);
 }
 ```
 
@@ -722,7 +722,7 @@ model {
   for (i in 1:I) {
     if (first[i] > 0) {
       for (t in (first[i]+1):last[i]) {
-        1 ~ bernoulli(phi[t-1]);
+        1 ~ bernoulli(phi[t - 1]);
         y[i, t] ~ bernoulli(p[t]);
       }
       1 ~ bernoulli(chi[last[i]]);
@@ -738,7 +738,7 @@ returning 0 for `first` if an individual is never captured.
 
 The inner loop for individual `i` first increments the log
 probability based on the survival of the individual with probability
-`phi[t-1]`.  The outcome of 1 is fixed because the individual
+`phi[t - 1]`.  The outcome of 1 is fixed because the individual
 must survive between the first and last capture (i.e., no zombies).
 The loop starts after the first capture, because all
 information in the CJS model is conditional on the first capture.
@@ -755,7 +755,7 @@ again after being observed at time `last[i]` is included, because
 #### Identified parameters {-}
 
 As with the collective model described in the previous subsection,
-this model does not identify `phi[T-1]` and `p[T]`, but
+this model does not identify `phi[T - 1]` and `p[T]`, but
 does identify their product, `beta`.  Thus `beta` is defined
 as a generated quantity to monitor convergence and report.
 
@@ -764,7 +764,7 @@ generated quantities {
   real beta;
   ...
 
-  beta = phi[T-1] * p[T];
+  beta = phi[T - 1] * p[T];
   ...
 }
 ```
@@ -773,7 +773,7 @@ generated quantities {
 The parameter `p[1]` is also not modeled and will just be uniform
 between 0 and 1.  A more finely articulated model might have a
 hierarchical or time-series component, in which case `p[1]` would
-be an unknown initial condition and both `phi[T-1]` and
+be an unknown initial condition and both `phi[T - 1]` and
 `p[T]` could be identified.
 
 #### Population size estimates {-}

@@ -166,16 +166,17 @@ The ARCH(1) model may be coded directly in Stan as follows.
 ```stan
 data {
   int<lower=0> T;                // number of time points
-  array[T] real r;                     // return at time t
+  array[T] real r;               // return at time t
 }
 parameters {
   real mu;                       // average return
   real<lower=0> alpha0;          // noise intercept
-  real<lower=0, upper=1> alpha1;  // noise slope
+  real<lower=0, upper=1> alpha1; // noise slope
 }
 model {
   for (t in 2:T) {
-    r[t] ~ normal(mu, sqrt(alpha0 + alpha1 * pow(r[t-1] - mu,2)));
+    r[t] ~ normal(mu, sqrt(alpha0 + alpha1 
+                                    * pow(r[t - 1] - mu,2)));
   }
 }
 ```
@@ -223,8 +224,8 @@ transformed parameters {
   sigma[1] = sigma1;
   for (t in 2:T) {
     sigma[t] = sqrt(alpha0
-                     + alpha1 * pow(r[t-1] - mu, 2)
-                     + beta1 * pow(sigma[t-1], 2));
+                     + alpha1 * pow(r[t - 1] - mu, 2)
+                     + beta1 * pow(sigma[t - 1], 2));
   }
 }
 model {
@@ -396,7 +397,7 @@ model {
   nu[1] = mu + phi * mu;     // assume err[0] == 0
   err[1] = y[1] - nu[1];
   for (t in 2:T) {
-    nu[t] = mu + phi * y[t-1] + theta * err[t-1];
+    nu[t] = mu + phi * y[t - 1] + theta * err[t - 1];
     err[t] = y[t] - nu[t];
   }
   mu ~ normal(0, 10);        // priors
@@ -437,7 +438,7 @@ model {
   err = y[1] - mu + phi * mu;
   err ~ normal(0, sigma);
   for (t in 2:T) {
-    err = y[t] - (mu + phi * y[t-1] + theta * err);
+    err = y[t] - (mu + phi * y[t - 1] + theta * err);
     err ~ normal(0, sigma);
   }
 }
@@ -524,7 +525,7 @@ data {
 }
 parameters {
   real mu;                     // mean log volatility
-  real<lower=-1, upper=1> phi;  // persistence of volatility
+  real<lower=-1, upper=1> phi; // persistence of volatility
   real<lower=0> sigma;         // white noise shock scale
   vector[T] h;                 // log volatility at time t
 }
@@ -591,7 +592,7 @@ transformed parameters {
   h[1] /= sqrt(1 - phi * phi);  // rescale h[1]
   h += mu;
   for (t in 2:T) {
-    h[t] += phi * (h[t-1] - mu);
+    h[t] += phi * (h[t - 1] - mu);
   }
 }
 ```
@@ -779,7 +780,7 @@ transformed data {
     alpha_post[k] = alpha;
   }
   for (t in 2:T) {
-    alpha_post[z[t-1], z[t]] += 1;
+    alpha_post[z[t - 1], z[t]] += 1;
   }
   for (k in 1:K) {
     beta_post[k] = beta;
@@ -841,7 +842,8 @@ model {
   for (t in 2:T_unsup) {
     for (k in 1:K) {
       for (j in 1:K) {
-        acc[j] = gamma[t-1, j] + log(theta[j, k]) + log(phi[k, u[t]]);
+        acc[j] = gamma[t - 1, j] + log(theta[j, k]) 
+                 + log(phi[k, u[t]]);
       }
       gamma[t, k] = log_sum_exp(acc);
     }
@@ -904,7 +906,7 @@ generated quantities {
         best_logp[t, k] = negative_infinity();
         for (j in 1:K) {
           real logp;
-          logp = best_logp[t-1, j]
+          logp = best_logp[t - 1, j]
                   + log(theta[j, k]) + log(phi[k, u[t]]);
           if (logp > best_logp[t, k]) {
             back_ptr[t, k] = j;

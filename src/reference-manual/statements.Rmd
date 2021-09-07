@@ -82,7 +82,7 @@ sets the value in the first column of the first row of `Sigma` to one.
 
 Assignments to subcomponents of larger multi-variate data structures
 are supported by Stan.  For example, `a` is an array of type
-`real[ , ]` and `b` is an array of type `real[]`, then
+`array[,] real` and `b` is an array of type `array[] real`, then
 the following two statements are both well-formed.
 
 ```stan
@@ -785,7 +785,7 @@ with truncation.
 ## For loops
 
 Suppose `N` is a variable of type `int`, `y` is a one-dimensional
-array of type `real[]`, and `mu` and `sigma` are variables of type
+array of type `array[] real`, and `mu` and `sigma` are variables of type
 `real`.  Furthermore, suppose that `n` has not been defined as a
 variable. Then the following is a well-formed for-loop statement.
 
@@ -892,7 +892,7 @@ following is a well-formed foreach statement.
 
 ```stan
 for (y in ys) {
-  ... do something with y ...
+  // ... do something with y ...
 }
 ```
 
@@ -902,10 +902,10 @@ The order in which elements of `ys` are visited is defined for container types a
 
 * `matrix`: elements visited in column-major order, `y` is of type `double`
 
-* `T[]`: elements visited in order, `y` is of type `T`.
+* `array[] T`: elements visited in order, `y` is of type `T`.
 
-Consequently, if `ys` is a two dimensional array `real[ , ]`, `y` will
-be a one-dimensional array of real values (type `real[]`).  If 'ys` is
+Consequently, if `ys` is a two dimensional array `array[,] real`, `y` will
+be a one-dimensional array of real values (type `array[] real`).  If 'ys` is
 a matrix, then `y` will be a real value (type `real`).  To loop over
 all values of a two-dimensional array using foreach statements would
 require a doubly-nested loop,
@@ -914,7 +914,7 @@ require a doubly-nested loop,
 array[2, 3] real yss;
 for (ys in yss) {
   for (y in ys) {
-    ... do something with y ...
+    // ... do something with y ...
   }
 }
 ```
@@ -924,7 +924,7 @@ whereas a matrix can be looped over in one foreach statement
 ```stan
 matrix[2, 3] yss;
 for (y in yss) {
-   ... do something with y...
+   // ... do something with y...
 }
 ```
 
@@ -1152,7 +1152,9 @@ program:
 
 ```stan
 while (1) {
-  if (n < 0) break;
+  if (n < 0) {
+    break;
+  }
   foo(n);
   n = n - 1;
 }
@@ -1187,7 +1189,9 @@ array `x`,
 real sum;
 sum = 0;
 for (n in 1:size(x)) {
-  if (x[n] <= 0) continue;
+  if (x[n] <= 0) {
+    continue;
+  }
   sum += x[n];
 }
 ```
@@ -1228,7 +1232,9 @@ while (cond1) {
   ...
   while (cond2) {
     ...
-    if (cond3) break;
+    if (cond3) {
+      break;
+    }
     ...
   }
   // execution continues here after break

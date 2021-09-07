@@ -61,7 +61,7 @@ g(x1) + g(x2) + g(x3) = f({ x1, x2, x3 })
                       = f({ x1, x2 }) + f({ x3 })
                       = f({ x1 }) + f({ x2, x3 })
 					  = f({ x1 }) + f({ x2 }) + f({ x3 })
-```stan
+```
 
 With the partial sum function ```f: U[] -> real``` reduction of a
 large number of terms can be evaluated in parallel automatically, since the
@@ -94,22 +94,22 @@ the effective sum (with individual terms) looks like:
 
 ```stan
 g(x1, s1, s2, ...) + g(x2, s1, s2, ...) + g(x3, s1, s2, ...) + ...
-```stan
+```
 
 which can be written equivalently with partial sums to look like:
 
 ```stan
 f({ x1, x2 }, s1, s2, ...) + f({ x3 }, s1, s2, ...)
-```stan
+```
 
 where the particular slicing of the ```x``` array can change.
 
 Given this, the signatures are:
 
 ```stan
-real reduce_sum(F f, T[] x, int grainsize, T1 s1, T2 s2, ...)
-real reduce_sum_static(F f, T[] x, int grainsize, T1 s1, T2 s2, ...)
-```stan
+real reduce_sum(F f, array[] T x, int grainsize, T1 s1, T2 s2, ...)
+real reduce_sum_static(F f, array[] T x, int grainsize, T1 s1, T2 s2, ...)
+```
 
 1. ```f``` - User defined function that computes partial sums
 2. ```x``` - Array to slice, each element corresponds to a term in the summation
@@ -119,8 +119,8 @@ real reduce_sum_static(F f, T[] x, int grainsize, T1 s1, T2 s2, ...)
 The user-defined partial sum functions have the signature:
 
 ```stan
-real f(T[] x_slice, int start, int end, T1 s1, T2 s2, ...)
-```stan
+real f(array[] T x_slice, int start, int end, T1 s1, T2 s2, ...)
+```
 
 and take the arguments:
 
@@ -207,7 +207,7 @@ the total sum. Using the interface defined in
 
 ```stan
 functions {
-  real partial_sum(int[] y_slice,
+  real partial_sum(array[] int y_slice,
                    int start, int end,
                    vector x,
                    vector beta) {
@@ -244,7 +244,7 @@ and computes them in parallel. `grainsize = 1` specifies that the
 
 ```stan
 functions {
-  real partial_sum(int[] y_slice,
+  real partial_sum(array[] int y_slice,
                    int start, int end,
                    vector x,
                    vector beta) {
@@ -338,9 +338,9 @@ just a sequence of inputs.
 Stan's map function has the following signature
 
 ```stan
-vector map_rect((vector, vector, real[], int[]):vector f,
+vector map_rect((vector, vector, array[] real, array[] int):vector f,
                 vector phi, vector[] thetas,
-                data real[ , ] x_rs, data int[ , ] x_is);
+                data array[,] real x_rs, data array[,] int x_is);
 ```
 
 The arrays `thetas` of parameters, `x_rs` of real data, and
@@ -361,12 +361,12 @@ originating in the data or transformed data blocks.  This will allow
 such data to be pinned to a processor on which it is being processed
 to reduce communication overhead.
 
-The notation `(vector, vector, real[], int[]):vector` indicates
+The notation `(vector, vector, array[] real, array[] int):vector` indicates
 that the function argument `f` must have the following signature.
 
 ```stan
 vector f(vector phi, vector theta,
-         data real[] x_r, data int[] x_i);
+         data array[] real x_r, data array[] int x_i);
 ```
 
 Although `f` will often return a vector of size one, the built-in
@@ -437,7 +437,7 @@ functionality as follows.
 
 ```stan
 functions {
-  vector lr(vector beta, vector theta, real[] x, int[] y) {
+  vector lr(vector beta, vector theta, array[] real x, array[] int y) {
     real lp = bernoulli_logit_lpmf(y | beta[1]
                                        + to_vector(x) * beta[2]);
     return [lp]';
@@ -585,7 +585,7 @@ linear model with a Bernoulli likelihood and logistic link function).
 ```stan
 functions {
  vector bl_glm(vector mu_sigma, vector beta,
-               real[] x, int[] y) {
+               array[] real x, array[] int y) {
    vector[2] mu = mu_sigma[1:2];
    vector[2] sigma = mu_sigma[3:4];
    real lp = normal_lpdf(beta | mu, sigma);

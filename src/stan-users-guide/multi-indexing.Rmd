@@ -9,8 +9,9 @@ varying-intercept hierarchical linear regression, which could be coded
 as
 
 ```
-for (n in 1:N)
+for (n in 1:N) {
   y[n] ~ normal(alpha[ii[n]] + beta[ii[n]] * x[n], sigma);
+}
 ```
 
 With multiple indexing, this can be coded in one line, leading to more
@@ -26,8 +27,9 @@ a local variable.
 ```
 {
   vector[N] mu;
-  for (n in 1:N)
+  for (n in 1:N) {
     mu[n] = alpha[ii[n]] + beta[ii[n]] * x[n];
+  }
   y ~ normal(mu, sigma);
 }
 ```
@@ -66,7 +68,7 @@ array[2, 3] int c;
 ...             // define: c = ((1, 3, 5), ((7, 11, 13))
 array[4] int idxs;
 ...             // define: idxs = (2, 2, 1, 2)
-int d[4, 3]
+array[4, 3] int d
 d = c[idxs];    // result: d = ((7, 11, 13), (7, 11, 13),
                 //              (1, 3, 5), (7, 11, 13))
 ```
@@ -381,7 +383,7 @@ data-frame or database format.
 
 ```
 transformed data {
-  int<lower=1, upper=3> idxs[7, 2]
+  array[7, 2] int<lower=1, upper=3> idxs
     = { {1, 1},
         {2, 1}, {2, 2}, {2, 3},
         {3, 1}, {3, 2}, {3, 3} };
@@ -402,8 +404,9 @@ local variable.
 ```
 model {
   matrix[3, 3] A;
-  for (i in 1:7)
+  for (i in 1:7) {
     A[idxs[i, 1], idxs[i, 2]] = A_raw[i];
+  }
   A[1, 2] = 0;
   A[1, 3] = 0;
   ...

@@ -157,7 +157,7 @@ The Stan code simply follows the mathematical definition, providing an
 example of the direct definition of a probability function up to a
 proportion.
 
-```
+```stan
 data {
   int<lower=0> N;
   vector[N] y;
@@ -172,9 +172,10 @@ transformed parameters {
 }
 model {
   target += -2 * log(sigma);
-  for (n in 1:N)
+  for (n in 1:N) {
     target += log(Phi((y[n] + 0.5 - mu) / sigma)
                   - Phi((y[n] - 0.5 - mu) / sigma));
+  }
 }
 ```
 
@@ -245,10 +246,10 @@ The clinical data consists of $J$ trials, each with $n^t$ treatment cases, $n^c$
 ```
 data {
   int<lower=0> J;
-  int<lower=0> n_t[J];  // num cases, treatment
-  int<lower=0> r_t[J];  // num successes, treatment
-  int<lower=0> n_c[J];  // num cases, control
-  int<lower=0> r_c[J];  // num successes, control
+  array[J] int<lower=0> n_t;  // num cases, treatment
+  array[J] int<lower=0> r_t;  // num successes, treatment
+  array[J] int<lower=0> n_c;  // num cases, control
+  array[J] int<lower=0> r_c;  // num successes, control
 }
 ```
 
@@ -281,13 +282,15 @@ division.^[When dividing two integers, the result type is an integer and roundin
 ```
 transformed data {
   array[J] real y;
-  real<lower=0> sigma[J];
-  for (j in 1:J)
+  array[J] real<lower=0> sigma;
+  for (j in 1:J) {
     y[j] = log(r_t[j]) - log(n_t[j] - r_t[j])
             - (log(r_c[j]) - log(n_c[j] - r_c[j]);
-  for (j in 1:J)
+  }
+  for (j in 1:J) {
     sigma[j] = sqrt(1 / r_t[j] + 1 / (n_t[j] - r_t[j])
                      + 1 / r_c[j] + 1 / (n_c[j] - r_c[j]));
+  }
 }
 ```
 
@@ -315,8 +318,9 @@ model {
 The sampling statement for `y` is vectorized; it has the same
 effect as the following.
 ```
-  for (j in 1:J)
+  for (j in 1:J) {
     y[j] ~ normal(theta, sigma[j]);
+  }
 ```
 
 It is common to include a prior for `theta` in this model, but it

@@ -119,20 +119,22 @@ ratios can be dropped, because
 
 ```
 log_half = log(0.5);
-for (n in 1:N)
+for (n in 1:N) {
   target += log_sum_exp(neg_log_half
                         + normal_lpdf(y[n] | mu[1], sigma[1]),
                         log_half
 			+ normal_lpdf(y[n] | mu[2], sigma[2]));
+}
 ```
 
 then the $\log 0.5$ term isn't contributing to the proportional
 density, and the above can be replaced with the more efficient version
 
 ```
-for (n in 1:N)
+for (n in 1:N) {
   target += log_sum_exp(normal_lpdf(y[n] | mu[1], sigma[1]),
                         normal_lpdf(y[n] | mu[2], sigma[2]));
+}
 ```
 
 The same result holds if there are $K$ components and the mixing
@@ -193,7 +195,7 @@ estimation setting, where the locations, scales, and mixture
 components are unknown.  Further generalizing to a number of mixture
 components specified as data yields the following model.
 
-```
+```stan
 data {
   int<lower=1> K;          // number of mixture components
   int<lower=1> N;          // number of data points
@@ -210,8 +212,9 @@ model {
   mu ~ normal(0, 10);
   for (n in 1:N) {
     vector[K] lps = log_theta;
-    for (k in 1:K)
+    for (k in 1:K) {
       lps[k] += normal_lpdf(y[n] | mu[k], sigma[k]);
+    }
     target += log_sum_exp(lps);
   }
 }
@@ -263,10 +266,11 @@ for (n in 1:N) {
 or equivalently
 
 ```
-for (n in 1:N)
+for (n in 1:N) {
   target += log_mix(lambda,
                     normal_lpdf(y[n] | mu[1], sigma[1]),
-                    normal_lpdf(y[n] | mu[2], sigma[2]));
+                    normal_lpdf(y[n] | mu[2], sigma[2])) 
+  };
 ```
 
 This definition assumes that each observation $y_n$ may have arisen
@@ -387,11 +391,12 @@ data {
   ...
 generated quantities {
   vector[N_tilde] log_p_y_tilde;
-  for (n in 1:N_tilde)
+  for (n in 1:N_tilde) {
     log_p_y_tilde[n]
       = log_mix(lambda,
                 normal_lpdf(y_tilde[n] | mu[1], sigma[1])
                 normal_lpdf(y_tilde[n] | mu[2], sigma[2]));
+  }
 }
 ```
 
@@ -470,7 +475,7 @@ The log probability function can be implemented directly in Stan as follows.
 ```
 data {
   int<lower=0> N;
-  int<lower=0> y[N];
+  array[N] int<lower=0> y;
 }
 parameters {
   real<lower=0, upper=1> theta;
@@ -478,13 +483,14 @@ parameters {
 }
 model {
   for (n in 1:N) {
-    if (y[n] == 0)
+    if (y[n] == 0) {
       target += log_sum_exp(bernoulli_lpmf(1 | theta),
                             bernoulli_lpmf(0 | theta)
                               + poisson_lpmf(y[n] | lambda));
-    else
+    } else {
       target += bernoulli_lpmf(0 | theta)
                   + poisson_lpmf(y[n] | lambda);
+    }
   }
 }
 ```
@@ -507,19 +513,20 @@ Then the nonzero cases are collected into their own array for
 vectorization.  The number of zeros is required to declare
 `y_nonzero`, so it must be computed in a function.
 
-```
+```stan
 functions {
   int num_zeros(int[] y) {
     int sum = 0;
-    for (n in 1:size(y))
+    for (n in 1:size(y)) {
       sum += (y[n] == 0);
+    }
     return sum;
   }
 }
 ...
 transformed data {
   int<lower = 0> N_zero = num_zeros(y);
-  int<lower = 1> y_nonzero[N - N_zero];
+  array[N - N_zero] int<lower = 1> y_nonzero;
   int N_nonzero = 0;
   for (n in 1:N) {
     if (y[n] == 0) continue;
@@ -569,10 +576,10 @@ where $\textsf{PoissonCDF}$ is the cumulative distribution function for
 the Poisson distribution.  The hurdle model is even more straightforward to
 program in Stan, as it does not require an explicit mixture.
 
-```
-if (y[n] == 0)
+```stan
+if (y[n] == 0) {
   1 ~ bernoulli(theta);
-else {
+} else {
   0 ~ bernoulli(theta);
   y[n] ~ poisson(lambda) T[1, ];
 }
@@ -586,12 +593,13 @@ section](#truncation.section) for more about truncation and the
 the Poisson CDF.  The net effect is equivalent to the direct
 definition of the log likelihood.
 
-```
-if (y[n] == 0)
+```stan
+if (y[n] == 0) {
   target += log(theta);
-else
+} else {
   target += log1m(theta) + poisson_lpmf(y[n] | lambda)
             - poisson_lccdf(0 | lambda));
+}
 ```
 
 Julian King pointed out that because
@@ -622,9 +630,11 @@ number of non-zero entries in an array of integers,
 functions {
   int num_zero(int[] y) {
     int nz = 0;
-    for (n in 1:size(y))
-      if (y[n] == 0)
+    for (n in 1:size(y)) {
+      if (y[n] == 0) {
         nz += 1;
+      } 
+    }
     return nz;
   }
 }
@@ -637,7 +647,7 @@ statistics,
 transformed data {
   int<lower=0, upper=N> N0 = num_zero(y);
   int<lower=0, upper=N> Ngt0 = N - N0;
-  int<lower=1> y_nz[N - num_zero(y)];
+  array[N - num_zero(y)] int<lower=1> y_nz;
   {
     int pos = 1;
     for (n in 1:N) {

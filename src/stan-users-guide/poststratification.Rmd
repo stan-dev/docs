@@ -138,8 +138,8 @@ of group $j$ in the population.
 ```
 data {
   int<lower = 1> J;
-  int<lower = 0> A[J]; 
-  int<lower = 0> a[J];
+  array[J] int<lower = 0> A; 
+  array[J] int<lower = 0> a;
   vector<lower = 0>[J] N;
 }
 parameters {
@@ -366,11 +366,11 @@ data variable `P`.
 ```
 data {
   int<lower = 0> N;
-  int<lower = 1, upper = 4> age[N];
-  int<lower = 1, upper = 5> income[N];
-  int<lower = 1, upper = 50> state[N];
-  int<lower = 0> y[N];
-  int<lower = 0> P[4, 5, 50];
+  array[N] int<lower = 1, upper = 4> age;
+  array[N] int<lower = 1, upper = 5> income;
+  array[N] int<lower = 1, upper = 50> state;
+  array[N] int<lower = 0> y;
+  array[4, 5, 50] int<lower = 0> P;
 }
 parameters {
   real alpha;
@@ -392,14 +392,16 @@ model {
 generated quantities {
   real expect_pos = 0;
   int total = 0;
-  for (b in 1:4)
-    for (c in 1:5)
+  for (b in 1:4) {
+    for (c in 1:5) {
       for (d in 1:50) {
         total += P[b, c, d];
         expect_pos
           += P[b, c, d]
              * inv_logit(alpha + beta[b] + gamma[c] + delta[d]);
       }
+    }
+  }
   real<lower = 0, upper = 1> phi = expect_pos / total;
 }
 ```
@@ -419,15 +421,15 @@ groups.  The data can be broken down into a size-2000 array, with
 entries corresponding to total vote counts in that group
 ```
 int<lower = 0> G;
-int<lower = 1, upper = 4> age[G];
-int<lower = 1, upper = 5> income[G];
-int<lower = 1, upper = 50> state[G];
+array[G] int<lower = 1, upper = 4> age;
+array[G] int<lower = 1, upper = 5> income;
+array[G] int<lower = 1, upper = 50> state;
 ```
 Then the number of positive votes and the number of total votes are
 collected into two parallel arrays indexed by group.
 ```
-int<lower = 0> pos_votes[G];
-int<lower = 0> total_votes[G];
+array[G] int<lower = 0> pos_votes;
+array[G] int<lower = 0> total_votes;
 ```
 Finally, the likelihood is converted to binomial.
 ```
@@ -446,7 +448,7 @@ feasible to build a hierarchical model with only two cases.
 A sex predictor is straightforward to add to the data block; it takes
 on values 1 or 2 for each of the `N` data points.
 ```
-  int<lower = 1, upper = 2> sex[N];
+  array[N] int<lower = 1, upper = 2> sex;
 ```
 Then add a single regression coefficient as a parameter,
 ```
@@ -487,7 +489,7 @@ poststratification because they are at the group level.  For example,
 suppose the average income level in the state is available as the data
 variable 
 ```
-real<lower = 0> income[50];
+array[50] real<lower = 0> income;
 ```
 then a regression coefficient `psi` can be added for the effect of
 average state income,

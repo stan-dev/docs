@@ -628,10 +628,11 @@ behaves the same way as the following more verbose form.
 
 ```stan
 y ~ normal(0, 1);
-if (y < -0.5 || y > 2.1)
+if (y < -0.5 || y > 2.1) {
   target += negative_infinity();
-else
+} else {
   target += -log_diff_exp(normal_lcdf(2.1 | 0, 1),
+}
                           normal_lcdf(-0.5 | 0, 1));
 ```
 
@@ -653,12 +654,13 @@ behaves in the same way as the following code.
 
 ```stan
 y ~ poisson(3.7);
-if (y < 2 || y > 10)
+if (y < 2 || y > 10) {
   target += negative_infinity();
-else
+} else {
   target += -log_sum_exp(poisson_lpmf(2 | 3.7),
                          log_diff_exp(poisson_lcdf(10 | 3.7),
                                       poisson_lcdf(2 | 3.7)));
+}
 ```
 
 Recall that `log_sum_exp(a, b)` is just the arithmetically stable form
@@ -678,10 +680,11 @@ following code.
 
 ```stan
 y ~ normal(0, 1);
-if (y < -0.5)
+if (y < -0.5) {
   target += negative_infinity();
-else
+} else {
   target += -normal_lccdf(-0.5 | 0, 1);
+}
 ```
 
 The `normal_lccdf` function is the normal complementary cumulative
@@ -699,11 +702,12 @@ behaves the same way as
 
 ```stan
 y ~ poisson(3.7);
-if (y < 2)
+if (y < 2) {
   target += negative_infinity();
-else
+} else {
   target += -log_sum_exp(poisson_lpmf(2 | 3.7),
                          poisson_lccdf(2 | 3.7));
+}
 ```
 
 
@@ -720,10 +724,11 @@ produces the same result as the following code.
 
 ```stan
 target += normal_lpdf(y | 0, 1);
-if (y > 2.1)
+if (y > 2.1) {
   target += negative_infinity();
-else
+} else {
   target += -normal_lcdf(2.1 | 0, 1);
+}
 ```
 
 With only an upper bound, the discrete case does not need a boundary
@@ -737,10 +742,11 @@ behaves the same way as the following code.
 
 ```stan
 y ~ poisson(3.7);
-if (y > 10)
+if (y > 10) {
   target += negative_infinity();
-else
+} else {
   target += -poisson_lcdf(10 | 3.7);
+}
 ```
 
 
@@ -853,8 +859,9 @@ sum the values of an array directly using code such as the following.
 
 ```stan
 total = 0.0;
-for (n in 1:N)
+for (n in 1:N) {
   total = total + x[n];
+}
 ```
 
 After the for loop is executed, the variable `total` will hold
@@ -906,17 +913,20 @@ require a doubly-nested loop,
 
 ```
 array[2, 3] real yss;
-for (ys in yss)
-  for (y in ys)
+for (ys in yss) {
+  for (y in ys) {
     ... do something with y ...
+  }
+}
 ```
 
 whereas a matrix can be looped over in one foreach statement
 
 ```
 matrix[2, 3] yss;
-for (y in yss)
+for (y in yss) {
    ... do something with y...
+}
 ```
 
 In both cases, the loop variable `y` is of type `real.  The elements
@@ -999,8 +1009,9 @@ any statement, for loops with bodies consisting of a single statement
 can be written as follows.
 
 ```stan
-for (n in 1:N)
+for (n in 1:N) {
   y[n] ~ normal(mu,sigma);
+}
 ```
 
 To put multiple statements inside the body of a for loop, a block is
@@ -1104,8 +1115,9 @@ for (m in 1:M) {
      int n = 2 * m;
      sum += n;
   }
-  for (n in 1:N)
+  for (n in 1:N) {
     sum += x[m, n];
+  }
 }
 ```
 
@@ -1193,8 +1205,9 @@ reversing the conditional,
 real sum;
 sum = 0;
 for (n in 1:size(x)) {
-  if (x[n] > 0)
+  if (x[n] > 0) {
     sum += x[n];
+  }
 }
 ```
 
@@ -1288,8 +1301,9 @@ transformed data {
   matrix[2, 2] u;
   u[1, 1] = 1.0;   u[1, 2] = 4.0;
   u[2, 1] = 9.0;   u[2, 2] = 16.0;
-  for (n in 1:2)
+  for (n in 1:2) {
     print("u[", n, "] = ", u[n]);
+  }
 }
 ```
 
@@ -1372,8 +1386,9 @@ example, the following code handles the case where a variable `x`'s
 value is negative.
 
 ```stan
-if (x < 0)
+if (x < 0) {
   reject("x must not be negative; found x=", x);
+}
 ```
 
 
@@ -1464,8 +1479,9 @@ functions.  In this case, it is wrong to try to deal with truncation
 through constraints.
 
 ```stan
-  if (theta < a || theta > b)
+  if (theta < a || theta > b) {
     reject("theta not in (a, b)");
+  }
   // still **wrong**, needs T[a,b]
   theta ~ normal(0, 1);
 ```

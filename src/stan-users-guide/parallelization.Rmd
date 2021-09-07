@@ -449,8 +449,8 @@ data {
 }
 transformed data {
   // K = 3 shards
-  int ys[3, 4] = { y[1:4], y[5:8], y[9:12] };
-  real xs[3, 4] = { x[1:4], x[5:8], x[9:12] };
+  array[3, 4] = { y[1:4], y[5:8], y[9:12] int ys };
+  array[3, 4] = { x[1:4], x[5:8], x[9:12] real xs };
   array[3] vector[0] theta;
 }
 parameters {
@@ -533,9 +533,9 @@ This model can be coded up in Stan directly as follows.
 data {
   int<lower = 0> K;
   int<lower = 0> N;
-  int<lower = 1, upper = K> kk[N];
+  array[N] int<lower = 1, upper = K> kk;
   vector[N] x;
-  int<lower = 0, upper = 1> y[N];
+  array[N] int<lower = 0, upper = 1> y;
 }
 parameters {
   matrix[K,2] beta;
@@ -545,8 +545,9 @@ parameters {
 model {
   mu ~ normal(0, 2);
   sigma ~ normal(0, 2);
-  for (i in 1:2)
+  for (i in 1:2) {
     beta[ , i] ~ normal(mu[i], sigma[i]);
+  }
   y ~ bernoulli_logit(beta[kk, 1] + beta[kk, 2] .* x);
 }
 ```
@@ -564,8 +565,9 @@ The vectorized likelihood works out to the same thing as the following
 less efficient looped form.
 
 ```
-for (n in 1:N)
+for (n in 1:N) {
   y[n] ~ bernoulli_logit(beta[kk[n], 1] + beta[kk[n], 2] * x[n]);
+}
 ```
 
 #### Mapped implementation {-}
@@ -614,14 +616,14 @@ arrays indexed by group.
 data {
   int<lower = 0> K;
   int<lower = 0> N;
-  int<lower = 1, upper = K> kk[N];
+  array[N] int<lower = 1, upper = K> kk;
   vector[N] x;
-  int<lower = 0, upper = 1> y[N];
+  array[N] int<lower = 0, upper = 1> y;
 }
 transformed data {
   int<lower = 0> J = N / K;
   array[K, J] real x_r;
-  int<lower = 0, upper = 1> x_i[K, J];
+  array[K, J] int<lower = 0, upper = 1> x_i;
   {
     int pos = 1;
     for (k in 1:K) {

@@ -63,7 +63,7 @@ To generate a replicated data set `y_rep` for this simple model, the
 following generated quantities block suffices.
 ```
 generated quantities {
-  real y_rep[N] = normal_rng(alpha + beta * x, sigma);
+  array[N] real y_rep = normal_rng(alpha + beta * x, sigma);
 }
 ```
 The vectorized form of the normal random
@@ -99,7 +99,7 @@ standard deviation of 10.
 ```
 data {
   int<lower = 0> N;
-  int<lower = 0> y[N];
+  array[N] int<lower = 0> y;
 }
 transformed data {
   real<lower = 0> mean_y = mean(to_vector(y));
@@ -113,7 +113,7 @@ model {
   lambda ~ exponential(0.2);
 }
 generated quantities {
-  int<lower = 0> y_rep[N] = poisson_rng(rep_array(lambda, N));
+  array[N] int<lower = 0> y_rep = poisson_rng(rep_array(lambda, N));
   real<lower = 0> mean_y_rep = mean(to_vector(y_rep));
   real<lower = 0> sd_y_rep = sd(to_vector(y_rep));
   int<lower = 0, upper = 1> mean_gte = (mean_y_rep >= mean_y);
@@ -197,7 +197,7 @@ generated quantities {
   int<lower = 0, upper = 1> mean_gt;
   int<lower = 0, upper = 1> sd_gt;
   {
-    real y_rep[N] = normal_rng(alpha + beta * x, sigma);
+    array[N] real y_rep = normal_rng(alpha + beta * x, sigma);
     mean_gt = mean(y_rep) > mean(y);
     sd_gt = sd(y_rep) > sd(y);
   }
@@ -328,7 +328,7 @@ data {
 generated quantities {
   real alpha = normal_rng(0, 1);
   real beta = normal_rng(0, 1);
-  real y_sim[N] = poisson_log_rng(alpha + beta * x);
+  array[N] real y_sim = poisson_log_rng(alpha + beta * x);
 }
 ```
 Running this program using Stan's fixed-parameter sampler
@@ -359,15 +359,17 @@ be used to perform prior predictive checks.
 ```
 data {
   int<lower = 0> J;
-  real<lower = 0> epsilon[2];
+  array[2] real<lower = 0> epsilon;
 }
 generated quantities {
-  real<lower = 0> lambda[J];
+  array[J] real<lower = 0> lambda;
   array[J, J] int y;
   for (j in 1:J) lambda[j] = gamma_rng(epsilon[1], epsilon[2]);
-  for (i in 1:J)
-    for (j in 1:J)
+  for (i in 1:J) {
+    for (j in 1:J) {
       y[i, j] = poisson_rng(lambda[i]) - poisson_rng(lambda[j]);
+    }
+  }
 }
 ```
 In this simulation, teams play each other twice and play themselves
@@ -470,8 +472,8 @@ programmed directly.
 data {
   int<lower = 0> K;
   int<lower = 0> N;
-  int<lower = 1, upper = K> kk[N];
-  int<lower = 0, upper = 1> y[N];
+  array[N] int<lower = 1, upper = K> kk;
+  array[N] int<lower = 0, upper = 1> y;
 }
 parameters {
   real mu;
@@ -486,9 +488,9 @@ model {
 }
 generated quantities {
   // alpha replicated;  mu and sigma not replicated
-  real alpha_rep[K]
+  array[K] real alpha_rep
     = normal_rng(rep_vector(mu, K), sigma);
-  int<lower = 0, upper = 1> y_rep[N]
+  array[N] int<lower = 0, upper = 1> y_rep
     = bernoulli_logit_rng(alpha_rep[kk]);
 }
 ```

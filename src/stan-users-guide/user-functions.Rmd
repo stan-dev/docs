@@ -80,8 +80,9 @@ to guard against illegal inputs.
 
 ```
 real dbl_sqrt(real x) {
-  if (!(x >= 0))
+  if (!(x >= 0)) {
     reject("dblsqrt(x): x must be positive; found x = ", x);
+  }
   return 2 * sqrt(x);
 }
 ```
@@ -114,37 +115,52 @@ quantities block.
 
 ### Type declarations for functions {-}
 
-| Function Argument    | Local            | Block                                 |
-|:---------------------|:-----------------|:--------------------------------------|
-| (unsized)            | (unconstrained)  | (constrained)                         |
-| `int`                | `int`            | `int`                                 |
-|                      |                  | `int<lower = L>`                      |
-|                      |                  | `int<upper = U>`                      |
-|                      |                  | `int<lower = L, upper = U>`           |
-| `real`               | `real`           | `real`                                |
-|                      |                  | `real<lower = L>`                     |
-|                      |                  | `real<upper = U>`                     |
-|                      |                  | `real<lower = L, upper = U>`          |
-| `vector`             | `vector[N]`      | `vector[N]`                           |
-|                      |                  | `vector[N]<lower = L>`                |
-|                      |                  | `vector[N]<upper = U>`                |
-|                      |                  | `vector[N]<lower = L, upper = U>`     |
-|                      |                  | `ordered[N]`                          |
-|                      |                  | `positive_ordered[N]`                 |
-|                      |                  | `simplex[N]`                          |
-|                      |                  | `unit_vector[N]`                      |
-| `row_vector`         | `row_vector[N]`  | `row_vector[N]`                       |
-|                      |                  | `row_vector[N]<lower = L>`            |
-|                      |                  | `row_vector[N]<upper = U>`            |
-|                      |                  | `row_vector[N]<lower = L, upper = U>` |
-| `matrix`             | `matrix[M, N]`   | `matrix[M, N]`                        |
-|                      |                  | `matrix[M, N]<lower = L>`             |
-|                      |                  | `matrix[M, N]<upper = U>`             |
-|                      |                  | `matrix[M, N]<lower = L, upper = U>`  |
-|                      | `matrix[K, K]`   | `corr_matrix[K]`                      |
-|                      | `matrix[K, K]`   | `cov_matrix[K]`                       |
-|                      | `matrix[K, K]`   | `cholesky_factor_corr[K]`             |
-|                      | `matrix[K, K]`   | `cholesky_factor_cov[K]`              |
+| Function Argument | Local           | Block                                   |
+| :---------------- | :-------------- | :-------------------------------------- |
+| (unsized)         | (unconstrained) | (constrained)                           |
+| `int`             | `int`           | `int`                                   |
+|                   |                 | `int<lower=L>`                          |
+|                   |                 | `int<upper=U>`                          |
+|                   |                 | `int<lower=L, upper=U>`                 |
+|                   |                 | `int<offset=O>`                         |
+|                   |                 | `int<multiplier=M>`                     |
+|                   |                 | `int<offset=O, multiplier=M>`           |
+| `real`            | `real`          | `real`                                  |
+|                   |                 | `real<lower=L>`                         |
+|                   |                 | `real<upper=U>`                         |
+|                   |                 | `real<lower=L, upper=U>`                |
+|                   |                 | `real<offset=O>`                        |
+|                   |                 | `real<multiplier=M>`                    |
+|                   |                 | `real<offset=O, multiplier=M>`          |
+| `vector`          | `vector[N]`     | `vector[N]`                             |
+|                   |                 | `vector[N]<lower=L>`                    |
+|                   |                 | `vector[N]<upper=U>`                    |
+|                   |                 | `vector[N]<lower=L, upper=U>`           |
+|                   |                 | `vector[N]<offset=O>`                   |
+|                   |                 | `vector[N]<multiplier=M>`               |
+|                   |                 | `vector[N]<offset=O, multiplier=M>`     |
+|                   |                 | `ordered[N]`                            |
+|                   |                 | `positive_ordered[N]`                   |
+|                   |                 | `simplex[N]`                            |
+|                   |                 | `unit_vector[N]`                        |
+| `row_vector`      | `row_vector[N]` | `row_vector[N]`                         |
+|                   |                 | `row_vector[N]<lower=L>`                |
+|                   |                 | `row_vector[N]<upper=U>`                |
+|                   |                 | `row_vector[N]<lower=L, upper=U>`       |
+|                   |                 | `row_vector[N]<offset=O>`               |
+|                   |                 | `row_vector[N]<multiplier=M>`           |
+|                   |                 | `row_vector[N]<offset=O, multiplier=M>` |
+| `matrix`          | `matrix[M, N]`  | `matrix[M, N]`                          |
+|                   |                 | `matrix[M, N]<lower=L>`                 |
+|                   |                 | `matrix[M, N]<upper=U>`                 |
+|                   |                 | `matrix[M, N]<lower=L, uppers=U>`       |
+|                   |                 | `matrix[M, N]<offset=O>`                |
+|                   |                 | `matrix[M, N]<multiplier=M>`            |
+|                   |                 | `matrix[M, N]<offset=O, multiplier=M>`  |
+|                   | `matrix[K, K]`  | `corr_matrix[K]`                        |
+|                   | `matrix[K, K]`  | `cov_matrix[K]`                         |
+|                   | `matrix[K, K]`  | `cholesky_factor_corr[K]`               |
+|                   | `matrix[K, K]`  | `cholesky_factor_cov[K]`                |
 
 <a name="id:constrained-types.figure"></a>
 
@@ -264,9 +280,11 @@ functions {
       return;
     }
     print("rows=", rows(x), " cols=", cols(x));
-    for (m in 1:rows(x))
-      for (n in 1:m)
+    for (m in 1:rows(x)) {
+      for (n in 1:m) {
         print("[", m, ",", n, "]=", x[m, n]);
+      }
+    }
   }
 }
 ```
@@ -350,8 +368,9 @@ matrix predictors_rng(int N, int K) {
   matrix[N, K] x;
   for (n in 1:N) {
     x[n, 1] = 1.0;  // intercept
-    for (k in 2:K)
+    for (k in 2:K) {
       x[n, k] = normal_rng(0, 1);
+    }
   }
   return x;
 }
@@ -366,8 +385,9 @@ vector regression_rng(vector beta, matrix x, real sigma) {
   vector[rows(x)] y;
   vector[rows(x)] mu;
   mu = x * beta;
-  for (n in 1:rows(x))
+  for (n in 1:rows(x)) {
     y[n] = normal_rng(mu[n], sigma);
+  }
   return y;
 }
 ```
@@ -560,10 +580,11 @@ directly translated to a recursive function definition.
 matrix matrix_pow(matrix a, int n);
 
 matrix matrix_pow(matrix a, int n) {
-  if (n == 0)
+  if (n == 0) {
     return diag_matrix(rep_vector(1, rows(a)));
-  else
+  } else {
     return a *  matrix_pow(a, n - 1);
+  }
 }
 ```
 
@@ -638,12 +659,14 @@ A robust version of this function would test that the arguments are
 finite and that `sigma` is non-negative, e.g.,
 
 ```
-  if (is_nan(mu) || is_inf(mu))
+  if (is_nan(mu) || is_inf(mu)) {
     reject("my_normal_rng: mu must be finite; ",
            "found mu = ", mu);
-  if (is_nan(sigma) || is_inf(sigma) || sigma < 0)
+  }
+  if (is_nan(sigma) || is_inf(sigma) || sigma < 0) {
     reject("my_normal_rng: sigma must be finite and non-negative; ",
            "found sigma = ", sigma);
+  }
 ```
 
 ### Truncated variate generation {-}

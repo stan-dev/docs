@@ -28,15 +28,16 @@ the observations as follows.
 data {
   int<lower=0> N;
   real U;
-  real<upper=U> y[N];
+  array[N] real<upper=U> y;
 }
 parameters {
   real mu;
   real<lower=0> sigma;
 }
 model {
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ normal(mu, sigma) T[,U];
+  }
 }
 ```
 
@@ -56,8 +57,9 @@ will evaluate to $-\infty$.  For instance, if variate `y` is
 sampled with the statement.
 
 ```
-for (n in 1:N)
+for (n in 1:N) {
   y[n] ~ normal(mu, sigma) T[L,U];
+}
 ```
 
 then if the value of `y[n]` is less than the value of `L`
@@ -72,7 +74,7 @@ the values of `L` and `U`.
 
 ```
 parameters {
-  real<lower=L,upper=U> y[N];
+  array[N] real<lower=L,upper=U> y;
   ...
 ```
 
@@ -120,8 +122,9 @@ parameters {
 model {
   L ~ ...;
   U ~ ...;
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ normal(mu, sigma) T[L,U];
+  }
 }
 ```
 
@@ -159,11 +162,11 @@ following right-censored case.
 data {
   int<lower=0> N_obs;
   int<lower=0> N_cens;
-  real y_obs[N_obs];
+  array[N_obs] real y_obs;
   real<lower=max(y_obs)> U;
 }
 parameters {
-  real<lower=U> y_cens[N_cens];
+  array[N_cens] real<lower=U> y_cens;
   real mu;
   real<lower=0> sigma;
 }
@@ -213,7 +216,7 @@ that the censoring point is known, so it is declared as data.
 data {
   int<lower=0> N_obs;
   int<lower=0> N_cens;
-  real y_obs[N_obs];
+  array[N_obs] real y_obs;
   real<lower=max(y_obs)> U;
 }
 parameters {
@@ -240,7 +243,7 @@ to the parameters block.
 data {
   int<lower=0> N_obs;
   int<lower=0> N_cens;
-  real y_obs[N_obs];
+  array[N_obs] real y_obs;
 }
 parameters {
   real<upper=min(y_obs)> L;

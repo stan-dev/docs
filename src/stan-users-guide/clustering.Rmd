@@ -105,20 +105,24 @@ parameters {
   array[K] vector[D] mu; // cluster means
 }
 transformed parameters {
-  real<upper=0> soft_z[N, K]; // log unnormalized clusters
-  for (n in 1:N)
-    for (k in 1:K)
+  array[N, K] real<upper=0> soft_z; // log unnormalized clusters
+  for (n in 1:N) {
+    for (k in 1:K) {
       soft_z[n, k] = neg_log_K
                      - 0.5 * dot_self(mu[k] - y[n]);
+    }
+  }
 }
 model {
   // prior
-  for (k in 1:K)
+  for (k in 1:K) {
     mu[k] ~ std_normal();
+  }
 
   // likelihood
-  for (n in 1:N)
+  for (n in 1:N) {
     target += log_sum_exp(soft_z[n]);
+  }
 }
 ```
 
@@ -292,9 +296,9 @@ data {
   int<lower=1> V;               // num words
   int<lower=0> M;               // num docs
   int<lower=0> N;               // total word instances
-  int<lower=1,upper=K> z[M];    // topic for doc m
-  int<lower=1,upper=V> w[N];    // word n
-  int<lower=1,upper=M> doc[N];  // doc ID for word n
+  array[M] int<lower=1,upper=K> z;    // topic for doc m
+  array[N] int<lower=1,upper=V> w;    // word n
+  array[N] int<lower=1,upper=M> doc;  // doc ID for word n
   // hyperparameters
   vector<lower=0>[K] alpha;     // topic prior
   vector<lower=0>[V] beta;      // word prior
@@ -305,12 +309,15 @@ parameters {
 }
 model {
   theta ~ dirichlet(alpha);
-  for (k in 1:K)
+  for (k in 1:K) {
     phi[k] ~ dirichlet(beta);
-  for (m in 1:M)
+  }
+  for (m in 1:M) {
     z[m] ~ categorical(theta);
-  for (n in 1:N)
+  }
+  for (n in 1:N) {
     w[n] ~ categorical(phi[z[doc[n]]]);
+  }
 }
 ```
 
@@ -348,17 +355,23 @@ scale.
 model {
   array[M, K] real gamma;
   theta ~ dirichlet(alpha);
-  for (k in 1:K)
+  for (k in 1:K) {
     phi[k] ~ dirichlet(beta);
-  for (m in 1:M)
-    for (k in 1:K)
+  }
+  for (m in 1:M) {
+    for (k in 1:K) {
       gamma[m, k] = categorical_lpmf(k \mid theta);
-  for (n in 1:N)
-    for (k in 1:K)
+    }
+  }
+  for (n in 1:N) {
+    for (k in 1:K) {
       gamma[doc[n], k] = gamma[doc[n], k]
                          + categorical_lpmf(w[n] \mid phi[k]);
-  for (m in 1:M)
+    }
+  }
+  for (m in 1:M) {
     target += log_sum_exp(gamma[m]);
+  }
 }
 ```
 
@@ -505,8 +518,8 @@ data {
   int<lower=2> V;               // num words
   int<lower=1> M;               // num docs
   int<lower=1> N;               // total word instances
-  int<lower=1,upper=V> w[N];    // word n
-  int<lower=1,upper=M> doc[N];  // doc ID for word n
+  array[N] int<lower=1,upper=V> w;    // word n
+  array[N] int<lower=1,upper=M> doc;  // doc ID for word n
   vector<lower=0>[K] alpha;     // topic prior
   vector<lower=0>[V] beta;      // word prior
 }
@@ -515,14 +528,17 @@ parameters {
   array[K] simplex[V] phi;      // word dist for topic k
 }
 model {
-  for (m in 1:M)
+  for (m in 1:M) {
     theta[m] ~ dirichlet(alpha);  // prior
-  for (k in 1:K)
+  }
+  for (k in 1:K) {
     phi[k] ~ dirichlet(beta);     // prior
+  }
   for (n in 1:N) {
     array[K] real gamma;
-    for (k in 1:K)
+    for (k in 1:K) {
       gamma[k] = log(theta[doc[n], k]) + log(phi[k, w[n]]);
+    }
     target += log_sum_exp(gamma);  // likelihood;
   }
 }
@@ -571,12 +587,14 @@ parameters {
 }
 transformed parameters {
   array[M] simplex[K] theta;
-  for (m in 1:M)
+  for (m in 1:M) {
     theta[m] = softmax(eta[m]);
+  }
 }
 model {
-  for (m in 1:M)
+  for (m in 1:M) {
     eta[m] ~ multi_normal(mu, Sigma);
+  }
   ... model as before w/o prior for theta ...
 }
 ```
@@ -602,8 +620,9 @@ parameters {
 transformed parameters {
   ... eta as above ...
   cov_matrix[K] Sigma;       // covariance matrix
-  for (m in 1:K)
+  for (m in 1:K) {
     Sigma[m, m] = sigma[m] * sigma[m] * Omega[m, m];
+  }
   for (m in 1:(K-1)) {
     for (n in (m+1):K) {
       Sigma[m, n] = sigma[m] * sigma[n] * Omega[m, n];

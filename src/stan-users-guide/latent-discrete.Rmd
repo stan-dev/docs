@@ -116,13 +116,13 @@ The Stan program for the change point model is shown in
 the figure below.  The transformed parameter
 `lp[s]` stores the quantity $\log p(s, D \mid e, l)$.
 
-```
+```stan
 data {
   real<lower=0> r_e;
   real<lower=0> r_l;
 
   int<lower=1> T;
-  int<lower=0> D[T];
+  array[T] int<lower=0> D;
 }
 transformed data {
   real log_unif;
@@ -135,9 +135,11 @@ parameters {
 transformed parameters {
   vector[T] lp;
   lp = rep_vector(log_unif, T);
-  for (s in 1:T)
-    for (t in 1:T)
+  for (s in 1:T) {
+    for (t in 1:T) {
       lp[s] = lp[s] + poisson_lpmf(D[t] | t < s ? e : l);
+    }
+  }
 }
 model {
   e ~ exponential(r_e);
@@ -160,7 +162,7 @@ programming similar to the forward-backward algorithm for Hidden
 Markov models; he submitted a slight variant of the following code to
 replace the transformed parameters block of the above Stan program.
 
-```
+```stan
 transformed parameters {
     vector[T] lp;
     {
@@ -295,14 +297,17 @@ and so on.  There are three parameters, `e`, `m`, and
 `l`, and two loops for the change point and then one over time,
 with log densities being stored in a matrix.
 
-```
+```stan
 matrix[T, T] lp;
 lp = rep_matrix(log_unif, T);
-for (s1 in 1:T)
-  for (s2 in 1:T)
-    for (t in 1:T)
+for (s1 in 1:T) {
+  for (s2 in 1:T) {
+    for (t in 1:T) {
       lp[s1,s2] = lp[s1,s2]
         + poisson_lpmf(D[t] | t < s1 ? e : (t < s2 ? m : l));
+    }
+  }
+}
 ```
 
 The matrix can then be converted back to a vector using
@@ -530,14 +535,14 @@ periods
 
 ```
 data {
-  int<lower=0> history[7];
+  array[7] int<lower=0> history;
 }
 parameters {
-  real<lower=0,upper=1> phi[2];
-  real<lower=0,upper=1> p[3];
+  array[2] real<lower=0,upper=1> phi;
+  array[3] real<lower=0,upper=1> p;
 }
 transformed parameters {
-  real<lower=0,upper=1> chi[2];
+  array[2] real<lower=0,upper=1> chi;
   chi[2] = (1 - phi[2]) + phi[2] * (1 - p[3]);
   chi[1] = (1 - phi[1]) + phi[1] * (1 - p[2]) * chi[2];
 }
@@ -588,7 +593,7 @@ Stan,
 data {
   int<lower=2> T;
   int<lower=0> I;
-  int<lower=0,upper=1> y[I, T];
+  array[I, T] int<lower=0,upper=1> y;
 }
 ```
 
@@ -607,17 +612,20 @@ captured.^[An alternative would be to compute this on the outside and feed it in
 ```
 functions {
   int first_capture(int[] y_i) {
-    for (k in 1:size(y_i))
-      if (y_i[k])
+    for (k in 1:size(y_i)) {
+      if (y_i[k]) {
         return k;
+      }
+    }
     return 0;
   }
   int last_capture(int[] y_i) {
     for (k_rev in 0:(size(y_i) - 1)) {
       int k;
       k = size(y_i) - k_rev;
-      if (y_i[k])
+      if (y_i[k]) {
         return k;
+      }
     }
     return 0;
   }
@@ -630,18 +638,23 @@ for each individual in the transformed data block.^[Both functions return 0 if t
 
 ```
 transformed data {
-  int<lower=0,upper=T> first[I];
-  int<lower=0,upper=T> last[I];
+  array[I] int<lower=0,upper=T> first;
+  array[I] int<lower=0,upper=T> last;
   vector<lower=0,upper=I>[T] n_captured;
-  for (i in 1:I)
+  for (i in 1:I) {
     first[i] = first_capture(y[i]);
-  for (i in 1:I)
+  }
+  for (i in 1:I) {
     last[i] = last_capture(y[i]);
+  }
   n_captured = rep_vector(0, T);
-  for (t in 1:T)
-    for (i in 1:I)
-      if (y[i, t])
+  for (t in 1:T) {
+    for (i in 1:I) {
+      if (y[i, t]) {
         n_captured[t] = n_captured[t] + 1;
+      }
+    }
+  }
 }
 ```
 
@@ -958,13 +971,13 @@ function.
 
 The Stan program for the Dawid and Skene model is provided below [@DawidSkene:1979].
 
-```
+```stan
 data {
   int<lower=2> K;
   int<lower=1> I;
   int<lower=1> J;
 
-  int<lower=1,upper=K> y[I, J];
+  array[I, J] int<lower=1,upper=K> y;
 
   vector<lower=0>[K] alpha;
   vector<lower=0>[K] beta[K];
@@ -977,20 +990,25 @@ transformed parameters {
   array[I] vector[K] log_q_z;
   for (i in 1:I) {
     log_q_z[i] = log(pi);
-    for (j in 1:J)
-      for (k in 1:K)
+    for (j in 1:J) {
+      for (k in 1:K) {
         log_q_z[i, k] = log_q_z[i, k]
                          + log(theta[j, k, y[i, j]]);
+      }
+    }
   }
 }
 model {
   pi ~ dirichlet(alpha);
-  for (j in 1:J)
-    for (k in 1:K)
+  for (j in 1:J) {
+    for (k in 1:K) {
       theta[j, k] ~ dirichlet(beta[k]);
+    }
+  }
 
-  for (i in 1:I)
+  for (i in 1:I) {
     target += log_sum_exp(log_q_z[i]);
+  }
 }
 ```
 <a name="id:dawid-skene-model.figure"></a>

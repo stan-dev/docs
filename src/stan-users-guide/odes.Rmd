@@ -322,8 +322,9 @@ model {
   sigma ~ normal(0, 2.5);
   theta ~ std_normal();
   y0 ~ std_normal();
-  for (t in 1:T)
+  for (t in 1:T) {
     y[t] ~ normal(mu[t], sigma);
+  }
 }
 ```
 <a name="id:sho-both.figure"></a>
@@ -422,10 +423,11 @@ concentration is zero for times $0 < t < t'$ and then positive for $t \geq t'$.
 In this example example, we would use code in the system such as
 
 ```
-if (t < t_lag)
+if (t < t_lag) {
   return [0, 0]';
-else
+} else {
   ... return non-zero vector...;
+}
 ```
 
 In general it is better to integrate up to `t_lag` in one solve and
@@ -581,8 +583,9 @@ generated quantities {
   array[T] vector[2] y_sim;
   matrix[2, 2] A = [[ 0,  1],
                     [-1, -theta[1]]]
-  for (t in 1:T)
+  for (t in 1:T) {
     y_sim[t] = matrix_exp((t - 1) * A) * y0;
+  }
   // add measurement error
   for (t in 1:T) {
     y_sim[t, 1] += normal_rng(0, 0.1);

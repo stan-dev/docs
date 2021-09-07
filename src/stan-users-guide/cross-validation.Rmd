@@ -284,14 +284,16 @@ functions {
   int[] permutation_rng(int N) {
      int N = rows(x);
      array[N] int y;
-     for (n in 1:N)
+     for (n in 1:N) {
        y[n] = n;
+     }
      vector[N] theta = rep_vector(1.0 / N, N);
-     for (n in 1:rows(y))
+     for (n in 1:rows(y)) {
        int i = categorical_rng(theta);
-       int temp = y[n];
-       y[n] = y[i];
-       y[i] = temp;
+     }
+      array[n] int temp = y;
+      y[n] = y[i];
+      y[i] = temp;
      }
      return y;
   }
@@ -307,7 +309,7 @@ item, resulting in a uniformly drawn permutation of the integers
 The transformed data block uses the permutation RNG to generate
 training data and test data by taking prefixes and suffixes of the
 permuted data.
-```
+```stan
 data {
   int<lower = 0> N;
   vector[N] x;
@@ -316,7 +318,7 @@ data {
 }
 transformed data {
   int N_train = N - N_test;
-  int permutation[N] = permutation_rng(N);
+  array[N] int permutation = permutation_rng(N);
   vector[N_train] x_train = x[permutation[1 : N_train]];
   vector[N_train] y_train = y[permutation[1 : N_train]];
   vector[N_test] x_test = x[permutation[N_train + 1 : N]];

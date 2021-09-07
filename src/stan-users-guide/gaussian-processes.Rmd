@@ -163,7 +163,7 @@ model {
 The above model can also be written more compactly using the specialized
 covariance function that implements the exponentiated quadratic kernel.
 
-```
+```stan
 data {
   int<lower=1> N;
   array[N] real x;
@@ -171,8 +171,9 @@ data {
 transformed data {
   matrix[N, N] K = cov_exp_quad(x, 1.0, 1.0);
   vector[N] mu = rep_vector(0, N);
-  for (n in 1:N)
+  for (n in 1:N) {
     K[n, n] = K[n, n] + 0.1;
+  }
 }
 parameters {
   vector[N] y;
@@ -194,7 +195,7 @@ multivariate model.
 
 The only lines that change from the univariate model above are as follows.
 
-```
+```stan
 data {
   int<lower=1> N;
   int<lower=1> D;
@@ -333,8 +334,9 @@ model {
   real sq_sigma = square(sigma);
 
   // diagonal elements
-  for (n in 1:N)
+  for (n in 1:N) {
     K[n, n] = K[n, n] + sq_sigma;
+  }
 
   L_K = cholesky_decompose(K);
 
@@ -400,8 +402,9 @@ model {
     matrix[N, N] K = cov_exp_quad(x, alpha, rho);
 
     // diagonal elements
-    for (n in 1:N)
+    for (n in 1:N) {
       K[n, n] = K[n, n] + delta;
+    }
 
     L_K = cholesky_decompose(K);
     f = L_K * eta;
@@ -446,7 +449,7 @@ cannot center count data like we would for normally distributed data.
 ```
 data {
 ...
-  int<lower=0> y[N];
+  array[N] int<lower=0> y;
 ...
 }
 ...
@@ -489,7 +492,7 @@ classes in the training data:
 ```
 data {
 ...
-  int<lower=0, upper=1> z[N];
+  array[N] int<lower=0, upper=1> z;
 ...
 }
 ...
@@ -724,7 +727,7 @@ $$
 A direct implementation in Stan defines a model in terms of the
 joint distribution of the observed $y$ and unobserved $\tilde{y}$.
 
-```
+```stan
 data {
   int<lower=1> N1;
   array[N1] real x1;
@@ -736,8 +739,12 @@ transformed data {
   real delta = 1e-9;
   int<lower=1> N = N1 + N2;
   array[N] real x;
-  for (n1 in 1:N1) x[n1] = x1[n1];
-  for (n2 in 1:N2) x[N1 + n2] = x2[n2];
+  for (n1 in 1:N1) {
+    x[n1] = x1[n1];
+  }
+  for (n2 in 1:N2) {
+    x[N1 + n2] = x2[n2];
+  }
 }
 parameters {
   real<lower=0> rho;
@@ -752,8 +759,9 @@ transformed parameters {
     matrix[N, N] K = cov_exp_quad(x, alpha, rho);
 
     // diagonal elements
-    for (n in 1:N)
+    for (n in 1:N) {
       K[n, n] = K[n, n] + delta;
+    }
 
     L_K = cholesky_decompose(K);
     f = L_K * eta;
@@ -769,8 +777,9 @@ model {
 }
 generated quantities {
   vector[N2] y2;
-  for (n2 in 1:N2)
+  for (n2 in 1:N2) {
     y2[n2] = normal_rng(f[N1 + n2], sigma);
+  }
 }
 ```
 
@@ -804,11 +813,11 @@ Consider the following full model for prediction using logistic Gaussian
 process regression.
 
 
-```
+```stan
 data {
   int<lower=1> N1;
   array[N1] real x1;
-  int<lower=0, upper=1> z1[N1];
+  array[N1] int<lower=0, upper=1> z1;
   int<lower=1> N2;
   array[N2] real x2;
 }
@@ -816,8 +825,12 @@ transformed data {
   real delta = 1e-9;
   int<lower=1> N = N1 + N2;
   array[N] real x;
-  for (n1 in 1:N1) x[n1] = x1[n1];
-  for (n2 in 1:N2) x[N1 + n2] = x2[n2];
+  for (n1 in 1:N1) {
+    x[n1] = x1[n1];
+  }
+  for (n2 in 1:N2) {
+    x[N1 + n2] = x2[n2];
+  }
 }
 parameters {
   real<lower=0> rho;
@@ -832,8 +845,9 @@ transformed parameters {
     matrix[N, N] K = cov_exp_quad(x, alpha, rho);
 
     // diagonal elements
-    for (n in 1:N)
+    for (n in 1:N) {
       K[n, n] = K[n, n] + delta;
+    }
 
     L_K = cholesky_decompose(K);
     f = L_K * eta;
@@ -849,8 +863,9 @@ model {
 }
 generated quantities {
   array[N2] int z2;
-  for (n2 in 1:N2)
+  for (n2 in 1:N2) {
     z2[n2] = bernoulli_logit_rng(a + f[N1 + n2]);
+  }
 }
 ```
 
@@ -892,7 +907,7 @@ generate a draw from the posterior predictive mean conditioned on observed data
 to cut down on the number of matrix-matrix multiplications when computing
 the conditional mean and the conditional covariance of $p(\tilde{y})$.
 
-```
+```stan
 functions {
   vector gp_pred_rng(real[] x2,
                      vector y1,
@@ -914,8 +929,9 @@ functions {
       matrix[N2, N2] diag_delta;
       matrix[N1, N1] K;
       K = cov_exp_quad(x1, alpha, rho);
-      for (n in 1:N1)
+      for (n in 1:N1) {
         K[n, n] = K[n,n] + square(sigma);
+      }
       L_K = cholesky_decompose(K);
       K_div_y1 = mdivide_left_tri_low(L_K, y1);
       K_div_y1 = mdivide_right_tri_low(K_div_y1', L_K)';
@@ -953,8 +969,9 @@ model {
     real sq_sigma = square(sigma);
 
     // diagonal elements
-    for (n1 in 1:N1)
+    for (n1 in 1:N1) {
       K[n1, n1] = K[n1, n1] + sq_sigma;
+    }
 
     L_K = cholesky_decompose(K);
   }
@@ -970,8 +987,9 @@ generated quantities {
   vector[N2] y2;
 
   f2 = gp_pred_rng(x2, y1, x1, alpha, rho, sigma, delta);
-  for (n2 in 1:N2)
+  for (n2 in 1:N2) {
     y2[n2] = normal_rng(f2[n2], sigma);
+  }
 }
 ```
 
@@ -1065,8 +1083,9 @@ model {
     matrix[N, N] L_K;
 
     // diagonal elements
-    for (n in 1:N)
+    for (n in 1:N) {
       K[n, n] = K[n, n] + delta;
+    }
 
     L_K = cholesky_decompose(K);
     f = L_K * eta

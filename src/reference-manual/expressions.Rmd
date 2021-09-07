@@ -184,12 +184,12 @@ The legal characters for variable identifiers are given in the
 *The alphanumeric characters and underscore in base ASCII are the only
 legal characters in Stan identifiers.*
 
- characters |  ASCII code points
-:----------:|:-----------------------------:
-`a -- z`    | 97 -- 122
-`A -- Z`    | 65 --  90
-`0 -- 9`    | 48 --  57
-`_`         |    95
+ | characters | ASCII code points |
+ | :--------: | :---------------: |
+ |  `a -- z`  |     97 -- 122     |
+ |  `A -- Z`  |     65 --  90     |
+ |  `0 -- 9`  |     48 --  57     |
+ |    `_`     |        95         |
 
 Although not the most expressive character set, ASCII is the most
 portable and least prone to corruption through improper character
@@ -271,7 +271,7 @@ values 1, 10, and 100.  This syntax is particularly convenient to
 define small arrays in a single line, as follows.
 
 ```stan
-int a[3] = { 1, 10, 100 };
+array[3] int a = { 1, 10, 100 };
 ```
 
 The values may be compound expressions, so it is legal to write
@@ -279,7 +279,7 @@ The values may be compound expressions, so it is legal to write
 arrays directly, as in the following example.
 
 ```stan
-int b[2, 3] = { { 1, 2, 3 }, { 4, 5, 6 } };
+array[2, 3] int b = { { 1, 2, 3 }, { 4, 5, 6 } };
 ```
 
 This way, `b[1]` is `{ 1, 2, 3 }` and `b[2]` is
@@ -290,7 +290,7 @@ out as follows to more clearly indicate the row and column structure
 of the resulting two dimensional array.
 
 ```stan
-int b[2, 3] = { { 1, 2, 3 },
+array[2, 3] int b = { { 1, 2, 3 },
                 { 4, 5, 6 } };
 ```
 
@@ -307,14 +307,14 @@ the result is an array of vectors.
 vector[3] b;
 vector[3] c;
 ...
-vector[3] d[2] = { b, c };
+array[2] vector[3] d = { b, c };
 ```
 
 The elements may also be a mixture of `int` and `real` typed
 expressions, in which case the result is an array of real values.
 
 ```stan
-real b[2] = { 1, 1.9 };
+array[2] real b = { 1, 1.9 };
 ```
 
 
@@ -370,14 +370,14 @@ If an array expression contains only integer elements, such as
 legal.
 
 ```stan
-real a[2] = { -3, 12 };  // error: int[] can't be assigned to real[]
+array[2] real a = { -3, 12 };  // error: int[] can't be assigned to real[]
 ```
 
 Integer arrays may not be assigned to real values.  However, this
 problem is easily sidestepped by using real literal expressions.
 
 ```stan
-real a[2] = { -3.0, 12.0 };
+array[2] real a = { -3.0, 12.0 };
 ```
 
 Now the types match and the assignment is allowed.
@@ -468,8 +468,9 @@ c = a .* b;
 produces the same result with roughly the same efficiency as the loop
 
 ```stan
-for (n in 1:N)
+for (n in 1:N) {
   c[n] = a[n] * b[n];
+}
 ```
 
 Stan supports exponentiation (`^`) of integer and
@@ -512,34 +513,34 @@ returns an integer).  Parentheses may be used to group expressions
 explicitly rather than relying on precedence and
 associativity.*
 
- Op.| Prec. | Assoc. | Placement |Description
-:--:|------:|:------:|:----------|:----------
-`? ~ :` | 10 | right | ternary infix | conditional
-`||` | 9 | left | binary infix | logical or
-`&&` | 8 | left | binary infix | logical and
-`==` | 7 | left | binary infix | equality
-`!=` | 7 | left | binary infix | inequality
-`<` | 6 | left | binary infix | less than
-`<=` | 6 | left | binary infix | less than or equal
-`>` | 6 | left | binary infix | greater than
-`>=` | 6 | left | binary infix | greater than or equal
-`+` | 5 | left | binary infix | addition
-`-` | 5 | left | binary infix | subtraction
-`*` | 4 | left | binary infix | multiplication
-`.*` | 4 | left | binary infix | elementwise multiplication
-`/` | 4 | left | binary infix | (right) division
-`./` | 4 | left | binary infix | elementwise division
-`%` | 4 | left | binary infix | modulus
-`\` | 3 | left | binary infix | left division
-`%/%` | 3 | left | binary infix | integer division
-`!` | 2 | n/a | unary prefix | logical negation
-`-` | 2 | n/a | unary prefix | negation
-`+` | 2 | n/a | unary prefix | promotion (no-op in Stan)
-`^` | 1 | right | binary infix | exponentiation
-`.^` | 1 | right | binary infix | elementwise exponentiation
-`'` | 0 | n/a | unary postfix | transposition
-`()` | 0 | n/a | prefix, wrap | function application
-`[]` | 0 | left | prefix, wrap | array, matrix indexing
+ |   Op.   | Prec. | Assoc. | Placement     | Description                |
+ | :-----: | ----: | :----: | :------------ | :------------------------- |
+ | `? ~ :` |    10 | right  | ternary infix | conditional                |
+ |  `||`   |     9 |  left  | binary infix  | logical or                 |
+ |  `&&`   |     8 |  left  | binary infix  | logical and                |
+ |  `==`   |     7 |  left  | binary infix  | equality                   |
+ |  `!=`   |     7 |  left  | binary infix  | inequality                 |
+ |   `<`   |     6 |  left  | binary infix  | less than                  |
+ |  `<=`   |     6 |  left  | binary infix  | less than or equal         |
+ |   `>`   |     6 |  left  | binary infix  | greater than               |
+ |  `>=`   |     6 |  left  | binary infix  | greater than or equal      |
+ |   `+`   |     5 |  left  | binary infix  | addition                   |
+ |   `-`   |     5 |  left  | binary infix  | subtraction                |
+ |   `*`   |     4 |  left  | binary infix  | multiplication             |
+ |  `.*`   |     4 |  left  | binary infix  | elementwise multiplication |
+ |   `/`   |     4 |  left  | binary infix  | (right) division           |
+ |  `./`   |     4 |  left  | binary infix  | elementwise division       |
+ |   `%`   |     4 |  left  | binary infix  | modulus                    |
+ |   `\`   |     3 |  left  | binary infix  | left division              |
+ |  `%/%`  |     3 |  left  | binary infix  | integer division           |
+ |   `!`   |     2 |  n/a   | unary prefix  | logical negation           |
+ |   `-`   |     2 |  n/a   | unary prefix  | negation                   |
+ |   `+`   |     2 |  n/a   | unary prefix  | promotion (no-op in Stan)  |
+ |   `^`   |     1 | right  | binary infix  | exponentiation             |
+ |  `.^`   |     1 | right  | binary infix  | elementwise exponentiation |
+ |   `'`   |     0 |  n/a   | unary postfix | transposition              |
+ |  `()`   |     0 |  n/a   | prefix, wrap  | function application       |
+ |  `[]`   |     0 |  left  | prefix, wrap  | array, matrix indexing     |
 
 Other expression-forming operations, such as function application and
 subscripting bind more tightly than any of the arithmetic operations.
@@ -667,10 +668,11 @@ model {
 would be more efficiently (if not more transparently) coded as
 
 ```stan
-if (cond)
+if (cond) {
   y ~ normal(x, sigma);
-else
+} else {
   y ~ normal(z, sigma);
+}
 ```
 
 The conditional statement, like the conditional operator, only
@@ -742,15 +744,15 @@ all of the indexes.  A complete table of index types is given in the
 *Types of indexes and examples with one-dimensional containers of size
   `N` and an integer array `ii` of type `int[]` size `K`.*
 
- index type |    example     |     value
-:----------:|:--------------:|:-----------------:
-integer | `a[11]` | value of `a` at index 11
-integer array | `a[ii]` | `a[ii[1]]`, ..., `a[ii[K]]`
-lower bound | `a[3:]` | `a[3]`, ..., `a[N]`
-upper bound | `a[:5]` | `a[1]`, ..., `a[5]`
-range | `a[2:7]` | `a[2]`, ...,  `a[7]`
-all | `a[:]` | `a[1]`, ..., `a[N]`
-all | `a[]` | `a[1]`, ..., `a[N]`
+ |  index type   | example  |            value            |
+ | :-----------: | :------: | :-------------------------: |
+ |    integer    | `a[11]`  |  value of `a` at index 11   |
+ | integer array | `a[ii]`  | `a[ii[1]]`, ..., `a[ii[K]]` |
+ |  lower bound  | `a[3:]`  |     `a[3]`, ..., `a[N]`     |
+ |  upper bound  | `a[:5]`  |     `a[1]`, ..., `a[5]`     |
+ |     range     | `a[2:7]` |    `a[2]`, ...,  `a[7]`     |
+ |      all      |  `a[:]`  |     `a[1]`, ..., `a[N]`     |
+ |      all      |  `a[]`   |     `a[1]`, ..., `a[N]`     |
 
 
 ### Multiple index semantics {-}
@@ -787,14 +789,14 @@ integer single indexes `i` and `j` and integer array multiple
 indexes `is` and `js`.  The same typing rules apply for all multiple
 indexes.*
 
-  example   |   row index  |   column index  |  result type
-:----------:|:------------:|:---------------:|:--------------:
-`a[i]` | single | n/a | row vector
-`a[is]` | multiple | n/a | matrix
-`a[i, j]` | single | single | real
-`a[i, js]` | single | multiple | row vector
-`a[is, j]` | multiple | single | vector
-`a[is, js]` | multiple | multiple | matrix
+  |   example   | row index | column index | result type |
+  | :---------: | :-------: | :----------: | :---------: |
+  |   `a[i]`    |  single   |     n/a      | row vector  |
+  |   `a[is]`   | multiple  |     n/a      |   matrix    |
+  |  `a[i, j]`  |  single   |    single    |    real     |
+  | `a[i, js]`  |  single   |   multiple   | row vector  |
+  | `a[is, j]`  | multiple  |    single    |   vector    |
+  | `a[is, js]` | multiple  |   multiple   |   matrix    |
 
 Evaluation of matrices with multiple indexes is defined to respect the
 following distributivity conditions.
@@ -982,21 +984,21 @@ primitive types.
   result types declared in terms of primitive types plus array
   dimensionality.*
 
-   type     |   primitive type
-:-----------|:------------------
-`int` | `int`
-`real` | `real`
-`matrix` | `matrix`
-`cov_matrix` | `matrix`
-`corr_matrix` | `matrix`
-`cholesky_factor_cov` | `matrix`
-`cholesky_factor_corr` | `matrix`
-`vector` | `vector`
-`simplex` | `vector`
-`unit_vector` | `vector`
-`ordered` | `vector`
-`positive_ordered` | `vector`
-`row_vector` | `row_vector`
+   | type                   | primitive type |
+   | :--------------------- | :------------- |
+   | `int`                  | `int`          |
+   | `real`                 | `real`         |
+   | `matrix`               | `matrix`       |
+   | `cov_matrix`           | `matrix`       |
+   | `corr_matrix`          | `matrix`       |
+   | `cholesky_factor_cov`  | `matrix`       |
+   | `cholesky_factor_corr` | `matrix`       |
+   | `vector`               | `vector`       |
+   | `simplex`              | `vector`       |
+   | `unit_vector`          | `vector`       |
+   | `ordered`              | `vector`       |
+   | `positive_ordered`     | `vector`       |
+   | `row_vector`           | `row_vector`   |
 
 
 A full implementation type consists of a primitive implementation type
@@ -1106,13 +1108,13 @@ or data. The second group of arguments, consisting of a real and integer
 array in all cases, must be expressions involving only data and
 literals.*
 
-  function   |  parameter or data args  |  data args   |  return type
-------------:|:-------------------:|:------------:|:-------------:
-`algebra_solver` | `vector, vector` | `real[], int[]` | `vector`
-`algebra_solver_newton` | `vector, vector` | `real[], int[]` | `vector`
-`integrate_1d`, | `real, real, real[]` | `real[], int[]` | `real`
-`integrate_ode_X`, | `real, real[], real[]` | `real[], int[]` | `real[]`
-`map_rect` | `vector, vector` | `real[], int[]` | `vector`
+  |                function | parameter or data args |    data args    | return type |
+  | ----------------------: | :--------------------: | :-------------: | :---------: |
+  |        `algebra_solver` |    `vector, vector`    | `real[], int[]` |  `vector`   |
+  | `algebra_solver_newton` |    `vector, vector`    | `real[], int[]` |  `vector`   |
+  |         `integrate_1d`, |  `real, real, real[]`  | `real[], int[]` |   `real`    |
+  |      `integrate_ode_X`, | `real, real[], real[]` | `real[], int[]` |  `real[]`   |
+  |              `map_rect` |    `vector, vector`    | `real[], int[]` |  `vector`   |
 
 For example, the `integrate_ode_rk45` function can be used to integrate
 differential equations in Stan:
@@ -1130,7 +1132,7 @@ array[1] real theta;
 array[0] real x_r;
 array[0] int x_i;
 ...
-real y_hat[T, 2] = integrate_ode_rk45(foo, y0, t0, ts, theta, x_r, x_i);
+array[T, 2] real y_hat = integrate_ode_rk45(foo, y0, t0, ts, theta, x_r, x_i);
 ```
 
 The function argument is `foo`, the name of the user-defined
@@ -1144,10 +1146,10 @@ an integer array as arguments and returns 2D real array.
 function types.  The first group of arguments are restricted in type.
 The sequence of trailing arguments can be of any length with any types.*
 
-  function   |  restricted args  | return type
-------------:|:-------------------:|:-------------:
-`ode_X`, | `vector, real, real[]` | `vector[]`
-`reduce_sum` | ```T[], T1, T2``` | `real`
+  |     function |    restricted args     | return type |
+  | -----------: | :--------------------: | :---------: |
+  |     `ode_X`, | `vector, real, real[]` | `vector[]`  |
+  | `reduce_sum` |   ```T[], T1, T2```    |   `real`    |
 
 `T`, `T1`, and `T2` can be any Stan type.
 

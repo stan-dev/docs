@@ -73,7 +73,7 @@ dimensions defined after the variable identifier.
 Equivalent declarations of `x` and `m` with the pre-2.26 syntax:
 
 ```stan
-real x[10];
+array[10] real x;
 matrix[3, 3] m[6, 7];
 ```
 
@@ -936,9 +936,9 @@ in square brackets following the name of the variable.
 The pre-Stan 2.26 array syntax for the above examples is as follows.
 
 ```stan
-int n[5];
-real a[3, 4];
-real<lower=0> z[5, 4, 2];
+array[5] int n;
+array[3, 4] real a;
+array[5, 4, 2] real<lower=0> z;
 vector[7] mu[3];
 matrix[7, 2] mu[15, 12];
 cholesky_factor_cov[5, 6] mu[2, 3, 4];
@@ -1284,6 +1284,54 @@ array[3] int is;
 void pretty_print_tri_lower(matrix x) { ... }
 
 ```
+
+| Function Argument | Local           | Block                                   |
+| :---------------- | :-------------- | :-------------------------------------- |
+| (unsized)         | (unconstrained) | (constrained)                           |
+| `int`             | `int`           | `int`                                   |
+|                   |                 | `int<lower=L>`                          |
+|                   |                 | `int<upper=U>`                          |
+|                   |                 | `int<lower=L, upper=U>`                 |
+|                   |                 | `int<offset=O>`                         |
+|                   |                 | `int<multiplier=M>`                     |
+|                   |                 | `int<offset=O, multiplier=M>`           |
+| `real`            | `real`          | `real`                                  |
+|                   |                 | `real<lower=L>`                         |
+|                   |                 | `real<upper=U>`                         |
+|                   |                 | `real<lower=L, upper=U>`                |
+|                   |                 | `real<offset=O>`                        |
+|                   |                 | `real<multiplier=M>`                    |
+|                   |                 | `real<offset=O, multiplier=M>`          |
+| `vector`          | `vector[N]`     | `vector[N]`                             |
+|                   |                 | `vector[N]<lower=L>`                    |
+|                   |                 | `vector[N]<upper=U>`                    |
+|                   |                 | `vector[N]<lower=L, upper=U>`           |
+|                   |                 | `vector[N]<offset=O>`                   |
+|                   |                 | `vector[N]<multiplier=M>`               |
+|                   |                 | `vector[N]<offset=O, multiplier=M>`     |
+|                   |                 | `ordered[N]`                            |
+|                   |                 | `positive_ordered[N]`                   |
+|                   |                 | `simplex[N]`                            |
+|                   |                 | `unit_vector[N]`                        |
+| `row_vector`      | `row_vector[N]` | `row_vector[N]`                         |
+|                   |                 | `row_vector[N]<lower=L>`                |
+|                   |                 | `row_vector[N]<upper=U>`                |
+|                   |                 | `row_vector[N]<lower=L, upper=U>`       |
+|                   |                 | `row_vector[N]<offset=O>`               |
+|                   |                 | `row_vector[N]<multiplier=M>`           |
+|                   |                 | `row_vector[N]<offset=O, multiplier=M>` |
+| `matrix`          | `matrix[M, N]`  | `matrix[M, N]`                          |
+|                   |                 | `matrix[M, N]<lower=L>`                 |
+|                   |                 | `matrix[M, N]<upper=U>`                 |
+|                   |                 | `matrix[M, N]<lower=L, uppers=U>`       |
+|                   |                 | `matrix[M, N]<offset=O>`                |
+|                   |                 | `matrix[M, N]<multiplier=M>`            |
+|                   |                 | `matrix[M, N]<offset=O, multiplier=M>`  |
+|                   | `matrix[K, K]`  | `corr_matrix[K]`                        |
+|                   | `matrix[K, K]`  | `cov_matrix[K]`                         |
+|                   | `matrix[K, K]`  | `cholesky_factor_corr[K]`               |
+|                   | `matrix[K, K]`  | `cholesky_factor_cov[K]`                |
+
 
 ## Compound variable declaration and definition
 

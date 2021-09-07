@@ -17,16 +17,18 @@ are $J$ students and $K$ questions, and if every student answers every
 question, then it is practical to declare the data as a $J \times K$
 array of answers.
 
-```
+```stan
 data {
   int<lower=1> J;
   int<lower=1> K;
-  int<lower=0,upper=1> y[J, K];
+  array[J, K] int<lower=0,upper=1> y;
   ...
 model {
-  for (j in 1:J)
-    for (k in 1:K)
+  for (j in 1:J) {
+    for (k in 1:K) {
       y[j, k] ~ bernoulli_logit(delta[k] * (alpha[j] - beta[k]));
+    }
+  }
   ...
 ```
 
@@ -105,14 +107,15 @@ the data and model can be formulated as follows.
 data {
   ...
   int<lower=1> N;
-  int<lower=1,upper=J> jj[N];
-  int<lower=1,upper=K> kk[N];
-  int<lower=0,upper=1> y[N];
+  array[N] int<lower=1,upper=J> jj;
+  array[N] int<lower=1,upper=K> kk;
+  array[N] int<lower=0,upper=1> y;
   ...
 model {
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ bernoulli_logit(delta[kk[n]]
                            * (alpha[jj[n]] - beta[kk[n]]));
+  }
   ...
 ```
 

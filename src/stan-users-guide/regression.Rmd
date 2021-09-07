@@ -60,8 +60,9 @@ y ~ normal(alpha + beta * x, sigma);
 providing the same model as the unvectorized version,
 
 ```
-for (n in 1:N)
+for (n in 1:N) {
   y[n] ~ normal(alpha + beta * x[n], sigma);
+}
 ```
 
 In addition to being more concise, the vectorized form is much faster.^[Unlike in Python and R, which are interpreted, Stan is translated to C++ and compiled, so loops and assignment statements are fast.  Vectorized code is faster in Stan because (a) the expression tree used to compute derivatives can be simplified, leading to fewer virtual function calls, and (b) computations that would be repeated in the looping version, such as `log(sigma)` in the above model, will be computed once and reused.]
@@ -117,8 +118,9 @@ following statistically equivalent model.
 
 ```
 model {
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ normal(x[n] * beta, sigma);
+  }
 }
 ```
 
@@ -288,7 +290,7 @@ follows.
 data {
   int<lower=0> N;
   vector[N] x;
-  int<lower=0,upper=1> y[N];
+  array[N] int<lower=0,upper=1> y;
 }
 parameters {
   real alpha;
@@ -328,8 +330,9 @@ to the less efficient version
 
 
 ```
-for (n in 1:N)
+for (n in 1:N) {
   y[n] ~ bernoulli_logit(alpha + beta * x[n]);
+}
 ```
 
 Expanding out the Bernoulli logit, the model is equivalent to the more
@@ -337,8 +340,9 @@ explicit, but less efficient and less arithmetically stable
 
 
 ```
-for (n in 1:N)
+for (n in 1:N) {
   y[n] ~ bernoulli(inv_logit(alpha + beta * x[n]));
+}
 ```
 
 Other link functions may be used in the same way.  For example, probit
@@ -394,8 +398,10 @@ model {
 
   to_vector(beta) ~ normal(0, 5);
 
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ categorical_logit(x_beta[n]');
+
+  }
 }
 ```
 
@@ -440,7 +446,7 @@ readability.  The above model's declarations could be tightened to
 int<lower = 2> K;
 int<lower = 0> N;
 int<lower = 1> D;
-int<lower = 1, upper = K> y[N];
+array[N] int<lower = 1, upper = K> y;
 ```
 
 These constraints arise because the number of categories, `K`,
@@ -665,7 +671,7 @@ data {
   int<lower=2> K;
   int<lower=0> N;
   int<lower=1> D;
-  int<lower=1,upper=K> y[N];
+  array[N] int<lower=1,upper=K> y;
   array[N] row_vector[D] x;
 }
 parameters {
@@ -673,8 +679,9 @@ parameters {
   ordered[K-1] c;
 }
 model {
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ ordered_logistic(x[n] * beta, c);
+  }
 }
 ```
 
@@ -700,7 +707,7 @@ data {
   int<lower=2> K;
   int<lower=0> N;
   int<lower=1> D;
-  int<lower=1,upper=K> y[N];
+  array[N] int<lower=1,upper=K> y;
   array[N] row_vector[D] x;
 }
 parameters {
@@ -713,8 +720,9 @@ model {
     real eta;
     eta = x[n] * beta;
     theta[1] = 1 - Phi(eta - c[1]);
-    for (k in 2:(K-1))
+    for (k in 2:(K-1)) {
       theta[k] = Phi(eta - c[k-1]) - Phi(eta - c[k]);
+    }
     theta[K] = Phi(eta - c[K-1]);
     y[n] ~ categorical(theta);
   }
@@ -760,23 +768,25 @@ data {
   int<lower=1> D;
   int<lower=0> N;
   int<lower=1> L;
-  int<lower=0,upper=1> y[N];
-  int<lower=1,upper=L> ll[N];
+  array[N] int<lower=0,upper=1> y;
+  array[N] int<lower=1,upper=L> ll;
   array[N] row_vector[D] x;
 }
 parameters {
   array[D] real mu;
-  real<lower=0> sigma[D];
+  array[D] real<lower=0> sigma;
   array[L] vector[D] beta;
 }
 model {
   for (d in 1:D) {
     mu[d] ~ normal(0, 100);
-    for (l in 1:L)
+    for (l in 1:L) {
       beta[l,d] ~ normal(mu[d], sigma[d]);
+    }
   }
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ bernoulli(inv_logit(x[n] * beta[ll[n]]));
+  }
 }
 ```
 
@@ -802,8 +812,9 @@ The first optimization vectorizes the for-loop over `D` as
 
 ```
 mu ~ normal(0, 100);
-for (l in 1:L)
+for (l in 1:L) {
   beta[l] ~ normal(mu, sigma);
+}
 ```
 
 The declaration of `beta` as an array of vectors means that the
@@ -820,8 +831,9 @@ Bernoulli,^[The Bernoulli-logit distribution builds in the log link function, ta
 
 
 ```
-for (n in 1:N)
+for (n in 1:N) {
   y[n] ~ bernoulli_logit(x[n] * beta[ll[n]]);
+}
 ```
 
 Unlike in R or BUGS, loops, array access and assignments are fast in
@@ -835,8 +847,9 @@ the original formulation as a loop over a sampling statement.
 ```
 {
   vector[N] x_beta_ll;
-  for (n in 1:N)
+  for (n in 1:N) {
     x_beta_ll[n] = x[n] * beta[ll[n]];
+  }
   y ~ bernoulli_logit(x_beta_ll);
 }
 ```
@@ -916,9 +929,9 @@ data {
   int<lower=1> J;              // number of students
   int<lower=1> K;              // number of questions
   int<lower=1> N;              // number of observations
-  int<lower=1,upper=J> jj[N];  // student for observation n
-  int<lower=1,upper=K> kk[N];  // question for observation n
-  int<lower=0,upper=1> y[N];   // correctness for observation n
+  array[N] int<lower=1,upper=J> jj;  // student for observation n
+  array[N] int<lower=1,upper=K> kk;  // question for observation n
+  array[N] int<lower=0,upper=1> y;   // correctness for observation n
 }
 ```
 
@@ -963,8 +976,9 @@ model {
   alpha ~ std_normal();         // informative true prior
   beta ~ std_normal();          // informative true prior
   delta ~ normal(0.75, 1);      // informative true prior
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ bernoulli_logit(alpha[jj[n]] - beta[kk[n]] + delta);
+  }
 }
 ```
 
@@ -1045,10 +1059,11 @@ $$
 The sampling statement is also vectorized using elementwise
 multiplication;  it is equivalent to
 
-```
-for (n in 1:N)
+```stan
+for (n in 1:N) {
   y[n] ~ bernoulli_logit(gamma[kk[n]]
                          * (alpha[jj[n]] - (beta[kk[n]] + mu_beta));
+}
 ```
 
 
@@ -1324,7 +1339,7 @@ data {
   int<lower=1> K;              // num ind predictors
   int<lower=1> J;              // num groups
   int<lower=1> L;              // num group predictors
-  int<lower=1,upper=J> jj[N];  // group for individual
+  array[N] int<lower=1,upper=J> jj;  // group for individual
   matrix[N, K] x;              // individual predictors
   array[J] row_vector[L] u;    // group predictors
   vector[N] y;                 // outcomes
@@ -1342,12 +1357,14 @@ model {
   to_vector(gamma) ~ normal(0, 5);
   {
     array[J] row_vector[K] u_gamma;
-    for (j in 1:J)
+    for (j in 1:J) {
       u_gamma[j] = u[j] * gamma;
+    }
     beta ~ multi_normal(u_gamma, quad_form_diag(Omega, tau));
   }
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ normal(x[n] * beta[jj[n]], sigma);
+  }
 }
 ```
 
@@ -1367,8 +1384,9 @@ functions, see the function reference manual.
 The code in the Stan program above can be sped up dramatically by replacing:
 
 ```
-for (n in 1:N)
+for (n in 1:N) {
   y[n] ~ normal(x[n] * beta[jj[n]], sigma);
+}
 ```
 
 with the vectorized form:
@@ -1376,8 +1394,9 @@ with the vectorized form:
 ```
 {
   vector[N] x_beta_jj;
-  for (n in 1:N)
+  for (n in 1:N) {
     x_beta_jj[n] = x[n] * beta[jj[n]];
+  }
   y ~ normal(x_beta_jj, sigma);
 }
 ```
@@ -1422,8 +1441,9 @@ need to be solved and differentiated.
 {
   matrix[K, K] Sigma_beta;
   Sigma_beta = quad_form_diag(Omega, tau);
-  for (j in 1:J)
+  for (j in 1:J) {
     beta[j] ~ multi_normal((u[j] * gamma)', Sigma_beta);
+  }
 }
 ```
 
@@ -1610,8 +1630,9 @@ model {
 }
 generated quantities {
   vector[N_new] y_new;
-  for (n in 1:N_new)
+  for (n in 1:N_new) {
     y_new[n] = normal_rng(x_new[n] * beta, sigma);
+  }
 }
 ```
 
@@ -1684,8 +1705,9 @@ parameters {
 }
 model {
   array[N] vector[K] mu;
-  for (n in 1:N)
+  for (n in 1:N) {
     mu[n] = beta * x[n];
+  }
   y ~ multi_normal(mu, Sigma);
 }
 ```
@@ -1711,8 +1733,10 @@ model {
   array[N] vector[K] mu;
   matrix[K, K] L_Sigma;
 
-  for (n in 1:N)
+  for (n in 1:N) {
     mu[n] = beta * x[n];
+
+  }
 
   L_Sigma = diag_pre_multiply(L_sigma, L_Omega);
 
@@ -1780,8 +1804,9 @@ there are in $y$.
 functions {
   int sum2d(int[,] a) {
     int s = 0;
-    for (i in 1:size(a))
+    for (i in 1:size(a)) {
       s += sum(a[i]);
+    }
     return s;
   }
 }
@@ -1800,7 +1825,7 @@ data {
   int<lower=1> K;
   int<lower=1> D;
   int<lower=0> N;
-  int<lower=0,upper=1> y[N,D];
+  array[N,D] int<lower=0,upper=1> y;
   array[N] vector[K] x;
 }
 ```
@@ -1814,11 +1839,11 @@ block.
 ```
 transformed data {
   int<lower=0> N_pos;
-  int<lower=1,upper=N> n_pos[sum2d(y)];
-  int<lower=1,upper=D> d_pos[size(n_pos)];
+  array[sum2d(y)] int<lower=1,upper=N> n_pos;
+  array[size(n_pos)] int<lower=1,upper=D> d_pos;
   int<lower=0> N_neg;
-  int<lower=1,upper=N> n_neg[(N * D) - size(n_pos)];
-  int<lower=1,upper=D> d_neg[size(n_neg)];
+  array[(N * D) - size(n_pos)] int<lower=1,upper=N> n_neg;
+  array[size(n_neg)] int<lower=1,upper=D> d_neg;
 
   N_pos = size(n_pos);
   N_neg = size(n_neg);
@@ -1874,10 +1899,12 @@ transformed parameter block to reconstruct $z$.
 ```
 transformed parameters {
   array[N] vector[D] z;
-  for (n in 1:N_pos)
+  for (n in 1:N_pos) {
     z[n_pos[n], d_pos[n]] = z_pos[n];
-  for (n in 1:N_neg)
+  }
+  for (n in 1:N_neg) {
     z[n_neg[n], d_neg[n]] = z_neg[n];
+  }
 }
 ```
 
@@ -1890,8 +1917,9 @@ model {
   to_vector(beta) ~ normal(0, 5);
   {
     array[N] vector[D] beta_x;
-    for (n in 1:N)
+    for (n in 1:N) {
       beta_x[n] = beta * x[n];
+    }
     z ~ multi_normal_cholesky(beta_x, L_Omega);
   }
 }
@@ -1972,8 +2000,9 @@ model {
 }
 generated quantities {
   vector[N_tilde] y_tilde;
-  for (n in 1:N_tilde)
+  for (n in 1:N_tilde) {
     y_tilde[n] = normal_rng(alpha + beta * x_tilde[n], sigma);
+  }
 }
 ```
 
@@ -2000,8 +2029,9 @@ $\tilde{x}$ and $\tilde{N}$,
 ```
 generated quantities {
   vector[N] y_tilde;
-  for (n in 1:N)
+  for (n in 1:N) {
     y_tilde[n] = normal_rng(alpha + beta * x[n], sigma);
+  }
 }
 ```
 

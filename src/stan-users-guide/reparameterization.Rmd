@@ -44,7 +44,7 @@ illustrates a hierarchical Stan model with a vector of parameters
 `theta` are drawn i.i.d.\ for a Beta distribution whose
 parameters are themselves drawn from a hyperprior distribution.
 
-```
+```stan
 parameters {
   real<lower = 0> alpha;
   real<lower = 0> beta;
@@ -52,8 +52,9 @@ parameters {
 model {
   alpha ~ ...
   beta ~ ...
-  for (n in 1:N)
+  for (n in 1:N) {
     theta[n] ~ beta(alpha, beta);
+  }
   ...
 ```
 
@@ -71,7 +72,7 @@ Following @[GelmanEtAl:2013, Chapter 5] the mean
 gets a uniform prior and the count parameter a Pareto prior with
 $p(\lambda) \propto \lambda^{-2.5}$.
 
-```
+```stan
 parameters {
   real<lower=0,upper=1> phi;
   real<lower=0.1> lambda;
@@ -83,8 +84,9 @@ transformed parameters {
 model {
   phi ~ beta(1, 1); // uniform on phi, could drop
   lambda ~ pareto(0.1, 1.5);
-  for (n in 1:N)
+  for (n in 1:N) {
     theta[n] ~ beta(alpha, beta);
+  }
   ...
 ```
 
@@ -95,20 +97,21 @@ transformed parameters block.  And If their values are not of interest,
 they could instead be defined as local variables in the model as
 follows.
 
-```
+```stan
 model {
   real alpha = lambda * phi
   real beta = lambda * (1 - phi);
 ...
-  for (n in 1:N)
+  for (n in 1:N) {
     theta[n] ~ beta(alpha, beta);
+  }
 ...
 }
 ```
 
 With vectorization, this could be expressed more compactly and
 efficiently as follows.
-```
+```stan
 model {
   theta ~ beta(lambda * phi, lambda * (1 - phi));
 ...
@@ -134,15 +137,16 @@ the Beta, which is a probability value, with a simplex.  Assume there
 are $K > 0$ dimensions being considered ($K=1$ is trivial and $K=2$
 reduces to the beta distribution case).  The traditional prior is
 
-```
+```stan
 parameters {
   vector[K] alpha;
   array[N] simplex[K] theta;
   ...
 model {
   alpha ~ ...;
-  for (n in 1:N)
+  for (n in 1:N) {
     theta[n] ~ dirichlet(alpha);
+  }
 }
 ```
 
@@ -153,7 +157,7 @@ reasonable prior for `alpha`.
 An alternative coding is to use the mean, which is a simplex, and a
 total count.
 
-```
+```stan
 parameters {
   simplex[K] phi;
   real<lower=0> kappa;
@@ -166,8 +170,9 @@ transformed parameters {
 model {
   phi ~ ...;
   kappa ~ ...;
-  for (n in 1:N)
+  for (n in 1:N) {
     theta[n] ~ dirichlet(alpha);
+  }
 ```
 
 Now it is much easier to formulate priors, because `phi` is the
@@ -196,7 +201,7 @@ program fragment declares a $(0, 1)$-constrained parameter
 `theta` and gives it a beta prior, then uses it as a parameter in
 a distribution (here using `foo` as a placeholder).
 
-```
+```stan
 parameters {
   real<lower = 0, upper = 1> theta;
 ...
@@ -216,7 +221,7 @@ has an inverted-U or more bell-like shape.
 Roughly the same result can be achieved with unbounded parameters that
 are probit or inverse-logit-transformed.  For example,
 
-```
+```stan
 parameters {
   real theta_raw;
 ...
@@ -244,7 +249,7 @@ may be performed using the softmax function, which is a multinomial
 generalization of the inverse logit function.  First, consider a
 simplex parameter with a Dirichlet prior.
 
-```
+```stan
 parameters {
   simplex[K] theta;
 ...
@@ -260,7 +265,7 @@ distribution is just the distribution of the first component of a
 Dirichlet with parameter vector $[a b]^{\top}$.  To formulate an
 unconstrained prior, the exact same strategy works as for the beta.
 
-```
+```stan
 parameters {
   vector[K] theta_raw;
 ...
@@ -279,7 +284,7 @@ parameters in the prior rather than order $K$.  If no covariance is
 desired, the number of parameters can be reduced back to $K$ using a
 vectorized normal distribution as follows.
 
-```
+```stan
 theta_raw ~ normal(mu, sigma);
 ```
 

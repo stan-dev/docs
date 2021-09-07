@@ -137,19 +137,19 @@ of group $j$ in the population.
 
 ```
 data {
-  int<lower = 1> J;
-  array[J] int<lower = 0> A; 
-  array[J] int<lower = 0> a;
-  vector<lower = 0>[J] N;
+  int<lower=1> J;
+  array[J] int<lower=0> A; 
+  array[J] int<lower=0> a;
+  vector<lower=0>[J] N;
 }
 parameters {
-  vector<lower = 0, upper = 1>[J] theta;
+  vector<lower=0, upper=1>[J] theta;
 }
 model {
   a ~ binomial(A, theta);
 }
 generated quantities {t
-  real<lower = 0, upper = 1> phi = dot(N, theta) / sum(N);
+  real<lower=0, upper=1> phi = dot(N, theta) / sum(N);
 }
 ```
 The likelihood is vectorized, and implicitly sums over the $j$.
@@ -296,7 +296,7 @@ parameters {
   vector[K - 1] alpha_raw;
 ...
 transformed parameters {
-  vector<multiplier = sigma_alpha>[K] alpha
+  vector<multiplier=sigma_alpha>[K] alpha
     = append_row(alpha_raw, -sum(alpha_raw));
 ...    
 model {
@@ -311,7 +311,7 @@ Soft constraints can be more computationally tractable.  They are also
 simpler to implement.
 ```
 parameters {
-  vector<multiplier = alpha>[K] alpha;
+  vector<multiplier=alpha>[K] alpha;
 ...
 model {
   alpha ~ normal(0, sigma_alpha);
@@ -348,7 +348,7 @@ which will be required for sampling efficiency, the `multiplier`
 transform is used on each of the parameters.  The combination of
 
 ```
-vector<multiplier = s>[K] a;
+vector<multiplier=s>[K] a;
 ...
 a ~ normal(0, s);
 ```
@@ -365,21 +365,21 @@ generated quantities using population sizes made available through
 data variable `P`.
 ```
 data {
-  int<lower = 0> N;
-  array[N] int<lower = 1, upper = 4> age;
-  array[N] int<lower = 1, upper = 5> income;
-  array[N] int<lower = 1, upper = 50> state;
-  array[N] int<lower = 0> y;
-  array[4, 5, 50] int<lower = 0> P;
+  int<lower=0> N;
+  array[N] int<lower=1, upper=4> age;
+  array[N] int<lower=1, upper=5> income;
+  array[N] int<lower=1, upper=50> state;
+  array[N] int<lower=0> y;
+  array[4, 5, 50] int<lower=0> P;
 }
 parameters {
   real alpha;
-  real<lower = 0> sigma_beta;
-  vector<multiplier = sigma_beta>[4] beta;
-  real<lower = 0> sigma_gamma;
-  vector<multiplier = sigma_gamma>[5] gamma;
-  real<lower = 0> sigma_delta;
-  vector<multiplier = sigma_delta>[50] delta;
+  real<lower=0> sigma_beta;
+  vector<multiplier=sigma_beta>[4] beta;
+  real<lower=0> sigma_gamma;
+  vector<multiplier=sigma_gamma>[5] gamma;
+  real<lower=0> sigma_delta;
+  vector<multiplier=sigma_delta>[50] delta;
 }
 model {
   y ~ bernoulli_logit(alpha + beta[age] + gamma[income] + delta[state]);
@@ -402,7 +402,7 @@ generated quantities {
       }
     }
   }
-  real<lower = 0, upper = 1> phi = expect_pos / total;
+  real<lower=0, upper=1> phi = expect_pos / total;
 }
 ```
 Unlike in posterior predictive inference aimed at uncertainty, there
@@ -420,16 +420,16 @@ group.  Suppose there are $4 \times 5 \times 2 \times 50 = 2000$
 groups.  The data can be broken down into a size-2000 array, with
 entries corresponding to total vote counts in that group
 ```
-int<lower = 0> G;
-array[G] int<lower = 1, upper = 4> age;
-array[G] int<lower = 1, upper = 5> income;
-array[G] int<lower = 1, upper = 50> state;
+int<lower=0> G;
+array[G] int<lower=1, upper=4> age;
+array[G] int<lower=1, upper=5> income;
+array[G] int<lower=1, upper=50> state;
 ```
 Then the number of positive votes and the number of total votes are
 collected into two parallel arrays indexed by group.
 ```
-array[G] int<lower = 0> pos_votes;
-array[G] int<lower = 0> total_votes;
+array[G] int<lower=0> pos_votes;
+array[G] int<lower=0> total_votes;
 ```
 Finally, the likelihood is converted to binomial.
 ```
@@ -448,7 +448,7 @@ feasible to build a hierarchical model with only two cases.
 A sex predictor is straightforward to add to the data block; it takes
 on values 1 or 2 for each of the `N` data points.
 ```
-  array[N] int<lower = 1, upper = 2> sex;
+  array[N] int<lower=1, upper=2> sex;
 ```
 Then add a single regression coefficient as a parameter,
 ```
@@ -489,7 +489,7 @@ poststratification because they are at the group level.  For example,
 suppose the average income level in the state is available as the data
 variable 
 ```
-array[50] real<lower = 0> income;
+array[50] real<lower=0> income;
 ```
 then a regression coefficient `psi` can be added for the effect of
 average state income,

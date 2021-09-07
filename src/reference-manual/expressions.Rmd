@@ -273,7 +273,7 @@ This syntax provides a way declare and define a matrix in a single
 line, as follows.
 
 ```stan
-matrix[3,2] m1 = [ [ 1, 2 ], [ 3, 4 ], [5, 6 ] ];
+matrix[3, 2] m1 = [ [ 1, 2 ], [ 3, 4 ], [5, 6 ] ];
 ```
 
 Any expression denoting a row vector can be used in a matrix expression.
@@ -282,7 +282,7 @@ For example, the following code is valid:
 ```stan
 vector[2] vX = [ 1, 10 ]';
 row_vector[2] vY = [ 100, 1000 ];
-matrix[3,2] m2 = [ vX', vY, [ 1, 2 ]  ];
+matrix[3, 2] m2 = [ vX', vY, [ 1, 2 ]  ];
 ```
 
 
@@ -538,7 +538,7 @@ of function application and array, matrix, and vector indexing. The
 operators are listed in order of precedence, from least tightly
 binding to most tightly binding.  The full set of legal arguments and
 corresponding result types are provided in the function documentation
-for the operators (i.e.,* `operator*(int,int):int` *indicates the
+for the operators (i.e.,* `operator*(int, int):int` *indicates the
 application of the multiplication operator to two integers, which
 returns an integer).  Parentheses may be used to group expressions
 explicitly rather than relying on precedence and
@@ -727,15 +727,15 @@ operations.  For example, `alpha*x[1]` is equivalent to
 
 Multiple subscripts may be provided within a single pair of square
 brackets.  If `x` is of type `real[ , ]`, a two-dimensional
-array, then `x[2,501]` is of type `real`.
+array, then `x[2, 501]` is of type `real`.
 
 
 ### Accessing subarrays {-}
 
 The subscripting operator also returns subarrays of arrays.  For
 example, if `x` is of type `real[ , , ]`, then `x[2]`
-is of type `real[ , ]`, and `x[2,3]` is of type
-`real[]`.  As a result, the expressions `x[2,3]` and
+is of type `real[ , ]`, and `x[2, 3]` is of type
+`real[]`.  As a result, the expressions `x[2, 3]` and
 `x[2][3]` have the same meaning.
 
 
@@ -753,11 +753,11 @@ or matrix values.  For example, if `m` is of type
 `matrix[ , ]`, a two-dimensional array of matrices, then
 `m[1]` refers to the first row of the array, which is a
 one-dimensional array of matrices.  More than one index may be used,
-so that `m[1,2]` is of type `matrix` and denotes the matrix
+so that `m[1, 2]` is of type `matrix` and denotes the matrix
 in the first row and second column of the array.  Continuing to add
-indices, `m[1,2,3]` is of type `row_vector` and denotes
-the third row of the matrix denoted by `m[1,2]`.  Finally,
-`m[1,2,3,4]` is of type `real` and denotes the value in the
+indices, `m[1, 2, 3]` is of type `row_vector` and denotes
+the third row of the matrix denoted by `m[1, 2]`.  Finally,
+`m[1, 2, 3, 4]` is of type `real` and denotes the value in the
 third row and fourth column of the matrix that is found at the first
 row and second column of the array `m`.
 
@@ -870,7 +870,7 @@ real log(real);
 
 and the signature for the `lmultiply` function is
 
-`real lmultiply(real,real);`
+`real lmultiply(real, real);`
 
 A function is uniquely determined by its name and its sequence of
 argument types.  For instance, the following two functions are
@@ -910,25 +910,25 @@ For example, consider a situation in which the following two function
 signatures have been registered for `foo`.
 
 ```
-real foo(real,real);
-int foo(int,int);
+real foo(real, real);
+int foo(int, int);
 ```
 
-The use of `foo` in the expression `foo(1.0,1.0)` resolves
-to `foo(real,real)`, and thus the expression `foo(1.0,1.0)`
+The use of `foo` in the expression `foo(1.0, 1.0)` resolves
+to `foo(real, real)`, and thus the expression `foo(1.0, 1.0)`
 itself is assigned a type of `real`.
 
 Because integers may be promoted to real values, the expression
-`foo(1,1)` could potentially match either `foo(real,real)`
-or `foo(int,int)`.  The former requires two type promotions and
-the latter requires none, so `foo(1,1)` is resolved to function
-`foo(int,int)` and is thus assigned the type `int`.
+`foo(1, 1)` could potentially match either `foo(real, real)`
+or `foo(int, int)`.  The former requires two type promotions and
+the latter requires none, so `foo(1, 1)` is resolved to function
+`foo(int, int)` and is thus assigned the type `int`.
 
-The expression `foo(1,1.0)` has argument types `(int,real)`
+The expression `foo(1, 1.0)` has argument types `(int, real)`
 and thus does not explicitly match either function signature.  By
 promoting the integer expression `1` to type `real`, it is
-able to match `foo(real,real)`, and hence the type of the
-function expression `foo(1,1.0)` is `real`.
+able to match `foo(real, real)`, and hence the type of the
+function expression `foo(1, 1.0)` is `real`.
 
 In some cases (though not for any built-in Stan functions), a
 situation may arise in which the function referred to by an
@@ -937,21 +937,21 @@ which there are exactly two functions named `bar` with the
 following signatures.
 
 ```
-real bar(real,int);
-real bar(int,real);
+real bar(real, int);
+real bar(int, real);
 ```
 
-With these signatures, the expression `bar(1.0,1)` and
-`bar(1,1.0)` resolve to the first and second of the above
-functions, respectively.  The expression `bar(1.0,1.0)` is
+With these signatures, the expression `bar(1.0, 1)` and
+`bar(1, 1.0)` resolve to the first and second of the above
+functions, respectively.  The expression `bar(1.0, 1.0)` is
 illegal because real values may not be demoted to integers.  The
-expression `bar(1,1)` is illegal for a different reason.  If the
+expression `bar(1, 1)` is illegal for a different reason.  If the
 first argument is promoted to a real value, it matches the first
 signature, whereas if the second argument is promoted to a real value,
 it matches the second signature.  The problem is that these both
 require one promotion, so the function name `bar` is ambiguous.
 If there is not a unique function requiring fewer promotions than all
-others, as with `bar(1,1)` given the two declarations above,
+others, as with `bar(1, 1)` given the two declarations above,
 the Stan compiler will flag the expression as illegal.
 
 
@@ -961,7 +961,7 @@ For most of the distributions supported by Stan, there is a
 corresponding random-number generating function.  These random number
 generators are named by the distribution with the suffix `_rng`.
 For example, a univariate normal random number can be generated by
-`normal_rng(0,1)`;  only the parameters of the distribution,
+`normal_rng(0, 1)`;  only the parameters of the distribution,
 here a location (0) and scale (1) are specified because the variate is
 generated.
 
@@ -1124,7 +1124,7 @@ function signature is a declaration of the argument types and the
 result type.
 
 In looking up functions, binary operators like `real * real` are
-defined as `operator*(real,real)` in the documentation and index.
+defined as `operator*(real, real)` in the documentation and index.
 
 In matching a function definition, arguments of type `int` may be
 promoted to type `real` if necessary (see the subsection on type
@@ -1134,7 +1134,7 @@ specification of Stan's integer-to-real type-promotion rule).
 In general, matrix operations return the lowest inferable type.  For
 example, `row_vector * vector` returns a value of type
 `real`, which is declared in the function documentation and index
-as `real operator*(row_vector,vector)`.
+as `real operator*(row_vector, vector)`.
 
 
 ## Higher-order functions

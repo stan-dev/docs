@@ -152,7 +152,7 @@ The simple harmonic oscillator can be coded using the following function
 in Stan (see the [user-defined functions chapter](#functions-programming.chapter) for
 more information on coding user-defined functions).
 
-```
+```stan
 vector sho(real t,        // time
            vector y,      // state
            real theta) {  // friction parameter
@@ -181,7 +181,7 @@ call.
 
 All of these are possible ODE signatures:
 
-```
+```stan
 vector myode1(real t, vector y, real a0);
 vector myode2(real t, vector y, int[] a0, vector a1);
 vector myode3(real t, vector y, matrix a0, real[] a1, row_vector a2);
@@ -189,7 +189,7 @@ vector myode3(real t, vector y, matrix a0, real[] a1, row_vector a2);
 
 but these are not allowed:
 
-```
+```stan
 vector myode1(real t, real[] y, real a0); // Second argument is not a vector
 real[] myode2(real t, vector y, real a0); // Return type is not a vector
 vector myode3(vector y, real a0); // First argument is not a real and second is not a vector
@@ -211,7 +211,7 @@ and $y_2(t, \theta)$).
 
 The following model can be used to generate data like this:
 
-```
+```stan
 functions {
   vector sho(real t,
              vector y,
@@ -251,7 +251,7 @@ produce simulated observations `y_sim`. Because the system is not stiff, the
 This program illustrates the way in which the ODE solver is called in
 a Stan program,
 
-```
+```stan
 vector[2] y_sim[T] = ode_rk45(sho, y0, t0, ts, theta);
 ```
 
@@ -266,13 +266,13 @@ passed, they could be appended to the end of the ode call here. For instance, if
 the system function took two parameters, $\theta$ and $\beta$, the system
 function definition would look like:
 
-```
+```stan
 vector sho(real t, vector y, real theta, real beta) { ... }
 ```
 
 and the appropriate ODE solver call would be:
 
-```
+```stan
 ode_rk45(sho, y0, t0, ts, theta, beta);
 ```
 
@@ -295,7 +295,7 @@ parameter, $\theta$, the initial conditions, $y(t_0, \theta)$, and the scale of
 the noise in the problem. The full Stan model is:
 
 \newpage
-```
+```stan
 functions {
   vector sho(real t,
              vector y,
@@ -357,7 +357,7 @@ specified exactly the same way with a function of exactly the same
 signature.  The only difference is in the call to the solver the
 `rk45` suffix is replaced with `bdf`, as in
 
-```
+```stan
 ode_bdf(sho, y0, t0, ts, theta);
 ```
 
@@ -385,7 +385,7 @@ function names but with `_tol` appended to the end. All three control
 arguments must be supplied with this signature (there are no
 defaults).
 
-```
+```stan
 vector[2] y_sim[T] = ode_bdf_tol(sho, y0, t0, ts,
                                  relative_tolerance,
                                  absolute_tolerance,
@@ -422,7 +422,7 @@ such a discontinuity is a lag in a pharmacokinetic model, where a
 concentration is zero for times $0 < t < t'$ and then positive for $t \geq t'$.
 In this example example, we would use code in the system such as
 
-```
+```stan
 if (t < t_lag) {
   return [0, 0]';
 } else {
@@ -512,7 +512,7 @@ backward ODE integration phase need to be set for each
 ODE state separately. The harmonic oscillator example call from above
 becomes:
 
-```
+```stan
 vector[2] y_sim[T]
     = ode_adjoint_tol_ctl(sho, y0, t0, ts,
                           relative_tolerance/9.0,                # forward tolerance
@@ -570,7 +570,7 @@ is given below.
 In general, computing a matrix exponential will be more efficient than using a numerical
 solver. We can however only apply this technique to systems of linear ODEs.
 
-```
+```stan
 data {
   int<lower=1> T;
   vector[2] y0;

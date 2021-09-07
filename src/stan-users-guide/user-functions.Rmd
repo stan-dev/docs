@@ -15,7 +15,7 @@ Here's an example of a skeletal Stan program with a user-defined
 relative difference function employed in the generated quantities
 block to compute a relative differences between two parameters.
 
-```
+```stan
 functions {
   real relative_diff(real x, real y) {
     real abs_diff;
@@ -78,7 +78,7 @@ arguments to a function are legal.  The following function takes a
 square root of its input, so requires non-negative inputs; it is coded
 to guard against illegal inputs.
 
-```
+```stan
 real dbl_sqrt(real x) {
   if (!(x >= 0)) {
     reject("dblsqrt(x): x must be positive; found x = ", x);
@@ -194,7 +194,7 @@ full details.
 For example, here's a function to compute the entropy of a categorical
 distribution with simplex parameter `theta`.
 
-```
+```stan
 real entropy(vector theta) {
   return sum(theta .* log(theta));
 }
@@ -213,7 +213,7 @@ manual for function signatures.  For example, a function that operates
 on a two-dimensional array to produce a one-dimensional array might be
 declared as follows.
 
-```
+```stan
 real[] baz(real[,] x);
 ```
 
@@ -232,7 +232,7 @@ i.e., not an integer type or integer array type,
 can be qualified using the prefix qualifier `data`.
 The following is an example of a data-only function argument.
 
-```
+```stan
 real foo(real y, data real mu) {
   return -0.5 * (y - mu)^2;
 }
@@ -272,7 +272,7 @@ In some cases, it makes sense to have functions that do not return a
 value.  For example, a routine to print the lower-triangular portion
 of a matrix can be defined as follows.
 
-```
+```stan
 functions {
   void pretty_print_tri_lower(matrix x) {
     if (rows(x) == 0) {
@@ -300,13 +300,13 @@ their own as statements.  For example, the pretty-print function
 defined above may be applied to a covariance matrix being defined in
 the transformed parameters block.
 
-```
+```stan
 transformed parameters {
   cov_matrix[K] Sigma;
   ... code to set Sigma ...
   pretty_print_tri_lower(Sigma);
   ...
-```
+```stan
 
 
 ## Functions accessing the log probability accumulator
@@ -322,7 +322,7 @@ translated and scaled coefficients; see the [reparameterization
 section](#reparameterization.section) for more information on
 efficient non-centered parameterizations
 
-```
+```stan
 functions {
   vector center_lp(vector beta_raw, real mu, real sigma) {
     beta_raw ~ std_normal();
@@ -342,7 +342,7 @@ transformed parameters {
   ...
   beta = center_lp(beta_raw, mu_beta, sigma_beta);
   ...
-```
+```stan
 
 
 ## Functions acting as random number generators
@@ -363,7 +363,7 @@ matrix, the first column of which is filled with 1 values for the
 intercept and the remaining entries of which have values drawn
 from a standard normal PRNG.
 
-```
+```stan
 matrix predictors_rng(int N, int K) {
   matrix[N, K] x;
   for (n in 1:N) {
@@ -380,7 +380,7 @@ The following function defines a simulator for regression outcomes
 based on a data matrix `x`, coefficients `beta`, and noise
 scale `sigma`.
 
-```
+```stan
 vector regression_rng(vector beta, matrix x, real sigma) {
   vector[rows(x)] y;
   vector[rows(x)] mu;
@@ -395,7 +395,7 @@ vector regression_rng(vector beta, matrix x, real sigma) {
 These might be used in a generated quantity block to simulate some
 fake data from a fitted regression model as follows.
 
-```
+```stan
 parameters {
   vector[K] beta;
   real<lower=0> sigma;
@@ -423,7 +423,7 @@ there is not a specific overloaded density nor defaults in Stan.  So
 rather than writing out the location of 0 and scale of 1 for all of
 them, a new density function may be defined and reused.
 
-```
+```stan
 functions {
   real unit_normal_lpdf(real y) {
     return normal_lpdf(y | 0, 1);
@@ -444,13 +444,13 @@ keyed off its name ending in `_lpdf` (names ending in
 In general, if `foo_lpdf` is defined to consume $N + 1$
 arguments, then
 
-```
+```stan
 y ~ foo(theta1, ..., thetaN);
 ```
 
 can be used as shorthand for
 
-```
+```stan
 target += foo_lpdf(y | theta1, ..., thetaN);
 ```
 
@@ -483,7 +483,7 @@ and the return value, prefaced with some descriptive text.
 For example, here's some documentation for the prediction matrix
 generator.
 
-```
+```stan
 /**
  * Return a data matrix of specified size with rows
  * corresponding to items and the first column filled
@@ -512,7 +512,7 @@ For functions that raise exceptions, exceptions can be documented using
 
 For example,
 
-```
+```stan
  ...
  * @param theta
  * @throws If any of the entries of theta is negative.
@@ -576,7 +576,7 @@ $$
 where $\textrm{I}$ is the identity matrix.  This definition can be
 directly translated to a recursive function definition.
 
-```
+```stan
 matrix matrix_pow(matrix a, int n);
 
 matrix matrix_pow(matrix a, int n) {
@@ -594,7 +594,7 @@ well-defined when it is encountered.  It would be more efficient to
 not allow the recursion to go all the way to the base case, adding the
 following conditional clause.
 
-```
+```stan
 else if (n == 1)
   return a;
 ```
@@ -613,7 +613,7 @@ cumulative distribution function, $y = \textrm{logit}(u)$.  If this
 were not already built in as `logistic_rng(0, 1)`, it could be
 coded in Stan directly as
 
-```
+```stan
 real standard_logistic_rng() {
   real u = uniform_rng(0, 1);
   real y = logit(u);
@@ -624,7 +624,7 @@ real standard_logistic_rng() {
 
 Following the same pattern, a standard normal RNG could be coded as
 
-```
+```stan
 real standard_normal_rng() {
   real u = uniform_rng(0, 1);
   real y = inv_Phi(u);
@@ -646,7 +646,7 @@ $\Phi$ is the inverse cumulative distribution function for the
 standard normal, and then, finally, scale and translate it, $y = \mu +
 \sigma \times z$.  In code,
 
-```
+```stan
 real my_normal_rng(real mu, real sigma) {
   real u = uniform_rng(0, 1);
   real z = inv_Phi(u);
@@ -658,7 +658,7 @@ real my_normal_rng(real mu, real sigma) {
 A robust version of this function would test that the arguments are
 finite and that `sigma` is non-negative, e.g.,
 
-```
+```stan
   if (is_nan(mu) || is_inf(mu)) {
     reject("my_normal_rng: mu must be finite; ",
            "found mu = ", mu);
@@ -682,7 +682,7 @@ back.
 
 For example, the following code generates a $\textsf{Weibull}(\alpha, \sigma)$ variate truncated below at a time $t$,^[The original code and impetus for including this in the manual came from the Stan forums post \url{http://discourse.mc-stan.org/t/rng-for-truncated-distributions/3122/7}; by user `lcomm`, who also explained truncation above and below.]
 
-```
+```stan
 real weibull_lb_rng(real alpha, real sigma, real t) {
   real p = weibull_cdf(lt, alpha, sigma);   // cdf for lb
   real u = uniform_rng(p, 1);               // unif in bounds
@@ -698,7 +698,7 @@ twice to find a lower and upper bound.  For example, to generate a
 $\textsf{normal}(\mu, \sigma)$ truncated to a region $(a, b)$, the
 following code suffices,
 
-```
+```stan
 real normal_lub_rng(real mu, real sigma, real lb, real ub) {
   real p_lb = normal_cdf(lb, mu, sigma);
   real p_ub = normal_cdf(ub, mu, sigma);
@@ -716,7 +716,7 @@ lines, the variable names serve as a kind of chunking of operations
 and naming for readability;  compare the multiple statement version
 above with the single statement
 
-```
+```stan
   return mu + sigma * inv_Phi(uniform_rng(normal_cdf(lb, mu, sigma),
                                           normal_cdf(ub, mu, sigma)));
 ```

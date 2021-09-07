@@ -135,7 +135,7 @@ and $\sigma^2 = 0.1$, and the mean function $m$ is defined to always
 return the zero vector, $m(x) = \textbf{0}$.  Consider the following
 implementation of a Gaussian process simulator.
 
-```
+```stan
 data {
   int<lower=1> N;
   array[N] real x;
@@ -240,7 +240,7 @@ data variable for the Cholesky decomposition.  The parameters change
 to the raw parameters sampled from an isotropic standard normal, and the
 actual samples are defined as generated quantities.
 
-```
+```stan
 ...
 transformed data {
   matrix[N, N] L;
@@ -314,7 +314,7 @@ above, but because we are doing inference on the hyperparameters, we need to
 calculate the covariance matrix `K` in the model block, rather than
 the transformed data block.
 
-```
+```stan
 data {
   int<lower=1> N;
   array[N] real x;
@@ -380,7 +380,7 @@ small positive term, $\delta$ to the diagonal of the covariance matrix in order
 to ensure that our covariance matrix remains positive definite.
 
 
-```
+```stan
 data {
   int<lower=1> N;
   array[N] real x;
@@ -446,7 +446,7 @@ will account for the marginal expected value for $y$. We do this because we
 cannot center count data like we would for normally distributed data.
 
 
-```
+```stan
 data {
 ...
   array[N] int<lower=0> y;
@@ -489,7 +489,7 @@ problems. Below `a` is the bias term, which can help account for imbalanced
 classes in the training data:
 
 
-```
+```stan
 data {
 ...
   array[N] int<lower=0, upper=1> z;
@@ -538,7 +538,7 @@ covariance matrix. We'll write a function to generate the Cholesky of the
 covariance matrix called `L_cov_exp_quad_ARD`.
 
 
-```
+```stan
 functions {
   matrix L_cov_exp_quad_ARD(vector[] x,
                             real alpha,
@@ -669,7 +669,7 @@ f(x \mid a, b, p) &= \dfrac{\left(a/b\right)^{p/2}}{2K_p\left(\sqrt{ab}\right)} 
 which has an inverse gamma left tail if $p \leq 0$ and an inverse Gaussian
 right tail.  This has not yet been implemented in Stan's math library, but it
 is possible to implement as a user defined function:
-```
+```stan
 functions {
   real generalized_inverse_gaussian_lpdf(real x, int p,
                                         real a, real b) {
@@ -1059,7 +1059,7 @@ This can be implemented in Stan using a latent-variable GP formulation. We've us
 $\textsf{LKJCorr}$ for $C(\phi)$, but any positive-definite matrix will do.
 
 
-```
+```stan
 data {
   int<lower=1> N;
   int<lower=1> D;

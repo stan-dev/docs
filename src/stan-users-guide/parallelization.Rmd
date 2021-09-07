@@ -56,12 +56,12 @@ sum function `f: U[] -> real`, where `f` computes the partial
 sum corresponding to a slice of the sequence `x` passed in. Due to the
 associativity of the sum reduction it holds that:
 
-```
+```stan
 g(x1) + g(x2) + g(x3) = f({ x1, x2, x3 })
                       = f({ x1, x2 }) + f({ x3 })
                       = f({ x1 }) + f({ x2, x3 })
 					  = f({ x1 }) + f({ x2 }) + f({ x3 })
-```
+```stan
 
 With the partial sum function ```f: U[] -> real``` reduction of a
 large number of terms can be evaluated in parallel automatically, since the
@@ -89,27 +89,27 @@ See details [below](#reduce-sum-grainsize).
 
 For efficiency and convenience additional
 shared arguments can be passed to every term in the sum. So for the
-array ```{ x1, x2, ... }``` and the shared arguments ```s1, s2, ...```
+array ```{ x1, x2, ... }``` and the shared arguments ```s1, s2, ...```stan
 the effective sum (with individual terms) looks like: 
 
-```
+```stan
 g(x1, s1, s2, ...) + g(x2, s1, s2, ...) + g(x3, s1, s2, ...) + ...
-```
+```stan
 
 which can be written equivalently with partial sums to look like:
 
-```
+```stan
 f({ x1, x2 }, s1, s2, ...) + f({ x3 }, s1, s2, ...)
-```
+```stan
 
 where the particular slicing of the ```x``` array can change.
 
 Given this, the signatures are:
 
-```
+```stan
 real reduce_sum(F f, T[] x, int grainsize, T1 s1, T2 s2, ...)
 real reduce_sum_static(F f, T[] x, int grainsize, T1 s1, T2 s2, ...)
-```
+```stan
 
 1. ```f``` - User defined function that computes partial sums
 2. ```x``` - Array to slice, each element corresponds to a term in the summation
@@ -118,9 +118,9 @@ real reduce_sum_static(F f, T[] x, int grainsize, T1 s1, T2 s2, ...)
 
 The user-defined partial sum functions have the signature:
 
-```
+```stan
 real f(T[] x_slice, int start, int end, T1 s1, T2 s2, ...)
-```
+```stan
 
 and take the arguments:
 
@@ -134,26 +134,26 @@ without modification from the ```reduce_sum``` / `reduce_sum_static` call)
 The user-provided function ```f``` is expected to compute the partial
 sum with the terms ```start``` through ```end``` of the overall
 sum. The user function is passed the subset ```x[start:end]``` as
-```x_slice```. ```start``` and  ```end``` are passed so that ```f```
+```x_slice```. ```start``` and  ```end``` are passed so that ```f```stan
 can index any of the tailing ```sM``` arguments as necessary. The
 trailing ```sM``` arguments are passed without modification to every
 call of ```f```.
 
 A ```reduce_sum``` (or `reduce_sum_static`) call:
 
-```
+```stan
 real sum = reduce_sum(f, x, grainsize, s1, s2, ...);
 ```
 
 can be replaced by either:
 
-```
+```stan
 real sum = f(x, 1, size(x), s1, s2, ...);
 ```
 
 or the code:
 
-```
+```stan
 real sum = 0.0;
 for(i in 1:size(x)) {
   sum += f({ x[i] }, i, i, s1, s2, ...);
@@ -166,7 +166,7 @@ Logistic regression is a useful example to clarify both the syntax
 and semantics of reduce summation and how it can be used to speed up a typical
 model. A basic logistic regression can be coded in Stan as:
 
-```
+```stan
 data {
   int N;
   array[N] int y;
@@ -186,13 +186,13 @@ covariate `x`. The intercept and slope of the linear equation are to be estimate
 The key point to getting this calculation to use reduce summation, is recognizing that
 the statement:
 
-```
+```stan
 y ~ bernoulli_logit(beta[1] + beta[2] * x);
 ```
 
 can be rewritten (up to a proportionality constant) as:
 
-```
+```stan
 for(n in 1:N) {
   target += bernoulli_logit_lpmf(y[n] | beta[1] + beta[2] * x[n])
 }
@@ -205,7 +205,7 @@ must be written that can be used to compute arbitrary partial sums of
 the total sum. Using the interface defined in
 [Reduce-Sum](#reduce-sum), such a function can be written like:
 
-```
+```stan
 functions {
   real partial_sum(int[] y_slice,
                    int start, int end,
@@ -218,7 +218,7 @@ functions {
 
 The likelihood statement in the model can now be written:
 
-```
+```stan
 target += partial_sum(y, 1, N, x, beta); // Sum terms 1 to N of the likelihood
 ```
 
@@ -231,7 +231,7 @@ hierarchical models. Because `x` is a shared argument, it is subset
 accordingly with `start:end`. With this function, reduce summation can
 be used to automatically parallelize the likelihood:
 
-```
+```stan
 int grainsize = 1;
 target += reduce_sum(partial_sum, y,
                      grainsize,
@@ -242,7 +242,7 @@ The reduce summation facility automatically breaks the sum into pieces
 and computes them in parallel. `grainsize = 1` specifies that the
 `grainsize` should be estimated automatically. The final model is:
 
-```
+```stan
 functions {
   real partial_sum(int[] y_slice,
                    int start, int end,
@@ -337,7 +337,7 @@ just a sequence of inputs.
 
 Stan's map function has the following signature
 
-```
+```stan
 vector map_rect((vector, vector, real[], int[]):vector f,
                 vector phi, vector[] thetas,
                 data real[ , ] x_rs, data int[ , ] x_is);
@@ -364,7 +364,7 @@ to reduce communication overhead.
 The notation `(vector, vector, real[], int[]):vector` indicates
 that the function argument `f` must have the following signature.
 
-```
+```stan
 vector f(vector phi, vector theta,
          data real[] x_r, data int[] x_i);
 ```
@@ -381,7 +381,7 @@ data, and integer data arrays.  Each of the arguments `theta`,
 `x_r`, and `x_i` must be arrays of the same size.  If the
 arrays are all size `N`, the result is defined as follows.
 
-```
+```stan
 map_rect(f, phi, thetas, xs, ns)
 = f(phi, thetas[1], xs[1], ns[1]) . f(phi, thetas[2], xs[2], ns[2])
   . ... . f(phi, thetas[N], xs[N], ns[N])
@@ -405,7 +405,7 @@ Consider the following simple logistic regression model, which is
 coded unconventionally to accomodate direct translation to a mapped
 implementation.
 
-```
+```stan
 data {
   array[12] int y;
   array[12] real x;
@@ -435,7 +435,7 @@ The unmapped logistic regression model described in the previous
 subsection may be implemented using Stan's rectangular mapping
 functionality as follows.
 
-```
+```stan
 functions {
   vector lr(vector beta, vector theta, real[] x, int[] y) {
     real lp = bernoulli_logit_lpmf(y | beta[1]
@@ -529,7 +529,7 @@ The slopes and intercepts get hierarchical priors,
 
 This model can be coded up in Stan directly as follows.
 
-```
+```stan
 data {
   int<lower=0> K;
   int<lower=0> N;
@@ -564,7 +564,7 @@ and elementwise multiplication (`.*`) for the income `x`.
 The vectorized likelihood works out to the same thing as the following
 less efficient looped form.
 
-```
+```stan
 for (n in 1:N) {
   y[n] ~ bernoulli_logit(beta[kk[n], 1] + beta[kk[n], 2] * x[n]);
 }
@@ -582,7 +582,7 @@ for a group as well as the prior for the group-specific parameters
 (the name `bl_glm` derives from the fact that it's a generalized
 linear model with a Bernoulli likelihood and logistic link function).
 
-```
+```stan
 functions {
  vector bl_glm(vector mu_sigma, vector beta,
                real[] x, int[] y) {
@@ -612,7 +612,7 @@ repeated here for convenience.  A transformed data block computes the
 data structures needed for the mapping by organizing the data into
 arrays indexed by group.
 
-```
+```stan
 data {
   int<lower=0> K;
   int<lower=0> N;
@@ -648,7 +648,7 @@ as the previous program.  The model has the same priors for the
 hyperparameters `mu` and `sigma`, but moves the prior for
 `beta` and the likelihood to the mapped function.
 
-```
+```stan
 parameters {
   array[K] vector[2] beta;
   vector[2] mu;

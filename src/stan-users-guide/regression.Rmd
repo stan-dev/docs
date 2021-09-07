@@ -27,7 +27,7 @@ $$
 
 This latter form of the model is coded in Stan as follows.
 
-```
+```stan
 data {
   int<lower=0> N;
   vector[N] x;
@@ -53,13 +53,13 @@ improper priors for the two regression coefficients.
 
 The sampling statement in the previous model is vectorized, with
 
-```
+```stan
 y ~ normal(alpha + beta * x, sigma);
 ```
 
 providing the same model as the unvectorized version,
 
-```
+```stan
 for (n in 1:N) {
   y[n] ~ normal(alpha + beta * x[n], sigma);
 }
@@ -81,7 +81,7 @@ because `x` is of type `vector` and `beta` of type
 Because Stan supports vectorization, a regression model with more than
 one predictor can be written directly using matrix notation.
 
-```
+```stan
 data {
   int<lower=0> N;   // number of data items
   int<lower=0> K;   // number of predictors
@@ -116,7 +116,7 @@ The sampling statement in the model above is just a more efficient,
 vector-based approach to coding the model with a loop, as in the
 following statistically equivalent model.
 
-```
+```stan
 model {
   for (n in 1:N) {
     y[n] ~ normal(x[n] * beta, sigma);
@@ -132,7 +132,7 @@ the product `x[n] * beta` is a scalar of type `real`.
 
 In the model formulation
 
-```
+```stan
 y ~ normal(x * beta, sigma);
 ```
 
@@ -167,7 +167,7 @@ R^\ast$ where $Q^\ast = Q * \sqrt{n - 1}$ and $R^\ast =
 \beta$, then we have $\eta = Q^\ast \theta$ and $\beta = R^{\ast^{-1}}
 \theta$. In that case, the previous Stan program becomes
 
-```
+```stan
 data {
   int<lower=0> N;   // number of data items
   int<lower=0> K;   // number of predictors
@@ -260,7 +260,7 @@ the noise term a Student-$t$ distribution.  To code this in Stan, the
 sampling distribution is changed to the following.
 
 
-```
+```stan
 data {
   ...
   real<lower=0> nu;
@@ -286,7 +286,7 @@ A logistic regression model with one predictor and an intercept is coded as
 follows.
 
 
-```
+```stan
 data {
   int<lower=0> N;
   vector[N] x;
@@ -329,7 +329,7 @@ The formulation is also vectorized in the sense that `alpha` and
 to the less efficient version
 
 
-```
+```stan
 for (n in 1:N) {
   y[n] ~ bernoulli_logit(alpha + beta * x[n]);
 }
@@ -339,7 +339,7 @@ Expanding out the Bernoulli logit, the model is equivalent to the more
 explicit, but less efficient and less arithmetically stable
 
 
-```
+```stan
 for (n in 1:N) {
   y[n] ~ bernoulli(inv_logit(alpha + beta * x[n]));
 }
@@ -359,7 +359,7 @@ may be coded in Stan by replacing the logistic model's sampling
 statement with the following.
 
 
-```
+```stan
 y[n] ~ bernoulli(Phi(alpha + beta * x[n]));
 ```
 
@@ -369,7 +369,7 @@ function $\Phi$ is implemented in Stan as the function
 The approximate probit regression model may
 be coded with the following.
 
-```
+```stan
 y[n] ~ bernoulli(Phi_approx(alpha + beta * x[n]));
 ```
 
@@ -382,7 +382,7 @@ vector $x_n$ of predictors for $y_n$.  The multi-logit model with
 $\textsf{normal}(0,5)$ priors on the coefficients is coded as follows.
 
 
-```
+```stan
 data {
   int K;
   int N;
@@ -425,7 +425,7 @@ $$
 The categorical distribution with log-odds (logit) scaled parameters
 used above is equivalent to writing
 
-```
+```stan
 y[n] ~ categorical(softmax(x[n] * beta));
 ```
 
@@ -442,7 +442,7 @@ the model author's intentions more explicit, which can help with
 readability.  The above model's declarations could be tightened to
 
 
-```
+```stan
 int<lower=2> K;
 int<lower=0> N;
 int<lower=1> D;
@@ -479,7 +479,7 @@ section](#partially-known-parameters.section) discusses how to mix
 constants and parameters in a vector.  In the multi-logit case, the
 parameter block would be redefined to use $(K - 1)$-vectors
 
-```
+```stan
 parameters {
   matrix[K - 1, D] beta_raw;
 }
@@ -489,7 +489,7 @@ and then these are transformed to parameters to use in the model.
 First, a transformed data block is added before the parameters block
 to define a row vector of zero values,
 
-```
+```stan
 transformed data {
   row_vector[D] zeros = rep_row_vector(0, D);
 }
@@ -498,7 +498,7 @@ transformed data {
 which can then be appended to `beta_row` to produce the
 coefficient matrix `beta`,
 
-```
+```stan
 transformed parameters {
   matrix[K, D] beta;
   beta = append_row(beta_raw, zeros);
@@ -540,7 +540,7 @@ There is more than one way to enforce a sum-to-zero constraint on a
 parameter vector, the most efficient of which is to define the $K$-th
 element as the negation of the sum of the elements $1$ through $K-1$.
 
-```
+```stan
 parameters {
   vector[K-1] beta_raw;
   ...
@@ -565,7 +565,7 @@ On the Stan forums, Aaron Goodman provided the following code to
 produce a prior with standard normal marginals on the components of
 `beta`,
 
-```
+```stan
 model {
   beta ~ normal(0, inv(sqrt(1 - inv(K))));
   ...
@@ -586,7 +586,7 @@ Aaron Goodman, on the Stan forums, also provided this approach, which
 calculates a QR decomposition in the transformed data block, then uses
 it to transform to a sum-to-zero parameter `x`,
 
-```
+```stan
 transformed data{
   matrix[K, K] A = diag_matrix(rep_vector(1,K));
   matrix[K, K-1] A_qr;
@@ -614,7 +614,7 @@ This produces a marginal standard normal distribution on the values of
 An alternative approach that's less efficient, but amenable to a
 symmetric prior, is to offset and scale a simplex.
 
-```
+```stan
 parameters {
   simplex[K] beta_raw;
   real beta_scale;
@@ -666,7 +666,7 @@ The ordered logistic model can be coded in Stan using the
 `ordered_logistic` distribution.
 
 
-```
+```stan
 data {
   int<lower=2> K;
   int<lower=0> N;
@@ -702,7 +702,7 @@ swapping the cumulative logistic (`inv_logit`) for the cumulative
 normal (`Phi`).
 
 
-```
+```stan
 data {
   int<lower=2> K;
   int<lower=0> N;
@@ -763,7 +763,7 @@ The following model encodes a hierarchical logistic regression model
 with a hierarchical prior on the regression coefficients.
 
 
-```
+```stan
 data {
   int<lower=1> D;
   int<lower=0> N;
@@ -810,7 +810,7 @@ gradient calculations.
 The first optimization vectorizes the for-loop over `D` as
 
 
-```
+```stan
 mu ~ normal(0, 100);
 for (l in 1:L) {
   beta[l] ~ normal(mu, sigma);
@@ -830,7 +830,7 @@ inside the Bernoulli distribution with the logit-parameterized
 Bernoulli,^[The Bernoulli-logit distribution builds in the log link function, taking $$\texttt{bernoulli}\mathtt{\_}\texttt{logit}\left(y \mid \alpha\right) = \texttt{bernoulli}\left(y \mid \operatorname{logit}^{-1}(\alpha)\right).$$]
 
 
-```
+```stan
 for (n in 1:N) {
   y[n] ~ bernoulli_logit(x[n] * beta[ll[n]]);
 }
@@ -844,7 +844,7 @@ and gradient calculations.  Thus the following version is faster than
 the original formulation as a loop over a sampling statement.
 
 
-```
+```stan
 {
   vector[N] x_beta_ll;
   for (n in 1:N) {
@@ -924,7 +924,7 @@ to account for the fact that not every student is required to answer
 every question.
 
 
-```
+```stan
 data {
   int<lower=1> J;                     // number of students
   int<lower=1> K;                     // number of questions
@@ -954,7 +954,7 @@ parameter (1P) for questions and uses the logistic link function (L).
 The model parameters are declared as follows.
 
 
-```
+```stan
 parameters {
   real delta;            // mean student ability
   array[J] real alpha;   // ability of student j - mean ability
@@ -971,7 +971,7 @@ response to the average question.^[@GelmanHill:2007 treat the $\delta$ term equi
 The model itself is as follows.
 
 
-```
+```stan
 model {
   alpha ~ std_normal();         // informative true prior
   beta ~ std_normal();          // informative true prior
@@ -1024,7 +1024,7 @@ question difficulty and discrimination parameters.  The model
 parameters are declared as follows.
 
 
-```
+```stan
 parameters {
   real mu_beta;                // mean question difficulty
   vector[J] alpha;             // ability for j - mean
@@ -1037,7 +1037,7 @@ parameters {
 
 The parameters should be clearer after the model definition.
 
-```
+```stan
 model {
   alpha ~ std_normal();
   beta ~ normal(0, sigma_beta);
@@ -1086,7 +1086,7 @@ and `gamma` then have varying scales given hierarchically in this
 model.  They could also be given weakly informative non-hierarchical
 priors, such as
 
-```
+```stan
 beta ~ normal(0, 5);
 gamma ~ lognormal(0, 2);
 ```
@@ -1098,13 +1098,13 @@ The `beta` parameter is here given a non-centered
 parameterization, with parameter `mu_beta` serving as the mean
 `beta` location. An alternative would've been to take:
 
-```
+```stan
 beta ~ normal(mu_beta, sigma_beta);
 ```
 
 and
 
-```
+```stan
 y[n] ~ bernoulli_logit(gamma[kk[n]] * (alpha[jj[n]] - beta[kk[n]]));
 ```
 
@@ -1333,7 +1333,7 @@ The Stan code for the full hierarchical model with multivariate priors
 on the group-level coefficients and group-level prior means follows
 its definition.
 
-```
+```stan
 data {
   int<lower=0> N;              // num individuals
   int<lower=1> K;              // num ind predictors
@@ -1383,7 +1383,7 @@ functions, see the function reference manual.
 
 The code in the Stan program above can be sped up dramatically by replacing:
 
-```
+```stan
 for (n in 1:N) {
   y[n] ~ normal(x[n] * beta[jj[n]], sigma);
 }
@@ -1391,7 +1391,7 @@ for (n in 1:N) {
 
 with the vectorized form:
 
-```
+```stan
 {
   vector[N] x_beta_jj;
   for (n in 1:N) {
@@ -1411,7 +1411,7 @@ all of the work into a single density function.
 Although it is tempting to redeclare `beta` and include a revised
 model block sampling statement,
 
-```
+```stan
 parameters {
   matrix[J, K] beta;
 ...
@@ -1423,7 +1423,7 @@ model {
 this fails because it breaks the vectorization of sampling for
 `beta`,^[Thanks to Mike Lawrence for pointing this out in the GitHub issue for the manual.]
 
-```
+```stan
 beta ~ multi_normal(...);
 ```
 
@@ -1437,7 +1437,7 @@ for the outcomes and for the multivariate normal, which provides a
 major speedup by reducing the number of linear systems that
 need to be solved and differentiated.
 
-```
+```stan
 {
   matrix[K, K] Sigma_beta;
   Sigma_beta = quad_form_diag(Omega, tau);
@@ -1464,7 +1464,7 @@ version of the non-centered parameterization.  For the model in the
 previous section, the program fragment to replace the full matrix
 prior with an equivalent Cholesky factorized prior is as follows.
 
-```
+```stan
 data {
   matrix[L, J] u;              // group predictors transposed
   ...
@@ -1537,7 +1537,7 @@ fact that $\mathbb{E}(z \, z^\top) = I$ since $z \sim \mathcal{N}(0, I)$.
 Omitting the remaining data declarations, which are the same as before
 with the exception of `u`, the optimized model is as follows.
 
-```
+```stan
 parameters {
   matrix[K, J] z;
   cholesky_factor_corr[K] L_Omega;
@@ -1591,7 +1591,7 @@ model statement for the predictions is exactly the same as for the
 observations, with the new outcome vector `y_new` and prediction
 matrix `x_new`.
 
-```
+```stan
 data {
   int<lower=1> K;
   int<lower=0> N;
@@ -1622,7 +1622,7 @@ use the generated quantities block.  This provides proper Monte Carlo
 (not Markov chain Monte Carlo) inference, which can have a much higher
 effective sample size per iteration.
 
-```
+```stan
 ...data as above...
 
 parameters {
@@ -1695,7 +1695,7 @@ as a column of ones.
 The basic Stan code is straightforward (though see below for more
 optimized code for use with LKJ priors on correlation).
 
-```
+```stan
 data {
   int<lower=1> K;
   int<lower=1> J;
@@ -1726,7 +1726,7 @@ prior on the correlations and a half-Cauchy prior on standard
 deviations.  The covariance structure is parameterized in terms of
 Cholesky factors for efficiency and arithmetic stability.
 
-```
+```stan
 ...
 parameters {
   matrix[K, J] beta;
@@ -1804,7 +1804,7 @@ First, we introduce a sum function for two-dimensional arrays of
 integers;  this is going to help us calculate how many total 1 values
 there are in $y$.
 
-```
+```stan
 functions {
   int sum2d(int[,] a) {
     int s = 0;
@@ -1824,7 +1824,7 @@ The data declaration block is much like for the seemingly unrelated
 regressions, but the observations `y` are now integers
 constrained to be 0 or 1.
 
-```
+```stan
 data {
   int<lower=1> K;
   int<lower=1> D;
@@ -1840,7 +1840,7 @@ positive and negative components, keeping track of indexes so that
 `z` can be easily reassembled in the transformed parameters
 block.
 
-```
+```stan
 transformed data {
   int<lower=0> N_pos;
   array[sum2d(y)] int<lower=1, upper=N> n_pos;
@@ -1880,7 +1880,7 @@ values in four arrays.
 
 The parameters are declared as follows.
 
-```
+```stan
 parameters {
   matrix[D, K] beta;
   cholesky_factor_corr[D] L_Omega;
@@ -1900,7 +1900,7 @@ components, whose size was conveniently calculated in the transformed
 data block.  The transformed data block's real work was to allow the
 transformed parameter block to reconstruct $z$.
 
-```
+```stan
 transformed parameters {
   array[N] vector[D] z;
   for (n in 1:N_pos) {
@@ -1915,7 +1915,7 @@ transformed parameters {
 At this point, the model is simple, pretty much recreating the
 seemingly unrelated regression.
 
-```
+```stan
 model {
   L_Omega ~ lkj_corr_cholesky(4);
   to_vector(beta) ~ normal(0, 5);
@@ -1935,7 +1935,7 @@ Chib-style constraints on `z`.
 Finally, the correlation matrix itself can be put back together in the
 generated quantities block if desired.
 
-```
+```stan
 generated quantities {
   corr_matrix[D] Omega;
   Omega = multiply_lower_tri_self_transpose(L_Omega);
@@ -1986,7 +1986,7 @@ To code the posterior predictive inference in Stan, a standard linear
 regression is combined with a random number in the generated
 quantities block.
 
-```
+```stan
 data {
   int<lower=0> N;
   vector[N] y;
@@ -2030,7 +2030,7 @@ To code posterior predictive checks in Stan requires only a slight
 modification of the prediction code to use $x$ and $N$ in place of
 $\tilde{x}$ and $\tilde{N}$,
 
-```
+```stan
 generated quantities {
   vector[N] y_tilde;
   for (n in 1:N) {

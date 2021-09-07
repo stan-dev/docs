@@ -30,7 +30,7 @@ linear regression model where the observed data for $N$ cases includes
 a predictor $x_n$ and outcome $y_n$.  In Stan, a linear regression for
 $y$ based on $x$ with a slope and intercept is modeled as follows.
 
-```
+```stan
 data {
   int<lower=0> N;       // number of cases
   vector[N] x;          // predictor (covariate)
@@ -60,7 +60,7 @@ the model.  A simple approach is to assume the measurement error is
 normal with known deviation $\tau$.  This leads to the following
 regression model with constant measurement error.
 
-```
+```stan
 data {
   ...
   array[N] real x_meas;   // measurement of x
@@ -187,7 +187,7 @@ and lower-bound constraints on the elements of a vector (or array),
 the parameters are declared to be the rounding error $y - z$, and
 then $z$ is defined as a transformed parameter.
 
-```
+```stan
 data {
   int<lower=0> N;
   vector[N] y;
@@ -243,7 +243,7 @@ myocardial infarction under a treatment of beta blockers
 
 The clinical data consists of $J$ trials, each with $n^t$ treatment cases, $n^c$ control cases, $r^t$ successful outcomes among those treated and $r^c$ successful outcomes among those in the control group.  This data can be declared in Stan as follows.^[Stan's integer constraints are not powerful enough to express the constraint that $\texttt{r}\mathtt{\_}\texttt{t[j]} \leq \texttt{n}\mathtt{\_}\texttt{t[j]}$, but this constraint could be checked in the transformed data block.]
 
-```
+```stan
 data {
   int<lower=0> J;
   array[J] int<lower=0> n_t;  // num cases, treatment
@@ -279,7 +279,7 @@ The log odds and standard errors can be defined in a transformed
 parameter block, though care must be taken not to use integer
 division.^[When dividing two integers, the result type is an integer and rounding will ensue if the result is not exact.  See the discussion of primitive arithmetic types in the reference manual for more information.]
 
-```
+```stan
 transformed data {
   array[J] real y;
   array[J] real<lower=0> sigma;
@@ -306,7 +306,7 @@ can be applied.  The first is a so-called "fixed effects" model,
 which assumes a single parameter for the global odds ratio.  This
 model is coded in Stan as follows.
 
-```
+```stan
 parameters {
   real theta;  // global treatment effect, log odds
 }
@@ -317,7 +317,7 @@ model {
 
 The sampling statement for `y` is vectorized; it has the same
 effect as the following.
-```
+```stan
   for (j in 1:J) {
     y[j] ~ normal(theta, sigma[j]);
   }
@@ -336,7 +336,7 @@ parameters include per-trial treatment effects and the hierarchical
 prior parameters, which will be estimated along with other unknown
 quantities.
 
-```
+```stan
 parameters {
   array[J] real theta;  // per-trial treatment effect
   real mu;              // mean treatment effect

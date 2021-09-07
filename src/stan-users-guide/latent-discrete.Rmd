@@ -261,7 +261,7 @@ values using the built-in pseudo-random number generators.  For
 example, with `lp` defined as above, the following program
 draws a random value for `s` at every iteration.
 
-```
+```stan
 generated quantities {
   int<lower=1, upper=T> s;
   s = categorical_logit_rng(lp);
@@ -363,7 +363,7 @@ given the total number of animals captured in the second round ($C$)
 with a recapture probability of $M/N$, the fraction of the total
 population $N$ marked in the first round.
 
-```
+```stan
 data {
   int<lower=0> M;
   int<lower=0> C;
@@ -533,7 +533,7 @@ mark-recapture model that considers counts of individuals with
 observation histories of being observed or not in three capture
 periods
 
-```
+```stan
 data {
   array[7] int<lower=0> history;
 }
@@ -589,7 +589,7 @@ capture events, the number $I$ of individuals, and a boolean flag
 $y_{i,t}$ indicating if individual $i$ was observed at time $t$.  In
 Stan,
 
-```
+```stan
 data {
   int<lower=2> T;
   int<lower=0> I;
@@ -609,7 +609,7 @@ definitions.  The first two are used in the transformed data block to
 compute the first and last time period in which an animal was
 captured.^[An alternative would be to compute this on the outside and feed it into the Stan model as preprocessed data.  Yet another alternative encoding would be a sparse one recording only the capture events along with their time and identifying the individual captured.]
 
-```
+```stan
 functions {
   int first_capture(int[] y_i) {
     for (k in 1:size(y_i)) {
@@ -636,7 +636,7 @@ functions {
 These two functions are used to define the first and last capture time
 for each individual in the transformed data block.^[Both functions return 0 if the individual represented by the input array was never captured.  Individuals with no captures are not relevant for estimating the model because all probability statements are conditional on earlier captures.  Typically they would be removed from the data, but the program allows them to be included even though they make not contribution to the log probability function.]
 
-```
+```stan
 transformed data {
   array[I] int<lower=0, upper=T> first;
   array[I] int<lower=0, upper=T> last;
@@ -669,7 +669,7 @@ is a function definition for computing the entire vector `chi`, the
 probability that if an individual is alive at `t` that it will
 never be captured again.
 
-```
+```stan
 parameters {
   vector<lower=0, upper=1>[T-1] phi;
   vector<lower=0, upper=1>[T] p;
@@ -683,7 +683,7 @@ transformed parameters {
 The definition of `prob_uncaptured`, from the functions block,
 is
 
-```
+```stan
 functions {
   ...
   vector prob_uncaptured(int T, vector p, vector phi) {
@@ -717,7 +717,7 @@ probability of the observations `q` given the parameters `p`
 and `phi` as well as the transformed parameter `chi` defined
 in terms of `p` and `phi`.
 
-```
+```stan
 model {
   for (i in 1:I) {
     if (first[i] > 0) {
@@ -759,7 +759,7 @@ this model does not identify `phi[T-1]` and `p[T]`, but
 does identify their product, `beta`.  Thus `beta` is defined
 as a generated quantity to monitor convergence and report.
 
-```
+```stan
 generated quantities {
   real beta;
   ...
@@ -785,7 +785,7 @@ mark-recapture model as the number of individuals captured at time
 is done with the elementwise division operation for vectors
 (`./`) in the generated quantities block.
 
-```
+```stan
 generated quantities {
   ...
   vector<lower=0>[T] pop;

@@ -26,7 +26,7 @@ Stan treats variables declared in the `data` and
 
 An example involving missing normal observations could be coded as follows.^[A more meaningful estimation example would involve a regression of the observed and missing observations using predictors that were known for each and specified in the `data` block.]
 
-```
+```stan
 data {
   int<lower=0> N_obs;
   int<lower=0> N_mis;
@@ -65,7 +65,7 @@ This can be done in Stan by creating a vector or array in the
 The following example involves a bivariate covariance matrix in which the
 variances are known, but the covariance is not.
 
-```
+```stan
 data {
   int<lower=0> N;
   array[N] vector[2] y;
@@ -114,7 +114,7 @@ often be effectively reassembled using index arrays and slicing.
 Here's an example for time-series data, where only some entries in the
 series are observed.
 
-```
+```stan
 data {
   int<lower=0> N_obs;
   int<lower=0> N_mis;
@@ -157,7 +157,7 @@ columns of a data matrix of predictors for which some predictors are
 missing; matrix columns can be accessed as vectors and assigned the
 same way, as in
 
-```
+```stan
 x[N_obs_2, 2] = x_obs_2;
 x[N_mis_2, 2] = x_mis_2;
 ```
@@ -177,7 +177,7 @@ used in Bayesian factor analysis [@aguilar-west:2000].  This
 can be accomplished by declaring the below-diagonal elements as
 parameters, then filling the full matrix as a transformed parameter.
 
-```
+```stan
 data {
   int<lower=2> K;
 }
@@ -228,7 +228,7 @@ both an array of vector observations `y` and a boolean array
 `y_observed` to indicate which values were observed (others can
 have dummy values in the input).
 
-```
+```stan
 array[N] vector[2] y;
 array[N, 2] int<lower=0, upper=1> y_observed;
 ```
@@ -237,7 +237,7 @@ If both components are observed, we model them using the full
 multi-normal, otherwise we model the marginal distribution of the
 component that is observed.
 
-```
+```stan
 for (n in 1:N) {
   if (y_observed[n, 1] && y_observed[n, 2]) {
     y[n] ~ multi_normal(mu, Sigma);
@@ -253,7 +253,7 @@ It's a bit more work, but much more efficient to vectorize these
 sampling statements.  In transformed data, build up three vectors of
 indices, for the three cases above:
 
-```
+```stan
 transformed data {
   array[observed_12(y_observed)] int ns12;
   array[observed_1(y_observed)] int ns1;
@@ -267,7 +267,7 @@ done with functions because the result needs to go in top-level block
 variable size declaration.  Then the rest of transformed data just
 fills in the values using three counters.
 
-```
+```stan
 int n12 = 1;
 int n1 = 1;
 int n2 = 1;
@@ -288,7 +288,7 @@ for (n in 1:N) {
 Then, in the model block, everything is vectorizable
 using those indexes constructed once in transformed data:
 
-```
+```stan
 y[ns12] ~ multi_normal(mu, Sigma);
 y[ns1] ~ normal(mu[1], sqrt(Sigma[1, 1]));
 y[ns2] ~ normal(mu[2], sqrt(Sigma[2, 2]));

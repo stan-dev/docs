@@ -135,7 +135,7 @@ binomial, where $A_j$ is the number of voters from group $j$, $a_j$ is
 the number of positive responses from group $j$, and $N_j$ is the size
 of group $j$ in the population.
 
-```
+```stan
 data {
   int<lower=1> J;
   array[J] int<lower=0> A; 
@@ -291,7 +291,7 @@ example, because there are only two sex categories, $\gamma_2 =
 -\gamma_1.$
 
 To implement sum-to-zero constraints,
-```
+```stan
 parameters {
   vector[K - 1] alpha_raw;
 ...
@@ -309,7 +309,7 @@ interpret.
 
 Soft constraints can be more computationally tractable.  They are also
 simpler to implement.
-```
+```stan
 parameters {
   vector<multiplier=alpha>[K] alpha;
 ...
@@ -347,7 +347,7 @@ Stan.  To code the non-centered parameterization for each coefficient,
 which will be required for sampling efficiency, the `multiplier`
 transform is used on each of the parameters.  The combination of
 
-```
+```stan
 vector<multiplier=s>[K] a;
 ...
 a ~ normal(0, s);
@@ -363,7 +363,7 @@ parameterization drops the `multiplier`.
 Here is the full Stan model, which performs poststratification in the
 generated quantities using population sizes made available through
 data variable `P`.
-```
+```stan
 data {
   int<lower=0> N;
   array[N] int<lower=1, upper=4> age;
@@ -419,7 +419,7 @@ In some cases, it can be more efficient to break the data down by
 group.  Suppose there are $4 \times 5 \times 2 \times 50 = 2000$
 groups.  The data can be broken down into a size-2000 array, with
 entries corresponding to total vote counts in that group
-```
+```stan
 int<lower=0> G;
 array[G] int<lower=1, upper=4> age;
 array[G] int<lower=1, upper=5> income;
@@ -427,12 +427,12 @@ array[G] int<lower=1, upper=50> state;
 ```
 Then the number of positive votes and the number of total votes are
 collected into two parallel arrays indexed by group.
-```
+```stan
 array[G] int<lower=0> pos_votes;
 array[G] int<lower=0> total_votes;
 ```
 Finally, the likelihood is converted to binomial.
-```
+```stan
 pos_votes ~ binomial_logit(total_votes,
                            alpha + beta[age] + ...);
 ```
@@ -447,7 +447,7 @@ two categories, it needs to be modeled separately, because it is not
 feasible to build a hierarchical model with only two cases.
 A sex predictor is straightforward to add to the data block; it takes
 on values 1 or 2 for each of the `N` data points.
-```
+```stan
   array[N] int<lower=1, upper=2> sex;
 ```
 Then add a single regression coefficient as a parameter,
@@ -459,7 +459,7 @@ In the log odds calculation, introduce a new term
 [epsilon, -epsilon][sex]';
 ```
 That is, the likelihood will now look like
-```
+```stan
   y ~ bernoulli_logit(alpha + beta[age] + gamma[income] + delta[state]
                       + [epsilon, -epsilon][sex]');
 ```
@@ -474,7 +474,7 @@ which is a `row_vector` into a `vector` that can be added to the other
 variables.
 
 Finally, a prior is needed for the coefficient in the model block,
-```
+```stan
 epsilon ~ normal(0, 2);
 ```
 As with other priors in multilevel models, the posterior for `epsilon`
@@ -488,27 +488,27 @@ predictors in the regression.  They will not pose an obstacle to
 poststratification because they are at the group level.  For example,
 suppose the average income level in the state is available as the data
 variable 
-```
+```stan
 array[50] real<lower=0> income;
 ```
 then a regression coefficient `psi` can be added for the effect of
 average state income,
-```
+```stan
 real psi;
 ```
 with a fixed prior, 
-```
+```stan
 psi ~ normal(0, 2);
 ```
 This prior assumes the `income` predictor has been standardized.
 Finally, a term is added to the regression for the fixed predictor,
-```
+```stan
 y ~ bernoulli_logit(alpha + beta[age] + ... + delta[state]
                     + income[state] * psi);
 ```
 And finally, the formula in the generated quantities block is also
 updated,
-```
+```stan
 expect_pos
   += P[b, c, d]
      * inv_logit(alpha + beta[b] + gamma[c] + delta[d]

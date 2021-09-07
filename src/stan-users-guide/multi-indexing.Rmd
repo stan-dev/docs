@@ -8,7 +8,7 @@ be vectorized.  For instance, consider the likelihood for a varying-slope,
 varying-intercept hierarchical linear regression, which could be coded
 as
 
-```
+```stan
 for (n in 1:N) {
   y[n] ~ normal(alpha[ii[n]] + beta[ii[n]] * x[n], sigma);
 }
@@ -17,14 +17,14 @@ for (n in 1:N) {
 With multiple indexing, this can be coded in one line, leading to more
 efficient vectorized code.
 
-```
+```stan
 y ~ normal(alpha[ii] + rows_dot_product(beta[ii], x), sigma);
 ```
 
 This latter version is equivalent in speed to the clunky assignment to
 a local variable.
 
-```
+```stan
 {
   vector[N] mu;
   for (n in 1:N) {
@@ -40,7 +40,7 @@ The following is the simplest concrete example of multiple indexing
 with an array of integers;  the ellipses stand for code defining the
 variables as indicated in the comments.
 
-```
+```stan
 array[3] int c;
 ...             // define: c == (5, 9, 7)
 array[4] int idxs;
@@ -63,7 +63,7 @@ Thus `c[idxs]` is of the same size as `idxs`, which is
 Multiple indexing can also be used with multi-dimensional arrays.  For
 example, consider the following.
 
-```
+```stan
 array[2, 3] int c;
 ...             // define: c = ((1, 3, 5), ((7, 11, 13))
 array[4] int idxs;
@@ -82,7 +82,7 @@ Multiple indexing may also be used in the second position of a
 multi-dimensional array.  Continuing the above example, consider a
 single index in the first position and a multiple index in the second.
 
-```
+```stan
 array[4] int e;
 e = c[2, idxs]; // result:  c[2] = (7, 11, 13)
                 // result:  e = (11, 11, 7, 11)
@@ -95,7 +95,7 @@ then the multiple index is applied to the result.  That is,
 Multiple indexing can apply to more than one position of a
 multi-dimensional array.  For instance, consider the following
 
-```
+```stan
 array[2, 3] int c;
 ...                   // define: c = ((1, 3, 5), (7, 11, 13))
 array[3] int idxs1;
@@ -132,7 +132,7 @@ Semantically, it is just a special form of multiple indexing.
 For instance, consider supplying an upper and lower bound for an
 index.
 
-```
+```stan
 array[7] int c;
 ...
 array[4] int d;
@@ -168,7 +168,7 @@ assignment statement, where they work exactly the same way as on the
 right-hand side in terms of picking out entries of a container.
 For example, consider the following.
 
-```
+```stan
 array[3] int a;
 array[2] int c;
 array[2] int idxs;
@@ -184,7 +184,7 @@ The result above can be worked out by noting that the assignment sets
 The same principle applies when there are many multiple indexes, as
 in the following example.
 
-```
+```stan
 array[5, 7] int a;
 array[2, 2] int c;
 ...
@@ -201,7 +201,7 @@ indexes maintaining dimensionality while rearranging, slicing, or
 blocking.  For example, it is valid to assign to a segment of a row of
 an array as follows.
 
-```
+```stan
 array[10, 13] int a;
 array[2] int c;
 ...
@@ -214,7 +214,7 @@ Aliasing issues arise when there are references to the same data
 structure on the right-hand and left-hand side of an assignment.  For
 example, consider the array `a` in the following code fragment.
 
-```
+```stan
 array[3] int a;
 ...               // define: a == (5, 6, 7)
 a[2:3] = a[1:2];
@@ -226,7 +226,7 @@ rather than $(5,5,5)$ is that Stan behaves as if the right-hand side
 expression is evaluated to a fresh copy.   As another example,
 consider the following.
 
-```
+```stan
 array[3] int a;
 array[3] int idxs;
 ...            // define idxs = (2, 1, 3)
@@ -239,7 +239,7 @@ before the assignment.
 It is tempting (but wrong) to think of the assignment `a[2:3] =
   a[1:2]` as executing the following assignments.
 
-```
+```stan
 ...               // define: a = (5, 6, 7)
 a[2] = a[1];      // result: a = (5, 5, 7)
 a[3] = a[2];      // result: a = (5, 5, 5)!
@@ -265,7 +265,7 @@ The only subtlety with vectors is in inferring the return type when
 there are multiple indexes. For example, consider the following
 minimal example.
 
-```
+```stan
 array[3] vector[5] v;
 array[7] int idxs;
 ...
@@ -294,7 +294,7 @@ underlying principle of type inference is the same---multiple indexes
 leave dimensions in place, whereas single indexes reduce them.  The
 following code shows how this works for multiple indexing of matrices.
 
-```
+```stan
 matrix[5, 7] m;
 ...
 row_vector[3] rv;
@@ -328,7 +328,7 @@ rules remain exactly the same: single indexes reduce dimensionality
 and multiple indexes redirect indexes.  For example, consider the
 following example.
 
-```
+```stan
 array[5, 7] matrix[3, 4] m;
 ...
 array[2] matrix[3, 4] a;
@@ -343,7 +343,7 @@ but it's different in both cases.  In the first case, `a[i] ==
 
 Continuing the previous example, consider the following.
 
-```
+```stan
 ...
 vector[2] b;
 b = a[1, 3, 2:3, 2];
@@ -359,7 +359,7 @@ lower bound minus one is added to the index, as seen in the `1 + j` expression a
 
 Continuing further, consider continuing with the following.
 
-```
+```stan
 ...
 array[2] row_vector[3] c;
 c = a[4:5, 3, 1, 2: ];
@@ -392,7 +392,7 @@ transformed data {
 
 The seven remaining parameters are declared as a vector.
 
-```
+```stan
 parameters {
   vector[7] A_raw;
   ...
@@ -401,7 +401,7 @@ parameters {
 Then the full matrix `A` is constructed in the model block as a
 local variable.
 
-```
+```stan
 model {
   matrix[3, 3] A;
   for (i in 1:7) {

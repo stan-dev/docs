@@ -331,7 +331,7 @@ accumulator is incremented with the log absolute derivative of the
 transform.  The lognormal distribution can thus be implemented
 directly in Stan as follows.^[This example is for illustrative purposes only; the recommended way to implement the lognormal distribution in Stan is with the built-in `lognormal` probability function; see the functions reference manual for details.]
 
-```
+```stan
 parameters {
   real<lower=0> y;
   ...
@@ -347,7 +347,7 @@ parameters;  here `y` is constrained to be positive.
 It would be slightly more efficient to define a local variable for the
 logarithm, as follows.
 
-```
+```stan
 model {
   real log_y;
   log_y = log(y);
@@ -372,13 +372,13 @@ Jacobian adjustment.
 It does not matter whether the probability function is
 expressed using a sampling statement, such as
 
-```
+```stan
 log(y) ~ normal(mu, sigma);
 ```
 
 or as an increment to the log probability function, as in
 
-```
+```stan
 target += normal_lpdf(log(y) | mu, sigma);
 ```
 
@@ -392,7 +392,7 @@ of variables.
 The transform based approach to sampling `y_inv` with an inverse
 gamma distribution can be coded as follows.
 
-```
+```stan
 parameters {
   real<lower=0> y;
 }
@@ -408,7 +408,7 @@ model {
 The change-of-variables approach to sampling `y_inv` with an
 inverse gamma distribution can be coded as follows.
 
-```
+```stan
 parameters {
   real<lower=0> y_inv;
 }
@@ -440,7 +440,7 @@ determinant of the Jacobian of the transform must be added to the
 log probability accumulator.  In Stan, this can be coded as 
 follows in the general case where the Jacobian is not a full matrix.
 
-```
+```stan
 parameters {
   vector[K] u;      // multivariate parameter
    ...
@@ -470,7 +470,7 @@ triangular matrices, the determinant is the product of the diagonal
 elements, so the transformed parameters block of the above model can
 be simplified and made more efficient by recoding as follows.
 
-```
+```stan
 transformed parameters {
   ...
   vector[K] J_diag;  // diagonals of Jacobian matrix
@@ -496,7 +496,7 @@ For example, suppose there is a vector parameter $\alpha$ with a
 vector $L$ of lower bounds.  The simplest way to deal with this if $L$
 is a constant is to shift a lower-bounded parameter.
 
-```
+```stan
 data {
   int N;
   vector[N] L;  // lower bounds
@@ -520,7 +520,7 @@ a Jacobian derivative matrix with a unit determinant.
 It's also possible implement the transform by directly transforming
 an unconstrained parameter and accounting for the Jacobian.
 
-```
+```stan
 data {
   int N;
   vector[N] L;  // lower bounds
@@ -552,7 +552,7 @@ Suppose there are lower and upper bounds that vary by parameter.
 These can be applied to shift and rescale a parameter constrained to
 $(0, 1)$.
 
-```
+```stan
 data {
   int N;
   vector[N] L;  // lower bounds

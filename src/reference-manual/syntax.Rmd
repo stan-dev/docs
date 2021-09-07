@@ -14,22 +14,22 @@ In the following BNF grammars, tokens are represented in ALLCAPS.
 Grammar non-terminals are surrounded by `<` and `>`.
 A square brackets (`[A]`) indicates optionality of `A`.
 A postfixed Kleene star (`A*`) indicates zero or more occurrences
-of `A`. 
+of `A`.
 Parenthesis can be used to group symbols together in productions.
 
 Finally, this grammar uses the concept of "parameterized nonterminals"
-as used in the parsing library 
+as used in the parsing library
 [Menhir](http://gallium.inria.fr/~fpottier/menhir/manual.html#sec30).
 A rule like `<list(x)> ::= x (COMMA x)*` declares a generic list rule,
 which can later be applied to others by the symbol `<list(<expression>)>`.
 
 The following representation is constructed directly from the OCaml
-[reference 
+[reference
 parser](https://github.com/stan-dev/stanc3/blob/release/v2.27.0/src/frontend/parser.mly)
-using a tool called [Obelisk](https://github.com/Lelio-Brun/Obelisk). 
+using a tool called [Obelisk](https://github.com/Lelio-Brun/Obelisk).
 The raw output is available [here](grammar.txt).
 
-<!-- This is the direct output of `obelisk -i parser.mly` 
+<!-- This is the direct output of `obelisk -i parser.mly`
      copied and pasted into reasonable section distinctions.
      Additionally, items which exist only for error messaging
      were removed, like allowing FUNCTIONBLOCK as a decl identifier
@@ -82,6 +82,7 @@ The raw output is available [here](grammar.txt).
 
 <basic_type> ::= INT
                | REAL
+               | COMPLEX
                | VECTOR
                | ROWVECTOR
                | MATRIX
@@ -203,6 +204,7 @@ The raw output is available [here](grammar.txt).
 
 <common_expression> ::= INTNUMERAL
                       | REALNUMERAL
+		      | IMAGNUMERAL
                       | LBRACE <expression> (COMMA <expression>)* RBRACE
                       | LBRACK [<expression> (COMMA <expression>)*] RBRACK
                       | <identifier> LPAREN [<expression> (COMMA
@@ -243,7 +245,7 @@ The raw output is available [here](grammar.txt).
                  | RABRACK
                  | GEQ
 
-<indexes> ::= epsilon 
+<indexes> ::= epsilon
             | COLON
             | <expression>
             | <expression> COLON
@@ -313,12 +315,12 @@ The raw output is available [here](grammar.txt).
 ## Tokenizing rules
 
 Many of the tokens used in the BNF grammars follow obviously
-from their names: `DATABLOCK` is the literal string 'data', 
-`COMMA` is a single ',' character, etc. The literal representation 
+from their names: `DATABLOCK` is the literal string 'data',
+`COMMA` is a single ',' character, etc. The literal representation
 of each operator is additionally provided in the [operator
 precedence table](#operator-precedence-table).
 
-A few tokens are not so obvious, and are defined here in 
+A few tokens are not so obvious, and are defined here in
 regular expressions:
 
 ```
@@ -330,9 +332,11 @@ INTNUMERAL = [0-9]+ (_ [0-9]+)*
 
 EXPLITERAL = [eE] [+-]? INTNUMERAL
 
-REALNUMERAL = INTNUMERAL \. INTNUMERAL? EXPLITERAL? 
+REALNUMERAL = INTNUMERAL \. INTNUMERAL? EXPLITERAL?
             | \. INTNUMERAL EXPLITERAL?
             | INTNUMERAL EXPLITERAL
+
+IMAGNUMERAL = (REALNUMERAL | INTNUMERAL) i
 ```
 
 ## Extra-grammatical constraints

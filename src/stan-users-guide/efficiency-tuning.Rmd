@@ -201,11 +201,12 @@ then used as a covariance parameter in the model block.
 ```stan
 transformed parameters {
   cov_matrix[K] Sigma;
-  ...
+  // ...
 }                               // first validation
 model {
   y ~ multi_normal(mu, Sigma);  // second validation
-  ...
+  // ...
+}
 ```
 
 Because `Sigma` is declared to be a covariance matrix, it will be
@@ -221,9 +222,11 @@ unconstrained matrix.
 ```stan
 transformed parameters {
   matrix[K, K] Sigma;
-  ...
+  // ...
+}
 model {
   y ~ multi_normal(mu, Sigma);  // only validation
+}
 ```
 
 Now the only validation is carried out by the multivariate normal.
@@ -369,11 +372,11 @@ Consider a Stan program involving a Cauchy-distributed parameter
 ```stan
 parameters {
   real beta;
-  ...
+  // ...
 }
 model {
   beta ~ cauchy(mu, tau);
-  ...
+  // ...
 }
 ```
 
@@ -384,7 +387,7 @@ uniform-distributed parameter `beta_unif`.
 ```stan
 parameters {
   real<lower=-pi() / 2, upper=pi() / 2> beta_unif;
-  ...
+  // ...
 }
 transformed parameters {
   real beta;
@@ -392,7 +395,7 @@ transformed parameters {
 }
 model {
   beta_unif ~ uniform(-pi() / 2, pi() / 2);  // not necessary
-  ...
+  // ...
 }
 ```
 
@@ -474,10 +477,12 @@ To translate into Stan notation, this reparameterization replaces
 parameters {
   real<lower=0> nu;
   real beta;
-  ...
+  // ...
+}
 model {
   beta ~ student_t(nu, 0, 1);
-  ...
+  // ...
+}
 ```
 
 with
@@ -487,17 +492,20 @@ parameters {
   real<lower=0> nu;
   real<lower=0> tau;
   real alpha;
-  ...
+  // ...
+}
 transformed parameters {
   real beta;
   beta = alpha / sqrt(tau);
-  ...
+  // ...
+}
 model {
   real half_nu;
   half_nu = 0.5 * nu;
   tau ~ gamma(half_nu, half_nu);
   alpha ~ std_normal();
-  ...
+  // ...
+}
 ```
 
 Although set to `0` here, in most cases, the lower bound for the
@@ -525,10 +533,12 @@ parameters {
   real mu_beta;
   real<lower=0> sigma_beta;
   vector[K] beta;
-  ...
+  // ...
+}
 model {
   beta ~ normal(mu_beta, sigma_beta);
-  ...
+  // ...
+}
 ```
 
 Although not shown, a full model will have priors on both
@@ -566,14 +576,17 @@ necessary to achieve convergence.
 ```stan
 parameters {
   vector[K] beta_raw;
-  ...
+  // ...
+}
 transformed parameters {
   vector[K] beta;
   // implies: beta ~ normal(mu_beta, sigma_beta)
   beta = mu_beta + sigma_beta * beta_raw;
+}
 model {
   beta_raw ~ std_normal();
-  ...
+  // ...
+}
 ```
 
 Any priors defined for `mu_beta` and `sigma_beta` remain as
@@ -630,13 +643,16 @@ data {
   int<lower=2> K;
   vector[K] mu;
   cov_matrix[K] Sigma;
-  ...
+  // ...
+}
 parameters {
   vector[K] beta;
-  ...
+  // ...
+}
 model {
   beta ~ multi_normal(mu, Sigma);
-  ...
+  // ...
+}
 ```
 
 In this case `mu` and `Sigma` are fixed data, but they could
@@ -655,14 +671,16 @@ data {
   int<lower=2> K;
   vector[K] mu;
   cov_matrix[K] Sigma;
-  ...
+  // ...
+}
 transformed data {
   matrix[K, K] L;
   L = cholesky_decompose(Sigma);
 }
 parameters {
   vector[K] alpha;
-  ...
+  // ...
+}
 transformed parameters {
   vector[K] beta;
   beta = mu + L * alpha;
@@ -670,7 +688,8 @@ transformed parameters {
 model {
   alpha ~ std_normal();
   // implies: beta ~ multi_normal(mu, Sigma)
-  ...
+  // ...
+}
 ```
 
 This reparameterization is more efficient for two reasons. First, it
@@ -697,7 +716,8 @@ data {
   int<lower=2> K;
   vector[K] mu;
   corr_matrix[K] Tau;
-  ...
+  // ...
+}
 transformed data {
   matrix[K, K] L;
   L = cholesky_decompose(Tau);
@@ -705,7 +725,8 @@ transformed data {
 parameters {
   vector[K] alpha;
   vector<lower=0>[K] sigma;
-  ...
+  // ...
+}
 transformed parameters {
   vector[K] beta;
   // This equals mu + diag_matrix(sigma) * L * alpha;
@@ -716,7 +737,8 @@ model {
   alpha ~ std_normal();
   // implies: beta ~ multi_normal(mu,
   //  diag_matrix(sigma) * L * L' * diag_matrix(sigma)))
-  ...
+  // ...
+}
 ```
 
 This reparameterization of a multivariate normal distribution in
@@ -751,11 +773,13 @@ data {
   matrix[K, K] L; // Cholesky factor of scale matrix
   vector[K] mu;
   matrix[N, K] y;
-  ...
+  // ...
+}
 parameters {
   vector<lower=0>[K] c;
   vector[0.5 * K * (K - 1)] z;
-  ...
+  // ...
+}
 model {
   matrix[K, K] A;
   int count = 1;
@@ -781,7 +805,8 @@ model {
   z ~ std_normal();
   // implies: L * A * A' * L' ~ wishart(nu, L * L')
   y ~ multi_normal_cholesky(mu, L * A);
-  ...
+  // ...
+}
 ```
 
 This reparameterization is more efficient for three reasons. First, it
@@ -807,7 +832,8 @@ data {
   int<lower=1> K;
   int<lower=K + 2> nu
   matrix[K, K] L; // Cholesky factor of scale matrix
-  ...
+  // ...
+}
 transformed data {
   matrix[K, K] eye;
   matrix[K, K] L_inv;
@@ -822,7 +848,8 @@ transformed data {
 parameters {
   vector<lower=0>[K] c;
   vector[0.5 * K * (K - 1)] z;
-  ...
+  // ...
+}
 model {
   matrix[K, K] A;
   matrix[K, K] A_inv_L_inv;
@@ -850,7 +877,8 @@ model {
 
   z ~ std_normal(); // implies: crossprod(A_inv_L_inv) ~
   // inv_wishart(nu, L_inv' * L_inv)
-  ...
+  // ...
+}
 ```
 
 Another candidate for reparameterization is the Dirichlet distribution
@@ -865,10 +893,12 @@ make $\rho$ be a transformed parameter to reduce dependence, as in:
 ```stan
 data {
   int<lower=1> beta;
-  ...
+  // ...
+}
 parameters {
   array[K] vector[beta] z;
-  ...
+  // ...
+}
 transformed parameters {
   simplex[K] rho;
   for (k in 1:K) {
@@ -881,7 +911,8 @@ model {
     z[k] ~ std_normal();
   }
   // implies: rho ~ dirichlet(0.5 * beta * ones)
-  ...
+  // ...
+}
 ```
 
 
@@ -1004,7 +1035,7 @@ reordering the product and pulling the transposition out of the loop,
 as follows.
 
 ```stan
-...
+// ...
 transformed parameters {
   row_vector[K] beta_t;
   beta_t = beta';
@@ -1022,9 +1053,9 @@ following example.
 
 ```stan
 data {
-  ...
+  // ...
   array[N] row_vector[K] x;
-  ...
+  // ...
 }
 parameters {
   vector[K] beta;
@@ -1132,7 +1163,7 @@ declarations.  For instance, with 5 levels, we have
 
 ```stan
 y_1 ~ normal(mu[1], sigma);
-...
+// ...
 y_5 ~ normal(mu[5], sigma);
 ```
 

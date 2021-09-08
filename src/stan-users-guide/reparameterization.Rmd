@@ -48,14 +48,16 @@ parameters are themselves drawn from a hyperprior distribution.
 parameters {
   real<lower=0> alpha;
   real<lower=0> beta;
-  ...
+  // ...
+}
 model {
   alpha ~ ...
   beta ~ ...
   for (n in 1:N) {
     theta[n] ~ beta(alpha, beta);
   }
-  ...
+  // ...
+}
 ```
 
 It is often more natural to specify hyperpriors in terms of
@@ -76,18 +78,21 @@ $p(\lambda) \propto \lambda^{-2.5}$.
 parameters {
   real<lower=0, upper=1> phi;
   real<lower=0.1> lambda;
-  ...
+  // ...
+}
 transformed parameters {
   real<lower=0> alpha = lambda * phi;
   real<lower=0> beta = lambda * (1 - phi);
-  ...
+  // ...
+}
 model {
   phi ~ beta(1, 1); // uniform on phi, could drop
   lambda ~ pareto(0.1, 1.5);
   for (n in 1:N) {
     theta[n] ~ beta(alpha, beta);
   }
-  ...
+  // ...
+}
 ```
 
 The new parameters, `phi` and `lambda`, are declared in the
@@ -101,11 +106,11 @@ follows.
 model {
   real alpha = lambda * phi
   real beta = lambda * (1 - phi);
-...
+  // ...
   for (n in 1:N) {
     theta[n] ~ beta(alpha, beta);
   }
-...
+  // ...
 }
 ```
 
@@ -114,7 +119,7 @@ efficiently as follows.
 ```stan
 model {
   theta ~ beta(lambda * phi, lambda * (1 - phi));
-...
+  // ...
 }
 ```
 
@@ -141,9 +146,10 @@ reduces to the beta distribution case).  The traditional prior is
 parameters {
   vector[K] alpha;
   array[N] simplex[K] theta;
-  ...
+  // ...
+}
 model {
-  alpha ~ ...;
+  alpha ~ // ...
   for (n in 1:N) {
     theta[n] ~ dirichlet(alpha);
   }
@@ -162,17 +168,20 @@ parameters {
   simplex[K] phi;
   real<lower=0> kappa;
   array[N] simplex[K] theta;
-  ...
+  // ...
+}
 transformed parameters {
   vector[K] alpha = kappa * phi;
-  ...
+  // ...
 }
 model {
-  phi ~ ...;
-  kappa ~ ...;
+  phi ~ // ...
+  kappa ~ // ...
   for (n in 1:N) {
     theta[n] ~ dirichlet(alpha);
   }
+  // ...
+}
 ```
 
 Now it is much easier to formulate priors, because `phi` is the
@@ -204,12 +213,14 @@ a distribution (here using `foo` as a placeholder).
 ```stan
 parameters {
   real<lower=0, upper=1> theta;
-...
+  // ...
+}
 model {
   theta ~ beta(a, b);
-  ...
+  // ...
   y ~ foo(theta);
-...
+  // ...
+}
 ```
 
 If the variables `a` and `b` are one, then this imposes
@@ -224,15 +235,18 @@ are probit or inverse-logit-transformed.  For example,
 ```stan
 parameters {
   real theta_raw;
-...
+  // ...
+}
 transformed parameters {
   real<lower=0, upper=1> theta = inv_logit(theta_raw);
-...
+  // ...
+}
 model {
   theta_raw ~ logistic(mu, sigma);
-  ...
+  // ...
   y ~ foo(theta);
-...
+  // ...
+}
 ```
 
 In this model, an unconstrained parameter `theta_raw` gets a
@@ -252,11 +266,13 @@ simplex parameter with a Dirichlet prior.
 ```stan
 parameters {
   simplex[K] theta;
-...
+  // ...
+}
 model {
   theta ~ dirichlet(a);
-  ...
+  // ...
   y ~ foo(theta);
+}
 ```
 
 Now `a` is a vector with `K` rows, but it has the same shape
@@ -268,12 +284,15 @@ unconstrained prior, the exact same strategy works as for the beta.
 ```stan
 parameters {
   vector[K] theta_raw;
-...
+  // ...
+}
 transformed parameters {
   simplex[K] theta = softmax(theta_raw);
-...
+  // ...
+}
 model {
   theta_raw ~ multi_normal_cholesky(mu, L_Sigma);
+}
 ```
 
 The multivariate normal is used for convenience and efficiency with
@@ -334,11 +353,13 @@ directly in Stan as follows.^[This example is for illustrative purposes only; th
 ```stan
 parameters {
   real<lower=0> y;
-  ...
+  // ...
+}
 model {
   log(y) ~ normal(mu, sigma);
   target += -log(y);
-  ...
+  // ...
+}
 ```
 
 It is important, as always, to declare appropriate constraints on
@@ -353,7 +374,8 @@ model {
   log_y = log(y);
   log_y ~ normal(mu, sigma);
   target += -log_y;
-  ...
+  // ...
+}
 ```
 
 
@@ -443,17 +465,20 @@ follows in the general case where the Jacobian is not a full matrix.
 ```stan
 parameters {
   vector[K] u;      // multivariate parameter
-   ...
+   // ...
+}
 transformed parameters {
   vector[K] v;     // transformed parameter
   matrix[K, K] J;   // Jacobian matrix of transform
-  ... compute v as a function of u ...
-  ... compute J[m, n] = d.v[m] / d.u[n] ...
+  // ... compute v as a function of u ...
+  // ... compute J[m, n] = d.v[m] / d.u[n] ...
   target += log(fabs(determinant(J)));
-  ...
+  // ...
+}
 model {
-  v ~ ...;
-  ...
+  v ~ // ...
+  // ...
+}
 ```
 
 If the determinant of the Jacobian is known analytically, it will be 
@@ -472,12 +497,13 @@ be simplified and made more efficient by recoding as follows.
 
 ```stan
 transformed parameters {
-  ...
+  // ...
   vector[K] J_diag;  // diagonals of Jacobian matrix
-  ...
-  ... compute J[k, k] = d.v[k] / d.u[k] ...
+  // ...
+  // ... compute J[k, k] = d.v[k] / d.u[k] ...
   target += sum(log(J_diag));
-  ...
+  // ...
+}
 ```
 
 
@@ -500,13 +526,16 @@ is a constant is to shift a lower-bounded parameter.
 data {
   int N;
   vector[N] L;  // lower bounds
-  ...
+  // ...
+}
 parameters {
   vector<lower=0>[N] alpha_raw;
-  ...
+  // ...
+}
 transformed parameters {
   vector[N] alpha = L + alpha_raw;
-  ...
+  // ...
+}
 ```
 
 The Jacobian for adding a constant is one, so its log drops out of the
@@ -524,16 +553,20 @@ an unconstrained parameter and accounting for the Jacobian.
 data {
   int N;
   vector[N] L;  // lower bounds
-  ...
+  // ...
+}
 parameters {
   vector[N] alpha_raw;
-  ...
+  // ...
+}
 transformed parameters {
   vector[N] alpha = L + exp(alpha_raw);
-  ...
+  // ...
+}
 model {
   target += sum(alpha_raw);  // log Jacobian
-  ...
+  // ...
+}
 ```
 
 The adjustment in the log Jacobian determinant of the transform
@@ -557,12 +590,15 @@ data {
   int N;
   vector[N] L;  // lower bounds
   vector[N] U;  // upper bounds
-  ...
+  // ...
+}
 parameters {
   vector<lower=0, upper=1>[N] alpha_raw;
-  ...
+  // ...
+}
 transformed parameters {
   vector[N] alpha = L + (U - L) .* alpha_raw;
+}
 ```
 
 The expression `U - L` is multiplied by `alpha_raw`

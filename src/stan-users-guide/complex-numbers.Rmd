@@ -22,8 +22,8 @@ function may be used.  For example, the following code will work if
 function or model block.
 
 ```stan
-real x = ...;
-real y = ...;
+real x = // ...
+real y = // ...
 complex z = to_complex(x, y);
 ```
 
@@ -65,10 +65,11 @@ curly bracket constructors.
 
 ```stan
 complex z1;  complex z2;  complex z3;
-...
+// ...
 array[3] complex zs = { z1, z2, z3 };
-for (z in zs)
+for (z in zs) {
   print(z);
+}
 ```
 
 Complex arrays allow assignment into their elements, with integer or
@@ -110,7 +111,7 @@ can be expressed as follows.
 complex z;
 vector[2] mu;
 cholesky_cov[2] L_Sigma;
-...
+// ...
 [to_real(z), to_imag(z)]' ~ multi_normal_cholesky(mu, L_Sigma);
 ```
 
@@ -141,7 +142,7 @@ parameters {
 model {
   for (n in 1:N) {
     complex eps_n = y[n] - (alpha + beta * x[n]);  // error
-    eps_n ~ ...error distribution...;
+    eps_n ~ // ...error distribution...
   }
 }
 ```
@@ -160,15 +161,15 @@ independent normal distributions, as follows.
 
 ```stan
 parameters {
-  ...
+  // ...
   vector[2] sigma;
 }
-...
+// ...
 model {
-  ...
+  // ...
   to_real(eps_n) ~ normal(0, sigma[1]);
   to_imag(eps_n) ~ normal(0, sigma[2]);
-  sigma ~ ...hyperprior...
+  sigma ~ //...hyperprior...
 }
 ```
 
@@ -187,14 +188,15 @@ working with a multivariate covariance matrix, as we do here.
 parameters {
   cholesky_factor_corr[2] L_Omega;  // correlation matrix
   vector[2] sigma;           // real, imag error scales
-  ...
+  // ...
 }
-...
+// ...
 model {
   eps_n ~ multi_normal_cholesky([0, 0]',
                                 diag_pre_multiply(sigma, L_Omega));
   L_Omega ~ lkj_cholesky(4);  // shrink toward diagonal correlation
-  sigma ~ ... hyperprior ...
+  sigma ~ // ... hyperprior ...
+}
 ```
 
 Here, the real and imaginary components of the error get a joint

@@ -294,13 +294,16 @@ To implement sum-to-zero constraints,
 ```stan
 parameters {
   vector[K - 1] alpha_raw;
-...
+// ...
+}
 transformed parameters {
   vector<multiplier=sigma_alpha>[K] alpha
     = append_row(alpha_raw, -sum(alpha_raw));
-...    
+// ...    
+}
 model {
   alpha ~ normal(0, sigma_alpha);
+}
 ```
 This prior is hard to interpret in that there are `K` normal
 distributions, but only `K - 1` free parameters.  An alternative is to
@@ -312,10 +315,12 @@ simpler to implement.
 ```stan
 parameters {
   vector<multiplier=alpha>[K] alpha;
-...
+// ...
+}
 model {
   alpha ~ normal(0, sigma_alpha);
   sum(alpha) ~ normal(0, 0.001);
+}
 ```
 This leaves the regular prior, but adds a second prior that
 concentrates the sum near zero.  The scale of the second prior will
@@ -349,7 +354,7 @@ transform is used on each of the parameters.  The combination of
 
 ```stan
 vector<multiplier=s>[K] a;
-...
+// ...
 a ~ normal(0, s);
 ```
 implements a non-centered parameterization for `a`; a centered

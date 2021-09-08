@@ -236,7 +236,7 @@ kind of each variable next to its declaration.
 ```stan
 data {
   int<lower=0> N;           // unmodeled data
-  real y[N];                // modeled data
+  array[N] real y;          // modeled data
   real mu_mu;               // config. unmodeled param
   real<lower=0> sigma_mu;   // config. unmodeled param
 }
@@ -257,8 +257,9 @@ transformed parameters {
 model {
   tau_y ~ gamma(alpha, beta);
   mu_y ~ normal(mu_mu, sigma_mu);
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ normal(mu_y, sigma_y);
+  }
 }
 generated quantities {
   real variance_y;       // derived quantity (transform)

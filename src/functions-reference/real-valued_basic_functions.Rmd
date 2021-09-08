@@ -47,17 +47,17 @@ When applied to a simple real value, the result is a real value.  When
 applied to arrays, vectorized functions like `exp()` are defined
 elementwise.  For example,
 
-```
+```stan
  // declare some variables for arguments
  real x0;
- real x1[5];
- real x2[4, 7];
- ...
+ array[5] real x1;
+ array[4, 7] real x2;
+ // ...
  // declare some variables for results
  real y0;
- real y1[5];
- real y2[4, 7];
- ...
+ array[5] real y1;
+ array[4, 7] real y2;
+ // ...
  // calculate and assign results
  y0 = exp(x0);
  y1 = exp(x1);
@@ -67,16 +67,18 @@ elementwise.  For example,
 When `exp` is applied to an array, it applies elementwise.  For
 example, the statement above,
 
-```
+```stan
  y2 = exp(x2);
 ```
 
 produces the same result for `y2` as the explicit loop
 
-```
- for (i in 1:4)
-   for (j in 1:7)
-     y2[i, j] = exp(x2[i, j]);
+```stan
+for (i in 1:4) {
+  for (j in 1:7) {
+    y2[i, j] = exp(x2[i, j]);
+  }
+}
 ```
 
 #### Vector and matrix arguments
@@ -84,7 +86,7 @@ produces the same result for `y2` as the explicit loop
 Vectorized functions also apply elementwise to vectors and matrices.
 For example,
 
-```
+```stan
  vector[5] xv;
  row_vector[7] xrv;
  matrix[10, 20] xm;
@@ -100,10 +102,10 @@ For example,
 
 Arrays of vectors and matrices work the same way.  For example,
 
-```
- matrix[17, 93] u[12];
+```stan
+ array[12] matrix[17, 93] u;
  
- matrix[17, 93] z[12];
+ array[12] matrix[17, 93] z;
  
  z = exp(u);
 ```
@@ -119,9 +121,9 @@ Arrays work the same way, so that if `n2` is a one dimensional array
 of integers, then `exp(n2)` will be a one-dimensional array of reals
 with the same number of elements as `n2`.  For example,
 
-```
- int n1[23];
- real z1[23];
+```stan
+ array[23] int n1;
+ array[23] real z1;
  z1 = exp(n1);
 ```
 
@@ -140,20 +142,20 @@ When applied to two scalar values, the result is a scalar value.  When
 applied to two arrays, or combination of a scalar value and an array,
 vectorized functions like `pow()` are defined elementwise.  For example,
 
-```
+```stan
  // declare some variables for arguments
  real x00;
  real x01;
- real x10[5];
- real x11[5];
- real x20[4, 7];
- real x21[4, 7];
- ...
+ array[5] real x10;
+ array[5]real x11;
+ array[4, 7] real x20;
+ array[4, 7] real x21;
+ // ...
  // declare some variables for results
  real y0;
- real y1[5];
- real y2[4, 7];
- ...
+ array[5] real y1;
+ array[4, 7] real y2;
+ // ...
  // calculate and assign results
  y0 = pow(x00, x01);
  y1 = pow(x10, x11);
@@ -163,30 +165,34 @@ vectorized functions like `pow()` are defined elementwise.  For example,
 When `pow` is applied to two arrays, it applies elementwise.  For
 example, the statement above,
 
-```
+```stan
  y2 = pow(x20, x21);
 ```
 
 produces the same result for `y2` as the explicit loop
 
-```
- for (i in 1:4)
-   for (j in 1:7)
-     y2[i, j] = pow(x20[i, j], x21[i, j]);
+```stan
+for (i in 1:4) {
+  for (j in 1:7) {
+    y2[i, j] = pow(x20[i, j], x21[i, j]);
+  }
+}
 ```
 
 Alternatively, if a combination of an array and a scalar are
 provided, the scalar value is broadcast to be applied to each
 value of the array. For example, the following statement:
-```
+```stan
 y2 = pow(x20, x00);
 ```
 
 produces the same result for `y2` as the explicit loop:
-```
- for (i in 1:4)
-   for (j in 1:7)
-     y2[i, j] = pow(x20[i, j], x00);
+```stan
+for (i in 1:4) {
+  for (j in 1:7) {
+    y2[i, j] = pow(x20[i, j], x00);
+  }
+}
 ```
 
 #### Vector and matrix arguments
@@ -195,7 +201,7 @@ Vectorized binary functions also apply elementwise to vectors and matrices,
 and to combinations of these with scalar values.
 For example,
 
-```
+```stan
  real x00;
  vector[5] xv00;
  vector[5] xv01;
@@ -213,10 +219,10 @@ For example,
 
 Arrays of vectors and matrices work the same way.  For example,
 
-```
- matrix[17, 93] u[12];
+```stan
+ array[12] matrix[17, 93] u;
  
- matrix[17, 93] z[12];
+ array[12] matrix[17, 93] z;
  
  z = pow(u, x00);
 ```
@@ -229,7 +235,7 @@ j, k], x00)`.
 Vectorised binary functions require that both inputs, unless one is a real,
 be containers of the same type and size. For example, the following statements
 are legal:
-```
+```stan
  vector[5] xv;
  row_vector[7] xrv;
  matrix[10, 20] xm;
@@ -240,7 +246,7 @@ are legal:
 ```
 
 But the following statements are not:
-```
+```stan
  vector[5] xv;
  vector[7] xv2;
  row_vector[5] xrv;
@@ -259,21 +265,21 @@ functions, one argument can be a container of any type while the other can be
 an integer array, as long as the dimensions of both are the same. For example,
 the following statements are legal:
 
-```
+```stan
  vector[5] xv;
  matrix[5, 5] xm;
- int xi[5];
- int xii[5, 5];
+ array[5] int xi;
+ array[5, 5] int xii;
  
  vector[5] yv = bessel_first_kind(xi, xv);
  matrix[5, 5] ym = bessel_first_kind(xii, xm);
 ```
 
 Whereas these are not:
-```
+```stan
  vector[5] xv;
  matrix[5, 5] xm;
- int xi[7];
+ array[7] int xi;
 
  // Dimensions of containers do not match
  vector[5] yv = bessel_first_kind(xi, xv);
@@ -463,13 +469,13 @@ Return 1 if x is greater than or equal to y and 0 otherwise. \[
 \text{otherwise} \end{cases} \]
 
 <!-- int; operator==; (int x, int y); -->
-\index{{\tt \bfseries operator\_logial\_equal }!{\tt (int x, int y): int}|hyperpage}
+\index{{\tt \bfseries operator\_logical\_equal }!{\tt (int x, int y): int}|hyperpage}
 
 `int` **`operator==`**`(int x, int y)`<br>\newline
 
 
 <!-- int; operator==; (real x, real y); -->
-\index{{\tt \bfseries operator\_logial\_equal }!{\tt (real x, real y): int}|hyperpage}
+\index{{\tt \bfseries operator\_logical\_equal }!{\tt (real x, real y): int}|hyperpage}
 
 `int` **`operator==`**`(real x, real y)`<br>\newline
 Return 1 if x is equal to y and 0 otherwise. \[ \text{operator==}(x,y)
@@ -864,6 +870,8 @@ length x and y. \[ \text{hypot}(x,y) = \begin{cases} \sqrt{x^2+y^2} &
 
 `R` **`hypot`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `hypot` function
+
+
 <!-- R; cos; (T x); -->
 \index{{\tt \bfseries cos }!{\tt (T x): R}|hyperpage}
 
@@ -899,7 +907,7 @@ principal arc (inverse) sine (in radians) of x
 
 `R` **`atan`**`(T x)`<br>\newline
 principal arc (inverse) tangent (in radians) of x, with values from
-$-\pi$ to $\pi$
+$-\pi/2$ to $\pi/2$
 
 <!-- real; atan2; (real y, real x); -->
 \index{{\tt \bfseries atan2 }!{\tt (real y, real x): real}|hyperpage}
@@ -1001,8 +1009,9 @@ standard normal cumulative distribution function of x
 \index{{\tt \bfseries inv\_phi }!{\tt (T x): R}|hyperpage}
 
 `R` **`inv_Phi`**`(T x)`<br>\newline
-standard normal inverse cumulative distribution function of p,
-otherwise known as the quantile function
+Return the value of the inverse standard normal cdf $\Phi^{-1}$ at the
+specified quantile `x`. The details of the algorithm can be found in [@Wichura:1988].
+Quantile arguments below 1e-16 are untested; quantiles above 0.999999999 result in increasingly large errors.
 
 <!-- R; Phi_approx; (T x); -->
 \index{{\tt \bfseries phi\_approx }!{\tt (T x): R}|hyperpage}

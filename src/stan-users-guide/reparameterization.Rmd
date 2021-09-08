@@ -44,17 +44,20 @@ illustrates a hierarchical Stan model with a vector of parameters
 `theta` are drawn i.i.d.\ for a Beta distribution whose
 parameters are themselves drawn from a hyperprior distribution.
 
-```
+```stan
 parameters {
-  real<lower = 0> alpha;
-  real<lower = 0> beta;
-  ...
+  real<lower=0> alpha;
+  real<lower=0> beta;
+  // ...
+}
 model {
   alpha ~ ...
   beta ~ ...
-  for (n in 1:N)
+  for (n in 1:N) {
     theta[n] ~ beta(alpha, beta);
-  ...
+  }
+  // ...
+}
 ```
 
 It is often more natural to specify hyperpriors in terms of
@@ -71,21 +74,25 @@ Following @[GelmanEtAl:2013, Chapter 5] the mean
 gets a uniform prior and the count parameter a Pareto prior with
 $p(\lambda) \propto \lambda^{-2.5}$.
 
-```
+```stan
 parameters {
-  real<lower=0,upper=1> phi;
+  real<lower=0, upper=1> phi;
   real<lower=0.1> lambda;
-  ...
+  // ...
+}
 transformed parameters {
   real<lower=0> alpha = lambda * phi;
   real<lower=0> beta = lambda * (1 - phi);
-  ...
+  // ...
+}
 model {
   phi ~ beta(1, 1); // uniform on phi, could drop
   lambda ~ pareto(0.1, 1.5);
-  for (n in 1:N)
+  for (n in 1:N) {
     theta[n] ~ beta(alpha, beta);
-  ...
+  }
+  // ...
+}
 ```
 
 The new parameters, `phi` and `lambda`, are declared in the
@@ -95,23 +102,24 @@ transformed parameters block.  And If their values are not of interest,
 they could instead be defined as local variables in the model as
 follows.
 
-```
+```stan
 model {
   real alpha = lambda * phi
   real beta = lambda * (1 - phi);
-...
-  for (n in 1:N)
+  // ...
+  for (n in 1:N) {
     theta[n] ~ beta(alpha, beta);
-...
+  }
+  // ...
 }
 ```
 
 With vectorization, this could be expressed more compactly and
 efficiently as follows.
-```
+```stan
 model {
   theta ~ beta(lambda * phi, lambda * (1 - phi));
-...
+  // ...
 }
 ```
 
@@ -134,15 +142,17 @@ the Beta, which is a probability value, with a simplex.  Assume there
 are $K > 0$ dimensions being considered ($K=1$ is trivial and $K=2$
 reduces to the beta distribution case).  The traditional prior is
 
-```
+```stan
 parameters {
   vector[K] alpha;
-  simplex[K] theta[N];
-  ...
+  array[N] simplex[K] theta;
+  // ...
+}
 model {
-  alpha ~ ...;
-  for (n in 1:N)
+  alpha ~ // ...
+  for (n in 1:N) {
     theta[n] ~ dirichlet(alpha);
+  }
 }
 ```
 
@@ -153,21 +163,25 @@ reasonable prior for `alpha`.
 An alternative coding is to use the mean, which is a simplex, and a
 total count.
 
-```
+```stan
 parameters {
   simplex[K] phi;
   real<lower=0> kappa;
-  simplex[K] theta[N];
-  ...
+  array[N] simplex[K] theta;
+  // ...
+}
 transformed parameters {
   vector[K] alpha = kappa * phi;
-  ...
+  // ...
 }
 model {
-  phi ~ ...;
-  kappa ~ ...;
-  for (n in 1:N)
+  phi ~ // ...
+  kappa ~ // ...
+  for (n in 1:N) {
     theta[n] ~ dirichlet(alpha);
+  }
+  // ...
+}
 ```
 
 Now it is much easier to formulate priors, because `phi` is the
@@ -196,15 +210,17 @@ program fragment declares a $(0, 1)$-constrained parameter
 `theta` and gives it a beta prior, then uses it as a parameter in
 a distribution (here using `foo` as a placeholder).
 
-```
+```stan
 parameters {
-  real<lower = 0, upper = 1> theta;
-...
+  real<lower=0, upper=1> theta;
+  // ...
+}
 model {
   theta ~ beta(a, b);
-  ...
+  // ...
   y ~ foo(theta);
-...
+  // ...
+}
 ```
 
 If the variables `a` and `b` are one, then this imposes
@@ -216,18 +232,21 @@ has an inverted-U or more bell-like shape.
 Roughly the same result can be achieved with unbounded parameters that
 are probit or inverse-logit-transformed.  For example,
 
-```
+```stan
 parameters {
   real theta_raw;
-...
+  // ...
+}
 transformed parameters {
-  real<lower = 0, upper = 1> theta = inv_logit(theta_raw);
-...
+  real<lower=0, upper=1> theta = inv_logit(theta_raw);
+  // ...
+}
 model {
   theta_raw ~ logistic(mu, sigma);
-  ...
+  // ...
   y ~ foo(theta);
-...
+  // ...
+}
 ```
 
 In this model, an unconstrained parameter `theta_raw` gets a
@@ -244,14 +263,16 @@ may be performed using the softmax function, which is a multinomial
 generalization of the inverse logit function.  First, consider a
 simplex parameter with a Dirichlet prior.
 
-```
+```stan
 parameters {
   simplex[K] theta;
-...
+  // ...
+}
 model {
   theta ~ dirichlet(a);
-  ...
+  // ...
   y ~ foo(theta);
+}
 ```
 
 Now `a` is a vector with `K` rows, but it has the same shape
@@ -260,15 +281,18 @@ distribution is just the distribution of the first component of a
 Dirichlet with parameter vector $[a b]^{\top}$.  To formulate an
 unconstrained prior, the exact same strategy works as for the beta.
 
-```
+```stan
 parameters {
   vector[K] theta_raw;
-...
+  // ...
+}
 transformed parameters {
   simplex[K] theta = softmax(theta_raw);
-...
+  // ...
+}
 model {
   theta_raw ~ multi_normal_cholesky(mu, L_Sigma);
+}
 ```
 
 The multivariate normal is used for convenience and efficiency with
@@ -279,7 +303,7 @@ parameters in the prior rather than order $K$.  If no covariance is
 desired, the number of parameters can be reduced back to $K$ using a
 vectorized normal distribution as follows.
 
-```
+```stan
 theta_raw ~ normal(mu, sigma);
 ```
 
@@ -326,14 +350,16 @@ accumulator is incremented with the log absolute derivative of the
 transform.  The lognormal distribution can thus be implemented
 directly in Stan as follows.^[This example is for illustrative purposes only; the recommended way to implement the lognormal distribution in Stan is with the built-in `lognormal` probability function; see the functions reference manual for details.]
 
-```
+```stan
 parameters {
   real<lower=0> y;
-  ...
+  // ...
+}
 model {
   log(y) ~ normal(mu, sigma);
   target += -log(y);
-  ...
+  // ...
+}
 ```
 
 It is important, as always, to declare appropriate constraints on
@@ -342,13 +368,14 @@ parameters;  here `y` is constrained to be positive.
 It would be slightly more efficient to define a local variable for the
 logarithm, as follows.
 
-```
+```stan
 model {
   real log_y;
   log_y = log(y);
   log_y ~ normal(mu, sigma);
   target += -log_y;
-  ...
+  // ...
+}
 ```
 
 
@@ -367,13 +394,13 @@ Jacobian adjustment.
 It does not matter whether the probability function is
 expressed using a sampling statement, such as
 
-```
+```stan
 log(y) ~ normal(mu, sigma);
 ```
 
 or as an increment to the log probability function, as in
 
-```
+```stan
 target += normal_lpdf(log(y) | mu, sigma);
 ```
 
@@ -387,7 +414,7 @@ of variables.
 The transform based approach to sampling `y_inv` with an inverse
 gamma distribution can be coded as follows.
 
-```
+```stan
 parameters {
   real<lower=0> y;
 }
@@ -403,7 +430,7 @@ model {
 The change-of-variables approach to sampling `y_inv` with an
 inverse gamma distribution can be coded as follows.
 
-```
+```stan
 parameters {
   real<lower=0> y_inv;
 }
@@ -435,20 +462,23 @@ determinant of the Jacobian of the transform must be added to the
 log probability accumulator.  In Stan, this can be coded as 
 follows in the general case where the Jacobian is not a full matrix.
 
-```
+```stan
 parameters {
   vector[K] u;      // multivariate parameter
-   ...
+   // ...
+}
 transformed parameters {
   vector[K] v;     // transformed parameter
   matrix[K, K] J;   // Jacobian matrix of transform
-  ... compute v as a function of u ...
-  ... compute J[m, n] = d.v[m] / d.u[n] ...
+  // ... compute v as a function of u ...
+  // ... compute J[m, n] = d.v[m] / d.u[n] ...
   target += log(fabs(determinant(J)));
-  ...
+  // ...
+}
 model {
-  v ~ ...;
-  ...
+  v ~ // ...
+  // ...
+}
 ```
 
 If the determinant of the Jacobian is known analytically, it will be 
@@ -465,14 +495,15 @@ triangular matrices, the determinant is the product of the diagonal
 elements, so the transformed parameters block of the above model can
 be simplified and made more efficient by recoding as follows.
 
-```
+```stan
 transformed parameters {
-  ...
+  // ...
   vector[K] J_diag;  // diagonals of Jacobian matrix
-  ...
-  ... compute J[k, k] = d.v[k] / d.u[k] ...
+  // ...
+  // ... compute J[k, k] = d.v[k] / d.u[k] ...
   target += sum(log(J_diag));
-  ...
+  // ...
+}
 ```
 
 
@@ -491,17 +522,20 @@ For example, suppose there is a vector parameter $\alpha$ with a
 vector $L$ of lower bounds.  The simplest way to deal with this if $L$
 is a constant is to shift a lower-bounded parameter.
 
-```
+```stan
 data {
   int N;
   vector[N] L;  // lower bounds
-  ...
+  // ...
+}
 parameters {
   vector<lower=0>[N] alpha_raw;
-  ...
+  // ...
+}
 transformed parameters {
   vector[N] alpha = L + alpha_raw;
-  ...
+  // ...
+}
 ```
 
 The Jacobian for adding a constant is one, so its log drops out of the
@@ -515,20 +549,24 @@ a Jacobian derivative matrix with a unit determinant.
 It's also possible implement the transform by directly transforming
 an unconstrained parameter and accounting for the Jacobian.
 
-```
+```stan
 data {
   int N;
   vector[N] L;  // lower bounds
-  ...
+  // ...
+}
 parameters {
   vector[N] alpha_raw;
-  ...
+  // ...
+}
 transformed parameters {
   vector[N] alpha = L + exp(alpha_raw);
-  ...
+  // ...
+}
 model {
   target += sum(alpha_raw);  // log Jacobian
-  ...
+  // ...
+}
 ```
 
 The adjustment in the log Jacobian determinant of the transform
@@ -547,17 +585,20 @@ Suppose there are lower and upper bounds that vary by parameter.
 These can be applied to shift and rescale a parameter constrained to
 $(0, 1)$.
 
-```
+```stan
 data {
   int N;
   vector[N] L;  // lower bounds
   vector[N] U;  // upper bounds
-  ...
+  // ...
+}
 parameters {
   vector<lower=0, upper=1>[N] alpha_raw;
-  ...
+  // ...
+}
 transformed parameters {
   vector[N] alpha = L + (U - L) .* alpha_raw;
+}
 ```
 
 The expression `U - L` is multiplied by `alpha_raw`

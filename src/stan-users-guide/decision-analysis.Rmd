@@ -151,23 +151,23 @@ easily coded in Stan.  The utility function is coded as a function,
 the observed data is coded as data, the model parameters coded as
 parameters, and the model block itself coded to follow the sampling
 distributions of each parameter.
-```
+```stan
 functions {
   real U(real c, real t) {
     return -(c + 25 * t);
   }
 }
 data {
-  int<lower = 0> N;
-  int<lower = 1, upper = 4> d[N];
-  real c[N];
-  real<lower = 0> t[N];
+  int<lower=0> N;
+  array[N] int<lower=1, upper=4> d;
+  array[N] real c;
+  array[N] real<lower=0> t;
 }
 parameters {
   vector[4] mu;
-  vector<lower = 0>[4] sigma;
-  real nu[4];
-  real<lower = 0> tau[4];
+  vector<lower=0>[4] sigma;
+  array[4] real nu;
+  array[4] real<lower=0> tau;
 }
 model {
   mu ~ normal(0, 1);
@@ -178,10 +178,11 @@ model {
   c ~ lognormal(nu[d], tau[d]);	
 }
 generated quantities {
-   real util[4];
-   for (k in 1:4)
-     util[k] = U(lognormal_rng(mu[k], sigma[k]),
-                 lognormal_rng(nu[k], tau[k]));
+  array[4] real util;
+  for (k in 1:4) {
+    util[k] = U(lognormal_rng(mu[k], sigma[k]),
+                lognormal_rng(nu[k], tau[k]));
+  }
 }
 ```
 

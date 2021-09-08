@@ -22,13 +22,13 @@ cat(' * <a href="vectorization.html">Vectorization</a>\n')
 The suffix is determined by the type of function according to the
 following table.
 
-| function   | outcome  | suffix  |
-|:---------|:--------|:------|
-| log probability mass function  | discrete | `_lpmf` |
-| log probability density function | continuous | `_lpdf` |
-| log cumulative distribution function | any | `_lcdf` |
-| log complementary cumulative distribution function | any | `_lccdf`
-| random number generator | any | `_rng` |
+| function                                           | outcome    | suffix   |
+| :------------------------------------------------- | :--------- | :------- |
+| log probability mass function                      | discrete   | `_lpmf`  |
+| log probability density function                   | continuous | `_lpdf`  |
+| log cumulative distribution function               | any        | `_lcdf`  |
+| log complementary cumulative distribution function | any        | `_lccdf` |
+| random number generator                            | any        | `_rng`   |
 For example, `normal_lpdf` is the log of the normal probability
 density function (pdf) and `bernoulli_lpmf` is the log of the
 bernoulli probability mass function (pmf).  The log of the
@@ -50,14 +50,14 @@ functions separate the outcome from the parameters in the same way
 
 The notation
 
-```
+```stan
  y ~ normal(mu, sigma);
 ```
 
 provides the same (proportional) contribution to the model log density
 as the explicit target density increment,
 
-```
+```stan
  target += normal_lpdf(y | mu, sigma);
 ```
 
@@ -172,7 +172,7 @@ application and assignment in a loop.
 
 The normal probability function is specified with the signature
 
-```
+```stan
  normal_lpdf(reals | reals, reals);
 ```
 
@@ -189,7 +189,7 @@ vector and row vector have the same size.
 The multivariate normal distribution accepting vector or array of
 vector arguments is written as
 
-```
+```stan
  multi_normal_lpdf(vectors | vectors, matrix);
 ```
 
@@ -209,29 +209,31 @@ namely `real` or `int`, is repeated.  For instance, if `y` is a vector
 of size `N`, `mu` is a vector of size `N`, and `sigma` is a scalar,
 then
 
-```
+```stan
  ll = normal_lpdf(y | mu, sigma);
 ```
 
 is just a more efficient way to write
 
-```
+```stan
  ll = 0;
- for (n in 1:N)
+ for (n in 1:N) {
    ll = ll + normal_lpdf(y[n] | mu[n], sigma);
+ }
 ```
 
 With the same arguments, the vectorized sampling statement
 
-```
+```stan
  y ~ normal(mu, sigma);
 ```
 
 has the same effect on the total log probability as
 
-```
- for (n in 1:N)
+```stan
+ for (n in 1:N) {
    y[n] ~ normal(mu[n], sigma);
+ }
 ```
 
 ### Evaluating vectorized PRNG functions {#prng-vectorization}
@@ -242,9 +244,9 @@ Such functions are indicated by argument pseudotypes `reals` or
 sequence.  For example, the following is allowed in the transformed data and
 generated quantities blocks.
 
-```
- vector[3] mu = ...;
- real x[3] = normal_rng(mu, 3);
+```stan
+ vector[3] mu = // ...
+ array[3] real x = normal_rng(mu, 3);
 ```
 
 #### Argument types
@@ -253,10 +255,10 @@ In the case of PRNG functions, arguments marked `ints` may be integers
 or integer arrays, whereas arguments marked `reals` may be integers or
 reals, integer or real arrays, vectors, or row vectors.
 
-| pseudotype | allowable PRNG arguments |
-|:-----------|:----------------------|
-|`ints` | `int`,  `int[]`  |
-|`reals` | `int`,  `int[]`,  `real`,  `real[]`,  `vector`,  `row_vector` |
+| pseudotype | allowable PRNG arguments                                                  |
+| :--------- | :------------------------------------------------------------------------ |
+| `ints`     | `int`,  `array[] int`                                                     |
+| `reals`    | `int`,  `array[] int`,  `real`,  `array[] real`,  `vector`,  `row_vector` |
 
 #### Dimension matching
 
@@ -266,10 +268,10 @@ example, the `normal_rng` function may be called with one vector
 argument and one real array argument as long as they have the same
 number of elements.
 
-```
- vector[3] mu = ...;
- real sigma[3] = ...;
- real x[3] = normal_rng(mu, sigma);
+```stan
+ vector[3] mu = // ...
+ array[3] real sigma = // ...
+ array[3] real x = normal_rng(mu, sigma);
 ```
 
 #### Return type
@@ -278,7 +280,7 @@ The result of a vectorized PRNG function depends on the size of the
 arguments and the distribution's support.  If all arguments are
 scalars, then the return type is a scalar.  For a continuous
 distribution, if there are any non-scalar arguments, the return type
-is a real array (`real[]`) matching the size of any of the non-scalar
+is a real array (`array[] real`) matching the size of any of the non-scalar
 arguments, as all non-scalar arguments must have matching size.
 Discrete distributions return `ints` and continuous distributions
 return `reals`, each of appropriate size.  The symbol `R` denotes such

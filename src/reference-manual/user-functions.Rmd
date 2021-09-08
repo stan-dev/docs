@@ -116,7 +116,7 @@ Arguments and return types may be arrays, and these are indicated with
 optional brackets and commas as would be used for indexing.  For
 example, `int` denotes a single integer argument or return,
 whereas `real[ ]` indicates a one-dimensional array of reals,
-`real[ , ]` a two-dimensional array and `real[ , , ]` a
+`array[,] real` a two-dimensional array and `array[,,] real` a
 three-dimensional array; whitespace is optional, as usual.
 
 The dimensions for vectors and matrices are not included, so that
@@ -157,7 +157,7 @@ In user-defined functions, the qualifier `data` may be placed before
 an argument type declaration to indicate that the argument must be
 data only.  For example,
 
-```
+```stan
 real foo(data real x) {
   return x^2;
 }
@@ -262,7 +262,7 @@ If there are `_lupdf` and `_lupmf` functions used inside the following
 call to `foo_lpdf`, they will be forced to normalize (return the equivalent
 of their `_lpdf` and `_lpmf` forms):
 
-```
+```stan
 target += foo_lpdf(z | phi);
 ```
 
@@ -328,8 +328,11 @@ These rules disqualify
 
 ```stan
 real foo(real x) {
-  if (x > 2) return 1.0;
-  else if (x <= 2) return -1.0;
+  if (x > 2) {
+    return 1.0;
+  } else if (x <= 2) {
+    return -1.0;
+  }
 }
 ```
 
@@ -340,7 +343,9 @@ real foo(real x) {
   real y;
   y = x;
   while (x < 10) {
-    if (x > 0) return x;
+    if (x > 0) {
+      return x;
+    }
     y = x / 2;
   }
 }
@@ -352,12 +357,13 @@ this case.  The rules for returns allow
 
 ```stan
 real log_fancy(real x) {
-  if (x < 1e-30)
+  if (x < 1e-30) {
     return x;
-  else if (x < 1e-14)
+  } else if (x < 1e-14) {
     return x * x;
-  else
+  } else {
     return log(x);
+  }
 }
 ```
 
@@ -432,8 +438,11 @@ code to compute Fibonacci numbers.
 int fib(int n);
 
 int fib(int n) {
-  if (n < 2) return n;
-  else return fib(n-1) + fib(n-2);
+  if (n < 2) {
+    return n;
+  } else {
+    return fib(n-1) + fib(n-2);
+  }
 }
 ```
 

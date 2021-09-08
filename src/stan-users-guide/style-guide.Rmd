@@ -50,10 +50,12 @@ recommended form is a single uppercase letter.  The reason for this is
 that it allows the loop variables to match.  So loops over the indices of
 an $M \times N$ matrix $a$ would look as follows.
 
-```
-for (m in 1:M)
-  for (n in 1:N)
-     a[m,n] = ...
+```stan
+for (m in 1:M) {
+  for (n in 1:N) {
+     a[m, n] = ...
+  }
+}
 ```
 
 
@@ -67,9 +69,9 @@ The following Stan program corresponds to a direct translation of a
 BUGS model, which uses a different element of `mu` in each
 iteration.
 
-```
+```stan
 model {
-  real mu[N];
+  array[N] real mu;
   for (n in 1:N) {
     mu[n] = alpha * x[n] + beta;
     y[n] ~ normal(mu[n],sigma);
@@ -80,7 +82,7 @@ model {
 Because variables can be reused in Stan and because they should be
 declared locally for clarity, this model should be recoded as follows.
 
-```
+```stan
 model {
   for (n in 1:N) {
     real mu;
@@ -92,10 +94,11 @@ model {
 
 The local variable can be eliminated altogether, as follows.
 
-```
+```stan
 model {
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ normal(alpha * x[n] + beta, sigma);
+  }
 }
 ```
 
@@ -112,12 +115,13 @@ declare a local variable for the structure outside of the block
 in which it is used.  This allows it to be allocated once and then
 reused.
 
-```
+```stan
 model {
   vector[K] mu;
   for (n in 1:N) {
-    for (k in 1:K)
-      mu[k] = ...;
+    for (k in 1:K) {
+      mu[k] = // ...
+    }
     y[n] ~ multi_normal(mu,Sigma);
 }
 ```
@@ -133,7 +137,7 @@ Single-statement blocks can be rendered in several ways.
 The preferred style is fully bracketed with the statement
 appearing on its own line, as follows.
 
-```
+```stan
 for (n in 1:N) {
   y[n] ~ normal(mu,1);
 }
@@ -142,7 +146,7 @@ for (n in 1:N) {
 The use of loops and conditionals without brackets can be dangerous.  
 For instance, consider this program.
 
-```
+```stan
 for (n in 1:N)
   z[n] ~ normal(nu,1);
   y[n] ~ normal(mu,1);
@@ -152,15 +156,27 @@ Because Stan ignores whitespace and the parser completes a statement
 as eagerly as possible (just as in C++), the previous program is
 equivalent to the following program.
 
-```
+```stan
 for (n in 1:N) {
   z[n] ~ normal(nu,1);
 }
 y[n] ~ normal(mu,1);
 ```
 
-Therefore, one should use braces in all instances.
+Therefore, one should prefer to use braces. The only exception is when
+nesting if-else clauses, where the `else` branch contains exactly one
+conditional. Then, it is preferred to place the following `if` on the
+same line, as in the following.
 
+```stan
+if (x) {
+  // ...
+} else if (y) {
+  // ...
+} else {
+  // ...
+}
+```
 
 ### Parentheses in nested operator expressions {-}
 
@@ -182,7 +198,7 @@ Vertical space is valuable as it controls how much of a program you
 can see.  The preferred Stan style is with the opening brace appearing
 at the end of a line.
 
-```
+```stan
 for (n in 1:N) {
   y[n] ~ normal(mu,1);
 }
@@ -191,10 +207,10 @@ for (n in 1:N) {
 This also goes for parameters blocks, transformed data blocks,
 which should look as follows.
 
-```
+```stan
 transformed parameters {
   real sigma;
-  ...
+  // ...
 }
 ```
 
@@ -211,13 +227,13 @@ allowing real or integer values to act as conditions, real
 values should be avoided. For a real-valued `x`, one should 
 use
 
-```
+```stan
 if (x != 0) { ...
 ```
 
 in place of 
 
-```
+```stan
 if (x) { ...
 ```
 
@@ -231,7 +247,7 @@ results due to numerical accuracy.
 Functions are laid out the same way as in languages such as Java and
 C++.  For example,
 
-```
+```stan
 real foo(real x, real y) {
   return sqrt(x * log(y));
 }
@@ -247,11 +263,11 @@ we use two spaces.  The close curly brace appears on its own line.
 If function names or argument lists are long, they can be
 written as
 
-```
+```stan
 matrix
 function_to_do_some_hairy_algebra(matrix thingamabob,
                                   vector doohickey2) {
-  ...body...
+  // ...body...
 }
 ```
 
@@ -262,7 +278,7 @@ Function documentation should follow the Javadoc and Doxygen styles.
 Here's an example repeated from the [documenting functions
 section](#documenting-functions.section).
 
-```
+```stan
 /**
  * Return a data matrix of specified size with rows
  * corresponding to items and the first column filled
@@ -275,7 +291,8 @@ section](#documenting-functions.section).
  * @return Simulated predictor matrix.
  */
 matrix predictors_rng(int N, int K) {
-  ...
+  // ...
+}
 ```
 
 The open comment is `/**`, asterisks are aligned below the first
@@ -302,7 +319,7 @@ Each statement of a program should appear on its own line.
 Declaring multiple variables of the same type can be
 accomplished in a single statement with the syntax
 
-```
+```stan
 real mu, sigma;
 ```
 
@@ -340,12 +357,12 @@ Unary operators are written without a space, such as in `-x`, `!y`.
 Another exception to the above rule is when the assignment operator
 (`=`) is used inside a type constraint, such as
 
-```
+```stan
 real<lower=0> x;
 ```
 
 Spaces should still be used in arithmetic and following commas, as in
-```
+```stan
 real<lower=0, upper=a * x + b> x;
 ```
 
@@ -357,7 +374,7 @@ operator,^[This is the usual convention in both typesetting and other programmin
 aligning the operator to a term above to indicate scoping.  
 For example, use the following form 
 
-```
+```stan
 vector[J] p_distance = Phi((distance_tolerance - overshot)
                            ./ ((x + overshot) * sigma_distance))
                        - Phi((-overshot)
@@ -371,7 +388,7 @@ subtraction indicates it is between the function applications (`Phi`).
 For functions with multiple arguments, break after a comma and 
 line the next argument up underneath as follows.
 
-```
+```stan
 y[n] ~ normal(alpha + beta * x + gamma * y,
               pow(tau,-0.5));
 ```
@@ -383,12 +400,12 @@ Commas should always be followed by spaces, including in function
 arguments, sequence literals, between variable declarations, etc.
 
 For example, 
-```
-normal(alpha * x[n] + beta, sigma)
+```stan
+normal(alpha * x[n] + beta, sigma);
 ``` 
 is preferred over
-```
-normal(alpha * x[n] + beta,sigma)
+```stan
+normal(alpha * x[n] + beta,sigma);
 ```
 
 

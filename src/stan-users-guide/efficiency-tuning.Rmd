@@ -198,14 +198,15 @@ Stan validates all of its data structure constraints.  For example,
 consider a transformed parameter defined to be a covariance matrix and
 then used as a covariance parameter in the model block.
 
-```
+```stan
 transformed parameters {
   cov_matrix[K] Sigma;
-  ...
+  // ...
 }                               // first validation
 model {
   y ~ multi_normal(mu, Sigma);  // second validation
-  ...
+  // ...
+}
 ```
 
 Because `Sigma` is declared to be a covariance matrix, it will be
@@ -218,12 +219,14 @@ $N \times N$ matrices), so it should not be done twice.
 The test may be avoided by simply declaring `Sigma` to be a simple
 unconstrained matrix.
 
-```
+```stan
 transformed parameters {
   matrix[K, K] Sigma;
-  ...
+  // ...
+}
 model {
   y ~ multi_normal(mu, Sigma);  // only validation
+}
 ```
 
 Now the only validation is carried out by the multivariate normal.
@@ -269,7 +272,7 @@ The marginal density of Neal's funnel for the upper-level variable $y$ and one l
 
 The funnel can be implemented directly in Stan as follows.
 
-```
+```stan
 parameters {
   real y;
   vector[9] x;
@@ -300,7 +303,7 @@ In this particular instance, because the analytic form of the density
 from which samples are drawn is known, the model can be converted to
 the following more efficient form.
 
-```
+```stan
 parameters {
   real y_raw;
   vector[9] x_raw;
@@ -366,14 +369,14 @@ distribution with location $\mu$ and scale $\tau$, i.e., $F^{-1}_X(Y) \sim
 Consider a Stan program involving a Cauchy-distributed parameter
 `beta`.
 
-```
+```stan
 parameters {
   real beta;
-  ...
+  // ...
 }
 model {
   beta ~ cauchy(mu, tau);
-  ...
+  // ...
 }
 ```
 
@@ -381,18 +384,18 @@ This declaration of `beta` as a parameter may be replaced with a
 transformed parameter `beta` defined in terms of a
 uniform-distributed parameter `beta_unif`.
 
-```
+```stan
 parameters {
-  real<lower = -pi()/2, upper = pi()/2> beta_unif;
-  ...
+  real<lower=-pi() / 2, upper=pi() / 2> beta_unif;
+  // ...
 }
 transformed parameters {
   real beta;
   beta = mu + tau * tan(beta_unif);  // beta ~ cauchy(mu, tau)
 }
 model {
-  beta_unif ~ uniform(-pi()/2, pi()/2);  // not necessary
-  ...
+  beta_unif ~ uniform(-pi() / 2, pi() / 2);  // not necessary
+  // ...
 }
 ```
 
@@ -410,7 +413,7 @@ without changing sampling behavior.  This is because $\log
 -\log \pi$ is a constant and Stan only
 needs the total log probability up to an additive constant.  Stan will spend
 some time checking that that `beta_unif` is between
-`-pi()/2` and `pi()/2`, but this condition is guaranteed by
+`-pi() / 2` and `pi() / 2`, but this condition is guaranteed by
 the constraints in the declaration of `beta_unif`.
 
 ### Reparameterizing a Student-t distribution {-}
@@ -470,34 +473,39 @@ the second, neither $\tau$ nor $\alpha$ have heavy tails.
 
 To translate into Stan notation, this reparameterization replaces
 
-```
+```stan
 parameters {
   real<lower=0> nu;
   real beta;
-  ...
+  // ...
+}
 model {
   beta ~ student_t(nu, 0, 1);
-  ...
+  // ...
+}
 ```
 
 with
 
-```
+```stan
 parameters {
   real<lower=0> nu;
   real<lower=0> tau;
   real alpha;
-  ...
+  // ...
+}
 transformed parameters {
   real beta;
   beta = alpha / sqrt(tau);
-  ...
+  // ...
+}
 model {
   real half_nu;
   half_nu = 0.5 * nu;
   tau ~ gamma(half_nu, half_nu);
   alpha ~ std_normal();
-  ...
+  // ...
+}
 ```
 
 Although set to `0` here, in most cases, the lower bound for the
@@ -520,15 +528,17 @@ For example, a vectorized hierarchical model might draw a vector of
 coefficients $\beta$ with definitions as follows.  The so-called
 centered parameterization is as follows.
 
-```
+```stan
 parameters {
   real mu_beta;
-  real<lower = 0> sigma_beta;
+  real<lower=0> sigma_beta;
   vector[K] beta;
-  ...
+  // ...
+}
 model {
   beta ~ normal(mu_beta, sigma_beta);
-  ...
+  // ...
+}
 ```
 
 Although not shown, a full model will have priors on both
@@ -563,17 +573,20 @@ effective sample size when there is not much data (see
 @Betancourt-Girolami:2013), and in more extreme cases will be
 necessary to achieve convergence.
 
-```
+```stan
 parameters {
   vector[K] beta_raw;
-  ...
+  // ...
+}
 transformed parameters {
   vector[K] beta;
   // implies: beta ~ normal(mu_beta, sigma_beta)
   beta = mu_beta + sigma_beta * beta_raw;
+}
 model {
   beta_raw ~ std_normal();
-  ...
+  // ...
+}
 ```
 
 Any priors defined for `mu_beta` and `sigma_beta` remain as
@@ -625,18 +638,21 @@ the prior for $\beta$ to be multivariate normal with mean vector $\mu$
 and covariance matrix $\Sigma$. Such a belief is reflected by the
 following code.
 
-```
+```stan
 data {
   int<lower=2> K;
   vector[K] mu;
   cov_matrix[K] Sigma;
-  ...
+  // ...
+}
 parameters {
   vector[K] beta;
-  ...
+  // ...
+}
 model {
   beta ~ multi_normal(mu, Sigma);
-  ...
+  // ...
+}
 ```
 
 In this case `mu` and `Sigma` are fixed data, but they could
@@ -650,19 +666,21 @@ $\beta$ is distributed multivariate normal with mean vector $\mu$ and
 covariance matrix $\Sigma$. One choice for $L$ is the Cholesky factor
 of $\Sigma$. Thus, the model above could be reparameterized as follows.
 
-```
+```stan
 data {
   int<lower=2> K;
   vector[K] mu;
   cov_matrix[K] Sigma;
-  ...
+  // ...
+}
 transformed data {
   matrix[K, K] L;
   L = cholesky_decompose(Sigma);
 }
 parameters {
   vector[K] alpha;
-  ...
+  // ...
+}
 transformed parameters {
   vector[K] beta;
   beta = mu + L * alpha;
@@ -670,7 +688,8 @@ transformed parameters {
 model {
   alpha ~ std_normal();
   // implies: beta ~ multi_normal(mu, Sigma)
-  ...
+  // ...
+}
 ```
 
 This reparameterization is more efficient for two reasons. First, it
@@ -692,12 +711,13 @@ vector of standard deviations `sigma` were unknown parameters,
 then a reparameterization of `beta` in terms of `alpha`
 could be implemented as follows.
 
-```
+```stan
 data {
   int<lower=2> K;
   vector[K] mu;
   corr_matrix[K] Tau;
-  ...
+  // ...
+}
 transformed data {
   matrix[K, K] L;
   L = cholesky_decompose(Tau);
@@ -705,7 +725,8 @@ transformed data {
 parameters {
   vector[K] alpha;
   vector<lower=0>[K] sigma;
-  ...
+  // ...
+}
 transformed parameters {
   vector[K] beta;
   // This equals mu + diag_matrix(sigma) * L * alpha;
@@ -716,7 +737,8 @@ model {
   alpha ~ std_normal();
   // implies: beta ~ multi_normal(mu,
   //  diag_matrix(sigma) * L * L' * diag_matrix(sigma)))
-  ...
+  // ...
+}
 ```
 
 This reparameterization of a multivariate normal distribution in
@@ -743,24 +765,26 @@ $W = LAA^{\top}L^{\top}$ is distributed Wishart with scale matrix
 $S = LL^{\top}$ and degrees of freedom $\nu$. Such a reparameterization
 can be implemented by the following Stan code:
 
-```
+```stan
 data {
   int<lower=1> N;
   int<lower=1> K;
-  int<lower=K+2> nu
+  int<lower=K + 2> nu
   matrix[K, K] L; // Cholesky factor of scale matrix
   vector[K] mu;
   matrix[N, K] y;
-  ...
+  // ...
+}
 parameters {
   vector<lower=0>[K] c;
   vector[0.5 * K * (K - 1)] z;
-  ...
+  // ...
+}
 model {
   matrix[K, K] A;
   int count = 1;
-  for (j in 1:(K-1)) {
-    for (i in (j+1):K) {
+  for (j in 1:(K - 1)) {
+    for (i in (j + 1):K) {
       A[i, j] = z[count];
       count += 1;
     }
@@ -769,17 +793,20 @@ model {
     }
     A[j, j] = sqrt(c[j]);
   }
-  for (i in 1:(K-1))
+  for (i in 1:(K - 1)) {
     A[i, K] = 0;
+  }
   A[K, K] = sqrt(c[K]);
 
-  for (i in 1:K)
+  for (i in 1:K) {
     c[i] ~ chi_square(nu - i + 1);
+  }
 
   z ~ std_normal();
   // implies: L * A * A' * L' ~ wishart(nu, L * L')
   y ~ multi_normal_cholesky(mu, L * A);
-  ...
+  // ...
+}
 ```
 
 This reparameterization is more efficient for three reasons. First, it
@@ -800,12 +827,13 @@ inverses exist, but
 $L^{{-1}^{\top}} = L^{{\top}^{-1}}$ and $A^{{-1}^{\top}} = A^{{\top}^{-1}}$.
 We can slightly modify the above Stan code for this case:
 
-```
+```stan
 data {
   int<lower=1> K;
-  int<lower=K+2> nu
+  int<lower=K + 2> nu
   matrix[K, K] L; // Cholesky factor of scale matrix
-  ...
+  // ...
+}
 transformed data {
   matrix[K, K] eye;
   matrix[K, K] L_inv;
@@ -820,14 +848,15 @@ transformed data {
 parameters {
   vector<lower=0>[K] c;
   vector[0.5 * K * (K - 1)] z;
-  ...
+  // ...
+}
 model {
   matrix[K, K] A;
   matrix[K, K] A_inv_L_inv;
   int count;
   count = 1;
-  for (j in 1:(K-1)) {
-    for (i in (j+1):K) {
+  for (j in 1:(K - 1)) {
+    for (i in (j + 1):K) {
       A[i, j] = z[count];
       count += 1;
     }
@@ -836,17 +865,20 @@ model {
     }
     A[j, j] = sqrt(c[j]);
   }
-  for (i in 1:(K-1))
+  for (i in 1:(K - 1)) {
     A[i, K] = 0;
+  }
   A[K, K] = sqrt(c[K]);
 
   A_inv_L_inv = mdivide_left_tri_low(A, L_inv);
-  for (i in 1:K)
+  for (i in 1:K) {
     c[i] ~ chi_square(nu - i + 1);
+  }
 
   z ~ std_normal(); // implies: crossprod(A_inv_L_inv) ~
   // inv_wishart(nu, L_inv' * L_inv)
-  ...
+  // ...
+}
 ```
 
 Another candidate for reparameterization is the Dirichlet distribution
@@ -858,24 +890,29 @@ parameters equal to $\frac{\beta}{2}$. In particular, if $\beta = 2$,
 then $\rho$ is uniformly distributed on the unit simplex. Thus, we can
 make $\rho$ be a transformed parameter to reduce dependence, as in:
 
-```
+```stan
 data {
   int<lower=1> beta;
-  ...
+  // ...
+}
 parameters {
-  vector[beta] z[K];
-  ...
+  array[K] vector[beta] z;
+  // ...
+}
 transformed parameters {
   simplex[K] rho;
-  for (k in 1:K)
+  for (k in 1:K) {
     rho[k] = dot_self(z[k]); // sum-of-squares
+  }
   rho = rho / sum(rho);
 }
 model {
-  for (k in 1:K)
+  for (k in 1:K) {
     z[k] ~ std_normal();
+  }
   // implies: rho ~ dirichlet(0.5 * beta * ones)
-  ...
+  // ...
+}
 ```
 
 
@@ -899,9 +936,10 @@ continually increment a variable by assignment and addition.  For
 example, consider the following code snippet, where `foo()` is
 some operation that depends on `n`.
 
-```
-for (n in 1:N)
+```stan
+for (n in 1:N) {
   total += foo(n,...);
+}
 ```
 
 This code has to create intermediate representations for each
@@ -910,11 +948,12 @@ of the `N` summands.
 A faster alternative is to copy the values into a vector, then
 apply the `sum()` operator, as in the following refactoring.
 
-```
+```stan
 {
   vector[N] summands;
-  for (n in 1:N)
+  for (n in 1:N) {
     summands[n] = foo(n,...);
+  }
   total = sum(summands);
 }
 ```
@@ -937,21 +976,22 @@ unit noise using a two-dimensional array `x` of predictors, an
 array `y` of outcomes, and an array `beta` of regression
 coefficients.
 
-```
+```stan
 data {
   int<lower=1> K;
   int<lower=1> N;
-  real x[K, N];
-  real y[N];
+  array[K, N] real x;
+  array[N] real y;
 }
 parameters {
-  real beta[K];
+  array[K] real beta;
 }
 model {
   for (n in 1:N) {
     real gamma = 0;
-    for (k in 1:K)
+    for (k in 1:K) {
       gamma += x[n, k] * beta[k];
+    }
     y[n] ~ normal(gamma, 1);
   }
 }
@@ -961,26 +1001,27 @@ The following model computes the same log probability function as the
 previous model, even supporting the same input files for data and
 initialization.
 
-```
+```stan
 data {
   int<lower=1> K;
   int<lower=1> N;
-  vector[K] x[N];
-  real y[N];
+  array[N] vector[K] x;
+  array[N] real y;
 }
 parameters {
   vector[K] beta;
 }
 model {
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ normal(dot_product(x[n], beta), 1);
+  }
 }
 ```
 
 Although it produces equivalent results, the dot product should not be
 replaced with a transpose and multiply, as in
 
-```
+```stan
 y[n] ~ normal(x[n]' * beta, 1);
 ```
 
@@ -993,15 +1034,16 @@ The inefficiency of transposition could itself be mitigated  by
 reordering the product and pulling the transposition out of the loop,
 as follows.
 
-```
-...
+```stan
+// ...
 transformed parameters {
   row_vector[K] beta_t;
   beta_t = beta';
 }
 model {
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ normal(beta_t * x[n], 1);
+  }
 }
 ```
 
@@ -1009,18 +1051,19 @@ The problem with transposition could be completely solved by directly
 encoding the `x` as a row vector, as in the
 following example.
 
-```
+```stan
 data {
-  ...
-  row_vector[K] x[N];
-  ...
+  // ...
+  array[N] row_vector[K] x;
+  // ...
 }
 parameters {
   vector[K] beta;
 }
 model {
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ normal(x[n] * beta, 1);
+  }
 }
 ```
 
@@ -1031,7 +1074,7 @@ example discussed in the next section.
 Having said all this, the most efficient way to code this model is
 with direct matrix multiplication, as in
 
-```
+```stan
 data {
   matrix[N, K] x;
   vector[N] y;
@@ -1055,7 +1098,7 @@ The final and most efficient version replaces the loops and
 transformed parameters by using the vectorized form of the normal
 probability function, as in the following example.
 
-```
+```stan
 data {
   int<lower=1> K;
   int<lower=1> N;
@@ -1093,19 +1136,21 @@ John Hall provided a simple example on the Stan users group.
 Simplifying notation a bit, the original model had a sampling
 statement in a loop, as follows.
 
-```
-for (n in 1:N)
+```stan
+for (n in 1:N) {
   y[n] ~ normal(mu[ii[n]], sigma);
+}
 ```
 
 The brute force vectorization would build up a mean vector and then
 vectorize all at once.
 
-```
+```stan
 {
   vector[N] mu_ii;
-  for (n in 1:N)
+  for (n in 1:N) {
     mu_ii[n] = mu[ii[n]];
+  }
   y ~ normal(mu_ii, sigma);
 }
 ```
@@ -1116,9 +1161,9 @@ Rather than having a single observation vector `y`, there are K of them.
 And because Stan doesn't support ragged arrays, it means K
 declarations.  For instance, with 5 levels, we have
 
-```
+```stan
 y_1 ~ normal(mu[1], sigma);
-...
+// ...
 y_5 ~ normal(mu[5], sigma);
 ```
 
@@ -1136,10 +1181,10 @@ in estimation.  This can lead to large efficiency gains compared to an
 expanded model.  For example, consider the following Bernoulli
 sampling model.
 
-```
+```stan
 data {
   int<lower=0> N;
-  int<lower=0, upper=1> y[N];
+  array[N] int<lower=0, upper=1> y;
   real<lower=0> alpha;
   real<lower=0> beta;
 }
@@ -1148,8 +1193,9 @@ parameters {
 }
 model {
   theta ~ beta(alpha, beta);
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ bernoulli(theta);
+  }
 }
 ```
 
@@ -1157,7 +1203,7 @@ In this model, the sum of positive outcomes in `y` is a
 sufficient statistic for the chance of success `theta`.  The
 model may be recoded using the binomial distribution as follows.
 
-```
+```stan
 theta ~ beta(alpha, beta);
 sum(y) ~ binomial(N, theta);
 ```
@@ -1173,9 +1219,10 @@ there are $N$ observations, where $N$ is much larger than $K$.  If
 $f_k$ is the frequency of outcome $z_k$, then the entire likelihood
 with distribution `foo` can be coded as follows.
 
-```
-for (k in 1:K)
+```stan
+for (k in 1:K) {
   target += f[k] * foo_lpmf(z[k] | ...);
+}
 ```
 
 where the ellipses are the parameters of the log probability mass
@@ -1202,11 +1249,13 @@ parameters, say `a[ii[n]] + b[jj[n]]`.  If `a` and `b`
 are small (i.e., do not have many levels), then a table `a_b` of
 their sums can be created, with
 
-```
+```stan
 matrix[size(a), size(b)] a_b;
-for (i in 1:size(a))
-  for (j in 1:size(b))
+for (i in 1:size(a)) {
+  for (j in 1:size(b)) {
     a_b[i, j] = a[i] + b[j];
+  }
+}
 ```
 
 Then the sum can be replaced with `a_b[ii[n], jj[n]]`.
@@ -1218,7 +1267,7 @@ Continuing the model from the previous section, the conjugacy of the
 beta prior and binomial sampling distribution allow the model to be
 further optimized to the following equivalent form.
 
-```
+```stan
 theta ~ beta(alpha + sum(y), beta + N - sum(y));
 ```
 
@@ -1278,7 +1327,7 @@ standardized.  This changes the scale of the variables, and hence
 changes the scale of the priors.  Consider the following initial
 model.
 
-```
+```stan
 data {
   int<lower=0> N;
   vector[N] y;
@@ -1295,8 +1344,9 @@ model {
   beta ~ normal(0, 10);
   sigma ~ cauchy(0, 5);
   // likelihood
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ normal(alpha + beta * x[n], sigma);
+  }
 }
 ```
 
@@ -1305,7 +1355,7 @@ The data block for the standardized model is identical.  The
 standardized predictors and outputs are defined in the transformed
 data block.
 
-```
+```stan
 data {
   int<lower=0> N;
   vector[N] y;
@@ -1326,9 +1376,10 @@ model {
   alpha_std ~ normal(0, 10);
   beta_std ~ normal(0, 10);
   sigma_std ~ cauchy(0, 5);
-  for (n in 1:N)
+  for (n in 1:N) {
     y_std[n] ~ normal(alpha_std + beta_std * x_std[n],
                       sigma_std);
+  }
 }
 ```
 
@@ -1387,7 +1438,7 @@ $$
 These recovered parameter values on the original scales can be
 calculated within Stan using a generated quantities block following
 the model block,
-```
+```stan
 generated quantities {
   real alpha;
   real beta;
@@ -1404,7 +1455,7 @@ deviations every iteration; for more efficiency, these can be
 calculated once and stored as transformed data.  Furthermore, the
 model sampling statement can be easily vectorized, for instance, in
 the transformed model, to
-```
+```stan
 y_std ~ normal(alpha_std + beta_std * x_std, sigma_std);
 ```
 
@@ -1414,13 +1465,13 @@ For many applications on the standard scale, normal distributions with
 location zero and scale one will be used.  In these cases, it is more
 efficient to use
 
-```
+```stan
 y ~ std_normal();
 ```
 
 than to use
 
-```
+```stan
 y ~ normal(0, 1);
 ```
 

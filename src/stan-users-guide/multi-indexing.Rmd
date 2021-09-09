@@ -3,8 +3,11 @@
 
 Stan allows multiple indexes to be provided for containers (i.e.,
 arrays, vectors, and matrices) in a single position, using either an
-array of integer indexes or range bounds.  This allows many models to
-be vectorized.  For instance, consider the likelihood for a varying-slope,
+array of integer indexes or range bounds.  In many cases, there are
+functions that provide similar behavior.
+
+Allowing multiple indexes supports inline vectorization of models.
+For instance, consider the likelihood for a varying-slope,
 varying-intercept hierarchical linear regression, which could be coded
 as
 
@@ -21,8 +24,8 @@ efficient vectorized code.
 y ~ normal(alpha[ii] + rows_dot_product(beta[ii], x), sigma);
 ```
 
-This latter version is equivalent in speed to the clunky assignment to
-a local variable.
+This latter version is faster than the loop version;  it is equivalent
+in speed to the clunky assignment to a local variable.
 
 ```stan
 {
@@ -33,6 +36,11 @@ a local variable.
   y ~ normal(mu, sigma);
 }
 ```
+
+The boost in speed compared to the original version is because the
+single call to the normal log density in the sampling statement will
+be much more memory efficient than the original version.
+
 
 ## Multiple indexing
 
@@ -121,6 +129,7 @@ general case: a multiple index like `idxs1` converts an index
 contrast, a single index just returns the value at that index, thus
 reducing dimensionality by one in the result.
 
+
 ## Slicing with range indexes
 
 Slicing returns a contiguous slice of a one-dimensional array, a
@@ -160,6 +169,40 @@ range of an array, either by including just the range symbol
 (`:`) as the index or leaving the index position empty. In both
 cases, `c[]` and `c[:]` are equal to `c[1:size(c)]`,
 which in turn is just equal to `c`.
+
+### Slicing functions {-}
+
+Stan provides `head` and `tail` functions that pull out prefixes or
+suffixes of vectors, row vectors, and one-dimensional arrays.  In each
+case, the return type is the same as the argument type.  For
+example,
+
+```
+vector[M] a = ...;
+vector[N] b = head(a, N);
+```
+
+assigns `b` to be a vector equivalent to the first `N` elements of the
+vector `a`.  The function `tail` works the same way for suffixes, with
+
+```
+array[M] a = ...;
+array[N] b = tail(a, N);
+```
+
+Finally, there is a segment function, which specifies a first element
+and number of elements.  For example,
+
+```
+array[15] a = ...;
+array[3] b = segment(a, 5, 3);
+```
+
+will set `b` to be equal to `{ a[5], a[6], a[7] }`, so that it starts
+at element 5 of `a` and includes a total of 3 elements.
+
+
+
 
 ## Multiple indexing on the left of assignments
 
@@ -321,6 +364,7 @@ supplying a single index, `m[3]`, produces a row vector result.
 That is, `m[3]` produces the same result as `m[3, ]`
 or `m[3, 1:cols(m)]`.
 
+
 ### Arrays of vectors or matrices {-}
 
 With arrays of matrices, vectors, and row vectors, the basic access
@@ -369,6 +413,36 @@ Here, the first array dimension is reduced, leaving a single array
 dimension, and the row index of the matrix is reduced, leaving a row
 vector.  For indexing, the values are given by
 `c[i, j] == a[i + 3, 3, 1, j + 1]`
+
+
+### Block, row, and column extraction for matrices {-}
+
+Matrix slicing can also be performed using the `block` function.  For
+example, 
+
+```
+matrix[20, 20] a = ...;
+matrix[3, 2] b = block(a, 5, 9, 3, 2);
+```
+
+will set `b` equal to the submatrix of `a` starting at index [5, 9]
+and extending 3 rows and 2 columns.  Thus `block(a, 5, 9, 3, 2)` is
+equivalent to `b[5:7, 9:10]`.
+
+The `sub_col` function extracts a slice of a column of a matrix as a
+vector.  For example,
+
+```
+matrix[10, 10] a = ...;
+vector b = sub_col(a, 2, 3, 5);
+```
+
+will set `b` equal to the vector `a[2:6, 3]`, taking the element
+starting at [2, 3], then extending for a total of 5 rows.  The
+function `sub_row` works the same way for extracting a slice of a row
+as a row vector.  For example, `sub_row(a, 2, 3, 5)` is equal to
+the row vector `a[2, 3:7]`, which also starts at position [2, 3] then
+extends for a total of 5 columns.
 
 
 ## Matrices with parameters and constants

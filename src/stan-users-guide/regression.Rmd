@@ -481,34 +481,33 @@ parameter block would be redefined to use $(K - 1)$-vectors
 
 ```stan
 parameters {
-  matrix[K - 1, D] beta_raw;
+  matrix[D, K - 1] beta_raw;
 }
 ```
 
 and then these are transformed to parameters to use in the model.
 First, a transformed data block is added before the parameters block
-to define a row vector of zero values,
+to define a vector of zero values,
 
 ```stan
 transformed data {
-  row_vector[D] zeros = rep_row_vector(0, D);
+  vector[D] zeros = rep_vector(0, D);
 }
 ```
 
-which can then be appended to `beta_row` to produce the
+which can then be appended to `beta_raw` to produce the
 coefficient matrix `beta`,
 
 ```stan
 transformed parameters {
-  matrix[K, D] beta;
-  beta = append_row(beta_raw, zeros);
+  matrix[D, K] beta = append_col(beta_raw, zeros);
 }
 ```
 
-The `rep_row_vector(0, D)` call creates a row vector of size `D` with
+The `rep_vector(0, D)` call creates a column vector of size `D` with
 all entries set to zero.  The derived matrix `beta` is then defined to
-be the result of appending the row-vector `zeros` as a new row at the
-end of `beta_raw`;  the row vector `zeros` is defined as transformed
+be the result of appending the vector `zeros` as a new column at the
+end of `beta_raw`;  the vector `zeros` is defined as transformed
 data so that it doesn't need to be constructed from scratch each time
 it is used.
 

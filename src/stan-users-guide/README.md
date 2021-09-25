@@ -10,10 +10,6 @@ statistics.
 * `_bookdown.yml`: book includes
 * `_output.yml`: output config
 * `bib/all.bib`: BibTeX file for references
-* `stan/*.Stan` : directory of Stan programs
-* `data/{*.R, *.rds}` : directory for data used by programs
-* `programs/{*.R, *.stan}` : legacy programs from old manual (deprecated until
-  they're moved into new style with R inline in .Rmd)
 
 
 ### Building the Book from Source
@@ -99,8 +95,8 @@ mandated by content
 * Pr(A)  # probability of an event
 
 * Follow the Stan style guide for code
-    - int<lower = 0> N;  # Put in the lower bound
-    - for (n in 1:N); # Not:  for (i in 1:n);
+    - int<lower=0> N;  # Put in the lower bound
+    - for (n in 1:N) {...} # Not:  for (i in 1:n), always bracketed
     - foo_bar # Underscores rather than dots or CamelCase
 
 * No R/Python code in the finished book except in appendix
@@ -113,4 +109,3 @@ mandated by content
 ### Licensing
 
 The code is licensed under BSD-3 and the text under CC-BY ND 4.0.
-

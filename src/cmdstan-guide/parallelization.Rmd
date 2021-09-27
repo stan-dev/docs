@@ -33,23 +33,27 @@ make path/to/model
 ### Running
 
 Before running a multi-threaded model, we need to specify the maximum number of threads
-a single chain can use. This is done by setting the environment variable
-`STAN_NUM_THREADS`. On Unix systems we can set it using the `export` command. The 
-following would set the maximum number of threads to use for a chain to four:
+the program can run (total threads for all chains). This is done by setting the `num_threads`
+argument. Valid values for `num_threads` are positive integers and -1. If `num_threads` is set 
+to -1, all available cores will be used.
+
+Generally, this number should not exceed the number of available cores for best performance.
+
+Example:
+
 ```
-export STAN_NUM_THREADS=4
-```
-In Windows PowerShell use the following command:
-```
-Set-Variable -Name STAN_NUM_THREADS -Value "4"
+./model sample data file=data.json num_threads=4 ...
 ```
 
-Generally, this number should not exceed the number of available cores.
-If this variable isn't set, then the program will run with only one thread.
+When the model is compiled with `STAN_THREADS` we can sample with multiple chains with a single
+executable (see section [running multiple chains]{#multi-chain-sampling} for cases when this is
+available). When running multiple chains `num_threads` is the maximum number of threads that can
+be used by all the chains combined. The exact number of threads that will be used for each chain
+at a given point in time is determined by the TBB scheduler. The following example start 2 chains
+with 8 total threads available:
 
-Once `STAN_NUM_THREADS` is set, run a model as normal:
 ```
-./model sample data file=data.json ...
+./model sample num_chains=2 data file=data.json num_threads=8 ...
 ```
 
 ## Multi-processing with MPI

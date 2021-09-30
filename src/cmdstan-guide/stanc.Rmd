@@ -79,7 +79,7 @@ override the default arguments to stanc, e.g.,
 > make STANCFLAGS="--include-paths=~/foo" examples/bernoulli/bernoulli
 ```
 
-## Command-line options for stanc3
+## Command-line options for stanc3 {#args}
 
 The stanc3 compiler has the following command-line syntax:
 
@@ -133,6 +133,124 @@ The compiler also provides a number of debug options which are
 primarily of interest to stanc3 developers; use the `--help`
 option to see the full set.
 
+## Understanding stanc3 errors and warnings
+
+During model compilation, stanc can produce a variety of errors (issues that
+prevent the model from being compiled) and warnings (non-fatal issues that
+should still be considered).
+
+### Warnings
+
+Even without the optional `--warn-pedantic` and `--warn-uninitialized` [command
+line flags](#args), both of which enable additional warnings, stanc can still
+produce warnings about your program. In particular, warnings will be produced
+in two situations
+
+1. A completely blank Stan program will produce the following warning message
+   ```
+   Warning: Empty file 'empty.stan' detected;
+   this is a valid stan model but likely unintended!
+   ```
+2. The use of any [deprecated
+   features](https://mc-stan.org/docs/reference-manual/deprecated-features-appendix.html)
+   will lead to warnings which will look as follows
+   ```
+   Warning in 'deprecated.stan', line 2, column 2:
+   Comments beginning with # are deprecated.
+   Please use // in place of # for line comments.
+   ```
+
+A single Stan program can produce many warnings during compilation.
+
+
+### Errors
+
+Errors differ from warnings in their severity and format. In particular, errors
+are _fatal_ and stop compilation, so at most one error is displayed per run of
+stanc.
+
+There are four kinds of errors emitted by stanc3
+
+1. File errors occur when the file passed to stanc is either missing or cannot
+   be opened (i.e. has permissions issues). They look like
+   ```
+   Error: file 'notfound.stan' not found or cannot be opened
+   ```
+2. Syntatic errors occur whenever a program violates the Stan language's
+   [syntax](https://mc-stan.org/docs/2_27/reference-manual/language-syntax.html)
+   requirements. There are three kinds of errors within syntax errors; "lexing"
+   errors mean that the input was unable to be read properly on the character
+   level, "include" errors which occur when the `#include` directive fails, and
+   "parsing" errors which result when the structure of the program is incorrect.
+
+   * The lexing errors occur due to the use of invalid characters in a program.
+     For example, a lexing error due to the use of `$` in a variable name will
+     look like the following.
+
+     ```
+     Syntax error in 'char.stan', line 2, column 6, lexing error:
+     -------------------------------------------------
+       1:  data {
+       2:     int $ome_variable;
+                  ^
+       3:  }
+     -------------------------------------------------
+     Invalid character found.
+     ```
+
+   * When an include directive is used, it can lead to errors if the included file
+     is not found, or if a file includes itself (including a recursive loop of
+     includes, such as A -> B -> A).
+
+     ```
+     Syntax error in './incl.stan', line 1, column 0, included from
+     './incl.stan', line 1, column 0, included from
+     'incl.stan', line 1, column 0, include error:
+     -------------------------------------------------
+       1:  #include <incl.stan>
+           ^
+     -------------------------------------------------
+     File incl.stan recursively included itself.
+     ```
+
+   * It is much more common to see parsing errors, which tend to have more
+     in-depth explanations of the error found. For example, if a user forgets to
+     put a size on a type like vector, as in the following, this raises a parsing
+     (structural) error in the compiler.
+     ```
+     Syntax error in vec.stan', line 3, column 10 to column 11, parsing error:
+     -------------------------------------------------
+       1:  data {
+       2:     int<lower=0> N;
+       3:     vector x;
+                     ^
+       4:  }
+     -------------------------------------------------
+     "[" expression "]" expected for vector size.
+     ```
+
+3. Semantic errors (also known as type errors) occur when a program is stuctured
+   correctly but features an error in the [type
+   rules](https://mc-stan.org/docs/reference-manual/extra-grammatical-constraints.html)
+   imposed by the language. An example of this is assigning a real value to a
+   variable defined as an integer.
+   ```
+   Semantic error in 'type.stan', line 2, column 3 to column 15:
+   -------------------------------------------------
+     1:  transformed data {
+     2:     int x = 1.5;
+            ^
+     3:  }
+   -------------------------------------------------
+   Ill-typed arguments supplied to assignment operator =: lhs has
+   type int and rhs has type real
+   ```
+4. Finally, the compiler can raise an internal error. These are caused by bugs
+   in the compiler, **not** your model, and we would appreciate it if you report
+   them on the [stanc3 repo](https://github.com/stan-dev/stanc3/issues) with the
+   error message provided. These errors usually say something like "This should
+   never happen," and we apologize if they do.
+
 ## Using external C++ code
 
 The `--allow_undefined` flag can be passed to the call to stanc,
@@ -144,7 +262,7 @@ This requires specifying two makefile variables:
 - `USER_HEADER=<header_file.hpp>`, where `<header_file.hpp>` is the name of a header file that
 defines a function with the same name and signature in a namespace
 that is formed by concatenating the `class_name` argument to
-stanc documented above to the string `_namespace` 
+stanc documented above to the string `_namespace`
 
 
 As an example, consider the following variant of the Bernoulli example

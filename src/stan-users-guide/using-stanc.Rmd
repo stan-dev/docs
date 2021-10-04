@@ -1,0 +1,700 @@
+# Using the Stan Compiler
+
+Stan is used in most of our
+[interfaces](https://mc-stan.org/users/interfaces/) through the Stan compiler
+`stanc`. Since version 2.22, the Stan compiler has been implemented in OCaml and
+is referred to as [stanc3](https://github.com/stan-dev/stanc3). The binary name
+is still simply `stanc`, so this document uses both stanc and stanc3
+interchangably.
+
+## Command-line options for stanc3 {#stanc-args}
+
+The stanc3 compiler has the following command-line syntax:
+
+```
+> stanc (options) <model_file>
+```
+where `<model_file>` is a path to a Stan model
+file ending in suffix `.stan`.
+
+The stanc3 options are:
+
+- `--help` - Displays the complete list of stanc3 options, then exits.
+
+- `--version` - Display stanc version number
+
+- `--info` - Print information about the model, such
+as the type information for variables and the list of used distributions.
+
+- `--name=<model_name>` - Specify the name of the class
+used for the implementation of the Stan model in the generated C++ code.
+
+- `--o=<file_name>` -  Specify the name of the file into
+which the generated C++ is written.
+
+- `--allow-undefined` - Do not throw a parser error if there is a function in
+  the Stan program that is declared but not defined in the functions block.
+
+- `--include_paths=<dir1,...dirN>` - Takes a comma-separated list
+  of directories that may contain a file in an `#include` directive.
+
+- `--use-opencl` - If set, will use additional Stan OpenCL
+  features enabled in the Stan-to-C++ compiler.
+
+- `--auto-format` - Pretty prints the program to the console. See [more on auto
+  formatting](#stanc-pretty-printing).
+
+- `--print-canonical` - Similar to `--auto-format`, but program is also updated
+  to remove deprecated features and canonicalize the program when possible.
+
+- `--print-cpp` - If set, output the generated C++ Stan model class to stdout.
+
+- `--O` - Allow the compiler to apply all optimizations to the Stan
+  code. **WARNING:** _This is currently an experimental feature!_
+
+- `--warn-uninitialized` - Emit warnings about uninitialized variables
+  to stderr. Currently an experimental feature.
+
+- `--warn-pedantic` - Emit warnings in [Pedantic mode](#pedantic-mode)
+  which warns of potential issues in the meaning of your program.
+
+The compiler also provides a number of debug options which are
+primarily of interest to stanc3 developers; use the `--help`
+option to see the full set.
+
+## Understanding stanc3 errors and warnings
+
+During model compilation, stanc can produce a variety of errors (issues that
+prevent the model from being compiled) and warnings (non-fatal issues that
+should still be considered).
+
+### Warnings
+
+Even without the optional `--warn-pedantic` and `--warn-uninitialized` [command
+line flags](#stanc-args), both of which enable additional warnings, stanc can still
+produce warnings about your program. In particular, warnings will be produced
+in two situations
+
+1. A completely blank Stan program will produce the following warning message
+   ```
+   Warning: Empty file 'empty.stan' detected;
+   this is a valid stan model but likely unintended!
+   ```
+2. The use of any [deprecated
+   features](https://mc-stan.org/docs/reference-manual/deprecated-features-appendix.html)
+   will lead to warnings which will look as follows
+   ```
+   Warning in 'deprecated.stan', line 2, column 2:
+   Comments beginning with # are deprecated.
+   Please use // in place of # for line comments.
+   ```
+
+A single Stan program can produce many warnings during compilation.
+
+
+### Errors
+
+Errors differ from warnings in their severity and format. In particular, errors
+are _fatal_ and stop compilation, so at most one error is displayed per run of
+stanc.
+
+There are four kinds of errors emitted by stanc3
+
+1. File errors occur when the file passed to stanc is either missing or cannot
+   be opened (i.e. has permissions issues). They look like
+   ```
+   Error: file 'notfound.stan' not found or cannot be opened
+   ```
+2. Syntatic errors occur whenever a program violates the Stan language's
+   [syntax](https://mc-stan.org/docs/2_27/reference-manual/language-syntax.html)
+   requirements. There are three kinds of errors within syntax errors; "lexing"
+   errors mean that the input was unable to be read properly on the character
+   level, "include" errors which occur when the `#include` directive fails, and
+   "parsing" errors which result when the structure of the program is incorrect.
+
+   * The lexing errors occur due to the use of invalid characters in a program.
+     For example, a lexing error due to the use of `$` in a variable name will
+     look like the following.
+
+     ```
+     Syntax error in 'char.stan', line 2, column 6, lexing error:
+     -------------------------------------------------
+       1:  data {
+       2:     int $ome_variable;
+                  ^
+       3:  }
+     -------------------------------------------------
+     Invalid character found.
+     ```
+
+   * When an include directive is used, it can lead to errors if the included file
+     is not found, or if a file includes itself (including a recursive loop of
+     includes, such as A -> B -> A).
+
+     ```
+     Syntax error in './incl.stan', line 1, column 0, included from
+     './incl.stan', line 1, column 0, included from
+     'incl.stan', line 1, column 0, include error:
+     -------------------------------------------------
+       1:  #include <incl.stan>
+           ^
+     -------------------------------------------------
+     File incl.stan recursively included itself.
+     ```
+
+   * It is much more common to see parsing errors, which tend to have more
+     in-depth explanations of the error found. For example, if a user forgets to
+     put a size on a type like vector, as in the following, this raises a parsing
+     (structural) error in the compiler.
+     ```
+     Syntax error in vec.stan', line 3, column 10 to column 11, parsing error:
+     -------------------------------------------------
+       1:  data {
+       2:     int<lower=0> N;
+       3:     vector x;
+                     ^
+       4:  }
+     -------------------------------------------------
+     "[" expression "]" expected for vector size.
+     ```
+
+3. Semantic errors (also known as type errors) occur when a program is stuctured
+   correctly but features an error in the [type
+   rules](https://mc-stan.org/docs/reference-manual/extra-grammatical-constraints.html)
+   imposed by the language. An example of this is assigning a real value to a
+   variable defined as an integer.
+   ```
+   Semantic error in 'type.stan', line 2, column 3 to column 15:
+   -------------------------------------------------
+     1:  transformed data {
+     2:     int x = 1.5;
+            ^
+     3:  }
+   -------------------------------------------------
+   Ill-typed arguments supplied to assignment operator =: lhs has
+   type int and rhs has type real
+   ```
+4. Finally, the compiler can raise an internal error. These are caused by bugs
+   in the compiler, **not** your model, and we would appreciate it if you report
+   them on the [stanc3 repo](https://github.com/stan-dev/stanc3/issues) with the
+   error message provided. These errors usually say something like "This should
+   never happen," and we apologize if they do.
+
+
+
+## Pedantic mode
+
+Pedantic mode is a compilation option built into Stanc3 that warns you about
+potential issues in your Stan program.
+
+For example, consider the following program.
+
+```stan
+data {
+  int N;
+  array[N] real x;
+}
+parameters {
+  real sigma;
+}
+model {
+  real mu;
+  x ~ normal(mu, sigma);
+}
+```
+
+When pedantic mode is turned on, the compiler will produce the following warnings.
+
+```
+Warning:
+  The parameter sigma has no priors.
+Warning at 'ped-mode-ex1.stan', line 10, column 14 to column 16:
+  The variable mu may not have been assigned a value before its use.
+Warning at 'ped-mode-ex1.stan', line 10, column 18 to column 23:
+  A normal distribution is given parameter sigma as a scale parameter
+  (argument 2), but sigma was not constrained to be strictly positive.
+```
+
+Here are the kinds of issues that pedantic mode will find (which are described
+in more detail in following sections):
+
+-   *Distribution usages issues.* Distribution arguments don't match the
+    distribution specification, or some specific distribution is used in an
+    inadvisable way.
+-   *Unused parameter.* A parameter is defined but doesn't contribute to target.
+-   *Large or small constant in a distribution.* Very large or very small
+    constants are used as distribution arguments.
+-   *Control flow depends on a parameter.* Branching control flow (like if/else)
+    depends on a parameter value .
+-   *Parameter has multiple twiddles.* A parameter is on the left-hand side of
+    multiple twiddles.
+-   *Parameter has zero or multiple priors.* A parameter has zero or more than
+    one prior distribution.
+-   *Variable is used before assignment.* A variable is used before being
+    assigned a value.
+-   *Strict or nonsensical parameter bounds.* A parameter is given questionable
+    bounds.
+
+Some important limitations of pedantic mode are listed at the end of this chapter.
+
+
+### Distribution argument and variate constraint issues
+
+When an argument to a built-in distribution certainly does not match that
+distribution's specification in the [Stan Functions
+Reference](https://mc-stan.org/docs/functions-reference/index.html), a warning
+is thrown. This primarily checks if any distribution argument's bounds at
+declaration, compile-time value, or subtype at declaration (e.g. `simplex`) is
+incompatible with the domain of the distribution. x
+
+For example, consider the following program.
+
+```stan
+parameters {
+  real unb_p;
+  real<lower=0> pos_p;
+}
+model {
+  1 ~ poisson(unb_p);
+  1 ~ poisson(pos_p);
+}
+```
+
+The parameter of `poisson` should be strictly positive, but `unb_p` is not constrained to be positive.
+
+Pedantic mode produces the following warning.
+
+```
+Warning at 'ex-dist-args.stan', line 6, column 14 to column 19:
+  A poisson distribution is given parameter unb_p as a rate parameter
+  (argument 1), but unb_p was not constrained to be strictly positive.
+```
+
+
+### Special-case distribution issues
+
+Pedantic mode checks for some specific uses of distributions that may indicate a
+statistical mistake:
+
+
+#### Uniform distributions
+
+Any use of uniform distribution generates a warning, except when the variate
+parameter's declared `upper` and `lower` bounds exactly match the uniform
+distribution bounds. In general, assigning a parameter a uniform distribution
+can create non-differentiable boundary conditions and is not recommended.
+
+For example, consider the following program.
+
+```stan
+parameters {
+  real a;
+  real<lower=0, upper=1> b;
+}
+model {
+  a ~ uniform(0, 1);
+  b ~ uniform(0, 1);
+}
+```
+
+`a` is assigned a uniform distribution that doesn't match its constraints.
+
+Pedantic mode produces the following warning.
+
+```
+Warning at 'uniform-warn.stan', line 6, column 2 to column 20:
+  Parameter a is given a uniform distribution. The uniform distribution is
+  not recommended, for two reasons: (a) Except when there are logical or
+  physical constraints, it is very unusual for you to be sure that a
+  parameter will fall inside a specified range, and (b) The infinite gradient
+  induced by a uniform density can cause difficulties for Stan's sampling
+  algorithm. As a consequence, we recommend soft constraints rather than hard
+  constraints; for example, instead of giving an elasticity parameter a
+  uniform(0, 1) distribution, try normal(0.5, 0.5).
+```
+
+
+#### (Inverse-) Gamma distributions
+
+Gamma distributions are sometimes used as an attempt to assign an improper prior
+to a parameter. Pedantic mode gives a warning when the Gamma arguments indicate
+that this may be the case.
+
+
+#### lkj\_corr distribution
+
+Any use of the `lkj_corr` distribution generates a warning that suggests using
+the Cholesky variant instead. See
+<https://mc-stan.org/docs/functions-reference/lkj-correlation.html> for details.
+
+
+### Unused parameters
+
+A warning is generated when a parameter is declared but does not have any effect
+on the program. This is determined by checking whether the value of the `target`
+variable depends in any way on each of the parameters.
+
+For example, consider the following program.
+
+```stan
+parameters {
+  real a;
+  real b;
+}
+model {
+  a ~ normal(1, 1);
+}
+```
+
+`a` participates in the density function but `b` does not.
+
+Pedantic mode produces the following warning.
+
+```
+Warning:
+  The parameter b was declared but was not used in the density calculation.
+```
+
+
+### Large or small constants in a distribution
+
+When numbers with magnitude less than 0.1 or greater than 10 are used as
+arguments to a distribution, it indicates that some parameter is not scaled to
+unit value, so a warning is thrown. See
+<https://mc-stan.org/docs/stan-users-guide/standardizing-predictors-and-outputs.html>
+for a discussion of scaling parameters.
+
+For example, consider the following program.
+
+```stan
+parameters {
+  real x;
+  real y;
+}
+model {
+  x ~ normal(-100, 100);
+  y ~ normal(0, 1);
+}
+```
+
+The constants `-100` and `100` suggest that `x` is not unit scaled.
+
+Pedantic mode produces the following warning.
+
+```
+Warning at 'constants-warn.stan', line 6, column 14 to column 17:
+  Argument -100 suggests there may be parameters that are not unit scale;
+  consider rescaling with a multiplier (see manual section 22.12).
+Warning at 'constants-warn.stan', line 6, column 19 to column 22:
+  Argument 100 suggests there may be parameters that are not unit scale;
+  consider rescaling with a multiplier (see manual section 22.12).
+```
+
+
+### Control flow depends on a parameter
+
+Control flow statements, such as `if`, `for` and `while` should not depend on
+parameters or functions of parameters to determine their branching conditions.
+This is likely to introduce a discontinuity into the density function. Pedantic
+mode generates a warning when any branching condition may depend on a parameter
+value.
+
+For example, consider the following program.
+
+```stan
+parameters {
+  real a;
+}
+model {
+  // x depends on parameter a
+  real x = a * a;
+
+  int m;
+
+  // the if-then-else depends on x which depends on a
+  if(x > 0) {
+    //now m depends on x which depends on a
+    m = 1;
+  } else {
+    m = 2;
+  }
+
+  // for loop depends on m -> x -> a
+  for (i in 0:m) {
+    a ~ normal(i, 1);
+  }
+}
+```
+
+The `if` and `for` statements are control flow that depend (indirectly) on the value of the parameter `m`.
+
+Pedantic mode produces the following warning.
+
+```
+Warning at 'param-dep-cf-warn.stan', line 11, column 2 to line 16, column 3:
+  A control flow statement depends on parameter(s): a.
+Warning at 'param-dep-cf-warn.stan', line 19, column 2 to line 21, column 3:
+  A control flow statement depends on parameter(s): a.
+```
+
+
+### Parameters with multiple twiddles
+
+A warning is generated when a parameter is found on the left-hand side of more than one ~ statements (or an equivalent `target +=` conditional density statement). This pattern is not inherently an issue, but it is unusual and may indicate a mistake.
+
+Pedantic mode only searches for repeated statements, it will not for example generate a warning when a ~ statement is executed repeatedly inside of a loop.
+
+For example, consider the following program.
+
+```stan
+data {
+  real x;
+}
+parameters {
+  real a;
+  real b;
+}
+model {
+  a ~ normal(0, 1);
+  a ~ normal(x, 1);
+
+  b ~ normal(1, 1);
+}
+```
+
+Pedantic mode produces the following warning.
+
+```
+Warning at 'multi-twiddle.stan', line 9, column 2 to column 19:
+  The parameter a is on the left-hand side of more than one twiddle
+  statement.
+```
+
+
+### Parameters with zero or multiple priors
+
+A warning is generated when a parameter appears to have greater than or less than one prior distribution factor.
+
+This analysis depends on a [*factor graph*](https://en.wikipedia.org/wiki/Factor_graph) representation of a Stan program. A factor F that depends on a parameter P is called a *prior factor for P* if there is no path in the factor graph from F to any data variable except through P.
+
+One limitation of this approach is that the compiler cannot distinguish between *modeled* `data` variables and other convenient uses of `data` variables such as data sizes or hyperparameters. This warning assumes that all data variables (except for `int` variables) are modeled data, which may cause extra warnings.
+
+For example, consider the following program.
+
+```stan
+data {
+  real x;
+}
+parameters {
+  real a;
+  real b;
+  real c;
+  real d;
+}
+model
+{
+  a ~ normal(0, 1); // this is a prior
+  x ~ normal(a, 1); // this is not a prior, since data is involved
+
+  b ~ normal(x, 1); // this is also not a prior, since data is involved
+
+  // this is not a prior for c, since data is involved through b
+  // but it is a prior for b, since the data is only involved through b
+  c ~ normal(b, 1);
+
+  //these are multiple priors:
+  d ~ normal(0, 1);
+  1 ~ normal(d, 1);
+}
+```
+
+One prior is found for `a` and for `b`, while `c` only has a factor that touches a `data` variable and `d` has multiple priors.
+
+Pedantic mode produces the following warning.
+
+```
+Warning:
+  The parameter c has no priors.
+Warning:
+  The parameter d has 2 priors.
+```
+
+
+### Variables used before assignment
+
+A warning is generated when any variable is used before it has been assigned a value.
+
+For example, consider the following program.
+
+```stan
+transformed data {
+  real x;
+  if (1 > 2) {
+    x = 1;
+  } else {
+    print("oops");
+  }
+  print(x);
+}
+```
+
+Since `x` is only assigned in one of the branches of the `if` statement, it might get to `print(x)` without having been assigned to.
+
+Pedantic mode produces the following warning.
+
+```
+Warning at 'uninit-warn.stan', line 7, column 8 to column 9:
+  The variable x may not have been assigned a value before its use.
+```
+
+
+### Strict or nonsensical parameter bounds
+
+Except when there are logical or physical constraints, it is very unusual for you to be sure that a parameter will fall inside a specified range. A warning is generated for all parameters declared with the bounds `<lower=.., upper=..>` except for `<lower=0, upper=1>` or `<lower=-1, upper=1>`.
+
+In addition, a warning is generated when a parameter bound is found to have `lower >= upper`.
+
+For example, consider the following program.
+
+```stan
+parameters {
+  real<lower=0, upper=1> a;
+  real<lower=-1, upper=1> b;
+  real<lower=-2, upper=1012> c;
+}
+model {
+  c ~ normal(b, a);
+}
+```
+
+Pedantic mode produces the following warning.
+
+```
+Warning:
+  Your Stan program has a parameter c with a lower and upper bound in its
+  declaration. These hard constraints are not recommended, for two reasons:
+  (a) Except when there are logical or physical constraints, it is very
+  unusual for you to be sure that a parameter will fall inside a specified
+  range, and (b) The infinite gradient induced by a hard constraint can cause
+  difficulties for Stan's sampling algorithm. As a consequence, we recommend
+  soft constraints rather than hard constraints; for example, instead of
+  constraining an elasticity parameter to fall between 0, and 1, leave it
+  unconstrained and give it a normal(0.5, 0.5) prior distribution.
+```
+
+
+### Pedantic mode limitations
+
+
+* Constant values are sometimes uncomputable
+
+  Pedantic mode attempts to evaluate expressions down to literal values so that
+  they can be used to generate warnings. For example, in the code `normal(x, 1 -
+  2)`, the expression `1 - 2` will be evaluated to `-1`, which is not a valid
+  variance argument so a warning is generated. However, this strategy is
+  limited; it is often impossible to fully evaluate expressions in finite time.
+
+* Container types
+
+  Currently, indexed variables are not handled intelligently, so they are
+  treated as monolithic variables. Each analysis treats indexed variables
+  conservatively (erring toward generating fewer warnings).
+
+* Data variables
+
+  The declaration information for `data` variables is currently not considered,
+  so using `data` as incompatible arguments to distributions may not generate
+  the appropriate warnings.
+
+* Control flow dependent on parameters in nested functions
+
+  If a parameter is passed as an argument to a user-defined function within
+  another user-defined function, and then some control flow depends on that
+  argument, the appropriate warning will not be thrown.
+
+
+## Automatic updating and formatting of Stan programs {#stanc-pretty-printing}
+
+In addition to compiling Stan programs, stanc3 features several [flags](#stanc-args)
+which can be used to format Stan programs and update them to the most recent
+Stan syntax by removing any
+[deprecation
+features](https://mc-stan.org/docs/reference-manual/deprecated-features-appendix.html)
+which can be automatically replaced.
+
+### Automatic formatting
+
+Invoking `stanc --auto-format <model_file>` will print a version of your model
+which has been re-formatted. The goal is to have this automatic formatting stay
+as close as possible to the [Stan Program Style Guide]. This means spacing,
+identation, and line length are all regularized. _Some_ deprecated features,
+like the use of `#` for line comments, are replaced, but the goal is mainly to
+preserve the program while formatting it.
+
+### Canonicalizing
+
+Invoking `stanc --print-canonical <model_file>` will also print a formatted
+version of your program, but it will first make several changes to the code to
+reflect changes in syntax and deprecations to the language. This can be a great
+tool for updating older Stan models and silencing deprecation warnings.
+
+Some of the changes made are:
+
+* Removing unnecessary extra parenthesis
+
+  `y = ((x-1))` $\to$ `y = x - 1`
+
+* Replacing deprecated assignment operators
+
+  `y <- 0` $\to$ `y = 0`
+
+* Updating the suffix of (included or user-defined) distributions
+
+  `my_distribution_cdf_log` $\to$ `my_distribution_lcdf`
+
+* Replacing inline conditionals with the ternary if operator
+
+  `if_else(a,b,c)` $\to$ `a ? b : c`
+
+* Replacing some deprecated functions with their drop-in replacements
+
+  `abs(2.4)` $\to$ `fabs(2.4)`
+
+* Replacing `increment_log_prob` calls with `target+=` statements
+
+
+### Known issues
+
+The formatting and canonicalizing features of stanc3 are still under
+development. The following are some known issues one should be aware of before
+using either:
+
+* Oddly placed comments
+
+  If your Stan program features comments in unexpected places, such as inside an
+  expression, they may be moved in the process of formatting. Moved comments are
+  prefixed with the string `^^^:` to indicate they originally appeared higher in
+  the program.
+
+  For example, the following program
+
+  ```stan
+  generated quantities {
+    real x = 2;
+    real y = x /* comment */ - 1;
+  }
+  ```
+
+  will be formatted as follows
+
+  ```stan
+  generated quantities {
+    real x = 2;
+    real y = x - 1;
+
+    /* ^^^: comment */
+  }
+  ```
+
+  One can avoid this by not placing comments directly inside an expression, and
+  we hope to improve this functionality in future versions.

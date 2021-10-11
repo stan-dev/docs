@@ -85,7 +85,7 @@ This repository uses
 [GitHub Pages](https://help.github.com/categories/github-pages-basics)
 to serve the
 [project pages](https://help.github.com/articles/user-organization-and-project-pages/#project-pages-sites) site
-with URL `https://mc-stan.org/docs`.
+with URL https://mc-stan.org/docs.
 The publishing strategy is to serve the contents of the directory `docs` on branch `master`.
 The `docs` directory contains an empty file named `.nojekyll` so that GitHub will treat the contents
 as pre-generated HTML instead of trying to run [jekyll](https://jekyllrb.com).

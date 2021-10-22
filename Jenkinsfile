@@ -51,12 +51,13 @@ pipeline {
                 sh "python3 add_redirects.py $major_version $minor_version reference-manual"
                 sh "python3 add_redirects.py $major_version $minor_version stan-users-guide"
                 sh "python3 add_redirects.py $major_version $minor_version cmdstan-guide"
-
-                if (params.linkDocs) {
-                    /* Link docs to latest */
-                    sh "ls -lhart docs"
-                    sh "chmod +x add_links.sh"
-                    sh "./add_links.sh $last_docs_version_dir"
+                script {
+                    if (params.linkDocs) {
+                        /* Link docs to latest */
+                        sh "ls -lhart docs"
+                        sh "chmod +x add_links.sh"
+                        sh "./add_links.sh $last_docs_version_dir"
+                    }
                 }
 
                 /* Create Pull Request */

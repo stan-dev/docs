@@ -12,7 +12,7 @@ pipeline {
         string(defaultValue: '', name: 'last_docs_version_dir', description: "Last docs version found in /docs. Example: 2_21")
         booleanParam(defaultValue: true, description: 'Build docs and create a PR ?', name: 'buildDocs')
         booleanParam(defaultValue: true, description: 'Change docs version for stan-dev.github.io ?', name: 'docsStanDev')
-        booleanParam(defaultValue: false, description: 'Build cmdstan manual ?', name: 'cmdstanManual')
+        booleanParam(defaultValue: true, description: 'Link docs to latest?', name: 'linkDocs')
     }
     environment {
         GITHUB_TOKEN = credentials('6e7c1e8f-ca2c-4b11-a70e-d934d3f6b681')
@@ -52,10 +52,12 @@ pipeline {
                 sh "python3 add_redirects.py $major_version $minor_version stan-users-guide"
                 sh "python3 add_redirects.py $major_version $minor_version cmdstan-guide"
 
-                /* Link docs to latest */
-                sh "ls -lhart docs"
-                sh "chmod +x add_links.sh"
-                sh "./add_links.sh $last_docs_version_dir"
+                if (params.linkDocs) {
+                    /* Link docs to latest */
+                    sh "ls -lhart docs"
+                    sh "chmod +x add_links.sh"
+                    sh "./add_links.sh $last_docs_version_dir"
+                }
 
                 /* Create Pull Request */
                 withCredentials([usernamePassword(credentialsId: 'a630aebc-6861-4e69-b497-fd7f496ec46b',
@@ -140,30 +142,6 @@ pipeline {
                     """
                 }
 
-            }
-        }
-        stage('Checkout cmdstan and build manual') {
-            when {
-              expression {
-                params.cmdstanManual
-              }
-            }
-            steps {
-                /* Checkout source code */
-                deleteDir()
-                checkout([$class: 'GitSCM',
-                          branches: [[name: '*/master']],
-                          doGenerateSubmoduleConfigurations: false,
-                          extensions: [],
-                          submoduleCfg: [],
-                          userRemoteConfigs: [[url: "https://github.com/stan-dev/cmdstan.git", credentialsId: 'a630aebc-6861-4e69-b497-fd7f496ec46b']]]
-                )
-
-                /* make manual */
-                sh "make manual"
-
-                /* archive manual for it to be shown in job result artifacts */
-                archiveArtifacts 'doc/*.pdf'
             }
         }
     }

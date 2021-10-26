@@ -141,17 +141,26 @@ the tokens are reserved for future use.
 
 ```
 for, in, while, repeat, until, if, then, else,
-true, false, target
+true, false, target, struct, typedef, export,
+auto, extern, var, static
 ```
 
 Variables should not be named after types, either, and thus may not be
 any of the following.
 
 ```
-int, real, vector, simplex, unit_vector, ordered,
-positive_ordered, row_vector, matrix,
+int, real, complex, vector, simplex, unit_vector,
+ordered, positive_ordered, row_vector, matrix,
 cholesky_factor_corr, cholesky_factor_cov,
 corr_matrix, cov_matrix
+```
+
+The following built in functions are also reserved and
+cannot be used as variable names:
+
+```
+print, reject, profile, get_lp, increment_log_prob,
+target
 ```
 
 The following block identifiers are reserved and cannot be used as variable names:
@@ -159,16 +168,6 @@ The following block identifiers are reserved and cannot be used as variable name
 ```
 functions, model, data, parameters, quantities,
 transformed, generated
-```
-
-#### Reserved names from Stan implementation {-}
-
-Some variable names are reserved because they are used within
-Stan's C++ implementation.  These are
-
-```
-var, fvar, STAN_MAJOR, STAN_MINOR, STAN_PATCH,
-STAN_MATH_MAJOR, STAN_MATH_MINOR, STAN_MATH_PATCH
 ```
 
 
@@ -186,25 +185,29 @@ to halt and report the name and location of the variable causing the
 conflict.
 
 
-#### Reserved names from C++ {-}
+#### Reserved names backend languages {-}
 
-Finally, variable names, including the names of models, should not
-conflict with any of the C++ keywords.
+Stan primarily generates code in C++, which features its own
+reserved words. It is legal to name a variable any of the
+following names, however doing so will lead to it being renamed
+`_stan_NAME` (e.g. `_stan_public`) behind the scenes (in the
+generated C++ code).
 
+<!-- corresponds to the list in stanc3/src/stan_math_backend/Mangle.ml -->
 ```
-alignas, alignof, and, and_eq, asm, auto, bitand, bitor, bool,
-break, case, catch, char, char16_t, char32_t, class, compl,
-const, constexpr, const_cast, continue, decltype, default,
-delete, do, double, dynamic_cast, else, enum, explicit,
-export, extern, false, float, for, friend, goto, if,
-inline, int, long, mutable, namespace, new, noexcept,
-not, not_eq, nullptr, operator, or, or_eq, private,
-protected, public, register, reinterpret_cast, return,
-short, signed, sizeof, static, static_assert, static_cast,
-struct, switch, template, this, thread_local, throw, true,
-try, typedef, typeid, typename, union, unsigned, using,
-virtual, void, volatile, wchar_t, while, xor, xor_eq
+alignas, alignof, and, and_eq, asm, bitand, bitor, bool,
+case, catch, char, char16_t, char32_t, class, compl, const,
+constexpr, const_cast, decltype, default, delete, do,
+double, dynamic_cast, enum, explicit, float, friend, goto,
+inline, long, mutable, namespace, new, noexcept, not, not_eq,
+nullptr, operator, or, or_eq, private, protected, public,
+register, reinterpret_cast, short, signed, sizeof,
+static_assert, static_cast, switch, template, this, thread_local,
+throw, try, typeid, typename, union, unsigned, using, virtual,
+volatile, wchar_t, xor, xor_eq, fvar, STAN_MAJOR, STAN_MINOR,
+STAN_PATCH, STAN_MATH_MAJOR, STAN_MATH_MINOR, STAN_MATH_PATCH
 ```
+<!-- mention python here when TFP backend finished -->
 
 ### Legal characters {-}
 
@@ -401,7 +404,7 @@ If an array expression contains only integer elements, such as
 legal.
 
 ```stan
-array[2] real a = { -3, 12 };  
+array[2] real a = { -3, 12 };
 // error: array [] real can't be assigned to array [] real
 ```
 
@@ -1172,10 +1175,10 @@ differential equations in Stan:
 
 ```stan
 functions {
-  array [] real foo(real t, 
-                    array [] real y, 
-                    array [] real theta, 
-                    array [] real x_r, 
+  array [] real foo(real t,
+                    array [] real y,
+                    array [] real theta,
+                    array [] real x_r,
                     array [] real x_i) {
     // ...
   }
@@ -1189,7 +1192,7 @@ array[1] real theta;
 array[0] real x_r;
 array[0] int x_i;
 // ...
-array[T, 2] real y_hat = integrate_ode_rk45(foo, y0, t0, 
+array[T, 2] real y_hat = integrate_ode_rk45(foo, y0, t0,
                                               ts, theta, x_r, x_i);
 ```
 
@@ -1216,7 +1219,7 @@ differential equations in Stan:
 
 ```stan
 functions {
-  vector foo(real t, vector y, real theta, vector beta, 
+  vector foo(real t, vector y, real theta, vector beta,
             array [] real x_i, int index) {
     // ...
   }
@@ -1231,7 +1234,7 @@ vector[7] beta;
 array[10] int x_i;
 int index;
 // ...
-vector[2] y_hat[T] = ode_rk45(foo, y0, t0, ts, theta, 
+vector[2] y_hat[T] = ode_rk45(foo, y0, t0, ts, theta,
                               beta, x_i, index);
 ```
 

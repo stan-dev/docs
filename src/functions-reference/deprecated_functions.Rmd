@@ -1,13 +1,54 @@
 # Deprecated Functions
 
 This appendix lists currently deprecated functionality along with how to
-replace it. These deprecated features are likely to be removed in the future.
+replace it.
 
-```{r results='asis', echo=FALSE}
-if (knitr::is_html_output()) {
-  cat(' * <a href="functions-old-ode-solver.html">integrate_ode_rk45, integrate_ode_adams, integrate_ode_bdf ODE Integrators</a>\n')
-}
-```
+Starting in Stan 2.29, deprecated functions with drop in replacements (such as
+the renaming of `get_lp` or `multiply_log`) will be removed 3 versions later
+e.g., functions deprecated in Stan 2.20 will be removed in Stan 2.23 and placed
+in [Removed Functions]. The Stan compiler can
+[automatically update](https://mc-stan.org/docs/stan-users-guide/stanc-pretty-printing.html)
+these on the behalf of the user.
+
+
+
+## `multiply_log` and `binomial_coefficient_log` functions
+
+*Deprecated*: Currently two non-conforming functions ending in suffix
+  `_log`.
+
+*Replacement*: Replace `multiply_log(...)` with `lmultiply(...)`.
+ Replace `binomial_coefficient_log(...)` with `lchoose(...)`.
+
+*Scheduled Removal*: Stan 2.32
+
+
+## `get_lp()` function
+
+*Deprecated*: The built-in no-argument function `get_lp()` is deprecated.
+
+*Replacement*: Use the no-argument function `target()` instead.
+
+*Scheduled Removal*: Stan 2.32
+
+## `abs(real x)` function
+
+*Deprecated*: Use of the `abs` function with real-valued arguments
+              is deprecated; use functions `fabs` instead.
+
+
+## Integer division with `operator/`
+
+*Deprecated*: Using `/` with two integer arguments is interpreted as integer
+floor division, such that
+
+$$ 1 / 2 = 0 $$
+
+This is deprecated due to its confusion with real-valued division, where
+
+$$ 1.0 / 2.0 = 0.5 $$
+
+*Replacement*: Use the integer division operator `operator%/%` instead.
 
 ## integrate_ode_rk45, integrate_ode_adams, integrate_ode_bdf ODE integrators {#functions-old-ode-solver}
 
@@ -24,7 +65,7 @@ if (knitr::is_html_output()) {
 A system of ODEs is specified as an ordinary function in Stan within
 the functions block. The ODE system function must have this function
 signature:
-  
+
 ```stan
 array[] real ode(real time, array[] real state, array[] real theta,
                  array[] real x_r, array[] int x_i);
@@ -117,7 +158,7 @@ are as follows.
 
 *   *`ode`*: function literal referring to a function specifying   the
 system of differential equations with signature:
-  
+
 ```
 (real, array[] real, array[] real, data array[] real, data array[] int):array[] real
 ```
@@ -140,7 +181,7 @@ derivatives with respect to time of the state,
 
 For more fine-grained control of the ODE solvers, these parameters can
 also be provided:
-  
+
   *   `data`   *`rel_tol`*: relative tolerance for the ODE  solver, type
 `real`, data only,
 
@@ -159,7 +200,7 @@ with values consisting of solutions at the specified times.
 
 The sizes must match, and in particular, the following groups are of
 the same size:
-  
+
   *   state variables passed into the system function,  derivatives
 returned by the system function, initial state passed  into the
 solver, and rows of the return value of the solver,

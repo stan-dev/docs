@@ -14,22 +14,22 @@ In the following BNF grammars, tokens are represented in ALLCAPS.
 Grammar non-terminals are surrounded by `<` and `>`.
 A square brackets (`[A]`) indicates optionality of `A`.
 A postfixed Kleene star (`A*`) indicates zero or more occurrences
-of `A`. 
+of `A`.
 Parenthesis can be used to group symbols together in productions.
 
 Finally, this grammar uses the concept of "parameterized nonterminals"
-as used in the parsing library 
+as used in the parsing library
 [Menhir](http://gallium.inria.fr/~fpottier/menhir/manual.html#sec30).
 A rule like `<list(x)> ::= x (COMMA x)*` declares a generic list rule,
 which can later be applied to others by the symbol `<list(<expression>)>`.
 
 The following representation is constructed directly from the OCaml
-[reference 
+[reference
 parser](https://github.com/stan-dev/stanc3/blob/release/v2.27.0/src/frontend/parser.mly)
-using a tool called [Obelisk](https://github.com/Lelio-Brun/Obelisk). 
+using a tool called [Obelisk](https://github.com/Lelio-Brun/Obelisk).
 The raw output is available [here](grammar.txt).
 
-<!-- This is the direct output of `obelisk -i parser.mly` 
+<!-- This is the direct output of `obelisk -i parser.mly`
      copied and pasted into reasonable section distinctions.
      Additionally, items which exist only for error messaging
      were removed, like allowing FUNCTIONBLOCK as a decl identifier
@@ -82,6 +82,7 @@ The raw output is available [here](grammar.txt).
 
 <basic_type> ::= INT
                | REAL
+               | COMPLEX
                | VECTOR
                | ROWVECTOR
                | MATRIX
@@ -203,6 +204,7 @@ The raw output is available [here](grammar.txt).
 
 <common_expression> ::= INTNUMERAL
                       | REALNUMERAL
+		      | IMAGNUMERAL
                       | LBRACE <expression> (COMMA <expression>)* RBRACE
                       | LBRACK [<expression> (COMMA <expression>)*] RBRACK
                       | <identifier> LPAREN [<expression> (COMMA
@@ -243,7 +245,7 @@ The raw output is available [here](grammar.txt).
                  | RABRACK
                  | GEQ
 
-<indexes> ::= epsilon 
+<indexes> ::= epsilon
             | COLON
             | <expression>
             | <expression> COLON
@@ -313,12 +315,12 @@ The raw output is available [here](grammar.txt).
 ## Tokenizing rules
 
 Many of the tokens used in the BNF grammars follow obviously
-from their names: `DATABLOCK` is the literal string 'data', 
-`COMMA` is a single ',' character, etc. The literal representation 
+from their names: `DATABLOCK` is the literal string 'data',
+`COMMA` is a single ',' character, etc. The literal representation
 of each operator is additionally provided in the [operator
 precedence table](#operator-precedence-table).
 
-A few tokens are not so obvious, and are defined here in 
+A few tokens are not so obvious, and are defined here in
 regular expressions:
 
 ```
@@ -330,9 +332,11 @@ INTNUMERAL = [0-9]+ (_ [0-9]+)*
 
 EXPLITERAL = [eE] [+-]? INTNUMERAL
 
-REALNUMERAL = INTNUMERAL \. INTNUMERAL? EXPLITERAL? 
+REALNUMERAL = INTNUMERAL \. INTNUMERAL? EXPLITERAL?
             | \. INTNUMERAL EXPLITERAL?
             | INTNUMERAL EXPLITERAL
+
+IMAGNUMERAL = (REALNUMERAL | INTNUMERAL) i
 ```
 
 ## Extra-grammatical constraints
@@ -345,7 +349,7 @@ by functions and distributions.  For example, the binomial
 distribution requires an integer total count parameter and integer
 variate and when truncated would require integer truncation points.
 If these constraints are violated, the program will be rejected during
-parsing with an error message indicating the location of the problem.
+compilation with an error message indicating the location of the problem.
 
 
 ### Operator precedence and associativity {-}
@@ -428,10 +432,10 @@ The `algebra_solver` function may be used without control
 parameters; in this case
 
 * its first argument refers to a function with signature
-`( vector,  vector, real[], int[]) : vector`,
+`( vector,  vector, array[] real, array[] int) : vector`,
 
 * the remaining four arguments must be assignable to types
-`vector`, `vector`, `real[]`, `int[]`,  respectively and
+`vector`, `vector`, `array[] real`, `array[] int`,  respectively and
 
 * the fourth and fifth arguments must be expressions
 containing only variables originating from the data or transformed
@@ -448,10 +452,10 @@ of parameter references. The final free arguments must be assignable to types
 The `integrate_1d` function requires
 
 * its first argument to refer to a function wth signature
-`(real, real, real[], real[], int[]) : real`,
+`(real, real, array[] real, array[] real, array[] int) : real`,
 
 * the remaining six arguments are assignable to types
-`real`, `real`, `real[]`, `real[]`, and `int[]`, and
+`real`, `real`, `array[] real`, `array[] real`, and `array[] int`, and
 
 * the fourth and fifth arguments must be expressions not containing
 any variables not originating in the data or transformed data blocks.
@@ -468,10 +472,10 @@ The `integrate_ode`, `integrate_ode_rk45`, and
 parameters;  in this case
 
 * its first argument to refer to a function with signature
-`(real, real[], real[], real[], int[]) : real[]`,
+`(real, array[] real, array[] real, array[] real, array[] int) : array[] real`,
 
 * the remaining six arguments must assignable to types
-`real[]`, `real`, `real[]`, `real[]`, `real[]`, and `int[]`,
+`array[] real`, `real`, `array[] real`, `array[] real`, `array[] real`, and `array[] int`,
 respectively, and
 
 * the third, fourth, and sixth arguments must be expressions not
@@ -488,7 +492,7 @@ references.  The final three arguments must be assignable to types
 ### Indexes {-}
 
 Standalone expressions used as indexes must denote either an integer
-(`int`) or an integer array (`int[]`).  Expressions
+(`int`) or an integer array (`array[] int`).  Expressions
 participating in range indexes (e.g., `a` and `b` in
 `a : b`) must denote integers (`int`).
 

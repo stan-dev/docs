@@ -15,13 +15,13 @@ To compute this integral in Stan, the integrand must first be defined as a Stan 
 (see the Stan Reference Manual chapter on User-Defined Functions
 for more information on coding user-defined functions).
 
-```
-real normal_density(real x,          // Function argument
-                    real xc,         // Complement of function argument
-                                     //  on the domain (defined later)
-                    real[] theta,    // parameters
-                    real[] x_r,      // data (real)
-                    int[] x_i) {     // data (integer)
+```stan
+real normal_density(real x,             // Function argument
+                    real xc,            // Complement of function argument
+                                        //  on the domain (defined later)
+                    array[] real theta, // parameters
+                    array[] real x_r,   // data (real)
+                    array[] int x_i) {  // data (integer)
   real mu = theta[1];
   real sigma = theta[2];
 
@@ -60,20 +60,20 @@ is described in the chapter on Truncated or Censored Data of this guide.
 Such a model might look like (include the function defined at the beginning of this
 chapter to make this code compile):
 
-```
+```stan
 data {
   int N;
-  real y[N];
+  array[N] real y;
 }
 
 transformed data {
-  real x_r[0];
-  int x_i[0];
+  array[0] real x_r;
+  array[0] int x_i;
 }
 
 parameters {
   real mu;
-  real<lower = 0.0> sigma;
+  real<lower=0.0> sigma;
   real left_limit;
 }
 
@@ -155,8 +155,8 @@ $$
 Normalizing this distribution requires computing the integral of $p(x)$ from
 zero to one. In Stan code, the integrand might look like:
 
-```
-real beta(real x, real xc, real[] theta, real[] x_r, int[] x_i) {
+```stan
+real beta(real x, real xc, array[] real theta, array[] real x_r, array[] int x_i) {
   real alpha = theta[1];
   real beta = theta[2];
 
@@ -174,8 +174,8 @@ as a high precision version of the distance from `x` to the nearest
 endpoint. To make use of this for the beta integral, the integrand can be
 re-coded:
 
-```
-real beta(real x, real xc, real[] theta, real[] x_r, int[] x_i) {
+```stan
+real beta(real x, real xc, array[] real theta, array[] real x_r, array[] int x_i) {
   real alpha = theta[1];
   real beta = theta[2];
   real v;

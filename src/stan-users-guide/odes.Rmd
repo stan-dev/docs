@@ -152,7 +152,7 @@ The simple harmonic oscillator can be coded using the following function
 in Stan (see the [user-defined functions chapter](#functions-programming.chapter) for
 more information on coding user-defined functions).
 
-```
+```stan
 vector sho(real t,        // time
            vector y,      // state
            real theta) {  // friction parameter
@@ -181,18 +181,21 @@ call.
 
 All of these are possible ODE signatures:
 
-```
+```stan
 vector myode1(real t, vector y, real a0);
-vector myode2(real t, vector y, int[] a0, vector a1);
-vector myode3(real t, vector y, matrix a0, real[] a1, row_vector a2);
+vector myode2(real t, vector y, array[] int a0, vector a1);
+vector myode3(real t, vector y, matrix a0, array[] real a1, row_vector a2);
 ```
 
 but these are not allowed:
 
-```
-vector myode1(real t, real[] y, real a0); // Second argument is not a vector
-real[] myode2(real t, vector y, real a0); // Return type is not a vector
-vector myode3(vector y, real a0); // First argument is not a real and second is not a vector
+```stan
+vector myode1(real t, array[] real y, real a0); 
+// Second argument is not a vector
+array[] real myode2(real t, vector y, real a0); 
+// Return type is not a vector
+vector myode3(vector y, real a0); 
+// First argument is not a real and second is not a vector
 ```
 
 ## Measurement error models
@@ -211,7 +214,7 @@ and $y_2(t, \theta)$).
 
 The following model can be used to generate data like this:
 
-```
+```stan
 functions {
   vector sho(real t,
              vector y,
@@ -226,7 +229,7 @@ data {
   int<lower=1> T;
   vector[2] y0;
   real t0;
-  real ts[T];
+  array[T] real ts;
   real theta;
 }
 model {
@@ -251,7 +254,7 @@ produce simulated observations `y_sim`. Because the system is not stiff, the
 This program illustrates the way in which the ODE solver is called in
 a Stan program,
 
-```
+```stan
 vector[2] y_sim[T] = ode_rk45(sho, y0, t0, ts, theta);
 ```
 
@@ -266,13 +269,13 @@ passed, they could be appended to the end of the ode call here. For instance, if
 the system function took two parameters, $\theta$ and $\beta$, the system
 function definition would look like:
 
-```
+```stan
 vector sho(real t, vector y, real theta, real beta) { ... }
 ```
 
 and the appropriate ODE solver call would be:
 
-```
+```stan
 ode_rk45(sho, y0, t0, ts, theta, beta);
 ```
 
@@ -295,7 +298,7 @@ parameter, $\theta$, the initial conditions, $y(t_0, \theta)$, and the scale of
 the noise in the problem. The full Stan model is:
 
 \newpage
-```
+```stan
 functions {
   vector sho(real t,
              vector y,
@@ -308,9 +311,9 @@ functions {
 }
 data {
   int<lower=1> T;
-  vector[2] y[T];
+  array[T] vector[2] y;
   real t0;
-  real ts[T];
+  array[T] real ts;
 }
 parameters {
   vector[2] y0;
@@ -322,8 +325,9 @@ model {
   sigma ~ normal(0, 2.5);
   theta ~ std_normal();
   y0 ~ std_normal();
-  for (t in 1:T)
+  for (t in 1:T) {
     y[t] ~ normal(mu[t], sigma);
+  }
 }
 ```
 <a name="id:sho-both.figure"></a>
@@ -356,7 +360,7 @@ specified exactly the same way with a function of exactly the same
 signature.  The only difference is in the call to the solver the
 `rk45` suffix is replaced with `bdf`, as in
 
-```
+```stan
 ode_bdf(sho, y0, t0, ts, theta);
 ```
 
@@ -384,7 +388,7 @@ function names but with `_tol` appended to the end. All three control
 arguments must be supplied with this signature (there are no
 defaults).
 
-```
+```stan
 vector[2] y_sim[T] = ode_bdf_tol(sho, y0, t0, ts,
                                  relative_tolerance,
                                  absolute_tolerance,
@@ -421,11 +425,12 @@ such a discontinuity is a lag in a pharmacokinetic model, where a
 concentration is zero for times $0 < t < t'$ and then positive for $t \geq t'$.
 In this example example, we would use code in the system such as
 
-```
-if (t < t_lag)
+```stan
+if (t < t_lag) {
   return [0, 0]';
-else
-  ... return non-zero vector...;
+} else {
+  // ... return non-zero vector...
+}
 ```
 
 In general it is better to integrate up to `t_lag` in one solve and
@@ -451,7 +456,7 @@ $$
 $$
 by reducing the stepsize when the inequality is not satisfied.
 
-To understand the roles of the two toleranes it helps to assume $y$ at
+To understand the roles of the two tolerances it helps to assume $y$ at
 opposite scales in the above expression: on one hand the absolute
 tolerance has little effect when $y_i \gg 1$, on the other the
 relative tolerance can
@@ -492,7 +497,7 @@ Additionally, for $M$ parameters there are $M$ additional equations
 to integrate during the backwards solve. Because of this the adjoint
 sensitivity problem scales better in parameters than the forward
 sensitivity problem. The adjoint solver in Stan uses CVODES (the same
-as the `bdf` and `adams` forward sensivitity interfaces).
+as the `bdf` and `adams` forward sensitivity interfaces).
 
 The solution computed in the forward integration is required during the
 backward integration. CVODES uses a checkpointing scheme that saves the
@@ -510,20 +515,20 @@ backward ODE integration phase need to be set for each
 ODE state separately. The harmonic oscillator example call from above
 becomes:
 
-```
+```stan
 vector[2] y_sim[T]
     = ode_adjoint_tol_ctl(sho, y0, t0, ts,
-                          relative_tolerance/9.0,                # forward tolerance
-                          rep_vector(absolute_tolerance/9.0, 2), # forward tolerance
-                          relative_tolerance/3.0,                # backward tolerance
-                          rep_vector(absolute_tolerance/3.0, 2), # backward tolerance
-                          relative_tolerance,                    # quadrature tolerance
-                          absolute_tolerance,                    # quadrature tolerance
+                          relative_tolerance/9.0,                // forward tolerance
+                          rep_vector(absolute_tolerance/9.0, 2), // forward tolerance
+                          relative_tolerance/3.0,                // backward tolerance
+                          rep_vector(absolute_tolerance/3.0, 2), // backward tolerance
+                          relative_tolerance,                    // quadrature tolerance
+                          absolute_tolerance,                    // quadrature tolerance
                           max_num_steps,
-                          150,                                   # number of steps between checkpoints
-                          1,                                     # interpolation polynomial: 1=Hermite, 2=polynomial
-                          2,                                     # solver for forward phase: 1=Adams, 2=BDF 
-                          2,                                     # solver for backward phase: 1=Adams, 2=BDF 
+                          150,                                   // number of steps between checkpoints
+                          1,                                     // interpolation polynomial: 1=Hermite, 2=polynomial
+                          2,                                     // solver for forward phase: 1=Adams, 2=BDF 
+                          2,                                     // solver for backward phase: 1=Adams, 2=BDF 
                           theta);
 ```
 
@@ -568,21 +573,22 @@ is given below.
 In general, computing a matrix exponential will be more efficient than using a numerical
 solver. We can however only apply this technique to systems of linear ODEs.
 
-```
+```stan
 data {
   int<lower=1> T;
   vector[2] y0;
-  real ts[T];
-  real theta[1];
+  array[T] real ts;
+  array[1] real theta;
 }
 model {
 }
 generated quantities {
-  vector[2] y_sim[T];
+  array[T] vector[2] y_sim;
   matrix[2, 2] A = [[ 0,  1],
                     [-1, -theta[1]]]
-  for (t in 1:T)
+  for (t in 1:T) {
     y_sim[t] = matrix_exp((t - 1) * A) * y0;
+  }
   // add measurement error
   for (t in 1:T) {
     y_sim[t, 1] += normal_rng(0, 0.1);

@@ -40,13 +40,14 @@ procedure in the Stan User's Guide.
 We write a program `bernoulli_ppc.stan` which contains
 the following generated quantities block, with comments
 to explain the procedure:
-```
+```stan
 generated quantities {
-  real<lower=0,upper=1> theta_rep;
-  int y_sim[N];
+  real<lower=0, upper=1> theta_rep;
+  array[N] int y_sim;
   // use current estimate of theta to generate new sample
-  for (n in 1:N)
+  for (n in 1:N) {
     y_sim[n] = bernoulli_rng(theta);
+  }
   // estimate theta_rep from new sample
   theta_rep = sum(y_sim) * 1.0 / N;
 }
@@ -106,14 +107,15 @@ better user experience for this workflow.
 Given the current implementation, to see the fitted parameter values for each draw,
 create a copy variable in the generated quantities block, e.g.:
 
-```
+```stan
 generated quantities {
-  real<lower=0,upper=1> theta_cp = theta;
-  real<lower=0,upper=1> theta_rep;
-  int y_sim[N];
+  real<lower=0, upper=1> theta_cp = theta;
+  real<lower=0, upper=1> theta_rep;
+  array[N] int y_sim;
   // use current estimate of theta to generate new sample
-  for (n in 1:N)
+  for (n in 1:N) {
     y_sim[n] = bernoulli_rng(theta);
+  }
   // estimate theta_rep from new sample
   theta_rep = sum(y_sim) * 1.0 / N;
 }

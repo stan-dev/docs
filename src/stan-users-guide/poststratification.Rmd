@@ -135,21 +135,21 @@ binomial, where $A_j$ is the number of voters from group $j$, $a_j$ is
 the number of positive responses from group $j$, and $N_j$ is the size
 of group $j$ in the population.
 
-```
+```stan
 data {
-  int<lower = 1> J;
-  int<lower = 0> A[J]; 
-  int<lower = 0> a[J];
-  vector<lower = 0>[J] N;
+  int<lower=1> J;
+  array[J] int<lower=0> A; 
+  array[J] int<lower=0> a;
+  vector<lower=0>[J] N;
 }
 parameters {
-  vector<lower = 0, upper = 1>[J] theta;
+  vector<lower=0, upper=1>[J] theta;
 }
 model {
   a ~ binomial(A, theta);
 }
 generated quantities {t
-  real<lower = 0, upper = 1> phi = dot(N, theta) / sum(N);
+  real<lower=0, upper=1> phi = dot(N, theta) / sum(N);
 }
 ```
 The likelihood is vectorized, and implicitly sums over the $j$.
@@ -208,7 +208,7 @@ To poststratify the results, the population size for each combination of
 predictors must still be known.  Then the population estimate is
 constructed as
 $$
-\sum_{i = 1}^5 \sum_{j = 1}^2 \sum{k = 1}^5 \sum{m = 1}^{50}
+\sum_{i = 1}^5 \sum_{j = 1}^2 \sum_{k = 1}^5 \sum_{m = 1}^{50}
 \textrm{logit}^{-1}(\alpha + \beta_i + \gamma_j + \delta_k + \eta_m)
 \cdot \textrm{pop}_{i, j, k, m},
 $$
@@ -291,16 +291,19 @@ example, because there are only two sex categories, $\gamma_2 =
 -\gamma_1.$
 
 To implement sum-to-zero constraints,
-```
+```stan
 parameters {
   vector[K - 1] alpha_raw;
-...
+// ...
+}
 transformed parameters {
-  vector<multiplier = sigma_alpha>[K] alpha
+  vector<multiplier=sigma_alpha>[K] alpha
     = append_row(alpha_raw, -sum(alpha_raw));
-...    
+// ...    
+}
 model {
   alpha ~ normal(0, sigma_alpha);
+}
 ```
 This prior is hard to interpret in that there are `K` normal
 distributions, but only `K - 1` free parameters.  An alternative is to
@@ -309,13 +312,15 @@ interpret.
 
 Soft constraints can be more computationally tractable.  They are also
 simpler to implement.
-```
+```stan
 parameters {
-  vector<multiplier = alpha>[K] alpha;
-...
+  vector<multiplier=alpha>[K] alpha;
+// ...
+}
 model {
   alpha ~ normal(0, sigma_alpha);
   sum(alpha) ~ normal(0, 0.001);
+}
 ```
 This leaves the regular prior, but adds a second prior that
 concentrates the sum near zero.  The scale of the second prior will
@@ -347,9 +352,9 @@ Stan.  To code the non-centered parameterization for each coefficient,
 which will be required for sampling efficiency, the `multiplier`
 transform is used on each of the parameters.  The combination of
 
-```
-vector<multiplier = s>[K] a;
-...
+```stan
+vector<multiplier=s>[K] a;
+// ...
 a ~ normal(0, s);
 ```
 implements a non-centered parameterization for `a`; a centered
@@ -363,24 +368,23 @@ parameterization drops the `multiplier`.
 Here is the full Stan model, which performs poststratification in the
 generated quantities using population sizes made available through
 data variable `P`.
-```
+```stan
 data {
-  int<lower = 0> N;
-  int<lower = 1, upper = 4> age[N];
-  int<lower = 1, upper = 5> income[N];
-  int<lower = 1, upper = 50> state[N];
-  int<lower = 0> y[N];
-  int<lower = 0> P[4, 5, 50];
+  int<lower=0> N;
+  array[N] int<lower=1, upper=4> age;
+  array[N] int<lower=1, upper=5> income;
+  array[N] int<lower=1, upper=50> state;
+  array[N] int<lower=0> y;
+  array[4, 5, 50] int<lower=0> P;
 }
 parameters {
   real alpha;
-  real<lower = 0> sigma_beta;
-  vector<multiplier = sigma_beta>[4] beta;
-  real<lower = 0> sigma_gamma;
-  vector<multiplier = sigma_gamma>[5] gamma;
-  real<lower = 0> sigma_delta;
-  vector<multiplier = sigma_delta>[50] delta;
-  real epsilon;
+  real<lower=0> sigma_beta;
+  vector<multiplier=sigma_beta>[4] beta;
+  real<lower=0> sigma_gamma;
+  vector<multiplier=sigma_gamma>[5] gamma;
+  real<lower=0> sigma_delta;
+  vector<multiplier=sigma_delta>[50] delta;
 }
 model {
   y ~ bernoulli_logit(alpha + beta[age] + gamma[income] + delta[state]);
@@ -393,15 +397,17 @@ model {
 generated quantities {
   real expect_pos = 0;
   int total = 0;
-  for (b in 1:4)
-    for (c in 1:5)
+  for (b in 1:4) {
+    for (c in 1:5) {
       for (d in 1:50) {
         total += P[b, c, d];
         expect_pos
           += P[b, c, d]
              * inv_logit(alpha + beta[b] + gamma[c] + delta[d]);
       }
-  real<lower = 0, upper = 1> phi = expect_pos / total;
+    }
+  }
+  real<lower=0, upper=1> phi = expect_pos / total;
 }
 ```
 Unlike in posterior predictive inference aimed at uncertainty, there
@@ -418,20 +424,20 @@ In some cases, it can be more efficient to break the data down by
 group.  Suppose there are $4 \times 5 \times 2 \times 50 = 2000$
 groups.  The data can be broken down into a size-2000 array, with
 entries corresponding to total vote counts in that group
-```
-int<lower = 0> G;
-int<lower = 1, upper = 4> age[G];
-int<lower = 1, upper = 5> income[G];
-int<lower = 1, upper = 50> state[G];
+```stan
+int<lower=0> G;
+array[G] int<lower=1, upper=4> age;
+array[G] int<lower=1, upper=5> income;
+array[G] int<lower=1, upper=50> state;
 ```
 Then the number of positive votes and the number of total votes are
 collected into two parallel arrays indexed by group.
-```
-int<lower = 0> pos_votes[G];
-int<lower = 0> total_votes[G];
+```stan
+array[G] int<lower=0> pos_votes;
+array[G] int<lower=0> total_votes;
 ```
 Finally, the likelihood is converted to binomial.
-```
+```stan
 pos_votes ~ binomial_logit(total_votes,
                            alpha + beta[age] + ...);
 ```
@@ -446,8 +452,8 @@ two categories, it needs to be modeled separately, because it is not
 feasible to build a hierarchical model with only two cases.
 A sex predictor is straightforward to add to the data block; it takes
 on values 1 or 2 for each of the `N` data points.
-```
-  int<lower = 1, upper = 2>[N] sex;
+```stan
+  array[N] int<lower=1, upper=2> sex;
 ```
 Then add a single regression coefficient as a parameter,
 ```
@@ -455,24 +461,25 @@ Then add a single regression coefficient as a parameter,
 ```
 In the log odds calculation, introduce a new term
 ```
-{epsilon, -epsilon}[sex];
+[epsilon, -epsilon][sex]';
 ```
 That is, the likelihood will now look like
-```
+```stan
   y ~ bernoulli_logit(alpha + beta[age] + gamma[income] + delta[state]
-                      + {epsilon, -epsilon}[sex]);
+                      + [epsilon, -epsilon][sex]');
 ```
 
-For data point `n`, the expression `{epsilon, -epsilon}[sex]` takes on
-value `{epsilon, -epsilon}[sex][n]`, which with Stan's multi-indexing
-reduces to `{epsilon, -epsilon}[sex[n]]`.  This term evaluates to
+For data point `n`, the expression `[epsilon, -epsilon][sex]` takes on
+value `[epsilon, -epsilon][sex][n]`, which with Stan's multi-indexing
+reduces to `[epsilon, -epsilon][sex[n]]`.  This term evaluates to
 `epsilon` if `sex[n]` is 1 and to `-epsilon` if `sex[n]` is 2.  The
 result is effectively a sum-to-zero constraint on two sex
-coefficients.
+coefficients. The `'` at the end transposes `[epsilon, -epsilon][sex]`
+which is a `row_vector` into a `vector` that can be added to the other
+variables.
 
-Finally, a prior is needed for
-the coefficient in the model block,
-```
+Finally, a prior is needed for the coefficient in the model block,
+```stan
 epsilon ~ normal(0, 2);
 ```
 As with other priors in multilevel models, the posterior for `epsilon`
@@ -486,27 +493,27 @@ predictors in the regression.  They will not pose an obstacle to
 poststratification because they are at the group level.  For example,
 suppose the average income level in the state is available as the data
 variable 
-```
-real<lower = 0> income[50];
+```stan
+array[50] real<lower=0> income;
 ```
 then a regression coefficient `psi` can be added for the effect of
 average state income,
-```
-real income;
+```stan
+real psi;
 ```
 with a fixed prior, 
-```
-income ~ normal(0, 2);
+```stan
+psi ~ normal(0, 2);
 ```
 This prior assumes the `income` predictor has been standardized.
 Finally, a term is added to the regression for the fixed predictor,
-```
+```stan
 y ~ bernoulli_logit(alpha + beta[age] + ... + delta[state]
                     + income[state] * psi);
 ```
 And finally, the formula in the generated quantities block is also
 updated,
-```
+```stan
 expect_pos
   += P[b, c, d]
      * inv_logit(alpha + beta[b] + gamma[c] + delta[d]

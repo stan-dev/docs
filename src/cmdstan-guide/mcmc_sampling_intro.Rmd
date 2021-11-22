@@ -1,6 +1,6 @@
 # MCMC Sampling {#mcmc-intro}
 
-## Running the Sampler
+## Running the sampler
 
 To generate a sample from the posterior distribution of
 the model conditioned on the data,
@@ -89,7 +89,7 @@ Finally, the sampler reports timing information:
                0.024 seconds (Total)
 ```
 
-## Running Multiple Chains
+## Running multiple chains {#multi-chain-sampling}
 
 A Markov chain generates samples from the target distribution only after it has converged to equilibrium.
 In theory, convergence is only guaranteed asymptotically as the number of draws grows without bound.
@@ -98,8 +98,46 @@ One way to monitor whether a chain has converged to the equilibrium distribution
 to other randomly initialized chains.
 For robust diagnostics, we recommend running 4 chains.
 
+There are two different ways of running multiple chains, with the `num_chains` argument using a single executable
+and by using the Unix and DOS shell to run multiple executables. The former is currently supported and 
+recommended when using the NUTS sampling algorithm with either the diagonal (`diag_e`) on dense (`dense_e`) metric.
+
+### Using the num_chains argument to run multiple chains
+
+The `num_chains` argument can be used with the NUTS sampling algorihtm with either the diagonal (`diag_e`) or dense
+(`dense_e`) metric.
+
+Example that will run 4 chains:
+```
+./bernoulli sample num_chains=4 data file=bernoulli.data.json output file=output.csv
+```
+
+If the model was not compiled with `STAN_THREADS=true`, the above command will run 4 chains sequentially and will
+produce the sample in `output_1.csv`, `output_2.csv`, `output_3.csv`, `output_4.csv`. A suffix with the chain id
+is appended to the provided output filename (`output.csv` in the above command).
+
+If the model was compiled with `STAN_THREADS=true`, the chains can run in parallel, with the `num_threads` argument
+defining the maximum number of threads used to run the chains. If the model uses no within-chain parallelization
+(`map_rect` or `reduce_sum` calls), the below command will run 4 chains in parallel, provided there are cores
+available:
+```
+./bernoulli sample num_chains=4 data file=bernoulli.data.json output file=output.csv num_threads=4
+```
+
+If the model uses within-chain parallelization (`map_rect` or `reduce_sum` calls), the threads are automatically
+scheduled to run the parallel parts of a single chain or run the sequential parts of another chains. The below
+call starts 4 chains that can use 16 threads. At a given moment a single chain may use all 16 threads,
+1 thread, anything in between, or can wait for a thread to be available. The scheduling is left to the [Threading
+Building Blocks scheduler](https://software.intel.com/content/www/us/en/develop/documentation/tbb-documentation/top/intel-threading-building-blocks-developer-guide/the-task-scheduler/how-task-scheduling-works.html).
+
+```
+./bernoulli_par sample num_chains=4 data file=bernoulli.data.json output file=output.csv num_threads=16
+```
+
+### Using shell for running multiple chains
+
 To run multiple chains given a model and data, either sequentially or in parallel,
-we use the Unix or DOS shell `for` loop to set up index variables needed to identify
+we can also use the Unix or DOS shell `for` loop to set up index variables needed to identify
 each chain and its outputs.
 
 On MacOS or Linux, the [for-loop syntax](https://linuxcourse.rutgers.edu/documents/Bash-Beginners-Guide/sect_09_01.html)
@@ -145,7 +183,7 @@ To run 4 chains in parallel on Windows:
 ```
 The caret (`^`) indicates a line continuation in DOS.
 
-## Stan CSV Output File {#mcmc_output_csv}
+## Stan CSV output file {#mcmc_output_csv}
 
 Each execution of the model results in draws from a single Markov
 chain being written to a file in comma-separated value (CSV) format.
@@ -229,7 +267,7 @@ The output ends with timing details:
 #                0.024 seconds (Total)
 ```
 
-## Summarizing Sampler Output(s) with `stansummary`
+## Summarizing sampler output(s) with `stansummary`
 
 The `stansummary` utility processes one or more output files from a run
 or set of runs of Stan's HMC sampler given a model and data.

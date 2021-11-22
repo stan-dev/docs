@@ -21,12 +21,12 @@ to obtain new quantities of interest.
 
 - `init` - specifies initial values for the model parameters, if any.
 
-- `random` - specifies the seed for the psuedo-random number.
+- `random` - specifies the seed for the pseudo-random number.
 
 The remainder of this chapter covers the general configuration options used for all processing.
 The following chapters cover the per-inference configuration options.
 
-## Input Data Argument
+## Input data argument
 
 The values for all variables declared in the data block of the model
 are read in from an input data file in either JSON or Rdump format.
@@ -38,8 +38,8 @@ The keyword `data` must be followed directly by the keyword-value pair `file=<fi
 If the model doesn't declare any data variables, this argument is ignored.
 
 The input data file must contain definitions for all data variables declared in the data block.
-If one or more data block variables are missing from the input data file, the program will
-print and error message to the terminal.
+If one or more data block variables are missing from the input data file, the program prints
+an error message to stderr and returns a non-zero return code.
 For example, the model `bernoulli.stan` defines two data variables `N` and `y`.
 If the input data file doesn't include both variables, or if the data variable
 doesn't match the declared type and dimensions, the program will exit with an error message
@@ -51,7 +51,7 @@ the executable exits with the following message:
 Exception: variable does not exist; processing stage=data initialization; variable name=y; base type=int (in 'examples/bernoulli/bernoulli.stan', line 3, column 2 to column 28)
 ```
 
-## Output Control Arguments
+## Output control arguments
 
 The `output` keyword is used to specify non-default options for
 output files and messages written to the terminal window.
@@ -69,10 +69,20 @@ The keyword value pair `refresh=<int>` specifies the
 number of iterations between progress messages written to the terminal window.
 The default value is 100 iterations.
 
-**Note:** Numeric values in the Stan CSV output and diagnostics file provide only 6 decimal places of precision.
+The keyword value pair `sig_figs=<int>` specifies the 
+number of significant digits for all numerical values in the output files.
+Allowable values are between 1 and 18, which is the maximum amount of precision
+available for 64-bit floating point arithmetic.
+The default value is 6. &nbsp;
+***Note:*** increasing `sig_figs` above the default will increase the size of
+the output CSV files accordingly.
 
+The keyword value pair `profile_file=<filepath>` specifies the location of the
+output file for profiling data. If the model uses no profiling, the output profile file
+is not produced. If the model uses profiling and `profile_file` is unspecified, the
+profiling data is written to a file named `profile.csv` in the current working directory.
 
-## Initialize Model Parameters Argument
+## Initialize model parameters argument
 
 Initialization is only applied to parameters defined in the parameters block.
 By default, all parameters are initialized to random draws from a uniform distribution over the range $[-2, 2]$.
@@ -98,9 +108,9 @@ a symmetric (uniform) vector for simplexes; unit matrices for both correlation a
 
 - filepath - A data file in JSON or Rdump format containing initial parameters values for some or all of the model parameters.
 User specified initial values must satisfy the constraints declared in the model (i.e., they are on the constrained scale).
-Parameters which aren't explicitly initializied will be initialized randomly over the range $[-2, 2]$.
+Parameters which aren't explicitly initialized will be initialized randomly over the range $[-2, 2]$.
 
-## Random Number Generator Arguments
+## Random number generator arguments
 
 The random-number generator’s behavior is determined by the unsigned seed
 (positive integer) it is started with. If a seed is not specified,
@@ -115,7 +125,7 @@ random seed=<int>
 ```
 The keyword `random` must be followed directly by the keyword-value pair `seed=<int>`.
 
-## Chain Identifier Argument:  `id`
+## Chain identifier argument:  `id`
 
 The chain identifier argument is used in conjunction with the `random seed` argument when running multiple Markov chains for sampling.
 The chain identifier is used to advance the random number generator a very large number of random variates so that two chains
@@ -141,7 +151,7 @@ See the [Stan Reference Manual Reproducibility chapter](https://mc-stan.org/docs
 for further details.
 
 
-## Command Line Help
+## Command line help
 
 CmdStan provides a `help` and `help-all` mechanism that displays either the
 available top-level or keyword-specific key-value argument pairs.
@@ -170,3 +180,25 @@ Additional configuration available by specifying
 
 See ./bernoulli <arg1> [ help | help-all ] for details on individual arguments.
 ```
+
+## Error messages and return codes
+
+CmdStan executables and utility programs use streams standard output (stdout) and
+standard error (stderr) to report information and error messages, respectively.
+Some methods also generate warning messages when the algorithm
+detects potential problems with the inference.  Depending on the method,
+these messages are sent to either standard out or standard error.
+
+All program executables provide a return code between 0 and 255:
+
+- 0 - Program ran to termination as expected.
+
+- value in range [1 : 125] - Method invoked could not run due to problems with model or data.
+
+- value > 128 - Fatal error during execution, process terminated by signal.  To determine the signal number,
+subtract 128 from the return value, e.g. return code 139 results from termination signal 11 (segmentation violation).
+
+A non-zero return code or outputs sent to stderr indicate problems with the inference.
+However, a return code of zero and absense of error messages doesn't necessarily mean
+that the inference is valid, it is still necessary to validate the inferences using all
+available summary and diagnostic techniques.

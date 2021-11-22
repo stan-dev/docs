@@ -11,15 +11,15 @@ create problematic posterior inferences, either in general for
 Bayesian inference or in practice for Stan.
 
 
-## Collinearity of Predictors in Regressions {#collinearity.section}
+## Collinearity of predictors in regressions {#collinearity.section}
 
 This section discusses problems related to the classical notion of
 identifiability, which lead to ridges in the posterior density and
 wreak havoc with both sampling and inference.
 
-### Examples of Collinearity {-}
+### Examples of collinearity {-}
 
-#### Redundant Intercepts {-}
+#### Redundant intercepts {-}
 
 The first example of collinearity is an artificial example involving
 redundant intercept parameters.^[This example was raised by Richard McElreath on the Stan users group in a query about the difference in behavior between Gibbs sampling as used in BUGS and JAGS and the Hamiltonian Monte Carlo (HMC) and no-U-turn samplers (NUTS) used by Stan.]
@@ -65,7 +65,7 @@ Even with an improper prior, the posterior is proper as long as there
 are at least two data points $y_n$ with distinct values.
 
 
-#### Ability and Difficulty in IRT Models {-}
+#### Ability and difficulty in IRT models {-}
 
 Consider an item-response theory model for students $j \in 1{:}J$ with
 abilities $\alpha_j$ and test items $i \in 1{:}I$ with difficulties
@@ -89,7 +89,7 @@ $$
 This leads to a multivariate version of the ridge displayed by the
 regression with two intercepts discussed above.
 
-#### General Collinear Regression Predictors {-}
+#### General collinear regression predictors {-}
 
 The general form of the collinearity problem arises when predictors
 for a regression are collinear.  For example, consider a linear
@@ -117,7 +117,7 @@ discussed above, they cause similar problems for inference if they are
 nearly collinear.
 
 
-#### Multiplicative Issues with Discrimination in IRT {-}
+#### Multiplicative issues with discrimination in IRT {-}
 
 Consider adding a discrimination parameter $\delta_i$ for each
 question in an IRT model, with data sampling model
@@ -134,7 +134,7 @@ If $c < 0$, this switches the signs of every component in $\alpha$,
 $\beta$, and $\delta$ without changing the density.
 
 
-#### Softmax with $K$ vs. $K-1$ Parameters {-}
+#### Softmax with $K$ vs. $K-1$ parameters {-}
 
 In order to parameterize a $K$-simplex (i.e., a $K$-vector with
 non-negative values that sum to one), only $K - 1$ parameters are
@@ -157,14 +157,14 @@ produces the same simplex $\theta$.
 
 
 
-### Mitigating the Invariances {-}
+### Mitigating the invariances {-}
 
 All of the examples discussed in the previous section allow
 translation or scaling of parameters while leaving the data
 probability density invariant.  These problems can be mitigated in
 several ways.
 
-#### Removing Redundant Parameters or Predictors {-}
+#### Removing redundant parameters or predictors {-}
 
 In the case of the multiple intercepts, $\lambda_1$ and $\lambda_2$,
 the simplest solution is to remove the redundant intercept, resulting
@@ -173,7 +173,7 @@ distribution $y_n \sim \textsf{normal}(\mu, \sigma)$.  The same
 solution works for solving the problem with collinearity---just remove
 one of the columns of the predictor matrix $x$.
 
-#### Pinning Parameters {-}
+#### Pinning parameters {-}
 
 The IRT model without a discrimination parameter can be fixed by
 pinning one of its parameters to a fixed value, typically 0.  For
@@ -203,8 +203,9 @@ can be written as
 ```
 vector softmax_id(vector alpha) {
   vector[num_elements(alpha) + 1] alphac1;
-  for (k in 1:num_elements(alpha))
+  for (k in 1:num_elements(alpha)) {
     alphac1[k] = alpha[k];
+  }
   alphac1[num_elements(alphac1)] = 0;
   return softmax(alphac1);
 }
@@ -213,7 +214,7 @@ vector softmax_id(vector alpha) {
 
 
 
-#### Adding Priors {-}
+#### Adding priors {-}
 
 So far, the models have been discussed as if the priors on the
 parameters were improper uniform priors.
@@ -269,7 +270,7 @@ statistically because it does not have the extra degree of (prior
 constrained) wiggle room.
 
 
-#### Vague, Strongly Informative, and Weakly Informative Priors {-}
+#### Vague, strongly informative, and weakly informative priors {-}
 
 Care must be used when adding a prior to resolve invariances.  If the
 prior is taken to be too broad (i.e., too vague), the resolution is in
@@ -299,13 +300,13 @@ chosen that is either informative or weakly informative based on prior
 knowledge of the problem.
 
 
-## Label Switching in Mixture Models {#label-switching-problematic.section}
+## Label switching in mixture models {#label-switching-problematic.section}
 
 Where collinearity in regression models can lead to infinitely many
 posterior maxima, swapping components in a mixture model leads to
 finitely many posterior maxima.
 
-### Mixture Models {-}
+### Mixture models {-}
 
 Consider a normal mixture model with two location parameters $\mu_1$
 and $\mu_2$, a shared scale $\sigma > 0$, a mixture ratio $\theta \in
@@ -323,7 +324,7 @@ The problem is exacerbated as the number of mixture components $K$
 grows, as in clustering models, leading to $K!$ identical posterior
 maxima.
 
-### Convergence Monitoring and Effective Sample Size {-}
+### Convergence monitoring and effective sample size {-}
 
 The analysis of posterior convergence and effective sample size is
 also difficult for mixture models.  For example, the $\hat{R}$
@@ -334,7 +335,7 @@ computations, is affected by label switching, resulting in a posterior
 mean for $\mu_1$ that is equal to that of $\mu_2$, and a posterior
 mean for $\theta$ that is always 1/2, no matter what the data are.
 
-### Some Inferences are Invariant {-}
+### Some inferences are invariant {-}
 
 In some sense, the index (or label) of a mixture component is
 irrelevant.  Posterior predictive inferences can still be carried out
@@ -346,7 +347,7 @@ means for the parameters are meaningless because they are not
 invariant to label switching; for example, the posterior mean for
 $\theta$ in the two component mixture model will always be 1/2.
 
-### Highly Multimodal Posteriors {-}
+### Highly multimodal posteriors {-}
 
 Theoretically, this should not present a problem for inference because
 all of the integrals involved in posterior predictive inference will
@@ -368,12 +369,12 @@ techniques are notoriously ineffective when the number of modes grows
 super-exponentially as it does for mixture models with increasing
 numbers of components.
 
-### Hacks as Fixes {-}
+### Hacks as fixes {-}
 
 Several hacks (i.e., "tricks") have been suggested and employed to
 deal with the problems posed by label switching in practice.
 
-#### Parameter Ordering Constraints {-}
+#### Parameter ordering constraints {-}
 
 One common strategy is to impose a constraint on the parameters that
 identifies the components.  For instance, we might consider
@@ -394,7 +395,7 @@ $$
 will result in an estimate of 0 because the posterior respects the
 constraint in the model.
 
-#### Initialization around a Single Mode {-}
+#### Initialization around a single mode {-}
 
 Another common approach is to run a single chain or to initialize the
 parameters near realistic values.^[Tempering methods may be viewed as automated ways to carry
@@ -407,7 +408,7 @@ initial values can be found and the labels do not switch within a
 Markov chain.  The result is that all chains are glued to a
 neighborhood of a particular mode in the posterior.
 
-## Component Collapsing in Mixture Models
+## Component collapsing in mixture models
 
 It is possible for two mixture components in a mixture model to
 collapse to the same values during sampling or optimization.  For
@@ -430,14 +431,14 @@ mixture components in a mixture model as $K$ increases beyond one
 (yes, even a two-component mixture can have this problem).
 
 
-## Posteriors with Unbounded Densities
+## Posteriors with unbounded densities
 
 In some cases, the posterior density grows without bounds as
 parameters approach certain poles or boundaries.  In such, there
 are no posterior modes and numerical stability issues can arise as
 sampled parameters approach constraint boundaries.
 
-### Mixture Models with Varying Scales {-}
+### Mixture models with varying scales {-}
 
 One such example is a binary mixture model with scales varying by
 component, $\sigma_1$ and $\sigma_2$ for locations $\mu_1$ and
@@ -446,7 +447,7 @@ $\sigma_1 \rightarrow 0$ and $\mu_1 \rightarrow y_n$ for some $n$;
 that is, one of the mixture components concentrates all of its mass
 around a single data item $y_n$.
 
-### Beta-Binomial Models with Skewed Data and Weak Priors {-}
+### Beta-binomial models with skewed data and weak priors {-}
 
 Another example of unbounded densities arises with a posterior such as
 $\textsf{beta}(\phi \mid 0.5,0.5)$, which can arise if seemingly weak beta
@@ -468,7 +469,7 @@ $\textsf{beta}(\phi \mid 9.5,0,5)$.  This posterior is unbounded as $\phi
 there is no posterior mode, the posterior mean is well-defined with a
 value of exactly 0.95.
 
-#### Constrained vs.\ Unconstrained Scales {-}
+#### Constrained vs.\ unconstrained scales {-}
 
 Stan does not sample directly on the constrained $(0,1)$ space for
 this problem, so it doesn't directly deal with unconstrained density
@@ -492,7 +493,7 @@ Bernoulli and binomial distributions are more stable.
 
 
 
-## Posteriors with Unbounded Parameters
+## Posteriors with unbounded parameters
 
 In some cases, the posterior density will not grow without bound, but
 parameters will grow without bound with gradually increasing density
@@ -501,7 +502,7 @@ densities that grow without bound, such models also have no posterior
 modes.
 
 
-### Separability in Logistic Regression {-}
+### Separability in logistic regression {-}
 
 Consider a logistic regression model with $N$ observed outcomes $y_n
 \in \{ 0, 1 \}$, an $N \times K$ matrix $x$ of predictors, a
@@ -524,7 +525,7 @@ Bayesian models is to include a proper prior for $\beta$, which
 ensures a proper posterior.
 
 
-## Uniform Posteriors
+## Uniform posteriors
 
 Suppose your model includes a parameter $\psi$ that is defined on
 $[0,1]$ and is given a flat prior $\textsf{uniform}(\psi \mid 0,1)$. Now if
@@ -540,7 +541,7 @@ thing by simply integrating (i.e., averaging) over the predictions for
 $\psi$ at all points in $[0,1]$.
 
 
-## Sampling Difficulties with Problematic Priors
+## Sampling difficulties with problematic priors
 
 With an improper posterior, it is theoretically impossible to properly
 explore the posterior. However, Gibbs sampling as performed by BUGS
@@ -551,7 +552,7 @@ example such as the two intercept model discussed in
 the [collinearity section](#collinearity.section) and illustrated in
 the non-identifiable density plot.
 
-### Gibbs Sampling {-}
+### Gibbs sampling {-}
 
 Gibbs sampling, as performed by BUGS and JAGS, may appear to be
 efficient and well behaved for this unidentified model, but as
@@ -578,7 +579,7 @@ is typical of Gibbs sampling when posteriors are highly correlated and
 the primary reason to prefer Hamiltonian Monte Carlo to Gibbs sampling
 for models with parameters correlated in the posterior.
 
-### Hamiltonian Monte Carlo Sampling {-}
+### Hamiltonian Monte Carlo sampling {-}
 
 Hamiltonian Monte Carlo (HMC), as performed by Stan, is much more
 efficient at exploring posteriors in models where parameters are
@@ -594,7 +595,7 @@ $\lambda_2$ in opposite directions along the valley corresponding to
 the ridge in the posterior log density.
 
 
-### No-U-Turn Sampling {-}
+### No-U-turn sampling {-}
 
 Stan's default no-U-turn sampler (NUTS), is even more efficient at
 exploring the posterior [see @Hoffman-Gelman:2014].  NUTS simulates the
@@ -676,7 +677,7 @@ value $\mu=0$ is within the 90% posterior intervals in all three models.
 <a name="id:non-identified-stan-fits.figure"></a>
 
 
-### Examples: Fits in Stan {-}
+### Examples: fits in Stan {-}
 
 To illustrate the issues with sampling from non-identified and only
 weakly identified models, we fit three models with increasing degrees
@@ -685,10 +686,10 @@ models is illustrated in the non-identifiable density plot.  The
 first model is the unidentified model with two location parameters and
 no priors discussed in the [collinearity section](#collinearity.section).
 
-```
+```stan
 data {
   int N;
-  real y[N];
+  array[N] real y;
 }
 parameters {
   real lambda1;
@@ -707,17 +708,17 @@ model {
 The second adds priors to the model block for `lambda1` and
 `lambda2` to the previous model.
 
-```
+```stan
 lambda1 ~ normal(0, 10);
 lambda2 ~ normal(0, 10);
 ```
 
 The third involves a single location parameter, but no priors.
 
-```
+```stan
 data {
   int N;
-  real y[N];
+  array[N] real y;
 }
 parameters {
   real mu;

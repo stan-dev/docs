@@ -15,13 +15,13 @@ To compute this integral in Stan, the integrand must first be defined as a Stan 
 (see the Stan Reference Manual chapter on User-Defined Functions
 for more information on coding user-defined functions).
 
-```
-real normal_density(real x,          // Function argument
-                    real xc,         // Complement of function argument
-                                     //  on the domain (defined later)
-                    real[] theta,    // parameters
-                    real[] x_r,      // data (real)
-                    int[] x_i) {     // data (integer)
+```stan
+real normal_density(real x,             // Function argument
+                    real xc,            // Complement of function argument
+                                        //  on the domain (defined later)
+                    array[] real theta, // parameters
+                    array[] real x_r,   // data (real)
+                    array[] int x_i) {  // data (integer)
   real mu = theta[1];
   real sigma = theta[2];
 
@@ -48,7 +48,7 @@ included in the function signature. This may require passing in zero-length arra
 for data or a zero-length vector for parameters if the integral does not involve
 data or parameters.
 
-## Calling the Integrator
+## Calling the integrator
 
 Suppose that our model requires evaluating the lpdf of a left-truncated normal, but
 the truncation limit is to be estimated as a parameter. Because the truncation
@@ -60,20 +60,20 @@ is described in the chapter on Truncated or Censored Data of this guide.
 Such a model might look like (include the function defined at the beginning of this
 chapter to make this code compile):
 
-```
+```stan
 data {
   int N;
-  real y[N];
+  array[N] real y;
 }
 
 transformed data {
-  real x_r[0];
-  int x_i[0];
+  array[0] real x_r;
+  array[0] int x_i;
 }
 
 parameters {
   real mu;
-  real<lower = 0.0> sigma;
+  real<lower=0.0> sigma;
   real left_limit;
 }
 
@@ -89,7 +89,7 @@ model {
 }
 ```
 
-### Limits of Integration
+### Limits of integration
 
 The limits of integration can be finite or infinite. The infinite limits are
 made available via the Stan calls `negative_infinity()` and
@@ -98,7 +98,7 @@ made available via the Stan calls `negative_infinity()` and
 If both limits are either `negative_infinity()` or
 `positive_infinity()`, the integral and its gradients are set to zero.
 
-### Data Versus Parameters
+### Data vs. parameters
 
 The arguments for the real data `x_r` and the integer data `x_i`
 must be expressions that only involve data or transformed data variables.
@@ -109,7 +109,7 @@ The endpoints of integration can be data or parameters (and internally the
 derivatives of the integral with respect to the endpoints are handled
 with the Leibniz integral rule).
 
-## Integrator Convergence
+## Integrator convergence
 
 The integral is performed with the iterative 1D quadrature methods implemented
 in the Boost library [@BoostQuadrature:2017]. If the $n$th estimate of the
@@ -126,7 +126,7 @@ Boost library recommendation of setting `relative_tolerance` to the square
 root of the machine epsilon of double precision floating point numbers
 (about `1e-8`).
 
-### Zero-crossing Integrals {#zero-crossing}
+### Zero-crossing integrals {#zero-crossing}
 
 Integrals on the (possibly infinite) interval $(a, b)$ that cross zero are
 split into two integrals, one from $(a, 0)$ and one from $(0, b)$. This is
@@ -155,8 +155,8 @@ $$
 Normalizing this distribution requires computing the integral of $p(x)$ from
 zero to one. In Stan code, the integrand might look like:
 
-```
-real beta(real x, real xc, real[] theta, real[] x_r, int[] x_i) {
+```stan
+real beta(real x, real xc, array[] real theta, array[] real x_r, array[] int x_i) {
   real alpha = theta[1];
   real beta = theta[2];
 
@@ -174,8 +174,8 @@ as a high precision version of the distance from `x` to the nearest
 endpoint. To make use of this for the beta integral, the integrand can be
 re-coded:
 
-```
-real beta(real x, real xc, real[] theta, real[] x_r, int[] x_i) {
+```stan
+real beta(real x, real xc, array[] real theta, array[] real x_r, array[] int x_i) {
   real alpha = theta[1];
   real beta = theta[2];
   real v;

@@ -1,37 +1,183 @@
 # Parallelization {#parallelization}
 
-Stan provides [high-level parallelization](https://mc-stan.org/docs/stan-users-guide/parallelization-chapter.html)
-via multi-threading by use of the `reduce_sum` and `map_rect` functions in a Stan program.
-Stan also provides [low-level parallelization](https://arxiv.org/pdf/1907.01063.pdf)
-on GPU hardware using the [OpenCL](https://www.khronos.org/opencl/) framework to speed
-up matrix operations.
-Both of these features require building executibles which call the appropriate
-libraries.  This is done via [makefile variables](#gnu-make) which set the appropriate
-C++ compiler and linker flags:
+Stan provides three ways of parallelizing execution of a Stan model: 
 
-- `STAN_THREADS` - compiler directives for threading
-- `STAN_OPENCL` - compiler directives for GPU-aware matrix operations
+- multi-threading with Intel Threading Building Blocks (TBB),
+- multi-processing with Message Passing Interface (MPI) and 
+- manycore processing with OpenCL.
 
-These options can be combined, it is possible to run a program which uses multi-threading
-operations on a machine with GPU hardware, in which case, the call to Make 
+## Multi-threading with TBB
 
-For example to compile program `parallel_logistic.stan` which uses
-[`reduce_sum`](https://mc-stan.org/docs/stan-users-guide/reduce-sum.html) for within-chain
-parallelization on an OpenCL (GPU) machine:
+In order to exploit multi-threading in a Stan model, the models must be 
+rewritten to use the `reduce_sum` and `map_rect` functions. For instructions
+on how to rewrite Stan models to use these functions see [Stan's User guide chapter on parallelization](https://mc-stan.org/docs/stan-users-guide/parallelization-chapter.html), [the reduce_sum case study](https://mc-stan.org/users/documentation/case-studies/reduce_sum_tutorial.html) or the [Multithreading and Map-Reduce tutorial](https://github.com/rmcelreath/cmdstan_map_rect_tutorial).
 
-```
-> make STAN_THREADS=TRUE STAN_OPENCL=TRUE /path/to/parallel_logistic
-```
+### Compiling
 
-In addition, for multi-threaded programs, it is necessary to specify the number of available threads
-via the shell environment variable `STAN_NUM_THREADS` which specifies how many threads to run in parallel.
-Generally, this number should not exceed the number of available cores.
-If this variable isn't set, then the program will run single-threaded.
-To run a single chain on a 4-core machine for program `parallel_logistic`:
+Once a model is rewritten to use the above-mentioned functions, the model
+must be compiled with the `STAN_THREADS` makefile flag. The flag can be 
+supplied in the `make` call but we recommend writing the flag to the 
+`make/local` file.
+
+An example of the contents of `make/local` to enable threading with TBB:
 
 ```
-export STAN_NUM_THREADS=4
-./parallel_logistic sample data file=data.csv ...
+STAN_THREADS=true
 ```
 
+The model is then compiled as normal:
+```
+make path/to/model
+```
 
+### Running
+
+Before running a multi-threaded model, we need to specify the maximum number of threads
+the program can run (total threads for all chains). This is done by setting the `num_threads`
+argument. Valid values for `num_threads` are positive integers and -1. If `num_threads` is set 
+to -1, all available cores will be used.
+
+Generally, this number should not exceed the number of available cores for best performance.
+
+Example:
+
+```
+./model sample data file=data.json num_threads=4 ...
+```
+
+When the model is compiled with `STAN_THREADS` we can sample with multiple chains with a single
+executable (see section [running multiple chains]{#multi-chain-sampling} for cases when this is
+available). When running multiple chains `num_threads` is the maximum number of threads that can
+be used by all the chains combined. The exact number of threads that will be used for each chain
+at a given point in time is determined by the TBB scheduler. The following example start 2 chains
+with 8 total threads available:
+
+```
+./model sample num_chains=2 data file=data.json num_threads=8 ...
+```
+
+## Multi-processing with MPI
+
+In order to use multi-processing with MPI in a Stan model, the models must be 
+rewritten to use the [`map_rect` function](https://mc-stan.org/docs/2_26/functions-reference/functions-map.html). By using MPI, the model can be parallelized across multiple cores or a cluster. MPI with Stan is supported on MacOS and Linux.
+
+### Dependencies
+
+Compiling and running Stan models with MPI requires that the system 
+has an MPI implementation installed. For Unix systems the most commonly used
+implementations are [MPICH](https://www.mpich.org/) and [OpenMPI](https://www.open-mpi.org/).
+
+### Compiling
+
+Once a model is rewritten to use `map_rect`, additional makefile flags 
+must be written to the `make/local`. These are:
+
+- `STAN_MPI`: Enables the use of MPI with Stan if `true`.
+- `CXX`: The name of the MPI C++ compiler wrapper. Typically `mpicxx`.
+- `TBB_CXX_TYPE`: The C++ compiler the MPI wrapper wraps. Typically `gcc` on Linux and `clang` on macOS.
+
+An example of `make/local` on Linux:
+
+```
+STAN_MPI=true
+CXX=mpicxx
+TBB_CXX_TYPE=gcc
+```
+The model is then compiled as normal:
+```
+make path/to/model
+```
+### Running
+
+The Stan model compiled with `STAN_MPI` is run using an MPI launcher. The MPI standard
+suggests using `mpiexec`, but a vendor wrapper for the launcher like `mpirun` can also be used.
+The launcher is supplied the path to the built executable and the number of processes to start:
+`-n X` for `mpiexec` or `-np X` for `mpirun` where `X` is replaced by the integer representing
+the number of processes.
+
+Example for running a model with six processes:
+```
+mpiexec -n 6 path/to/model sample data file=data.json ...
+```
+
+## OpenCL
+
+### Dependencies
+
+OpenCL is supported on most modern CPUs and GPUs. In order to run OpenCL-enabled Stan models,
+an OpenCL runtime for the target device must be installed. This subsection lists installation
+instructions for OpenCL runtimes of the commonly-found devices.
+
+In order to check if any OpenCL-enabled device and its runtime is already present use the
+`clinfo` tool. On Linux, `clinfo` can typically be installed with the default package manager
+(for example `sudo apt-get install clinfo` on Ubuntu). For Windows, pre-built `clinfo` binary
+can be found [here](https://github.com/Oblomov/clinfo#windows-support).
+
+Also use `clinfo` to verify successful installation of OpenCL runtimes.
+
+#### NVIDIA GPU
+
+- Linux:
+
+  Install the NVIDIA GPU driver and the  NVIDIA CUDA Toolkit.
+  On Ubuntu the commands to install both is:
+  ```
+  sudo apt update
+  sudo apt install nvidia-driver-460 nvidia-cuda-toolkit
+  ```
+
+  Replace the driver version (`460` in the above case) with the lastest number at the time of installation.
+
+- Windows:
+
+  Install the [NVIDIA GPU Driver](https://www.nvidia.com/Download/index.aspx) and [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit).
+
+#### AMD GPU
+
+- Linux:
+
+  Install `Radeon Software for Linux` available [here](https://www.amd.com/en/support/kb/release-notes/rn-amdgpu-unified-linux-20-40).
+
+- Windows: 
+
+  We recommend installing the open source [OCL-SDK](https://github.com/GPUOpen-LibrariesAndSDKs/OCL-SDK/releases).
+
+#### AMD CPU
+
+Install the open source [PoCL](http://portablecl.org/download.html).
+
+#### Intel CPU/GPU
+
+Follow Intel's install instructions given [here](https://software.intel.com/content/www/us/en/develop/articles/opencl-drivers.html) (requires registration).
+
+### Compiling
+
+In order to enable the OpenCL backend the model
+must be compiled with the `STAN_OPENCL` makefile flag. The flag can be 
+supplied in the `make` call but we recommend writing the flag to the 
+`make/local` file.
+
+An example of the contents of `make/local` to enable parallelization
+with OpenCL:
+
+```
+STAN_OPENCL=true
+```
+
+The model is then compiled as normal:
+```
+make path/to/model
+```
+
+### Running
+
+The Stan model compiled with `STAN_OPENCL` can also be supplied the OpenCL platform and device IDs
+of the target device. These IDs determine the device on which to run the OpenCL-supported functions on.
+You can list the devices on your system using the `clinfo` program. If the system has one GPU and
+no OpenCL CPU runtime, the platform and device IDs of the GPU are typically `0`. In that case
+you can also omit the OpenCL IDs as the default `0` IDs are used in that case.
+
+We supply these IDs when starting the executable as shown below:
+```
+path/to/model sample data file=data.json opencl platform=0 device=1
+```

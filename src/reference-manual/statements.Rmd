@@ -17,19 +17,18 @@ local variables to be declared in blocks and also allows an empty
 statement consisting only of a semicolon.
 
 
-## Statement Block Contexts
+## Statement block contexts
 
 The data and parameters blocks do not allow statements of any kind
 because these blocks are solely used to declare the data variables for
 input and the parameter variables for sampling.  All other blocks
 allow statements.  In these blocks, both variable declarations and
-statements are allowed.  The first statement that is not a variable
-declaration ends the list of block variable declarations.  See
-the [blocks chapter](#blocks.chapter) for more information about the block structure of
-Stan programs.
+statements are allowed.  All top-level variables in a block are
+considered block variables. See the [blocks chapter](#blocks.chapter)
+for more information about the block structure of Stan programs.
 
 
-## Assignment Statement {#assignment-statement.section}
+## Assignment statements {#assignment-statement.section}
 
 An assignment statement consists of a variable (possibly multivariate
 with indexing information) and an expression.  Executing an
@@ -83,7 +82,7 @@ sets the value in the first column of the first row of `Sigma` to one.
 
 Assignments to subcomponents of larger multi-variate data structures
 are supported by Stan.  For example, `a` is an array of type
-`real[ , ]` and `b` is an array of type `real[]`, then
+`array[,] real` and `b` is an array of type `array[] real`, then
 the following two statements are both well-formed.
 
 ```stan
@@ -103,7 +102,7 @@ Y[2] = x;
 ```
 
 
-### Lvalue Summary {-}
+### Lvalue summary {-}
 
 The expressions that are legal left-hand sides of assignment
 statements are known as "lvalues."  In Stan, there are only two
@@ -126,7 +125,7 @@ hand side must itself be multidimensional to match the remaining
 dimensions.
 
 
-### Multiple Indexes {-}
+### Multiple indexes {-}
 
 Multiple indexes, as described in the
 [multi-indexing section](#language-multi-indexing), are also permitted on the
@@ -144,7 +143,7 @@ arising from he right-hand side changing in the middle of an
 assignment statement's execution.
 
 
-### Compound Arithmetic and Assignment Statement  {-}
+### Compound arithmetic and assignment statement  {-}
 <a id="compound-arithmetic-assignment.section"></a>
 
 Stan's arithmetic operators may be used in compound arithmetic
@@ -206,22 +205,21 @@ are also listed in the index prefaced by `operator`, e.g.,
 
 **Compound Arithmetic/Assignment Table.**
 <a id="compound-arithmetic-assign-table"></a>
-*Stan allows compound arithmetic and assignment
-statements of the forms listed in the table above.  The compound
-form is legal whenever the corresponding long form would be legal
-and it has the same effect.*
+_Stan allows compound arithmetic and assignment statements of the
+forms listed in the table.  The compound form is legal whenever the
+corresponding long form would be legal and it has the same effect._
 
- operation  |   compound  |   unfolded
-:-----------|:------------|:-------------
-addition | `x += y` | `x = x + y`
-subtraction | `x -= y` | `x = x - y`
-multiplication | `x *= y` | `x = x * y`
-division | `x /= y` | `x = x / y`
-elementwise multiplication | `x .*= y` | `x = x .* y`
-elementwise division | `x ./= y` | `x = x ./ y`
+ | operation                  | compound  | unfolded     |
+ | :------------------------- | :-------- | :----------- |
+ | addition                   | `x += y`  | `x = x + y`  |
+ | subtraction                | `x -= y`  | `x = x - y`  |
+ | multiplication             | `x *= y`  | `x = x * y`  |
+ | division                   | `x /= y`  | `x = x / y`  |
+ | elementwise multiplication | `x .*= y` | `x = x .* y` |
+ | elementwise division       | `x ./= y` | `x = x ./ y` |
 
 
-## Increment Log Density {#increment-log-prob.section}
+## Increment log density {#increment-log-prob.section}
 
 The basis of Stan's execution is the evaluation of a log probability
 function (specifically, a probability density function) for a given
@@ -283,13 +281,44 @@ depend on the parameters.  This is convenient because often the
 normalizing constant $Z$ is either time-consuming to compute or
 intractable to evaluate.
 
+#### Built in distributions {-}
+
+The built in distribution functions in Stan are all available in normalized
+and unnormalized form. The normalized forms include all of the terms in the log
+density, and the unnormalized forms drop terms which are not directly or
+indirectly a function of the model parameters.
+
+For instance, the `normal_lpdf` function returns the log density of a normal
+distribution:
+
+
+$$
+\textsf{normal\_lpdf}(x | \mu, \sigma) =
+-\log \left( \sigma \sqrt{2 \pi} \right)
+-\frac{1}{2} \left( \frac{x - \mu}{\sigma} \right)^2
+$$
+
+The `normal_lupdf` function returns the log density of an unnormalized distribution.
+With the unnormalized version of the function, Stan does not define what the
+normalization constant will be, though usually as many terms as possible are dropped
+to make the calculation fast. Dropping a constant `sigma` term, `normal_lupdf` would
+be equivalent to:
+
+$$
+\textsf{normal\_lupdf}(x | \mu, \sigma) =
+-\frac{1}{2} \left( \frac{x - \mu}{\sigma} \right)^2
+$$
+
+All functions ending in `_lpdf` have a corresponding `_lupdf` version which evaluates
+and returns the unnormalized density. The same is true for `_lpmf` and `_lupmf`.
 
 #### Relation to compound addition and assignment {-}
 
 The increment log density statement looks syntactically like compound
-addition and assignment (see the [compound arithmetic/assignment section](#compound-arithmetic-assignment.section), it is treated as a
-primitive statement because `target` is not itself a variable.
-So, even though
+addition and assignment (see the [compound arithmetic/assignment
+section](#compound-arithmetic-assignment.section), it is treated as a
+primitive statement because `target` is not itself a variable. So,
+even though
 
 ```stan
 target += lp;
@@ -311,19 +340,19 @@ including arrays of vectors and matrices.   For container arguments,
 their sum will be added to the total log density.
 
 
-### Accessing the Log Density {-}
+### Accessing the log density {-}
 
 To access accumulated log density up to the current execution point,
 the function `target()` may be used.
 
 
-## Sampling Statements {#sampling-statements.section}
+## Sampling statements {#sampling-statements.section}
 
 Stan supports writing probability statements also in sampling
 notation, such as
 
 ```stan
-y ~ normal(mu,sigma);
+y ~ normal(mu, sigma);
 ```
 
 The name "sampling statement" is meant to be suggestive, not
@@ -369,7 +398,7 @@ This will be well formed if and only if `dist_lpdf(y | theta1,
 well-formed expression of type `real`.
 
 
-### Log Probability Increment vs. Sampling Statement {-}
+### Log probability increment vs. sampling statement {-}
 
 Although both lead to the same sampling behavior in Stan, there is one
 critical difference between using the sampling statement, as in
@@ -381,7 +410,7 @@ y ~ normal(mu, sigma);
 and explicitly incrementing the log probability function, as in
 
 ```stan
-target += normal_lpdf(y | mu,sigma);
+target += normal_lpdf(y | mu, sigma);
 ```
 
 The sampling statement drops all the terms in the log probability
@@ -395,7 +424,7 @@ sampling statement form will be faster if any of the input expressions,
 variables, and transformed data variables.
 
 
-### User-Transformed Variables {-}
+### User-transformed variables {-}
 
 The left-hand side of a sampling statement may be a complex
 expression.  For instance, it is legal syntactically to write
@@ -427,7 +456,7 @@ target += - log(fabs(y));
 ```
 
 
-### Truncated Distributions {-}
+### Truncated distributions {-}
 
 Stan supports truncating distributions with lower bounds, upper
 bounds, or both.
@@ -598,10 +627,11 @@ behaves the same way as the following more verbose form.
 
 ```stan
 y ~ normal(0, 1);
-if (y < -0.5 || y > 2.1)
+if (y < -0.5 || y > 2.1) {
   target += negative_infinity();
-else
+} else {
   target += -log_diff_exp(normal_lcdf(2.1 | 0, 1),
+}
                           normal_lcdf(-0.5 | 0, 1));
 ```
 
@@ -623,12 +653,13 @@ behaves in the same way as the following code.
 
 ```stan
 y ~ poisson(3.7);
-if (y < 2 || y > 10)
+if (y < 2 || y > 10) {
   target += negative_infinity();
-else
+} else {
   target += -log_sum_exp(poisson_lpmf(2 | 3.7),
                          log_diff_exp(poisson_lcdf(10 | 3.7),
                                       poisson_lcdf(2 | 3.7)));
+}
 ```
 
 Recall that `log_sum_exp(a, b)` is just the arithmetically stable form
@@ -648,10 +679,11 @@ following code.
 
 ```stan
 y ~ normal(0, 1);
-if (y < -0.5)
+if (y < -0.5) {
   target += negative_infinity();
-else
+} else {
   target += -normal_lccdf(-0.5 | 0, 1);
+}
 ```
 
 The `normal_lccdf` function is the normal complementary cumulative
@@ -669,11 +701,12 @@ behaves the same way as
 
 ```stan
 y ~ poisson(3.7);
-if (y < 2)
+if (y < 2) {
   target += negative_infinity();
-else
+} else {
   target += -log_sum_exp(poisson_lpmf(2 | 3.7),
                          poisson_lccdf(2 | 3.7));
+}
 ```
 
 
@@ -690,10 +723,11 @@ produces the same result as the following code.
 
 ```stan
 target += normal_lpdf(y | 0, 1);
-if (y > 2.1)
+if (y > 2.1) {
   target += negative_infinity();
-else
+} else {
   target += -normal_lcdf(2.1 | 0, 1);
+}
 ```
 
 With only an upper bound, the discrete case does not need a boundary
@@ -707,10 +741,11 @@ behaves the same way as the following code.
 
 ```stan
 y ~ poisson(3.7);
-if (y > 10)
+if (y > 10) {
   target += negative_infinity();
-else
+} else {
   target += -poisson_lcdf(10 | 3.7);
+}
 ```
 
 
@@ -741,16 +776,16 @@ probability and the entire statement adds $-\infty$ to the total log
 probability, which in turn results in the sample being rejected.
 
 
-#### Vectorizing Truncated Distributions {-}
+#### Vectorizing truncated distributions {-}
 
 Stan does not (yet) support vectorization of distribution functions
 with truncation.
 
 
-## For Loops
+## For loops
 
 Suppose `N` is a variable of type `int`, `y` is a one-dimensional
-array of type `real[]`, and `mu` and `sigma` are variables of type
+array of type `array[] real`, and `mu` and `sigma` are variables of type
 `real`.  Furthermore, suppose that `n` has not been defined as a
 variable. Then the following is a well-formed for-loop statement.
 
@@ -765,7 +800,7 @@ range `1:N`, and the body is the statement following the
 loop bounds.
 
 
-### Loop Variable Typing and Scope {-}
+### Loop variable typing and scope {-}
 
 The type of the loop variable is `int`.  Unlike in C++ and similarly
 to R, this variable must not be declared explicitly.
@@ -783,7 +818,7 @@ greater than or equal to 5 and less than or equal to 2.
 The scope of the loop variable is limited to the body of the loop.
 
 
-### Order Sensitivity and Repeated Variables {-}
+### Order sensitivity and repeated variables {-}
 
 Unlike in BUGS, Stan allows variables to be reassigned.  For
 example, the variable `theta` in the following program is
@@ -823,8 +858,9 @@ sum the values of an array directly using code such as the following.
 
 ```stan
 total = 0.0;
-for (n in 1:N)
+for (n in 1:N) {
   total = total + x[n];
+}
 ```
 
 After the for loop is executed, the variable `total` will hold
@@ -847,16 +883,16 @@ for (n in 1:100) {
 ```
 
 
-## Foreach Loops
+## Foreach loops
 
 A second form of for loops allows iteration over elements of
 containers.  If `ys` is an expression denoting a container (vector,
 row vector, matrix, or array) with elements of type `T`, then the
 following is a well-formed foreach statement.
 
-```
+```stan
 for (y in ys) {
-  ... do something with y ...
+  // ... do something with y ...
 }
 ```
 
@@ -866,27 +902,30 @@ The order in which elements of `ys` are visited is defined for container types a
 
 * `matrix`: elements visited in column-major order, `y` is of type `double`
 
-* `T[]`: elements visited in order, `y` is of type `T`.
+* `array[] T`: elements visited in order, `y` is of type `T`.
 
-Consequently, if `ys` is a two dimensional array `real[ , ]`, `y` will
-be a one-dimensional array of real values (type `real[]`).  If 'ys` is
+Consequently, if `ys` is a two dimensional array `array[,] real`, `y` will
+be a one-dimensional array of real values (type `array[] real`).  If 'ys` is
 a matrix, then `y` will be a real value (type `real`).  To loop over
 all values of a two-dimensional array using foreach statements would
 require a doubly-nested loop,
 
-```
-real yss[2, 3];
-for (ys in yss)
-  for (y in ys)
-    ... do something with y ...
+```stan
+array[2, 3] real yss;
+for (ys in yss) {
+  for (y in ys) {
+    // ... do something with y ...
+  }
+}
 ```
 
 whereas a matrix can be looped over in one foreach statement
 
-```
+```stan
 matrix[2, 3] yss;
-for (y in yss)
-   ... do something with y...
+for (y in yss) {
+   // ... do something with y...
+}
 ```
 
 In both cases, the loop variable `y` is of type `real.  The elements
@@ -896,7 +935,7 @@ two-dimensional array are visited in row-major order (e.g., `y[1, 1]`,
 `y[1, 2]`, `y[1, 3]`, `y[2, 1]`, ..., `y[2, 3]`).
 
 
-## Conditional Statements
+## Conditional statements
 
 Stan supports full conditional statements using
 the same if-then-else syntax as C++.  The general format is
@@ -928,7 +967,7 @@ a non-zero value and there is a final else clause, its statement is
 executed.
 
 
-## While Statements
+## While statements
 
 Stan supports standard while loops using the same syntax as C++.  The
 general format is as follows.
@@ -954,14 +993,14 @@ the [section on continue and break
 statements](#break-continue-statements) for more details.
 
 
-## Statement Blocks and Local Variable Declarations
+## Statement blocks and local variable declarations
 
 Just as parentheses may be used to group expressions, curly brackets
 may be used to group a sequence of zero or more statements into a
 statement block.  At the beginning of each block, local variables may be
 declared that are scoped over the rest of the statements in the block.
 
-### Blocks in For Loops {-}
+### Blocks in for loops {-}
 
 Blocks are often used to group a sequence of statements together to be
 used in the body of a for loop.  Because the body of a for loop can be
@@ -969,8 +1008,9 @@ any statement, for loops with bodies consisting of a single statement
 can be written as follows.
 
 ```stan
-for (n in 1:N)
-  y[n] ~ normal(mu,sigma);
+for (n in 1:N) {
+  y[n] ~ normal(mu, sigma);
+}
 ```
 
 To put multiple statements inside the body of a for loop, a block is
@@ -978,7 +1018,7 @@ used, as in the following example.
 
 ```stan
 for (n in 1:N) {
-  lambda[n] ~ gamma(alpha,beta);
+  lambda[n] ~ gamma(alpha, beta);
   y[n] ~ poisson(lambda[n]);
 }
 ```
@@ -997,7 +1037,7 @@ for (n in 1:N)
 
 The problem is that the body of the for loop is taken to be the
 statement directly following it, which is
-`y[n] ~ normal(mu,sigma)`.  This leaves the probability statement for
+`y[n] ~ normal(mu, sigma)`.  This leaves the probability statement for
 `z[n]` hanging, as is clear from the following equivalent
 program.
 
@@ -1014,7 +1054,7 @@ an error.  If the loop variable `n` was not defined before the
 for loop, then the use of the expression `z[n]` will raise an
 error.
 
-### Local Variable Declarations {-}
+### Local variable declarations {-}
 
 A for loop has a statement as a body.  It is often convenient in
 writing programs to be able to define a local variable that will be
@@ -1052,7 +1092,7 @@ The compiler will flag the second declaration of `theta` with a
 message that it is already defined.
 
 
-### No Constraints on Local Variables {-}
+### No constraints on local variables {-}
 
 Local variables may not have constraints on their declaration.  The
 only types that may be used are
@@ -1062,7 +1102,7 @@ int, real, vector[K], row_vector[K], matrix[M, N].
 ```
 
 
-### Blocks within Blocks {-}
+### Blocks within blocks {-}
 
 A block is itself a statement, so anywhere a sequence of statements is
 allowed, one or more of the statements may be a block.  For instance,
@@ -1074,8 +1114,9 @@ for (m in 1:M) {
      int n = 2 * m;
      sum += n;
   }
-  for (n in 1:N)
+  for (n in 1:N) {
     sum += x[m, n];
+  }
 }
 ```
 
@@ -1086,7 +1127,7 @@ in which the loop variable is defined.  As far as Stan is concerned,
 these two uses of `n` are unrelated.
 
 
-## Break and Continue Statements <a id="break-continue-statements"></a>
+## Break and continue statements <a id="break-continue-statements"></a>
 
 The one-token statements `continue` and `break` may be used
 within loops to alter control flow;  `continue` causes the next
@@ -1102,7 +1143,7 @@ readability by reducing the level of nesting or eliminating bookkeeping
 inside loops.
 
 
-### Break Statements {-}
+### Break statements {-}
 
 When a `break` statement is executed, the most deeply nested loop
 currently being executed is ended and execution picks up with the next
@@ -1111,7 +1152,9 @@ program:
 
 ```stan
 while (1) {
-  if (n < 0) break;
+  if (n < 0) {
+    break;
+  }
   foo(n);
   n = n - 1;
 }
@@ -1134,7 +1177,7 @@ This case is simply illustrative of the behavior; it is not a case
 where a `break` simplifies the loop.
 
 
-### Continue Statements {-}
+### Continue statements {-}
 
 The `continue` statement ends the current operation of the loop
 and returns to the condition at the top of the loop.  Such loops are
@@ -1146,7 +1189,9 @@ array `x`,
 real sum;
 sum = 0;
 for (n in 1:size(x)) {
-  if (x[n] <= 0) continue;
+  if (x[n] <= 0) {
+    continue;
+  }
   sum += x[n];
 }
 ```
@@ -1163,8 +1208,9 @@ reversing the conditional,
 real sum;
 sum = 0;
 for (n in 1:size(x)) {
-  if (x[n] > 0)
+  if (x[n] > 0) {
     sum += x[n];
+  }
 }
 ```
 
@@ -1176,21 +1222,23 @@ there are several such exclusion conditions, the break or continue
 versions tend to be much easier to read.
 
 
-### Breaking and Continuing Nested Loops {-}
+### Breaking and continuing nested loops {-}
 
 If there is a loop nested within a loop, a `break` or
 `continue` statement only breaks out of the inner loop. So
 
 ```stan
 while (cond1) {
-  ...
+  // ...
   while (cond2) {
-    ...
-    if (cond3) break;
-    ...
+    // ...
+    if (cond3) {
+      break;
+    }
+    // ...
   }
   // execution continues here after break
-  ...
+  // ...
 }
 ```
 
@@ -1207,7 +1255,7 @@ statements jump past any control structure other than while-loops and
 for-loops.
 
 
-## Print Statements {#print-statements.section}
+## Print statements {#print-statements.section}
 
 Stan provides print statements that can print literal strings and the
 values of expressions.  Print statements accept any number of
@@ -1224,7 +1272,7 @@ iteration: " (with the trailing space), followed by the value of the
 expression `n`, followed by a new line.
 
 
-### Print Content {-}
+### Print content {-}
 
 The text printed by a print statement varies based on its content.  A
 literal (i.e., quoted) string in a print statement always prints
@@ -1248,6 +1296,15 @@ and a $2 \times 3$-matrix as
 [[1, 2, 3], [4, 5, 6]]
 ```
 
+Complex numbers print as pairs.  For example, the pair of statements
+
+```stan
+complex z = to_complex(1.2, -3.5);
+print(z)
+```
+
+will print as `(1.2,-3.5)`, with no space after the comma or within
+the parentheses.
 
 Printing a more readable version of arrays or matrices can be done
 with loops.  An example is the print statement in the following
@@ -1258,8 +1315,9 @@ transformed data {
   matrix[2, 2] u;
   u[1, 1] = 1.0;   u[1, 2] = 4.0;
   u[2, 1] = 9.0;   u[2, 2] = 16.0;
-  for (n in 1:2)
+  for (n in 1:2) {
     print("u[", n, "] = ", u[n]);
+  }
 }
 ```
 
@@ -1272,14 +1330,14 @@ u[2] = [9, 16]
 ```
 
 
-### Non-void Input {-}
+### Non-void input {-}
 
 The input type to a print function cannot be void.  In particular, it
 can't be the result of a user-defined void function.  All other types
 are allowed as arguments to the print function.
 
 
-### Print Frequency {-}
+### Print frequency {-}
 
 Printing for a print statement happens every time it is executed.  The
 `transformed data` block is executed once per chain, the
@@ -1287,20 +1345,18 @@ Printing for a print statement happens every time it is executed.  The
 step, and the `generated quantities` block once per iteration.
 
 
-### String Literals {-}
+### String literals {-}
 
 String literals begin and end with a double quote character
 (`"`).  The characters between the double quote characters may be
-the space character or any visible ASCII character, with the exception
-of the backslash character (`\`) and double quote character
-(`"`).  The full list of visible ASCII characters is as follows,
+any byte sequence, with the exception of the double quote character.
 
-```
-a b c d e f g h i j k l m n o p q r s t u v w x y z
-A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
-0 1 2 3 4 5 6 7 8 9 0 { } [ ] ( ) < >
-~ @ # $ ` ^ & * _ ' - + = | / ! ? . , ; :
-```
+The Stan interfaces preserve the byte sequences which they receive.
+The encoding of these byte sequences as characters and their rendering
+as glyphs will be handled by whatever display mechanism is being used to
+monitor Stan's output (e.g., a terminal, a Jupyter notebook, RStudio, etc.).
+Stan does not enforce a character encoding for strings, and no attempt is
+made to validate the bytes as legal ASCII, UTF-8, etc.
 
 
 ### Debug by `print` {-}
@@ -1329,7 +1385,7 @@ sampling statement, it's possible to isolate where the log probability
 becomes ill-defined (i.e., becomes not-a-number).
 
 
-## Reject Statements {#reject-statements.section}
+## Reject statements {#reject-statements.section}
 
 The Stan `reject` statement provides a mechanism to
 report errors or problematic values encountered during program
@@ -1344,12 +1400,13 @@ example, the following code handles the case where a variable `x`'s
 value is negative.
 
 ```stan
-if (x < 0)
+if (x < 0) {
   reject("x must not be negative; found x=", x);
+}
 ```
 
 
-### Behavior of Reject Statements {-}
+### Behavior of reject statements {-}
 
 Reject statements have the same behavior as exceptions thrown by
 built-in Stan functions.  For example, the `normal_lpdf` function
@@ -1361,7 +1418,7 @@ In all cases of rejection, the interface accessing the Stan
 program should print the arguments to the reject statement.
 
 
-#### Rejections in Functions {-}
+#### Rejections in functions {-}
 
 Rejections in user-defined functions are just passed to the
 calling function or program block.  Reject statements can be used in
@@ -1370,7 +1427,7 @@ functions to fully emulate built-in function behavior.  It is better
 to find out earlier rather than later when there is a problem.
 
 
-#### Fatal Exception Contexts {-}
+#### Fatal exception contexts {-}
 
 In both the transformed data block and generated quantities block,
 rejections are fatal.  This is because if initialization fails or if
@@ -1382,7 +1439,7 @@ more complicated constraints to be enforced that can be specified with
 Stan's constrained variable declarations.
 
 
-#### Recoverable Rejection Contexts {-}
+#### Recoverable rejection contexts {-}
 
 Rejections in the transformed parameters and model blocks are
 not in and of themselves instantly fatal.  The result has the same
@@ -1397,7 +1454,7 @@ message.  To aid in diagnosing problems, the message for each
 reject statement will be printed as a result of executing it.
 
 
-### Rejection is not for Constraints {-}
+### Rejection is not for constraints {-}
 
 Rejection should be used for error handling, not defining arbitrary
 constraints.  Consider the following errorful Stan program.
@@ -1407,11 +1464,13 @@ parameters {
   real a;
   real<lower=a> b;
   real<lower=a, upper=b> theta;
-  ...
+  // ...
+}
 model {
   // **wrong** needs explicit truncation
   theta ~ normal(0, 1);
-  ...
+  // ...
+}
 ```
 
 This program is wrong because its truncation bounds on `theta`
@@ -1436,8 +1495,9 @@ functions.  In this case, it is wrong to try to deal with truncation
 through constraints.
 
 ```stan
-  if (theta < a || theta > b)
+  if (theta < a || theta > b) {
     reject("theta not in (a, b)");
+  }
   // still **wrong**, needs T[a,b]
   theta ~ normal(0, 1);
 ```

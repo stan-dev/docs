@@ -35,7 +35,7 @@ The summary statistics and the algorithms used to compute them are described in 
 and 
 [Effective Sample Size](https://mc-stan.org/docs/reference-manual/effective-sample-size-section.html).
 
-## Building the stansummary Command
+## Building the stansummary command
 
 The CmdStan makefile task `build` compiles the `stansummary` utility
 into the `bin` directory.
@@ -45,7 +45,7 @@ It can be compiled directly using the makefile as follows:
 > make bin/stansummary
 ```
 
-## Running the `stansummary` Program
+## Running the `stansummary` program
 
 The `stansummary` utility processes one or more output files from a set of
 chains from one run of the HMC sampler.
@@ -109,7 +109,7 @@ The console output information consists of
 There is one row per parameter and the row order in the summary report corresponds
 to the column order in the Stan CSV output file.
 
-### Sampler Parameters
+### Sampler parameters
 
 The initial Stan CSV columns provide information on the sampler state for each draw:
 
@@ -126,7 +126,7 @@ Because we ran the NUTS sampler, the above summary reports sampler parameters
 `treedepth__`, `n_leapfrog__`, and `divergent__`;
 the static HMC sampler would report `int_time__` instead.
 
-### Model Parameters and Quantities of Interest
+### Model parameters and quantities of interest
 
 The remaining Stan CSV columns report the values of all parameters, transformed parameters,
 and generated quantities in the order in which these variables are declared in the Stan program.
@@ -136,14 +136,14 @@ The `eight_schools.stan` program parameters block contains the following paramet
 declarations:
 ```
   real mu;
-  real theta[J];
+  array[J] real theta;
   real<lower=0> tau;
 ```
 In the example data, `J` is $8$; therefore the stansummary listing
 reports on `theta[1]` through `theta[8]`.
 
 
-## Command-line Options
+## Command-line options
 
 The `stansummary` command syntax provides a set of flags to customize the output
 which must precede the list of filenames.
@@ -162,8 +162,14 @@ Options:
                               comma-separated integers from (1,99), inclusive.
                               Default is 5,50,95.
   -s, --sig_figs [n]          Significant figures reported. Default is 2.
-                              Must be an integer from (1, 10), inclusive.
+                              Must be an integer from (1, 18), inclusive.
 ```
 
 Both short an long option names are allowed.  Short names are specified as `-<o> <value>`;
 long option names can be specified either as `--<option>=<value>` or `--<option> <value>`.
+
+The amount of precision
+in the sampler output limits the amount of real precision in the summary report.
+CmdStan's command line interface also has output argument `sig_figs`.
+The default sampler output precision is 6.
+The `--sig_figs` argument to the stansummary program should not exceed the `sig_figs` argument to the sampler.

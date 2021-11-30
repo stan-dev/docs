@@ -5,7 +5,7 @@ Stan is used in most of our
 `stanc`. Since version 2.22, the Stan compiler has been implemented in OCaml and
 is referred to as [stanc3](https://github.com/stan-dev/stanc3). The binary name
 is still simply `stanc`, so this document uses both stanc and stanc3
-interchangably.
+interchangeably.
 
 ## Command-line options for stanc3 {#stanc-args}
 
@@ -46,8 +46,12 @@ used for the implementation of the Stan model in the generated C++ code.
 - `--auto-format` - Pretty prints the program to the console. See [more on auto
   formatting](#stanc-pretty-printing).
 
-- `--print-canonical` - Similar to `--auto-format`, but program is also updated
-  to remove deprecated features and canonicalize the program when possible.
+- `--canonicalize` - Make changes to the program before pretty-printing by
+  specifying options in a comma separated list. Options are 'deprecations',
+  'parentheses', 'braces'.
+
+- `--print-canonical` - Synonymous with `--auto-format --canonicalize=[all
+  options]`.
 
 - `--print-cpp` - If set, output the generated C++ Stan model class to stdout.
 
@@ -636,59 +640,51 @@ file.
 Invoking `stanc --auto-format <model_file>` will print a version of your model
 which has been re-formatted. The goal is to have this automatic formatting stay
 as close as possible to the [Stan Program Style Guide]. This means spacing,
-identation, and line length are all regularized. _Some_ deprecated features,
+indentation, and line length are all regularized. _Some_ deprecated features,
 like the use of `#` for line comments, are replaced, but the goal is mainly to
 preserve the program while formatting it.
 
 ### Canonicalizing
 
-Invoking `stanc --print-canonical <model_file>` will also print a formatted
-version of your program, but it will first make several changes to the code to
-reflect changes in syntax and deprecations to the language. This can be a great
-tool for updating older Stan models and silencing deprecation warnings.
+In addition to automatic formatting, stanc can also "canonicalize" programs by
+updating deprecated syntax, removing unnecessary parenthesis, and adding braces
+around bodies of `if` statements and `for` and `while` loops.
 
-Some of the changes made are:
+This can be done by using `stanc --auto-format --canonicalize=...` where `...`
+is a comma-separated list of options. Currently these options are:
 
-* Removing unnecessary extra parenthesis
+- `deprecations`
 
-  `y = ((x-1))` $\to$ `y = x - 1`
+  Removes deprecated syntax such as replacing `<-` with `=`, replacing the
+  deprecated `_log` suffix, replacing deprecated functions with their drop-in
+  replacements, and replacing `get_lp()` with `target()` and
+  `increment_log_prob(...)` with `target += ...`.
 
-* Replacing deprecated assignment operators
+- `parentheses`
 
-  `y <- 0` $\to$ `y = 0`
+  Removes unnecessary extra parentheses, such as converting `y = ((x-1))` to
+  `y = x - 1`
 
-* Updating the suffix of (included or user-defined) distributions
+- `braces`
 
-  `my_distribution_cdf_log` $\to$ `my_distribution_lcdf`
-
-* Replacing inline conditionals with the ternary if operator
-
-  `if_else(a,b,c)` $\to$ `a ? b : c`
-
-* Replacing some deprecated functions with their drop-in replacements
-
-  `abs(2.4)` $\to$ `fabs(2.4)`
-
-* Replacing `increment_log_prob` calls with `target+=` statements
-
-* Replacing single-statement branches with blocks.
-
-  For example, the following statement
+  Places braces around all blocks. For example, the following statement
 
   ```stan
   if (cond)
     #result
   ```
-
-  will be formatted as follows
+  will be formatted as
 
   ```stan
   if (cond) {
     #result
   }
   ```
+  and similarly for both kinds of loops containing a single statement.
 
-  and similarly for For/While loops containing a single statement.
+
+Invoking `stanc --print-canonical <model_file>` is synonymous with running
+`stanc --auto-format --canonicalize=deprecations,braces,parentheses`
 
 ### Known issues
 
@@ -703,25 +699,7 @@ using either:
   prefixed with the string `^^^:` to indicate they originally appeared higher in
   the program.
 
-  For example, the following program
-
-  ```stan
-  generated quantities {
-    real x = 2;
-    real y = x /* comment */ - 1;
-  }
-  ```
-
-  will be formatted as follows
-
-  ```stan
-  generated quantities {
-    real x = 2;
-    real y = x - 1;
-
-    /* ^^^: comment */
-  }
-  ```
-
-  One can avoid this by not placing comments directly inside an expression, and
-  we hope to improve this functionality in future versions.
+  We hope to improve this functionality in future versions. For now, this can
+  usually be avoided by manually moving the comment outside of an expression,
+  either by placing it on its own line or following a separator such as a comma
+  or keyword.

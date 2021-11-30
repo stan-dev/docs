@@ -1,7 +1,12 @@
 #!/usr/bin/env groovy
 
 pipeline {
-    agent { label 'osx' }
+    agent {
+        docker {
+            image 'stanorg/ci:alpine'
+            label 'linux'
+        }
+    }
     options {
         skipDefaultCheckout()
         preserveStashes(buildCount: 5)
@@ -110,20 +115,20 @@ pipeline {
                     def new_version_dot = major_version + "." + minor_version
 
                     /* Linux Version */
-                    //sh """
-                        //sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/documentation/index.md
-                        //sed -i 's/$last_version_dot/$new_version_dot/g' users/documentation/index.md
-                        //sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/interfaces/cmdstan.md
-                        //sed -i 's/$last_version_dot/$new_version_dot/g' users/interfaces/cmdstan.md
-                    //"""
+                    sh """
+                        sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/documentation/index.md
+                        sed -i 's/$last_version_dot/$new_version_dot/g' users/documentation/index.md
+                        sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/interfaces/cmdstan.md
+                        sed -i 's/$last_version_dot/$new_version_dot/g' users/interfaces/cmdstan.md
+                    """
 
                     /* Mac Version */
-                    sh """
-                        sed -i.bak 's/$last_docs_version_dir/$new_version_underscore/g' users/documentation/index.md
-                        sed -i.bak 's/$last_version_dot/$new_version_dot/g' users/documentation/index.md
-                        sed -i.bak 's/$last_docs_version_dir/$new_version_underscore/g' users/interfaces/cmdstan.md
-                        sed -i.bak 's/$last_version_dot/$new_version_dot/g' users/interfaces/cmdstan.md
-                    """
+//                     sh """
+//                         sed -i.bak 's/$last_docs_version_dir/$new_version_underscore/g' users/documentation/index.md
+//                         sed -i.bak 's/$last_version_dot/$new_version_dot/g' users/documentation/index.md
+//                         sed -i.bak 's/$last_docs_version_dir/$new_version_underscore/g' users/interfaces/cmdstan.md
+//                         sed -i.bak 's/$last_version_dot/$new_version_dot/g' users/interfaces/cmdstan.md
+//                     """
 
                 }
 

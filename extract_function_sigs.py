@@ -8,7 +8,9 @@ import os
 import os.path
 import sys
 import contextlib
-
+from lxml import html
+import requests
+import re
 
 @contextlib.contextmanager
 def pushd(new_dir):
@@ -23,8 +25,16 @@ def main():
         stan_major = int(sys.argv[1])
         stan_minor = int(sys.argv[2])
     else:
-        print('Expecting 2 arguments <MAJOR> <MINOR> version numbers')
-        sys.exit(1)
+        page = requests.get('https://mc-stan.org/docs/functions-reference/index.html')
+        if page.status_code == 404:
+            print('Stan version not found! Add 2 arguments <MAJOR> <MINOR> version numbers')
+            sys.exit(1)
+            
+        tree = html.fromstring(page.content)  
+        stan_url = tree.xpath('/html/body/a/@href')
+        x = re.findall(r'[0-9]+', stan_url[0])
+        stan_major = int(x[0])
+        stan_minor = int(x[1])
 
     sigs = set()
     ref_dir = os.path.join('src', 'functions-reference')

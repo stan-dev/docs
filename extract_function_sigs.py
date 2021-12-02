@@ -8,9 +8,7 @@ import os
 import os.path
 import sys
 import contextlib
-from lxml import html
-import requests
-import re
+import subprocess
 
 @contextlib.contextmanager
 def pushd(new_dir):
@@ -24,17 +22,15 @@ def main():
     if len(sys.argv) > 2:
         stan_major = int(sys.argv[1])
         stan_minor = int(sys.argv[2])
+        outfile_name = 'stan-functions-{}_{}.txt'.format(str(stan_major), str(stan_minor))
     else:
-        page = requests.get('https://mc-stan.org/docs/functions-reference/index.html')
-        if page.status_code == 404:
+        try:
+            bash_git_hash = ['git', 'rev-parse', 'HEAD']
+            git_hash = subprocess.run(bash_git_hash, stdout=subprocess.PIPE, universal_newlines=True).stdout
+            outfile_name = 'stan-functions-{}.txt'.format(str(git_hash).strip())
+        except OSError:
             print('Stan version not found! Add 2 arguments <MAJOR> <MINOR> version numbers')
             sys.exit(1)
-            
-        tree = html.fromstring(page.content)  
-        stan_url = tree.xpath('/html/body/a/@href')
-        x = re.findall(r'[0-9]+', stan_url[0])
-        stan_major = int(x[0])
-        stan_minor = int(x[1])
 
     sigs = set()
     ref_dir = os.path.join('src', 'functions-reference')
@@ -54,8 +50,7 @@ def main():
                             sigs.add('{}; {}; {}'.format(parts[1], parts[2], parts[0]))
                         else:
                             print('not a function sig: {}'.format(line))
-
-    outfile_name = 'stan-functions-{}_{}.txt'.format(str(stan_major), str(stan_minor))
+    
     with open(outfile_name, 'w') as outfile:
         outfile.write('# This file is semicolon delimited\n')
         outfile.write('StanFunction; Arguments; ReturnType\n')

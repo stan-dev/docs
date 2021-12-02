@@ -29,7 +29,7 @@ def main():
             git_hash = subprocess.run(bash_git_hash, stdout=subprocess.PIPE, universal_newlines=True).stdout
             outfile_name = 'stan-functions-{}.txt'.format(str(git_hash).strip())
         except OSError:
-            print('Stan version not found! Add 2 arguments <MAJOR> <MINOR> version numbers')
+            print('Stan version not found and Git not found! Either install Git or add 2 arguments <MAJOR> <MINOR> version numbers')
             sys.exit(1)
 
     sigs = set()

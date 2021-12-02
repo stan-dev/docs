@@ -48,7 +48,7 @@ used for the implementation of the Stan model in the generated C++ code.
 
 - `--canonicalize` - Make changes to the program before pretty-printing by
   specifying options in a comma separated list. Options are 'deprecations',
-  'parentheses', 'braces'.
+  'parentheses', 'braces', 'includes'.
 
 - `--print-canonical` - Synonymous with `--auto-format --canonicalize=[all
   options]`.
@@ -671,20 +671,26 @@ is a comma-separated list of options. Currently these options are:
 
   ```stan
   if (cond)
-    #result
+    //result
   ```
   will be formatted as
 
   ```stan
   if (cond) {
-    #result
+    //result
   }
   ```
   and similarly for both kinds of loops containing a single statement.
 
+- `includes`
+
+  This will pretty-print code from other files included with `#include` as part
+  of the program. This was the default behavior prior to Stan 2.29. When not
+  enabled, the pretty-printer output will include the same `#include` directives
+  as the input program.
 
 Invoking `stanc --print-canonical <model_file>` is synonymous with running
-`stanc --auto-format --canonicalize=deprecations,braces,parentheses`
+`stanc --auto-format --canonicalize=deprecations,braces,parentheses,includes`
 
 ### Known issues
 
@@ -703,3 +709,10 @@ using either:
   usually be avoided by manually moving the comment outside of an expression,
   either by placing it on its own line or following a separator such as a comma
   or keyword.
+
+* Failure to recreate strange `#include` structure
+
+  Printing _without_ include inlining (`--canonicalize=includes`) can fail when
+  includes were used in atypical locations, such as in the middle of statements.
+  We recommend either printing with inlining enabled or reconsidering the use of
+  includes in this way.

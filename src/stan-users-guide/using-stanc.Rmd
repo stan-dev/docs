@@ -247,6 +247,9 @@ in more detail in following sections):
     assigned a value.
 -   *Strict or nonsensical parameter bounds.* A parameter is given questionable
     bounds.
+-   *Nonlinear transformations.* When the left-hand side of a tilde statement
+    (or first argument of a log probability function) contains a nonlinear
+    transform which may require a Jacobian change of variables adjustment.
 
 Some important limitations of pedantic mode are listed at the end of this chapter.
 
@@ -595,6 +598,36 @@ Warning:
   unconstrained and give it a normal(0.5, 0.5) prior distribution.
 ```
 
+### Nonlinear transformations
+
+When a parameter is transformed in a non-linear fashion, an adjustment must be
+applied to account for distortion caused by the transform. This is discussed in
+depth in the [Changes of variables] section.
+
+This portion of pedantic mode tries to detect instances where such an adjustment
+would be necessary and remind the user.
+
+For example, consider the following program.
+
+```stan
+parameters {
+  real y;
+}
+model {
+  log(y) ~ normal(0,1);
+}
+
+```
+
+Pedantic mode produces the following warning.
+
+```
+Warning:
+    Left-hand side of sampling statement (~) may contain a non-linear
+    transform of a parameter or local variable. If it does, you need
+    to include a target += statement with the log absolute determinant
+    of the Jacobian of the transform.
+```
 
 ### Pedantic mode limitations
 

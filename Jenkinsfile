@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 pipeline {
-    agent { label 'gelman-group-linux' }
+    agent { label 'osx' }
     options {
         skipDefaultCheckout()
         preserveStashes(buildCount: 5)
@@ -12,7 +12,7 @@ pipeline {
         string(defaultValue: '', name: 'last_docs_version_dir', description: "Last docs version found in /docs. Example: 2_21")
         booleanParam(defaultValue: true, description: 'Build docs and create a PR ?', name: 'buildDocs')
         booleanParam(defaultValue: true, description: 'Change docs version for stan-dev.github.io ?', name: 'docsStanDev')
-        booleanParam(defaultValue: false, description: 'Build cmdstan manual ?', name: 'cmdstanManual')
+        booleanParam(defaultValue: true, description: 'Link docs to latest?', name: 'linkDocs')
     }
     environment {
         GITHUB_TOKEN = credentials('6e7c1e8f-ca2c-4b11-a70e-d934d3f6b681')
@@ -44,17 +44,21 @@ pipeline {
                 }
 
                 /* Build docs */
-                sh "python build.py $major_version $minor_version"
+                sh "python3 build.py $major_version $minor_version"
 
                 /* Add redirects */
-                sh "python add_redirects.py $major_version $minor_version functions-reference"
-                sh "python add_redirects.py $major_version $minor_version reference-manual"
-                sh "python add_redirects.py $major_version $minor_version stan-users-guide"
-
-                /* Link docs to latest */
-                sh "ls -lhart docs"
-                sh "chmod +x add_links.sh"
-                sh "./add_links.sh $last_docs_version_dir"
+                sh "python3 add_redirects.py $major_version $minor_version functions-reference"
+                sh "python3 add_redirects.py $major_version $minor_version reference-manual"
+                sh "python3 add_redirects.py $major_version $minor_version stan-users-guide"
+                sh "python3 add_redirects.py $major_version $minor_version cmdstan-guide"
+                script {
+                    if (params.linkDocs) {
+                        /* Link docs to latest */
+                        sh "ls -lhart docs"
+                        sh "chmod +x add_links.sh"
+                        sh "./add_links.sh $last_docs_version_dir"
+                    }
+                }
 
                 /* Create Pull Request */
                 withCredentials([usernamePassword(credentialsId: 'a630aebc-6861-4e69-b497-fd7f496ec46b',
@@ -105,12 +109,20 @@ pipeline {
                     def new_version_underscore = major_version + "_" + minor_version
                     def new_version_dot = major_version + "." + minor_version
 
-                    sh """
-                        sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/documentation/index.md
-                        sed -i 's/$last_version_dot/$new_version_dot/g' users/documentation/index.md
+                    /* Linux Version */
+                    //sh """
+                        //sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/documentation/index.md
+                        //sed -i 's/$last_version_dot/$new_version_dot/g' users/documentation/index.md
+                        //sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/interfaces/cmdstan.md
+                        //sed -i 's/$last_version_dot/$new_version_dot/g' users/interfaces/cmdstan.md
+                    //"""
 
-                        sed -i 's/$last_docs_version_dir/$new_version_underscore/g' users/interfaces/cmdstan.md
-                        sed -i 's/$last_version_dot/$new_version_dot/g' users/interfaces/cmdstan.md
+                    /* Mac Version */
+                    sh """
+                        sed -i.bak 's/$last_docs_version_dir/$new_version_underscore/g' users/documentation/index.md
+                        sed -i.bak 's/$last_version_dot/$new_version_dot/g' users/documentation/index.md
+                        sed -i.bak 's/$last_docs_version_dir/$new_version_underscore/g' users/interfaces/cmdstan.md
+                        sed -i.bak 's/$last_version_dot/$new_version_dot/g' users/interfaces/cmdstan.md
                     """
 
                 }
@@ -131,30 +143,6 @@ pipeline {
                     """
                 }
 
-            }
-        }
-        stage('Checkout cmdstan and build manual') {
-            when {
-              expression {
-                params.cmdstanManual
-              }
-            }
-            steps {
-                /* Checkout source code */
-                deleteDir()
-                checkout([$class: 'GitSCM',
-                          branches: [[name: '*/master']],
-                          doGenerateSubmoduleConfigurations: false,
-                          extensions: [],
-                          submoduleCfg: [],
-                          userRemoteConfigs: [[url: "https://github.com/stan-dev/cmdstan.git", credentialsId: 'a630aebc-6861-4e69-b497-fd7f496ec46b']]]
-                )
-
-                /* make manual */
-                sh "make manual"
-
-                /* archive manual for it to be shown in job result artifacts */
-                archiveArtifacts 'doc/*.pdf'
             }
         }
     }

@@ -13,8 +13,7 @@ Optimization levels are specified by the numbers 0-4:
 
 -   **O0** No optimizations are applied.
 -   **O1** Only optimizations which are simple, do not dramatically change the program, and are unlikely noticeably slow down compile times are applied.
--   **O2** All optimizations are applied which are unlikely to significantly increase the size of the output program.
--   **O3** All optimizations are applied.
+-   **Oexperimental** All optimizations are applied. Some of these are not thorougly tested and may not always improve a programs performance.
 
 The levels include these optimizations:
 
@@ -22,32 +21,25 @@ The levels include these optimizations:
 -   **O1** includes:
     -   Dead code elimination
     -   Auto-differentiation level optimization
--   **O2** includes optimizations specified by **O1** and also:
+-   **Oexperimental** includes optimizations specified by **O1** and also:
     -   One step loop unrolling
     -   Constant propagation
     -   Expression propagation
     -   Copy propagation
     -   Partial evaluation
     -   Lazy code motion
--   **O3** includes optimizations specified by **O2** and also:
     -   Function inlining
     -   Static loop unrolling
 
-In addition, **O3** will apply more repetitions of the optimizations, which may increase compile times.
+In addition, **Oexperimental** will apply more repetitions of the optimizations, which may increase compile times.
+
+## Optimization descriptions
 
 
-# The `--optimize-numerically-close` option
-
-Using the `--optimize-numerically-close` option will disallow all optimizations which are likely to result in a program with nontrivial numerical differences from the unoptimized program. Some code transformations, such as replacing `log(1-x)` with the builtin `log1m(x)`, may result in slight numerical differences that are detectable when sampling from the program with a fixed random seed. While these transformations do not result in incorrect code, and infact are often more stable than the original code, they are sometimes undesirable for testing purposes.
+### **O1** Optimizations
 
 
-# Optimization descriptions
-
-
-## **O1** Optimizations
-
-
-### Dead code elimination
+#### Dead code elimination
 
 Dead code is code that does not have any effect on the behavior of the program. Code is not dead if it affects `target`, the value of any outside-observable variable like transformed parameters or generated quantities, or side effects such as print statements. Removing dead code can speed up a program by avoiding unnecessary computations.
 
@@ -92,9 +84,9 @@ log_prob {
 ```
 
 
-### Auto-differentiation level optimization
+#### Auto-differentiation level optimization
 
-Stan variables can have two auto-differentiation (AD) *levels*: AD or non-AD. AD variables carry gradient information with them, which allows Stan to calculate the log-density gradient, but they also have more overhead than non-AD variables. It is therefore inefficient for a variable to be AD unnecessarily. AD-level optimization sets every variable to be non-AD unless its gradient is necessary.
+Stan variables can have two auto-differentiation (AD) *levels*: AD or non-AD. AD variables carry gradient information with them, which allows Stan to calculate the log-density gradient, but they also have more overhead than non-AD variables. It is therefore inefficient for a variable to be AD unnecessarily. AD-level optimization sets every variable to be a floating point type unless its gradient is necessary.
 
 Example Stan program:
 
@@ -132,10 +124,10 @@ log_prob {
 ```
 
 
-## **O2** Optimizations
+### **Oexperimental** Optimizations
 
 
-### One step loop unrolling
+#### One step loop unrolling
 
 One step loop unrolling is similar to [static loop unrolling](#orge4599d2), but it only 'unrolls' the first iteration of a loop, and can therefore work even when the total number of iterations is not predictable. This can speed up a program by providing more opportunities for further optimizations such as partial evaluation and lazy code motion.
 
@@ -181,7 +173,7 @@ prepare_data {
 ```
 
 
-### Constant propagation
+#### Constant propagation
 
 Constant propagation replaces uses of a variable which is known to have a constant value `C` with that constant `C`. This removes the overhead of looking up the variable, and also makes many other optimizations possible (such as static loop unrolling and partial evaluation).
 
@@ -222,7 +214,7 @@ prepare_data {
 ```
 
 
-### Expression propagation
+#### Expression propagation
 
 <a id="org4e2cadd"></a> Constant propagation replaces uses of a variable which is known to have a constant value `E` with that constant `E`. This often results in recalculation of the expression, but provides more opportunities for further optimizations such as partial evaluation. Expression propagation is always followed by [lazy code motion](#org0c605fa) to avoid unnecessarily recomputing expressions.
 
@@ -268,7 +260,7 @@ prepare_data {
 ```
 
 
-### Copy propagation
+#### Copy propagation
 
 Copy propagation is similar to [expression propagation](#org4e2cadd), but only propagates variables rather than arbitrary expressions. This can reduce the complexity of the code for other optimizations such as expression propagation.
 
@@ -303,7 +295,7 @@ log_prob {
 ```
 
 
-### Partial evaluation
+#### Partial evaluation
 
 Partial evaluation searches for expressions that can be replaced with a faster, simpler, more memory efficient, or more numerically stable expression that has the same meaning.
 
@@ -338,7 +330,7 @@ log_prob {
 ```
 
 
-### Lazy code motion
+#### Lazy code motion
 
 <a id="org0c605fa"></a> Lazy code motion rearranges the statements and expressions in a program with the goals of:
 
@@ -348,7 +340,7 @@ log_prob {
 To accomplish these goals, lazy code motion will perform optimizations such as:
 
 -   Moving a repeatedly calculated expression its own variable (also referred to as *common-subexpression elimination*)
--   Moving an expression outside of a loop, if it doesn't need to be in the loop (also referred to as *loop-invariant code motion*)
+-   Moving an expression outside of a loop if it does not need to be in the loop (also referred to as *loop-invariant code motion*)
 
 Lazy code motion can make some programs significantly more efficient by avoiding redundant or early computations.
 
@@ -368,7 +360,7 @@ model {
 }
 ```
 
-Compiler representation of program \*before lazy code motion (simplified from the output of `--debug-transformed-mir-pretty`):
+Compiler representation of program before lazy code motion (simplified from the output of `--debug-transformed-mir-pretty`):
 
 ```
 log_prob {
@@ -383,7 +375,7 @@ log_prob {
 }
 ```
 
-Compiler representation of program \*after lazy code motion (simplified from the output of `--debug-optimized-mir-pretty`):
+Compiler representation of program after lazy code motion (simplified from the output of `--debug-optimized-mir-pretty`):
 
 ```
 log_prob {
@@ -401,11 +393,7 @@ log_prob {
 }
 ```
 
-
-## **O3** Optimizations
-
-
-### Function inlining
+#### Function inlining
 
 Function inlining replaces each function call to each user-defined function `f` with the body of `f`. It does this by copying the function body to the call site and doing the appropriate renaming of the argument variables. This can speed up a program by avoiding the overhead of a function call and providing more opportunities for further optimizations (such as partial evaluation).
 
@@ -464,7 +452,7 @@ prepare_data {
 In this code, the `for` loop and `break` is used to simulate the behavior of a `return` statement. The value to be returned is held in `inline_sym1__`. The flag variable `inline_sym3__` indicates whether a return has occurred and is necessary to handle `return` statements nested inside loops within the function body.
 
 
-### Static loop unrolling
+#### Static loop unrolling
 
 <a id="orge4599d2"></a> Static loop unrolling takes a loop that has a predictable number of iterations `X` and replaces it by writing out the loop body `X` times. The loop index in each repeat is replaced with the appropriate constant. This can speed up a program by avoiding the overhead of a loop and providing more opportunities for further optimizations (such as partial evaluation).
 

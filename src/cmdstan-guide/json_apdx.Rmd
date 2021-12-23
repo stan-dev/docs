@@ -5,7 +5,7 @@ parameters. Model data is read in by the model constructor. Model
 parameters are used to initialize the sampler and optimizer.
 
 
-## Creating JSON Files
+## Creating JSON files
 
 You can create the JSON file yourself using the guidelines below, but a more
 convenient way to create a JSON file for use with CmdStan is to use the
@@ -13,7 +13,7 @@ convenient way to create a JSON file for use with CmdStan is to use the
 function provided by the CmdStanR interface.
 
 
-## JSON Syntax Summary
+## JSON syntax summary
 
 JSON is a data interchange notation, defined by an
 \href{http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf}{ECMA
@@ -61,7 +61,7 @@ The following are examples of objects:
 `{ }`, `{"foo": null}`, `{"bar" : 17, "baz" : [14,15,16.6] }`.
 
 
-## Stan Data Types in JSON Notation
+## Stan data types in JSON notation
 
 Stan follows the JSON standard. A Stan input file in JSON notation
 consists of single JSON object which contains zero or more name-value pairs.
@@ -73,12 +73,12 @@ model:
 ```
 Matrix data and multi-dimensional arrays are indexed in row-major order.
 For a Stan program which has data block:
-```
+```stan
 data {
   int d1;
   int d2;
   int d3;
-  int ar[d1, d2, d3];
+  array[d1, d2, d3] int ar;
 }
 ```
 the following JSON input would be valid:
@@ -99,23 +99,23 @@ data variable declaration and the right column contains valid JSON
 data inputs.
 ```{r table1, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
 tabl <-  "
-| Stan variable |  JSON data |
-|--------------:|:----------:|
-| `int i` | `\"i\": 17` |
-| `real a` | `\"a\" : 17` |
-|  | `\"a\" : 17.2` |
-|  | `\"a\" : \"NaN\"` |
-|  | `\"a\" : \"+inf\"` |
-|  | `\"a\" : \"-inf\"` |
-| | |
-| `int a[5]` | `\"a\" : [1, 2, 3, 4, 5]` |
-| | |
-| `real a[5]` | `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]` |
-| `vector[5] a` | `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]` |
-| `row_vector[5] a` | `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]` |
-| `real a[5]` | `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]` |
-| | |
-| `matrix[2,3] a` | `\"a\" : [ [ 1, 2, 3 ], [ 4, 5, 6] ]` |
+|     Stan variable |               JSON data               |
+| ----------------: | :-----------------------------------: |
+|           `int i` |              `\"i\": 17`              |
+|          `real a` |             `\"a\" : 17`              |
+|                   |            `\"a\" : 17.2`             |
+|                   |           `\"a\" : \"NaN\"`           |
+|                   |          `\"a\" : \"+inf\"`           |
+|                   |          `\"a\" : \"-inf\"`           |
+|                   |                                       |
+|    `array[5] int` |       `\"a\" : [1, 2, 3, 4, 5]`       |
+|                   |                                       |
+| `array[5] real a` |  `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]`  |
+|     `vector[5] a` |  `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]`  |
+| `row_vector[5] a` |  `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]`  |
+| `array[5] real a` |  `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]`  |
+|                   |                                       |
+|  `matrix[2, 3] a` | `\"a\" : [ [ 1, 2, 3 ], [ 4, 5, 6] ]` |
 "
 cat(tabl)
 ```
@@ -127,12 +127,12 @@ arrays where any dimension is $0$, e.g., a 2-D array with dimensions $(1,0)$,
 i.e., an array which contains a single array which is empty,
 has JSON representation ` [ ] `.
 To see how this works, consider the following Stan program data block:
-```
+```stan
 data {
   int d;
-  int ar_1d[d];
-  int ar_2d[d,d];
-  int ar_3d[d,d,d];
+  array[d] int ar_1d;
+  array[d, d] int ar_2d;
+  array[d, d, d] int ar_3d;
 }
 ```
 In the case where variable `d` is `1`, all arrays will contain a single value.

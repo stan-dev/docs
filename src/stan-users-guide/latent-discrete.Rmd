@@ -11,7 +11,7 @@ latent discrete parameters.  The next chapter, the [clustering
 chapter](#clustering.chapter), on clustering models, considers further
 models involving latent discrete parameters.
 
-## The Benefits of Marginalization {#rao-blackwell.section}
+## The benefits of marginalization {#rao-blackwell.section}
 
 Although it requires some algebra on the joint probability function,
 a pleasant byproduct of the required calculations is the posterior
@@ -27,12 +27,12 @@ Standard optimization algorithms, including expectation maximization
 maximum likelihood estimation algorithms.  Such derivations provide
 exactly the marginalization needed for coding the model in Stan.
 
-## Change Point Models {#change-point.section}
+## Change point models {#change-point.section}
 
 The first example is a model of coal mining disasters in the U.K. for the years 1851--1962.^[The source of the data is [@Jarret:1979], which itself is a note correcting an earlier data collection.]
 
 
-### Model with Latent Discrete Parameter {-}
+### Model with latent discrete parameter {-}
 
 @PyMC:2014[, Section 3.1] provides a Poisson model of disaster
 $D_t$ in year $t$ with two rate parameters, an early rate ($e$)
@@ -60,27 +60,27 @@ c \; ? \; x_1 \: : \: x_2
 \ x_2 & \quad\text{if } c \text{ is false (i.e., zero).}
 \end{cases}
 $$
-<!--As of version 2.10, Stan supports the conditional operator.-->
 
 
-### Marginalizing out the Discrete Parameter {-}
+### Marginalizing out the discrete parameter {-}
 
 To code this model in Stan, the discrete parameter $s$ must be
 marginalized out to produce a model defining the log of the
-probability function $p(e,l,D_t)$.  The full joint probability factors
-as
+probability function $p(e,l,D_t)$.
+The full joint probability factors as
 \begin{align*}
 p(e,l,s,D) &=  p(e) \, p(l) \, p(s) \, p(D \mid s, e, l) \\
- &= \textsf{exponential}(e \mid r_e) \ \textsf{exponential}(l \mid r_l) \
+ &= \textsf{exponential}(e \mid r_e) \ \textsf{exponential}(l \mid r_l) \,
     \textsf{uniform}(s \mid 1, T) \\
- &\qquad \prod_{t=1}^T \textsf{Poisson}(D_t \mid t < s \; ? \; e \: : \: l),
+ & \qquad \prod_{t=1}^T \textsf{Poisson}(D_t \mid t < s \; ? \; e \: : \: l).
 \end{align*}
 
-To marginalize, an alternative factorization into prior and likelihood
-is used,
+
+To marginalize, an alternative factorization into prior and likelihood is used,
 $$
 p(e,l,D) = p(e,l) \, p(D \mid e,l),
 $$
+
 where the likelihood is defined by marginalizing $s$ as
 \begin{align*}
 p(D \mid e,l) &= \sum_{s=1}^T p(s, D \mid e,l) \\
@@ -110,19 +110,19 @@ which provides both arithmetic stability and efficiency for mixture
 model calculations.
 
 
-### Coding the Model in Stan {-}
+### Coding the model in Stan {-}
 
 The Stan program for the change point model is shown in
 the figure below.  The transformed parameter
 `lp[s]` stores the quantity $\log p(s, D \mid e, l)$.
 
-```
+```stan
 data {
   real<lower=0> r_e;
   real<lower=0> r_l;
 
   int<lower=1> T;
-  int<lower=0> D[T];
+  array[T] int<lower=0> D;
 }
 transformed data {
   real log_unif;
@@ -135,9 +135,11 @@ parameters {
 transformed parameters {
   vector[T] lp;
   lp = rep_vector(log_unif, T);
-  for (s in 1:T)
-    for (t in 1:T)
+  for (s in 1:T) {
+    for (t in 1:T) {
       lp[s] = lp[s] + poisson_lpmf(D[t] | t < s ? e : l);
+    }
+  }
 }
 model {
   e ~ exponential(r_e);
@@ -160,7 +162,7 @@ programming similar to the forward-backward algorithm for Hidden
 Markov models; he submitted a slight variant of the following code to
 replace the transformed parameters block of the above Stan program.
 
-```
+```stan
 transformed parameters {
     vector[T] lp;
     {
@@ -190,7 +192,7 @@ clever use of subtraction allows `lp_l` to be accumulated
 naturally in the forward direction.
 
 
-### Fitting the Model with MCMC {-}
+### Fitting the model with MCMC {-}
 
 This model is easy to fit using MCMC with NUTS in its default
 configuration.  Convergence is  fast and sampling produces roughly
@@ -204,7 +206,7 @@ value of `lp` were not of interest, it could be coded as a local
 variable in the model block and thus avoid the I/O overhead of saving
 values every iteration.
 
-### Posterior Distribution of the Discrete Change Point {-}
+### Posterior distribution of the discrete change point {-}
 
 The value of `lp[s]` in a given iteration is given by $\log
 p(s,D \mid e,l)$ for the values of the early and late rates, $e$ and $l$,
@@ -252,16 +254,16 @@ of years in the second plot resulting from sampling. The posterior
 mean of $s$ is roughly 1891.
 
 
-### Discrete Sampling {-}
+### Discrete sampling {-}
 
 The generated quantities block may be used to draw discrete parameter
 values using the built-in pseudo-random number generators.  For
 example, with `lp` defined as above, the following program
 draws a random value for `s` at every iteration.
 
-```
+```stan
 generated quantities {
-  int<lower=1,upper=T> s;
+  int<lower=1, upper=T> s;
   s = categorical_logit_rng(lp);
 }
 ```
@@ -277,7 +279,7 @@ the generated quantities block based on the posterior distribution for
 `s` given by `softmax(lp)`.
 
 
-### Posterior Covariance {-}
+### Posterior covariance {-}
 
 The discrete sample generated for $s$ can be used to calculate
 covariance with other parameters.  Although the sampling approach is
@@ -286,7 +288,7 @@ requiring far fewer iterations for the same degree of accuracy) to
 calculate these covariances in expectation using `lp`.
 
 
-### Multiple Change Points {-}
+### Multiple change points {-}
 
 There is no obstacle in principle to allowing multiple change points.
 The only issue is that computation increases from linear to quadratic
@@ -295,20 +297,23 @@ and so on.  There are three parameters, `e`, `m`, and
 `l`, and two loops for the change point and then one over time,
 with log densities being stored in a matrix.
 
-```
+```stan
 matrix[T, T] lp;
 lp = rep_matrix(log_unif, T);
-for (s1 in 1:T)
-  for (s2 in 1:T)
-    for (t in 1:T)
+for (s1 in 1:T) {
+  for (s2 in 1:T) {
+    for (t in 1:T) {
       lp[s1,s2] = lp[s1,s2]
         + poisson_lpmf(D[t] | t < s1 ? e : (t < s2 ? m : l));
+    }
+  }
+}
 ```
 
 The matrix can then be converted back to a vector using
 `to_vector` before being passed to `log_sum_exp`.
 
-## Mark-Recapture Models
+## Mark-recapture models
 
 A widely applied field method in ecology is to capture (or sight)
 animals, mark them (e.g., by tagging), then release them.  This
@@ -321,7 +326,7 @@ not involve any latent discrete parameters.  The following subsections
 describes the Cormack-Jolly-Seber model, which involves latent
 discrete parameters for animal death.
 
-### Simple Mark-Recapture Model {-}
+### Simple mark-recapture model {-}
 
 In the simplest case, a one-stage mark-recapture study produces the
 following data
@@ -358,11 +363,11 @@ given the total number of animals captured in the second round ($C$)
 with a recapture probability of $M/N$, the fraction of the total
 population $N$ marked in the first round.
 
-```
+```stan
 data {
   int<lower=0> M;
   int<lower=0> C;
-  int<lower=0,upper=min(M,C)> R;
+  int<lower=0, upper=min(M, C)> R;
 }
 parameters {
   real<lower=(C - R + M)> N;
@@ -400,7 +405,7 @@ $f : (C-R+M,\infty) \rightarrow (-\infty,+\infty)$ defined by
 $f(N) = \log(N - (C - R + M))$; the reference manual contains full
 details of all constrained parameter transforms.
 
-### Cormack-Jolly-Seber with Discrete Parameter {-}
+### Cormack-Jolly-Seber with discrete parameter {-}
 
 The Cormack-Jolly-Seber (CJS) model [@Cormack:1964; @Jolly:1965; @Seber:1965] 
 is an open-population model in which the population may change over time 
@@ -448,7 +453,7 @@ $$
 The conditional enforces the constraint that dead animals cannot be captured.
 
 
-### Collective Cormack-Jolly-Seber Model {-}
+### Collective Cormack-Jolly-Seber model {-}
 
 This subsection presents an implementation of the model in terms of
 counts for different history profiles for individuals over three
@@ -528,16 +533,16 @@ mark-recapture model that considers counts of individuals with
 observation histories of being observed or not in three capture
 periods
 
-```
+```stan
 data {
-  int<lower=0> history[7];
+  array[7] int<lower=0> history;
 }
 parameters {
-  real<lower=0,upper=1> phi[2];
-  real<lower=0,upper=1> p[3];
+  array[2] real<lower=0, upper=1> phi;
+  array[3] real<lower=0, upper=1> p;
 }
 transformed parameters {
-  real<lower=0,upper=1> chi[2];
+  array[2] real<lower=0, upper=1> chi;
   chi[2] = (1 - phi[2]) + phi[2] * (1 - p[3]);
   chi[1] = (1 - phi[1]) + phi[1] * (1 - p[2]) * chi[2];
 }
@@ -553,7 +558,7 @@ model {
                             + log(phi[2]) + log(p[3]));
 }
 generated quantities {
-  real<lower=0,upper=1> beta3;
+  real<lower=0, upper=1> beta3;
   beta3 = phi[2] * p[3];
 }
 ```
@@ -574,7 +579,7 @@ thus have proper uniform priors, it would be better to formulate an
 identified parameterization.  One way to do this would be to formulate
 a hierarchical model for the $p$ and $\phi$ parameters.
 
-### Individual Cormack-Jolly-Seber Model {-}
+### Individual Cormack-Jolly-Seber model {-}
 
 This section presents a version of the Cormack-Jolly-Seber (CJS) model
 cast at the individual level rather than collectively as in the
@@ -584,11 +589,11 @@ capture events, the number $I$ of individuals, and a boolean flag
 $y_{i,t}$ indicating if individual $i$ was observed at time $t$.  In
 Stan,
 
-```
+```stan
 data {
   int<lower=2> T;
   int<lower=0> I;
-  int<lower=0,upper=1> y[I, T];
+  array[I, T] int<lower=0, upper=1> y;
 }
 ```
 
@@ -597,51 +602,59 @@ possible to add individual "random effects" that affect survival or
 capture probability, as well as to avoid the combinatorics involved in
 unfolding $2^T$ observation histories for $T$ capture times.
 
-#### Utility Functions {-}
+#### Utility functions {-}
 
 The individual CJS model is written involves several function
 definitions.  The first two are used in the transformed data block to
 compute the first and last time period in which an animal was
 captured.^[An alternative would be to compute this on the outside and feed it into the Stan model as preprocessed data.  Yet another alternative encoding would be a sparse one recording only the capture events along with their time and identifying the individual captured.]
 
-```
+```stan
 functions {
-  int first_capture(int[] y_i) {
-    for (k in 1:size(y_i))
-      if (y_i[k])
+  int first_capture(array[] int y_i) {
+    for (k in 1:size(y_i)) {
+      if (y_i[k]) {
         return k;
-    return 0;
-  }
-  int last_capture(int[] y_i) {
-    for (k_rev in 0:(size(y_i) - 1)) {
-      int k;
-      k = size(y_i) - k_rev;
-      if (y_i[k])
-        return k;
+      }
     }
     return 0;
   }
-  ...
+  int last_capture(array[] int y_i) {
+    for (k_rev in 0:(size(y_i) - 1)) {
+      int k;
+      k = size(y_i) - k_rev;
+      if (y_i[k]) {
+        return k;
+      }
+    }
+    return 0;
+  }
+  // ...
 }
 ```
 
 These two functions are used to define the first and last capture time
 for each individual in the transformed data block.^[Both functions return 0 if the individual represented by the input array was never captured.  Individuals with no captures are not relevant for estimating the model because all probability statements are conditional on earlier captures.  Typically they would be removed from the data, but the program allows them to be included even though they make not contribution to the log probability function.]
 
-```
+```stan
 transformed data {
-  int<lower=0,upper=T> first[I];
-  int<lower=0,upper=T> last[I];
-  vector<lower=0,upper=I>[T] n_captured;
-  for (i in 1:I)
+  array[I] int<lower=0, upper=T> first;
+  array[I] int<lower=0, upper=T> last;
+  vector<lower=0, upper=I>[T] n_captured;
+  for (i in 1:I) {
     first[i] = first_capture(y[i]);
-  for (i in 1:I)
+  }
+  for (i in 1:I) {
     last[i] = last_capture(y[i]);
+  }
   n_captured = rep_vector(0, T);
-  for (t in 1:T)
-    for (i in 1:I)
-      if (y[i, t])
+  for (t in 1:T) {
+    for (i in 1:I) {
+      if (y[i, t]) {
         n_captured[t] = n_captured[t] + 1;
+      }
+    }
+  }
 }
 ```
 
@@ -656,23 +669,23 @@ is a function definition for computing the entire vector `chi`, the
 probability that if an individual is alive at `t` that it will
 never be captured again.
 
-```
+```stan
 parameters {
-  vector<lower=0,upper=1>[T-1] phi;
-  vector<lower=0,upper=1>[T] p;
+  vector<lower=0, upper=1>[T - 1] phi;
+  vector<lower=0, upper=1>[T] p;
 }
 transformed parameters {
-  vector<lower=0,upper=1>[T] chi;
-  chi = prob_uncaptured(T,p,phi);
+  vector<lower=0, upper=1>[T] chi;
+  chi = prob_uncaptured(T, p, phi);
 }
 ```
 
 The definition of `prob_uncaptured`, from the functions block,
 is
 
-```
+```stan
 functions {
-  ...
+  // ...
   vector prob_uncaptured(int T, vector p, vector phi) {
     vector[T] chi;
     chi[T] = 1.0;
@@ -695,7 +708,7 @@ The function definition directly follows the mathematical definition
 of $\chi_t$, unrolling the recursion into an iteration and
 defining the elements of `chi` from `T` down to 1.
 
-#### The Model {-}
+#### The model {-}
 
 Given the precomputed quantities, the model block directly encodes the
 CJS model's log likelihood function.  All parameters are left with
@@ -704,12 +717,12 @@ probability of the observations `q` given the parameters `p`
 and `phi` as well as the transformed parameter `chi` defined
 in terms of `p` and `phi`.
 
-```
+```stan
 model {
   for (i in 1:I) {
     if (first[i] > 0) {
       for (t in (first[i]+1):last[i]) {
-        1 ~ bernoulli(phi[t-1]);
+        1 ~ bernoulli(phi[t - 1]);
         y[i, t] ~ bernoulli(p[t]);
       }
       1 ~ bernoulli(chi[last[i]]);
@@ -725,7 +738,7 @@ returning 0 for `first` if an individual is never captured.
 
 The inner loop for individual `i` first increments the log
 probability based on the survival of the individual with probability
-`phi[t-1]`.  The outcome of 1 is fixed because the individual
+`phi[t - 1]`.  The outcome of 1 is fixed because the individual
 must survive between the first and last capture (i.e., no zombies).
 The loop starts after the first capture, because all
 information in the CJS model is conditional on the first capture.
@@ -739,20 +752,20 @@ again after being observed at time `last[i]` is included, because
 `last[i]` was defined to be the last time period in which animal
 `i` was observed.
 
-#### Identified Parameters {-}
+#### Identified parameters {-}
 
 As with the collective model described in the previous subsection,
-this model does not identify `phi[T-1]` and `p[T]`, but
+this model does not identify `phi[T - 1]` and `p[T]`, but
 does identify their product, `beta`.  Thus `beta` is defined
 as a generated quantity to monitor convergence and report.
 
-```
+```stan
 generated quantities {
   real beta;
-  ...
+  // ...
 
-  beta = phi[T-1] * p[T];
-  ...
+  beta = phi[T - 1] * p[T];
+  // ...
 }
 ```
 
@@ -760,10 +773,10 @@ generated quantities {
 The parameter `p[1]` is also not modeled and will just be uniform
 between 0 and 1.  A more finely articulated model might have a
 hierarchical or time-series component, in which case `p[1]` would
-be an unknown initial condition and both `phi[T-1]` and
+be an unknown initial condition and both `phi[T - 1]` and
 `p[T]` could be identified.
 
-#### Population Size Estimates {-}
+#### Population size estimates {-}
 
 The generated quantities also calculates an estimate of the population
 mean at each time `t` in the same way as in the simple
@@ -772,17 +785,17 @@ mark-recapture model as the number of individuals captured at time
 is done with the elementwise division operation for vectors
 (`./`) in the generated quantities block.
 
-```
+```stan
 generated quantities {
-  ...
+  // ...
   vector<lower=0>[T] pop;
-  ...
+  // ...
   pop = n_captured ./ p;
   pop[1] = -1;
 }
 ```
 
-#### Generalizing to Individual Effects {-}
+#### Generalizing to individual effects {-}
 
 All individuals are modeled as having the same capture probability,
 but this model could be easily generalized to use a logistic
@@ -791,14 +804,14 @@ predictors.
 
 
 
-## Data Coding and Diagnostic Accuracy Models
+## Data coding and diagnostic accuracy models
 
 Although seemingly disparate tasks, the rating/coding/annotation of
 items with categories and diagnostic testing for disease or other
 conditions, share several characteristics which allow their statistical
 properties to be modeled similarly.
 
-### Diagnostic Accuracy {-}
+### Diagnostic accuracy {-}
 
 Suppose you have diagnostic tests for a condition of varying
 sensitivity and specificity.  Sensitivity is the probability a test
@@ -817,7 +830,7 @@ might be interested in the diagnostic accuracy of a new test. A health
 care worker performing tests might be interested in the disease status
 of a particular patient.
 
-### Data Coding {-}
+### Data coding {-}
 
 Humans are often given the task of coding (equivalently rating or
 annotating) data.  For example, journal or grant reviewers rate
@@ -831,7 +844,7 @@ of the same estimands are in play --- data coder accuracy and bias,
 true categories of items being coded, or the prevalence of various
 categories of items in the data.
 
-### Noisy Categorical Measurement Model {-}
+### Noisy categorical measurement model {-}
 
 In this section, only categorical ratings are considered, and the
 challenge in the modeling for Stan is to marginalize out the discrete
@@ -855,7 +868,7 @@ It is relatively straightforward to extend Dawid and Skene's model to
 deal with the situation where not every rater rates each item exactly
 once.
 
-### Model Parameters {-}
+### Model parameters {-}
 
 The model is based on three parameters, the first of which is discrete:
 
@@ -867,7 +880,7 @@ The model is based on three parameters, the first of which is discrete:
   to an item of true category $k$.
 
 
-### Noisy Measurement Model {-}
+### Noisy measurement model {-}
 
 The true category of an item is assumed to be generated by a simple
 categorical distribution based on item prevalence,
@@ -881,7 +894,7 @@ $$
 y_{i, j} \sim \textsf{categorical}(\theta_{j,\pi_{z[i]}}).
 $$
 
-#### Priors and Hierarchical Modeling {-}
+#### Priors and hierarchical modeling {-}
 
 Dawid and Skene provided maximum likelihood estimates for $\theta$ and
 $\pi$, which allows them to generate probability estimates for each $z_i$.
@@ -907,7 +920,7 @@ Because there are $J$ coders, it would be natural to extend the model
 to include a hierarchical prior for $\beta$ and to partially pool the
 estimates of coder accuracy and bias.
 
-#### Marginalizing out the True Category {-}
+#### Marginalizing out the true category {-}
 
 Because the true category parameter $z$ is discrete, it must be
 marginalized out of the joint posterior in order to carry out sampling
@@ -929,9 +942,9 @@ This can be done item by item, with
 $$
 p(y \mid \theta, \pi) =
 \prod_{i=1}^I \sum_{k=1}^K
-  \left( \textsf{categorical}(z_i \mid \pi)
+  \left( \textsf{categorical}(k \mid \pi)
          \prod_{j=1}^J
-         \textsf{categorical}(y_{i, j} \mid \theta_{j, z[i]})
+         \textsf{categorical}(y_{i, j} \mid \theta_{j, k})
   \right).
 $$
 
@@ -945,52 +958,57 @@ probability function on the log scale,
 \begin{align*}
 \log p(y \mid \theta, \pi)
  &= \sum_{i=1}^I \log \left( \sum_{k=1}^K \exp
-    \left(\log \textsf{categorical}(z_i \mid \pi) \vphantom{\sum_{j=1}^J}\right.\right. 
+    \left(\log \textsf{categorical}(k \mid \pi) \vphantom{\sum_{j=1}^J}\right.\right. 
     \left.\left. + \ \sum_{j=1}^J
-           \log \textsf{categorical}(y_{i, j} \mid \theta_{j, z[i]})
+           \log \textsf{categorical}(y_{i, j} \mid \theta_{j, k})
     \right) \right),
 \end{align*}
 which can be directly coded using Stan's built-in `log_sum_exp`
 function.
 
 
-### Stan Implementation {-}
+### Stan implementation {-}
 
 The Stan program for the Dawid and Skene model is provided below [@DawidSkene:1979].
 
-```
+```stan
 data {
   int<lower=2> K;
   int<lower=1> I;
   int<lower=1> J;
 
-  int<lower=1,upper=K> y[I, J];
+  array[I, J] int<lower=1, upper=K> y;
 
   vector<lower=0>[K] alpha;
   vector<lower=0>[K] beta[K];
 }
 parameters {
   simplex[K] pi;
-  simplex[K] theta[J, K];
+  array[J, K] simplex[K] theta;
 }
 transformed parameters {
-  vector[K] log_q_z[I];
+  array[I] vector[K] log_q_z;
   for (i in 1:I) {
     log_q_z[i] = log(pi);
-    for (j in 1:J)
-      for (k in 1:K)
+    for (j in 1:J) {
+      for (k in 1:K) {
         log_q_z[i, k] = log_q_z[i, k]
                          + log(theta[j, k, y[i, j]]);
+      }
+    }
   }
 }
 model {
   pi ~ dirichlet(alpha);
-  for (j in 1:J)
-    for (k in 1:K)
+  for (j in 1:J) {
+    for (k in 1:K) {
       theta[j, k] ~ dirichlet(beta[k]);
+    }
+  }
 
-  for (i in 1:I)
+  for (i in 1:I) {
     target += log_sum_exp(log_q_z[i]);
+  }
 }
 ```
 <a name="id:dawid-skene-model.figure"></a>
@@ -1008,7 +1026,7 @@ be unit vectors and applying optimization will produce the same answer
 as the expectation maximization (EM) algorithm of
 @DawidSkene:1979.
 
-#### Inference for the True Category {-}
+#### Inference for the true category {-}
 
 The quantity `log_q_z[i]` is defined as a transformed
 parameter.  It encodes the (unnormalized) log of $p(z_i \mid \theta,

@@ -14,7 +14,7 @@ There are three kinds of variable declarations:
  - sequences
  - general arrays
  
-## Creating Dump Files
+## Creating dump files
 
 Dump files can be created from R using RStan,
 via the `rstan` package function `stan_rdump`.
@@ -22,7 +22,7 @@ Stan RDump files must be created via `stan_rdump` and
 not by  R's native `dump` function because R's `dump` function
 uses a richer syntax than is supported by the underlying Stan i/o libraries.
 
-## Scalar Variables
+## Scalar variables
 
 A simple scalar value can be thought of as having an empty list of
 dimensions. Its declaration in the dump format follows the SPLUS
@@ -33,7 +33,7 @@ y <- 17.2
 ```
 
 
-## Sequence Variables {#sequence-variables}
+## Sequence variables {#sequence-variables}
 
 One-dimensional arrays may be specified directly using the SPLUS
 sequence notation. The following example defines an integer-value and
@@ -72,7 +72,7 @@ y2 <- double(0)
 y3 <- double(2)
 ```
 
-## Array Variables {#array-variables}
+## Array variables {#array-variables}
 
 For more than one dimension, the dump format uses a dimensionality
 specification. For example, the following
@@ -82,12 +82,12 @@ y <- structure(c(1,2,3,4,5,6), .Dim = c(2,3))
 ```
 Data is stored column-major, thus the values for `y` will be:
 ```
-y[1,1] = 1
-y[1,2] = 3
-y[1,3] = 5
-y[2,1] = 2
-y[2,2] = 4
-y[2,3] = 6
+y[1, 1] = 1
+y[1, 2] = 3
+y[1, 3] = 5
+y[2, 1] = 2
+y[2, 2] = 4
+y[2, 3] = 6
 ```
 
 The `structure` keyword just wraps a sequence of values and a
@@ -112,30 +112,30 @@ z <- structure(1:24, .Dim = c(2,3,4))
 ```
 produces a three-dimensional `int` (assignable to `real`) array `z` with values:
 ```
-z[1,1,1] = 1
-z[2,1,1] = 2
-z[1,2,1] = 3
-z[2,2,1] = 4
-z[1,3,1] = 5
-z[2,3,1] = 6
-z[1,1,2] = 7
-z[2,1,2] = 8
-z[1,2,2] = 9
-z[2,2,2] = 10
-z[1,3,2] = 11
-z[2,3,2] = 12
-z[1,1,3] = 13
-z[2,1,3] = 14
-z[1,2,3] = 15
-z[2,2,3] = 16
-z[1,3,3] = 17
-z[2,3,3] = 18
-z[1,1,4] = 19
-z[2,1,4] = 20
-z[1,2,4] = 21
-z[2,2,4] = 22
-z[1,3,4] = 23
-z[2,3,4] = 24
+z[1, 1, 1] = 1
+z[2, 1, 1] = 2
+z[1, 2, 1] = 3
+z[2, 2, 1] = 4
+z[1, 3, 1] = 5
+z[2, 3, 1] = 6
+z[1, 1, 2] = 7
+z[2, 1, 2] = 8
+z[1, 2, 2] = 9
+z[2, 2, 2] = 10
+z[1, 3, 2] = 11
+z[2, 3, 2] = 12
+z[1, 1, 3] = 13
+z[2, 1, 3] = 14
+z[1, 2, 3] = 15
+z[2, 2, 3] = 16
+z[1, 3, 3] = 17
+z[2, 3, 3] = 18
+z[1, 1, 4] = 19
+z[2, 1, 4] = 20
+z[1, 2, 4] = 21
+z[2, 2, 4] = 22
+z[1, 3, 4] = 23
+z[2, 3, 4] = 24
 ```
 If the underlying 3-D array is stored as a 1-D array in last-index major format,
 the innermost array elements will be contiguous.
@@ -149,30 +149,30 @@ the dump format.
 y <- structure(integer(), .Dim = c(2,0))
 ```
 
-## Matrix- and Vector-Valued Variables
+## Matrix- and vector-valued variables
 
 The dump format for matrices and vectors, including arrays of matrices
 and vectors, is the same as that for arrays of the same shape.
 
-### Vector Dump Format
+### Vector dump format
 
 The following three declarations have the same dump format for their
 data.
 ```
-real a[K];
+array[K] real a;
 vector[K] b;
 row_vector[K] c;
 ```
 
-### Matrix Dump Format
+### Matrix dump format
 
 The following declarations have the same dump format.
 ```
-real a[M,N];
-matrix[M,N] b;
+array[M, N] real a;
+matrix[M, N] b;
 ```
 
-### Arrays of Vectors and Matrices
+### Arrays of vectors and matrices
 
 The key to understanding arrays is that the array indexing comes before
 any of the container indexing. That is, an array of vectors is just
@@ -183,20 +183,20 @@ of the language manual for more information.
 For the dump data format, the following declarations have the same
 arrangement.
 ```
-real a[M,N];
-matrix[M,N] b;
-vector[N] c[M];
-row_vector[N] d[M];
+array[M, N] real a;
+matrix[M, N] b;
+array[M] vector[N] c;
+array[M] row_vector[N] d;
 ```
 Similarly, the following also have the same dump format.
 ```
-real a[P,M,N];
-matrix[M,N] b[P];
-vector[N] c[P,M];
-row_vector[N] d[P,M];
+array[P, M, N] real a;
+array[P] matrix[M, N] b;
+array[P, M] vector[N] c;
+array[P, M] row_vector[N] d;
 ```
 
-## Integer- and Real-Valued Variables
+## Integer- and real-valued variables
 
 There is no declaration in a dump file that distinguishes integer
 versus continuous values. If a value in a dump file's definition of a
@@ -233,13 +233,13 @@ in the value, $2.0$, causes Stan to infer that `y` is real
 valued. This dump file may only be used for variables `y`
 declared as real in Stan.
 
-### Scientific Notation
+### Scientific notation
 
 Numbers written in scientific notation may only be used for real
 values in Stan. R will write out the integer one million as
 $1e+06$.
 
-### Infinite and Not-a-Number Values
+### Infinite and not-a-number values
 
 Stan's reader supports infinite and not-a-number values for scalar
 quantities (see the section of the reference manual section of the
@@ -248,11 +248,11 @@ Both infinite and not-a-number values are supported by Stan's
 dump-format readers.
 ```{r table2, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
 tabl <-  "
-| Value       | Preferred Form | Alternative Forms |
-|------------:|:---------------|:------------------|
-| positive infinity | Inf |  Infinity, infinity       | 
-| negative infinity | -Inf|  -Infinity, -infinity      | 
-| not a number | NaN  | |
+|             Value | Preferred Form | Alternative Forms    |
+| ----------------: | :------------- | :------------------- |
+| positive infinity | Inf            | Infinity, infinity   |
+| negative infinity | -Inf           | -Infinity, -infinity |
+|      not a number | NaN            |                      |
 "
 cat(tabl)
 ```
@@ -260,7 +260,7 @@ cat(tabl)
 These strings are not case sensitive, so `inf` may also be used
 for positive infinity, or `NAN` for not-a-number.
 
-## Quoted Variable Names
+## Quoted variable names
 
 In order to support JAGS data files, variables may be double quoted.
 For instance, the following definition is legal in a dump file.
@@ -268,7 +268,7 @@ For instance, the following definition is legal in a dump file.
 "y" <- c(1,2,3) \end{Verbatim}
 ```
 
-## Line Breaks
+## Line breaks
 
 The line breaks in a dump file are required to be consistent with the
 way R reads in data. Both of the following declarations are legal.
@@ -299,7 +299,7 @@ Because there are no decimal points in the values, the resulting dump
 file may be used for three-dimensional array variables declared as
 `int` or `real`.
 
-## BNF Grammar for Dump Data
+## BNF grammar for dump data
 
 A more precise definition of the dump data format is provided by the
 following (mildly templated) Backus-Naur form grammar.

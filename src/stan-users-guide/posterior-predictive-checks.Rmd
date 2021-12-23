@@ -41,16 +41,16 @@ As with other posterior predictive quantities, generating a replicated
 data set $y^{\textrm{rep}}$ from the posterior predictive distribution is
 straightforward using the generated quantities block.  Consider a simple regression
 model with parameters $\theta = (\alpha, \beta, \sigma).$
-```
+```stan
 data {
-  int<lower = 0> N;
+  int<lower=0> N;
   vector[N] x;
   vector[N] y;
 }
 parameters {
   real alpha;
   real beta;
-  real<lower = 0> sigma;
+  real<lower=0> sigma;
 }
 model {
   alpha ~ normal(0, 2);
@@ -61,9 +61,9 @@ model {
 ```
 To generate a replicated data set `y_rep` for this simple model, the
 following generated quantities block suffices.
-```
+```stan
 generated quantities {
-  real y_rep[N] = normal_rng(alpha + beta * x, sigma);
+  array[N] real y_rep = normal_rng(alpha + beta * x, sigma);
 }
 ```
 The vectorized form of the normal random
@@ -96,28 +96,28 @@ Here's a complete example where the model is a simple Poisson with
 a weakly informative exponential prior with a mean of 10 and
 standard deviation of 10.
 
-```
+```stan
 data {
-  int<lower = 0> N;
-  int<lower = 0> y[N];
+  int<lower=0> N;
+  array[N] int<lower=0> y;
 }
 transformed data {
-  real<lower = 0> mean_y = mean(to_vector(y));
-  real<lower = 0> sd_y = sd(to_vector(y));
+  real<lower=0> mean_y = mean(to_vector(y));
+  real<lower=0> sd_y = sd(to_vector(y));
 }
 parameters {
-  real<lower = 0> lambda;
+  real<lower=0> lambda;
 }
 model {
   y ~ poisson(lambda);
   lambda ~ exponential(0.2);
 }
 generated quantities {
-  int<lower = 0> y_rep[N] = poisson_rng(rep_array(lambda, N));
-  real<lower = 0> mean_y_rep = mean(to_vector(y_rep));
-  real<lower = 0> sd_y_rep = sd(to_vector(y_rep));
-  int<lower = 0, upper = 1> mean_gte = (mean_y_rep >= mean_y);
-  int<lower = 0, upper = 1> sd_gte = (sd_y_rep >= sd_y);
+  array[N] int<lower=0> y_rep = poisson_rng(rep_array(lambda, N));
+  real<lower=0> mean_y_rep = mean(to_vector(y_rep));
+  real<lower=0> sd_y_rep = sd(to_vector(y_rep));
+  int<lower=0, upper=1> mean_gte = (mean_y_rep >= mean_y);
+  int<lower=0, upper=1> sd_gte = (sd_y_rep >= sd_y);
 }
 ```
 The generated quantities block creates a variable `y_rep` for the
@@ -192,12 +192,12 @@ indicator variables that take on value 1 if the event occurs and
 0 if it does not.  The posterior mean is then the event probability.
 For efficiency, indicator variables are defined in the
 generated quantities block.
-```
+```stan
 generated quantities {
-  int<lower = 0, upper = 1> mean_gt;
-  int<lower = 0, upper = 1> sd_gt;
+  int<lower=0, upper=1> mean_gt;
+  int<lower=0, upper=1> sd_gt;
   {
-    real y_rep[N] = normal_rng(alpha + beta * x, sigma);
+    array[N] real y_rep = normal_rng(alpha + beta * x, sigma);
     mean_gt = mean(y_rep) > mean(y);
     sd_gt = sd(y_rep) > sd(y);
   }
@@ -320,15 +320,15 @@ will be independent.  Predictors must be read in from the actual data
 set---they do not have a generative model from which to be simulated.
 For a Poisson regression, prior predictive sampling can be
 encoded as the following complete Stan program.
-```
+```stan
 data {
-  int<loer = 0> N;
+  int<lower=0> N;
   vector[N] x;
 }
 generated quantities {
   real alpha = normal_rng(0, 1);
   real beta = normal_rng(0, 1);
-  real y_sim[n] = poisson_log_rng(alpha + beta * x);
+  array[N] real y_sim = poisson_log_rng(alpha + beta * x);
 }
 ```
 Running this program using Stan's fixed-parameter sampler
@@ -356,18 +356,20 @@ Suppose the league plays a round-robin tournament wherein every team
 plays every other team.  The following Stan model generates random team
 abilities and the results of such a round-robin tournament, which may
 be used to perform prior predictive checks.
-```
+```stan
 data {
-  int<lower = 0> J;
-  real<lower = 0> epsilon[2];
+  int<lower=0> J;
+  array[2] real<lower=0> epsilon;
 }
 generated quantities {
-  real<lower = 0> lambda[J];
-  int y[J, J];
+  array[J] real<lower=0> lambda;
+  array[J, J] int y;
   for (j in 1:J) lambda[j] = gamma_rng(epsilon[1], epsilon[2]);
-  for (i in 1:J)
-    for (j in 1:J)
+  for (i in 1:J) {
+    for (j in 1:J) {
       y[i, j] = poisson_rng(lambda[i]) - poisson_rng(lambda[j]);
+    }
+  }
 }
 ```
 In this simulation, teams play each other twice and play themselves
@@ -466,17 +468,17 @@ among the original $K$ groups.
 In Stan, mixed predictive replications $y^{\textrm{rep}(m)}$ can be
 programmed directly.
 
-```
+```stan
 data {
-  int<lower = 0> K;
-  int<lower = 0> N;
-  int<lower = 1, upper = K> kk[N];
-  int<lower = 0, upper = 1> y[N];
+  int<lower=0> K;
+  int<lower=0> N;
+  array[N] int<lower=1, upper=K> kk;
+  array[N] int<lower=0, upper=1> y;
 }
 parameters {
   real mu;
-  real<lower = 0> sigma;
-  vector<offset = mu, multiplier = sigma>[K] alpha;
+  real<lower=0> sigma;
+  vector<offset=mu, multiplier=sigma>[K] alpha;
 }
 model {
   mu ~ normal(0, 2);               // hyperprior
@@ -486,9 +488,9 @@ model {
 }
 generated quantities {
   // alpha replicated;  mu and sigma not replicated
-  real alpha_rep[K]
+  array[K] real alpha_rep
     = normal_rng(rep_vector(mu, K), sigma);
-  int<lower = 0, upper = 1> y_rep[N]
+  array[N] int<lower=0, upper=1> y_rep
     = bernoulli_logit_rng(alpha_rep[kk]);
 }
 ```

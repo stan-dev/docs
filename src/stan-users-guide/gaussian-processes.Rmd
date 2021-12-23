@@ -41,7 +41,7 @@ only touches on some basic models.  For more information, see
 @RasmussenWilliams:2006.
 
 
-## Gaussian Process Regression
+## Gaussian process regression
 
 The data for a multivariate Gaussian process regression consists of a
 series of $N$ inputs $x_1,\dotsc,x_N \in \mathbb{R}^D$ paired with outputs
@@ -119,7 +119,7 @@ Changing the notion of distance from Euclidean to taxicab distance
 (i.e., an $L_1$ norm) changes the support to functions which are
 continuous but not smooth.
 
-## Simulating from a Gaussian Process
+## Simulating from a Gaussian process
 
 It is simplest to start with a Stan model that does nothing more than
 simulate draws of functions $f$ from a Gaussian process.  In practical
@@ -135,10 +135,10 @@ and $\sigma^2 = 0.1$, and the mean function $m$ is defined to always
 return the zero vector, $m(x) = \textbf{0}$.  Consider the following
 implementation of a Gaussian process simulator.
 
-```
+```stan
 data {
   int<lower=1> N;
-  real x[N];
+  array[N] real x;
 }
 transformed data {
   matrix[N, N] K;
@@ -163,16 +163,17 @@ model {
 The above model can also be written more compactly using the specialized
 covariance function that implements the exponentiated quadratic kernel.
 
-```
+```stan
 data {
   int<lower=1> N;
-  real x[N];
+  array[N] real x;
 }
 transformed data {
   matrix[N, N] K = cov_exp_quad(x, 1.0, 1.0);
   vector[N] mu = rep_vector(0, N);
-  for (n in 1:N)
+  for (n in 1:N) {
     K[n, n] = K[n, n] + 0.1;
+  }
 }
 parameters {
   vector[N] y;
@@ -187,21 +188,22 @@ The input data are just the vector of inputs `x` and its size
 spaced over some interval in order to plot sample draws of functions
 from a Gaussian process.
 
-### Multivariate Inputs {-}
+### Multivariate inputs {-}
 
 Only the input data needs to change in moving from a univariate model to a
 multivariate model.
 
 The only lines that change from the univariate model above are as follows.
 
-```
+```stan
 data {
   int<lower=1> N;
   int<lower=1> D;
-  vector[D] x[N];
+  array[N] vector[D] x;
 }
 transformed data {
-...
+  // ...
+}
 ```
 
 The data are now declared as an array of vectors instead of an array of
@@ -212,7 +214,7 @@ but any of the models could be changed to multivariate in the same way as the
 simple sampling model. The only extra computational overhead from a
 multivariate model is in the distance calculation.
 
-### Cholesky Factored and Transformed Implementation {-}
+### Cholesky factored and transformed implementation {-}
 
 A more efficient implementation of the simulation model can be
 coded in Stan by relocating, rescaling and rotating an isotropic standard
@@ -239,11 +241,11 @@ data variable for the Cholesky decomposition.  The parameters change
 to the raw parameters sampled from an isotropic standard normal, and the
 actual samples are defined as generated quantities.
 
-```
-...
+```stan
+// ...
 transformed data {
   matrix[N, N] L;
-...
+  // ...
   L = cholesky_decompose(K);
 }
 parameters {
@@ -266,7 +268,7 @@ univariate distribution for efficiency; this specifies that each
 vector `y` is then defined as a generated quantity using a direct
 encoding of the transform described above.
 
-## Fitting a Gaussian Process {#fit-gp.section}
+## Fitting a Gaussian process {#fit-gp.section}
 
 ### GP with a normal outcome {-}
 
@@ -313,10 +315,10 @@ above, but because we are doing inference on the hyperparameters, we need to
 calculate the covariance matrix `K` in the model block, rather than
 the transformed data block.
 
-```
+```stan
 data {
   int<lower=1> N;
-  real x[N];
+  array[N] real x;
   vector[N] y;
 }
 transformed data {
@@ -333,8 +335,9 @@ model {
   real sq_sigma = square(sigma);
 
   // diagonal elements
-  for (n in 1:N)
+  for (n in 1:N) {
     K[n, n] = K[n, n] + sq_sigma;
+  }
 
   L_K = cholesky_decompose(K);
 
@@ -378,10 +381,10 @@ small positive term, $\delta$ to the diagonal of the covariance matrix in order
 to ensure that our covariance matrix remains positive definite.
 
 
-```
+```stan
 data {
   int<lower=1> N;
-  real x[N];
+  array[N] real x;
   vector[N] y;
 }
 transformed data {
@@ -400,8 +403,9 @@ model {
     matrix[N, N] K = cov_exp_quad(x, alpha, rho);
 
     // diagonal elements
-    for (n in 1:N)
+    for (n in 1:N) {
       K[n, n] = K[n, n] + delta;
+    }
 
     L_K = cholesky_decompose(K);
     f = L_K * eta;
@@ -428,7 +432,7 @@ terms as one $N$-dimensional multivariate normal with an identity covariance
 matrix multiplied by $\sigma^2$. However, it is more efficient to use the
 vectorized statement as shown above.
 
-### Discrete outcomes with Gaussian Processes {-}
+### Discrete outcomes with Gaussian processes {-}
 
 Gaussian processes can be generalized the same way as standard linear
 models by introducing a link function.  This allows them to be used as
@@ -443,13 +447,13 @@ will account for the marginal expected value for $y$. We do this because we
 cannot center count data like we would for normally distributed data.
 
 
-```
+```stan
 data {
-...
-  int<lower=0> y[N];
-...
+  // ...
+  array[N] int<lower=0> y;
+  // ...
 }
-...
+// ...
 parameters {
   real<lower=0> rho;
   real<lower=0> alpha;
@@ -457,7 +461,7 @@ parameters {
   vector[N] eta;
 }
 model {
-...
+  // ...
   rho ~ inv_gamma(5, 5);
   alpha ~ std_normal();
   a ~ std_normal();
@@ -468,7 +472,7 @@ model {
 ```
 
 
-#### Logistic Gaussian Process Regression {-}
+#### Logistic Gaussian process regression {-}
 
 For binary classification problems, the observed outputs $z_n \in
 \{ 0,1 \}$ are binary.  These outputs are modeled using a Gaussian
@@ -486,22 +490,21 @@ problems. Below `a` is the bias term, which can help account for imbalanced
 classes in the training data:
 
 
-```
+```stan
 data {
-...
-  int<lower=0, upper=1> z[N];
-...
+  // ...
+  array[N] int<lower=0, upper=1> z;
+  // ...
 }
-...
+// ...
 model {
-...
-
+  // ...
   y ~ bernoulli_logit(a + f);
 }
 ```
 
 
-### Automatic Relevance Determination {-}
+### Automatic relevance determination {-}
 
 If we have multivariate inputs $x \in \mathbb{R}^D$, the squared exponential
 covariance function can be further generalized by fitting a scale
@@ -535,7 +538,7 @@ covariance matrix. We'll write a function to generate the Cholesky of the
 covariance matrix called `L_cov_exp_quad_ARD`.
 
 
-```
+```stan
 functions {
   matrix L_cov_exp_quad_ARD(vector[] x,
                             real alpha,
@@ -559,7 +562,7 @@ functions {
 data {
   int<lower=1> N;
   int<lower=1> D;
-  vector[D] x[N];
+  array[N] vector[D] x;
   vector[N] y;
 }
 transformed data {
@@ -588,7 +591,7 @@ model {
 ```
 
 
-### Priors for Gaussian Process Parameters {#priors-gp.section}
+### Priors for Gaussian process parameters {#priors-gp.section}
 
 Formulating priors for GP hyperparameters requires the analyst to consider the
 inherent statistical properties of a GP, the GP's purpose in the model, and the
@@ -666,7 +669,7 @@ f(x \mid a, b, p) &= \dfrac{\left(a/b\right)^{p/2}}{2K_p\left(\sqrt{ab}\right)} 
 which has an inverse gamma left tail if $p \leq 0$ and an inverse Gaussian
 right tail.  This has not yet been implemented in Stan's math library, but it
 is possible to implement as a user defined function:
-```
+```stan
 functions {
   real generalized_inverse_gaussian_lpdf(real x, int p,
                                         real a, real b) {
@@ -677,7 +680,8 @@ functions {
  }
 }
 data {
-...
+  // ...
+}
 ```
 
 If we have high-frequency covariates in our fixed effects, we may wish to
@@ -706,7 +710,7 @@ nontrivial prior mass around zero. This allows the GP support the zero
 functions and allows the possibility that the GP won't contribute to the
 conditional mean of the total output.
 
-### Predictive Inference with a Gaussian Process {-}
+### Predictive inference with a Gaussian process {-}
 
 Suppose for a given sequence of inputs $x$ that the corresponding
 outputs $y$ are observed.  Given a new sequence of inputs $\tilde{x}$,
@@ -724,20 +728,24 @@ $$
 A direct implementation in Stan defines a model in terms of the
 joint distribution of the observed $y$ and unobserved $\tilde{y}$.
 
-```
+```stan
 data {
   int<lower=1> N1;
-  real x1[N1];
+  array[N1] real x1;
   vector[N1] y1;
   int<lower=1> N2;
-  real x2[N2];
+  array[N2] real x2;
 }
 transformed data {
   real delta = 1e-9;
   int<lower=1> N = N1 + N2;
-  real x[N];
-  for (n1 in 1:N1) x[n1] = x1[n1];
-  for (n2 in 1:N2) x[N1 + n2] = x2[n2];
+  array[N] real x;
+  for (n1 in 1:N1) {
+    x[n1] = x1[n1];
+  }
+  for (n2 in 1:N2) {
+    x[N1 + n2] = x2[n2];
+  }
 }
 parameters {
   real<lower=0> rho;
@@ -752,8 +760,9 @@ transformed parameters {
     matrix[N, N] K = cov_exp_quad(x, alpha, rho);
 
     // diagonal elements
-    for (n in 1:N)
+    for (n in 1:N) {
       K[n, n] = K[n, n] + delta;
+    }
 
     L_K = cholesky_decompose(K);
     f = L_K * eta;
@@ -769,8 +778,9 @@ model {
 }
 generated quantities {
   vector[N2] y2;
-  for (n2 in 1:N2)
+  for (n2 in 1:N2) {
     y2[n2] = normal_rng(f[N1 + n2], sigma);
+  }
 }
 ```
 
@@ -795,7 +805,7 @@ The generated quantities block defines the quantity `y2`. We generate
 to the appropriate element in `f`.
 
 
-#### Predictive Inference in non-Gaussian GPs {-}
+#### Predictive inference in non-Gaussian GPs {-}
 
 We can do predictive inference in non-Gaussian GPs in much the
 same way as we do with Gaussian GPs.
@@ -804,20 +814,24 @@ Consider the following full model for prediction using logistic Gaussian
 process regression.
 
 
-```
+```stan
 data {
   int<lower=1> N1;
-  real x1[N1];
-  int<lower=0, upper=1> z1[N1];
+  array[N1] real x1;
+  array[N1] int<lower=0, upper=1> z1;
   int<lower=1> N2;
-  real x2[N2];
+  array[N2] real x2;
 }
 transformed data {
   real delta = 1e-9;
   int<lower=1> N = N1 + N2;
-  real x[N];
-  for (n1 in 1:N1) x[n1] = x1[n1];
-  for (n2 in 1:N2) x[N1 + n2] = x2[n2];
+  array[N] real x;
+  for (n1 in 1:N1) {
+    x[n1] = x1[n1];
+  }
+  for (n2 in 1:N2) {
+    x[N1 + n2] = x2[n2];
+  }
 }
 parameters {
   real<lower=0> rho;
@@ -832,8 +846,9 @@ transformed parameters {
     matrix[N, N] K = cov_exp_quad(x, alpha, rho);
 
     // diagonal elements
-    for (n in 1:N)
+    for (n in 1:N) {
       K[n, n] = K[n, n] + delta;
+    }
 
     L_K = cholesky_decompose(K);
     f = L_K * eta;
@@ -848,14 +863,15 @@ model {
   z1 ~ bernoulli_logit(a + f[1:N1]);
 }
 generated quantities {
-  int z2[N2];
-  for (n2 in 1:N2)
+  array[N2] int z2;
+  for (n2 in 1:N2) {
     z2[n2] = bernoulli_logit_rng(a + f[N1 + n2]);
+  }
 }
 ```
 
 
-#### Analytical Form of Joint Predictive Inference {-}
+#### Analytical form of joint predictive inference {-}
 
 Bayesian predictive inference for Gaussian processes with Gaussian observations
 can be sped up by deriving the posterior analytically, then directly sampling
@@ -892,11 +908,11 @@ generate a draw from the posterior predictive mean conditioned on observed data
 to cut down on the number of matrix-matrix multiplications when computing
 the conditional mean and the conditional covariance of $p(\tilde{y})$.
 
-```
+```stan
 functions {
-  vector gp_pred_rng(real[] x2,
+  vector gp_pred_rng(array[] real x2,
                      vector y1,
-                     real[] x1,
+                     array[] real x1,
                      real alpha,
                      real rho,
                      real sigma,
@@ -914,8 +930,9 @@ functions {
       matrix[N2, N2] diag_delta;
       matrix[N1, N1] K;
       K = cov_exp_quad(x1, alpha, rho);
-      for (n in 1:N1)
-        K[n, n] = K[n,n] + square(sigma);
+      for (n in 1:N1) {
+        K[n, n] = K[n, n] + square(sigma);
+      }
       L_K = cholesky_decompose(K);
       K_div_y1 = mdivide_left_tri_low(L_K, y1);
       K_div_y1 = mdivide_right_tri_low(K_div_y1', L_K)';
@@ -932,10 +949,10 @@ functions {
 }
 data {
   int<lower=1> N1;
-  real x1[N1];
+  array[N1] real x1;
   vector[N1] y1;
   int<lower=1> N2;
-  real x2[N2];
+  array[N2] real x2;
 }
 transformed data {
   vector[N1] mu = rep_vector(0, N1);
@@ -953,8 +970,9 @@ model {
     real sq_sigma = square(sigma);
 
     // diagonal elements
-    for (n1 in 1:N1)
+    for (n1 in 1:N1) {
       K[n1, n1] = K[n1, n1] + sq_sigma;
+    }
 
     L_K = cholesky_decompose(K);
   }
@@ -970,8 +988,9 @@ generated quantities {
   vector[N2] y2;
 
   f2 = gp_pred_rng(x2, y1, x1, alpha, rho, sigma, delta);
-  for (n2 in 1:N2)
+  for (n2 in 1:N2) {
     y2[n2] = normal_rng(f2[n2], sigma);
+  }
 }
 ```
 
@@ -1041,11 +1060,11 @@ This can be implemented in Stan using a latent-variable GP formulation. We've us
 $\textsf{LKJCorr}$ for $C(\phi)$, but any positive-definite matrix will do.
 
 
-```
+```stan
 data {
   int<lower=1> N;
   int<lower=1> D;
-  real x[N];
+  array[N] real x;
   matrix[N, D] y;
 }
 transformed data {
@@ -1065,8 +1084,9 @@ model {
     matrix[N, N] L_K;
 
     // diagonal elements
-    for (n in 1:N)
+    for (n in 1:N) {
       K[n, n] = K[n, n] + delta;
+    }
 
     L_K = cholesky_decompose(K);
     f = L_K * eta

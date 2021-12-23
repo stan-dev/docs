@@ -83,6 +83,79 @@ log_prob {
 }
 ```
 
+#### Constant propagation
+
+Constant propagation replaces uses of a variable which is known to have a constant value `C` with that constant `C`. This removes the overhead of looking up the variable, and also makes many other optimizations possible (such as static loop unrolling and partial evaluation).
+
+Example Stan program:
+
+```
+transformed data {
+  int n = 100;
+  int a[n];
+  for (i in 1:n) {
+    a[i] = i;
+  }
+}
+```
+
+Compiler representation of program **before constant propagation** (simplified from the output of `--debug-transformed-mir-pretty`):
+
+```
+prepare_data {
+  data int n = 100;
+  data array[int, n] a;
+  for(i in 1:n) {
+    a[i] = i;
+  }
+}
+```
+
+Compiler representation of program **after constant propagation** (simplified from the output of `--debug-optimized-mir-pretty`):
+
+```
+prepare_data {
+  data int n = 100;
+  data array[int, 100] a;
+  for(i in 1:100) {
+    a[i] = i;
+  }
+}
+```
+
+#### Copy propagation
+
+Copy propagation is similar to [expression propagation](#org4e2cadd), but only propagates variables rather than arbitrary expressions. This can reduce the complexity of the code for other optimizations such as expression propagation.
+
+Example Stan program:
+
+```
+model {
+  int i = 1;
+  int j = i;
+  int k = i + j;
+}
+```
+
+Compiler representation of program **before copy propagation** (simplified from the output of `--debug-transformed-mir-pretty`):
+
+```
+log_prob {
+    int i = 1;
+    int j = i;
+    int k = (i + j);
+}
+```
+
+Compiler representation of program **after copy propagation** (simplified from the output of `--debug-optimized-mir-pretty`):
+
+```
+log_prob {
+  int i = 1;
+  int j = i;
+  int k = (i + i);
+}
+```
 
 #### Auto-differentiation level optimization
 
@@ -122,6 +195,41 @@ log_prob {
   data real x = (y + 1);
 }
 ```
+
+#### Partial evaluation
+
+Partial evaluation searches for expressions that can be replaced with a faster, simpler, more memory efficient, or more numerically stable expression that has the same meaning.
+
+Example Stan program:
+
+```
+model {
+  real a = 1 + 1;
+  real b = log(1 - a);
+  real c = a + b * 5;
+}
+```
+
+Compiler representation of program **before partial evaluation** (simplified from the output of `--debug-transformed-mir-pretty`):
+
+```
+log_prob {
+  real a = (1 + 1);
+  real b = log((1 - a));
+  real c = (a + (b * 5));
+}
+```
+
+Compiler representation of program **after partial evaluation** (simplified from the output of `--debug-optimized-mir-pretty`):
+
+```
+log_prob {
+  real a = 2;
+  real b = log1m(a);
+  real c = fma(b, 5, a);
+}
+```
+
 
 
 ### **Oexperimental** Optimizations
@@ -172,48 +280,6 @@ prepare_data {
 }
 ```
 
-
-#### Constant propagation
-
-Constant propagation replaces uses of a variable which is known to have a constant value `C` with that constant `C`. This removes the overhead of looking up the variable, and also makes many other optimizations possible (such as static loop unrolling and partial evaluation).
-
-Example Stan program:
-
-```
-transformed data {
-  int n = 100;
-  int a[n];
-  for (i in 1:n) {
-    a[i] = i;
-  }
-}
-```
-
-Compiler representation of program **before constant propagation** (simplified from the output of `--debug-transformed-mir-pretty`):
-
-```
-prepare_data {
-  data int n = 100;
-  data array[int, n] a;
-  for(i in 1:n) {
-    a[i] = i;
-  }
-}
-```
-
-Compiler representation of program **after constant propagation** (simplified from the output of `--debug-optimized-mir-pretty`):
-
-```
-prepare_data {
-  data int n = 100;
-  data array[int, 100] a;
-  for(i in 1:100) {
-    a[i] = i;
-  }
-}
-```
-
-
 #### Expression propagation
 
 <a id="org4e2cadd"></a> Constant propagation replaces uses of a variable which is known to have a constant value `E` with that constant `E`. This often results in recalculation of the expression, but provides more opportunities for further optimizations such as partial evaluation. Expression propagation is always followed by [lazy code motion](#org0c605fa) to avoid unnecessarily recomputing expressions.
@@ -258,77 +324,6 @@ prepare_data {
   }
 }
 ```
-
-
-#### Copy propagation
-
-Copy propagation is similar to [expression propagation](#org4e2cadd), but only propagates variables rather than arbitrary expressions. This can reduce the complexity of the code for other optimizations such as expression propagation.
-
-Example Stan program:
-
-```
-model {
-  int i = 1;
-  int j = i;
-  int k = i + j;
-}
-```
-
-Compiler representation of program **before copy propagation** (simplified from the output of `--debug-transformed-mir-pretty`):
-
-```
-log_prob {
-    int i = 1;
-    int j = i;
-    int k = (i + j);
-}
-```
-
-Compiler representation of program **after copy propagation** (simplified from the output of `--debug-optimized-mir-pretty`):
-
-```
-log_prob {
-  int i = 1;
-  int j = i;
-  int k = (i + i);
-}
-```
-
-
-#### Partial evaluation
-
-Partial evaluation searches for expressions that can be replaced with a faster, simpler, more memory efficient, or more numerically stable expression that has the same meaning.
-
-Example Stan program:
-
-```
-model {
-  real a = 1 + 1;
-  real b = log(1 - a);
-  real c = a + b * 5;
-}
-```
-
-Compiler representation of program **before partial evaluation** (simplified from the output of `--debug-transformed-mir-pretty`):
-
-```
-log_prob {
-  real a = (1 + 1);
-  real b = log((1 - a));
-  real c = (a + (b * 5));
-}
-```
-
-Compiler representation of program **after partial evaluation** (simplified from the output of `--debug-optimized-mir-pretty`):
-
-```
-log_prob {
-  real a = 2;
-  real b = log1m(a);
-  real c = fma(b, 5, a);
-}
-```
-
 
 #### Lazy code motion
 

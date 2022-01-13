@@ -34,11 +34,11 @@ def shexec(command):
         print('Command {} failed'.format(command))
         raise Exception(returncode)
 
-def check_bookdown_2_23():
+def check_bookdown_at_least_0_23():
     command = ["Rscript", "-e", "utils::packageVersion(\"bookdown\") > 0.22"]
     check = subprocess.run(command, capture_output=True, text=True)
     if not 'TRUE' in check.stdout:
-        print("R Package bookdown must be version 2.23, see README for build tools requirements")
+        print("R Package bookdown version must be at least 0.23, see README for build tools requirements")
         sys.exit(1)
 
 def safe_rm(fname):
@@ -77,7 +77,7 @@ def main():
     if sys.version_info < (3, 7):
         print('requires Python 3.7 or higher, found {}'.format(sys.version))
         sys.exit(1)
-    check_bookdown_2_23()
+    check_bookdown_at_least_0_23()
     global all_docs
     global all_formats
     if (len(sys.argv) > 2):

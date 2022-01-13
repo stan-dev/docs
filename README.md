@@ -23,7 +23,7 @@ GitHub (re)builds and (re)deploys the website.
 
 The documentation source files are written in [Rmarkdown](https://rmarkdown.rstudio.com)
 and the RStudio's [bookdown package](https://github.com/rstudio/bookdown) converts these to HTML and pdf.
-**Required bookdown version:** 2.23 or higher, cf [the bookdown changelog](https://github.com/rstudio/bookdown/blob/main/NEWS.md#changes-in-bookdown-version-023).
+**Required bookdown version:** 0.23 or higher, cf [the bookdown changelog](https://github.com/rstudio/bookdown/blob/main/NEWS.md#changes-in-bookdown-version-023).
 Reported via [issue #380](https://github.com/stan-dev/docs/issues/380).
 
 

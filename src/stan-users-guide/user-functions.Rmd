@@ -121,7 +121,7 @@ Function argument type declarations may not be
 declared with constraints, either lower or upper bounds or structured
 constraints like forming a simplex or correlation matrix, (as is also
 the case for local variables);  see the table of types in the [reference
-manual](https://mc-stan.org/docs/reference-manual/variable-declaration.html) 
+manual](https://mc-stan.org/docs/reference-manual/variable-declaration.html)
 for full details.
 
 For example, here's a function to compute the entropy of a categorical
@@ -404,10 +404,71 @@ function (`_lpmf`) must be discrete (integer or integer array).
 
 ## Overloading functions
 
-Stan does not permit overloading user-defined functions.  This means
-that it is not possible to define two different functions with the
-same name, even if they have different signatures.
+As described in the [reference
+manual](https://mc-stan.org/docs/2_28/reference-manual/function-names.html)
+function overloading is permitted in Stan, beginning in version 2.29.
 
+This means two different functions can be defined with the same name as long as
+they accept different numbers or types of arguments. User-defined functions can
+also overload Stan library functions.
+
+### Warning on usage
+
+Overloading is a powerful productivity tool in programming languages, but it can
+also lead to confusion.
+
+In particular, it can be unclear at first glance which version of a function is
+being called at any particular call site, especially with type promotion allowed
+between scalar number types. Because of this, it is a programming best practice
+that overloaded functions maintain the same high-level (i.e. mathematical or
+semantic) meaning as each other.
+
+### Function resolution
+
+Stan resolves overloaded functions by the type of arguments passed to the
+function.
+
+Consider the following function signatures:
+
+```stan
+real foo(int a, real b);
+real foo(real a, real b);
+```
+
+Given these, the function call `foo(1.5, 2.5)` is unambiguous - it must resolve
+to the second signature.
+But, the function call `foo(1, 1.5)` could be valid for _either_ under Stan's
+promotion rules, which allow integers to be promoted to real numbers.
+
+To resolve this, Stan selects the signature which requires the fewest number of
+promotions for a given function call. In the above case, this means
+the call `foo(1, 1.5)` would select the first signature, because it requires 0
+promotions (the second signature would require 1 promotion).
+
+Furthermore, there must be only one such signature, e.g., the minimum number of
+promotions must be a unique minimum. This requirement does forbid certain kinds
+of overloading. For example, the function signatures
+```stan
+real bar(int x, real y);
+real bar(real x, int y);
+```
+These signatures do not have a unique minimum number of promotions for the call
+`bar(1, 2)`. Both signatures require one promotion, and so it cannot be
+determined which is correct. Stan will produce a compilation error in this case.
+
+Promotion from integers to complex numbers is considered to be two
+separate promotions, first from int to real, then from real to complex. This
+means that integer arguments will "prefer" a signature with real types over
+complex.
+
+For example,
+
+```stan
+real pop(real x);
+real pop(complex x);
+```
+
+Will select the first signature when called with an integer argument, `pop(0)`.
 
 ## Documenting functions {#documenting-functions.section}
 

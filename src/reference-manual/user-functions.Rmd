@@ -39,9 +39,8 @@ types `real` and `real`.  The arguments are named `mu`
 and `sigma`, but that is not part of the declaration.
 
 ### Function overloading
-Two user-defined functions may have the same name if they have
+Multiple user-defined functions may have the same name if they have
 different sequences of [argument types](#argument-types-and-qualifiers).
-
 This is known as function overloading.
 
 For example, the following two functions are both defined with the name `add_up`
@@ -56,18 +55,23 @@ real add_up(real a, real b, real c){
 }
 ```
 
-The return types of overloaded functions do not need to be the same as a matter
-of course, but it may be confusing if they differ.
+The return types of overloaded functions do not need to be the same. One could define an additional `add_up` function as follows
 
-Two function may **not** use the same name if their signature _only_ differs by the
+```stan
+int add_up(int a, int b){
+  return a + b;
+}
+```
+
+That being said, functions may **not** use the same name if their signature _only_ differs by the
 return type.
 
-For example,
+For example, the following is not permitted
 ```stan
+// illegal
 real baz(int x);
 int baz(int x);
 ```
-is not permitted.
 
 Function names used in the Stan standard library may be overloaded by
 user-defined functions. Exceptions to this are the `reduce_sum` family of
@@ -101,25 +105,24 @@ promotion](#promotion) can result in situations where there are multiple valid
 interpretations of a function call. Stan requires that there be a unique
 signature which minimizes the number of promotions required.
 
-For example, the overloaded functions
+Consider the following two overloaded functions
 ```stan
 real foo(int a, real b);
 real foo(real a, int b);
 ```
-Do **not** have a unique minimum when called with two integer arguments
+These functions do **not** have a unique minimum when called with two integer arguments
 `foo(1,2)`, and therefore cannot be called as such.
 
-For this purpose, promotion of integers to complex numbers is considered as two
-separate promotions, one from int to real and a second from real to complex.
-
-Therefore, the following functions
-
+Promotion of integers to complex numbers is considered as two separate
+promotions, one from `int` to `real` and a second from `real` to `complex`.
+Consider the following functions with `real` and `complex` signatures
 ```stan
 real bar(real x);
 real bar(complex z);
 ```
-do have a deterministic choice when called with an integer argument: the first
-signature is used.
+A call `bar(5)` with an integer argument will be resolved to `bar(real)` because
+it only requires a single promotion, whereas the promotion to a complex number
+requires two promotions.
 
 ### Probability functions in sampling statements {-}
 

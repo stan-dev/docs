@@ -182,7 +182,7 @@ problems specified as Ordinary Differential Equations (ODEs).
 
 Solving an initial value ODE means given a set of differential equations
 $y'(t, \theta) = f(t, y, \theta)$ and initial conditions $y(t_0, \theta)$,
-solving for $y$ at a sequence of times $t_0 < t_1 \leq t_2, \cdots \leq t_n$.
+solving for $y$ at a sequence of times $t_0 < t_1 < t_2, \cdots < t_n$.
 $f(t, y, \theta)$ is referred to here as the ODE system function.
 
 $f(t, y, \theta)$ will be defined as a function with a certain signature
@@ -412,7 +412,131 @@ the same size:
 returned by the system function, initial state passed into the
 solver, and length of each vector in the output,
 
-*   number of solution times and number of vectors in the output,
+*   number of solution times and number of vectors in the output.
+
+## Differential-Algebraic equation (DAE) solver {#functions-dae-solver}
+
+Stan provides two higher order functions for solving initial value
+problems specified as Differential-Algebraic Equations (DAEs) with index-1 [@serban_user:2021].
+
+Solving an initial value DAE means given a set of residual functions
+$r(y'(t, \theta), y(t, \theta), t)$ and initial conditions $(y(t_0, \theta), y'(t_0, \theta))$,
+solving for $y$ at a sequence of times $t_0 < t_1 \leq t_2, \cdots \leq t_n$.
+The residual function $r(y', y, t, \theta)$ will be defined as a function with a certain signature
+and provided along with the initial conditions and output times to one of the
+DAE solver functions.
+
+Similar to ODE solvers, the DAE solver function takes extra arguments
+that are passed along unmodified to the user-supplied system function.
+Because there can be any number of these arguments and they can be of different types,
+they are denoted below as `...`, and the types of these arguments,
+also represented by `...` in the DAE solver call, must match the types of the arguments represented by
+`...` in the user-supplied system function.
+
+### The DAE solver
+
+<!-- array[] vector; dae; (function residual, vector initial_state, vector initial_state_derivative, real initial_time, array[] real times, ...); -->
+\index{{\tt \bfseries dae }!{\tt (function residual, vector initial\_state, vector initial\_state\_derivative, real initial\_time, array[] real times, ...): array[] vector}|hyperpage}
+
+`array[] vector` **`dae`**`(function residual, vector initial_state, vector initial_state_derivative, real initial_time, array[] real times, ...)`<br>\newline
+Solves the DAE system using the backward differentiation formula (BDF)
+method [@serban_user:2021].
+`r since("2.29")`
+
+<!-- array[] vector; dae_tol; (function residual, vector initial_state, vector initial_state_derivative, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...); -->
+\index{{\tt \bfseries dae\_tol }!{\tt (function residual, vector initial\_state, vector initial\_state\_derivative, real initial\_time, array[] real times, data real rel\_tol, data real abs\_tol, int max\_num\_steps, ...): array[] vector}|hyperpage}
+
+`array[] vector` **`dae_tol`**`(function residual, vector initial_state, vector initial_state_derivative, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...)`<br>\newline
+Solves the DAE system for the times provided using the backward differentiation formula (BDF) method with additional control
+parameters for the solver.
+`r since("2.29")`
+
+### DAE system function
+
+The first argument to the DAE solver is the DAE residual
+function. The DAE residual function must have a `vector` return type, and the
+first three arguments must be a `real`, `vector`, and `vector`, in that order. These three
+arguments are followed by the variadic arguments that are passed through from
+the DAE solver function call:
+
+```stan
+  vector residual(real time, vector state, vector state_derivative, ...)
+```
+
+The DAE residual function should return the residuals at the time and state provided. The length of the returned
+vector must match the length of the state input into the function.
+
+The arguments to this function are:
+
+*   *`time`*, the time to evaluate the DAE system
+
+*   *`state`*, the state of the DAE system at the time specified
+
+*   *`state_derivative`*, the time derivatives of the state of the DAE system at the time specified
+
+*   *`...`*, sequence of arguments passed unmodified from the DAE solve
+function call. The types here must match the types in the `...` arguments of the
+DAE solve function call.
+
+### Arguments to the DAE solver {#dae-solver}
+
+The arguments to the DAE solver are
+
+*   *`residual`*: DAE residual function,
+
+*   *`initial_state`*: initial state, type `vector`,
+
+*   *`initial_state_derivative`*: time derivative of the initial state, type `vector`,
+
+*   *`initial_time`*: initial time, type `real`,
+
+*   *`times`*: solution times, type `array[] real`,
+
+*   *`...`*: sequence of arguments that will be passed through unmodified
+to the DAE residual function. The types here must match the types in the `...`
+arguments of the DAE residual function.
+
+For `dae_tol`, the following three 
+parameters must be provided after `times` and before the `...` arguments:
+
+*   `data`   *`rel_tol`*: relative tolerance for the DAE solver, type `real`,
+data only,
+
+*   `data`   *`abs_tol`*: absolute tolerance for the DAE solver, type `real`,
+data only, and
+
+*   *`max_num_steps`*: maximum number of steps to take between output
+times in the DAE solver, type `int`, data only.
+
+Because the tolerances are `data` arguments, they must be supplied as
+primitive numerics or defined in either the data
+or transformed data blocks. They cannot be parameters, transformed parameters
+or functions of parameters or transformed parameters.
+
+#### Consistency of the initial conditions
+
+The user is responsible to ensure 
+the residual function becomes zero at the initial time, `t0`, when the
+arguments `initial_state` and `initial_state_derivative` are
+introduced as `state` and `state_derivative`, respectively.
+
+#### Return values
+
+The return value for the DAE solvers is an array of vectors (type `array[] vector`),
+one vector representing the state of the system at every time specified in
+the `times` argument.
+
+#### Array and vector sizes
+
+The sizes must match, and in particular, the following groups are of
+the same size:
+
+*   state variables and state derivatives passed into the residual function, 
+the residual returned by the residual function, initial state and
+initial state derivatives passed into the solver, and length of each vector in the output,
+
+*   number of solution times and number of vectors in the output.
+
 
 ## 1D integrator {#functions-1d-integrator}
 

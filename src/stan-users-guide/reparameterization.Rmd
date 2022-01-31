@@ -509,9 +509,8 @@ transformed parameters {
 
 ## Vectors with varying bounds
 
-Stan only allows a single lower and upper bound to be declared in the
-constraints for a container data type.  But suppose we have a vector
-of parameters and a vector of lower bounds?  Then the transforms are
+Stan allows scalar and non-scalar upper and lower bounds to be declared in the
+constraints for a container data type. The transforms are
 calculated and their log Jacobians added to the log density accumulator;
 the Jacobian calculations are described in detail in the reference
 manual chapter on constrained parameter transforms.
@@ -521,6 +520,21 @@ manual chapter on constrained parameter transforms.
 For example, suppose there is a vector parameter $\alpha$ with a
 vector $L$ of lower bounds.  The simplest way to deal with this if $L$
 is a constant is to shift a lower-bounded parameter.
+
+```stan
+data {
+  int N;
+  vector[N] L;  // lower bounds
+  // ...
+}
+parameters {
+  vector<lower=L>[N] alpha_raw;
+  // ...
+}
+```
+
+The above is equivalent to manually calculating the vector bounds by the 
+following.
 
 ```stan
 data {
@@ -546,7 +560,24 @@ Jacobian required, because the transform from $(L, \alpha_{\textrm{raw}})$
 to $(L + \alpha_{\textrm{raw}}, \alpha_{\textrm{raw}})$ produces
 a Jacobian derivative matrix with a unit determinant.
 
-It's also possible implement the transform by directly transforming
+It's also possible to implement the transform using arrary or vector
+of parameters as bounds (with the requirement that the type of the 
+variable must match the bound type) in the following.
+
+```stan
+data {
+  int N;
+  vector[N] L;  // lower bounds
+  // ...
+}
+parameters {
+  vector<lower=0>[N] alpha_raw;
+  vector<lower=L + alpha_raw>[N] alpha;
+  // ...
+}
+```
+
+This is equivalent to directly transforming
 an unconstrained parameter and accounting for the Jacobian.
 
 ```stan
@@ -583,8 +614,24 @@ taking into account the dependencies.
 
 Suppose there are lower and upper bounds that vary by parameter.
 These can be applied to shift and rescale a parameter constrained to
-$(0, 1)$.
+$(0, 1)$. This is easily accomplished as the following.
 
+```stan
+data {
+  int N;
+  vector[N] L;  // lower bounds
+  vector[N] U;  // upper bounds
+  // ...
+}
+parameters {
+  vector<lower=L, upper=U>[N] alpha;
+  // ...
+}
+```
+
+The same may be accomplished by manually constructing
+the transform as follows.
+ 
 ```stan
 data {
   int N;

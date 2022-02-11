@@ -43,6 +43,8 @@ The raw output is available [here](grammar.txt).
               [<parameters_block>] [<transformed_parameters_block>]
               [<model_block>] [<generated_quantities_block>] EOF
 
+<functions_only> ::= <function_def>* EOF
+
 <function_block> ::= FUNCTIONBLOCK LBRACE <function_def>* RBRACE
 
 <data_block> ::= DATABLOCK LBRACE <top_var_decl_no_assign>* RBRACE
@@ -99,11 +101,13 @@ The raw output is available [here](grammar.txt).
 ```
 <identifier> ::= IDENTIFIER
                | TRUNCATE
-               | OFFSET
-               | MULTIPLIER
-               | LOWER
-               | UPPER
-               | ARRAY
+               | <future_keyword>
+
+<future_keyword> ::= OFFSET
+                   | MULTIPLIER
+                   | LOWER
+                   | UPPER
+                   | ARRAY
 
 <decl_identifier> ::= <identifier>
 
@@ -116,7 +120,7 @@ The raw output is available [here](grammar.txt).
 
 <decl(type_rule, rhs)> ::= type_rule <decl_identifier> <dims>
                            <optional_assignment(rhs)> SEMICOLON
-                         | [<lhs>] type_rule
+                         | [<arr_dims>] type_rule
                            <id_and_optional_assignment(rhs)> (COMMA
                            <id_and_optional_assignment(rhs)>)* SEMICOLON
 
@@ -125,21 +129,18 @@ The raw output is available [here](grammar.txt).
 <top_var_decl> ::= <decl(<top_var_type>, <expression>)>
 
 <top_var_decl_no_assign> ::= <decl(<top_var_type>, <no_assign>)>
-
-<vardecl_or_statement> ::= <statement>
-                         | <var_decl>
-
-<top_vardecl_or_statement> ::= <statement>
-                             | <top_var_decl>
+                           | SEMICOLON
 
 <sized_basic_type> ::= INT
                      | REAL
+                     | COMPLEX
                      | VECTOR LBRACK <expression> RBRACK
                      | ROWVECTOR LBRACK <expression> RBRACK
                      | MATRIX LBRACK <expression> COMMA <expression> RBRACK
 
 <top_var_type> ::= INT [LABRACK <range> RABRACK]
                  | REAL <type_constraint>
+                 | COMPLEX <type_constraint>
                  | VECTOR <type_constraint> LBRACK <expression> RBRACK
                  | ROWVECTOR <type_constraint> LBRACK <expression> RBRACK
                  | MATRIX <type_constraint> LBRACK <expression> COMMA
@@ -170,6 +171,8 @@ The raw output is available [here](grammar.txt).
                   <constr_expression>
                 | OFFSET ASSIGN <constr_expression>
                 | MULTIPLIER ASSIGN <constr_expression>
+
+<arr_dims> ::= ARRAY LBRACK <expression> (COMMA <expression>)* RBRACK
 
 <dims> ::= LBRACK <expression> (COMMA <expression>)* RBRACK
 ```
@@ -204,7 +207,7 @@ The raw output is available [here](grammar.txt).
 
 <common_expression> ::= INTNUMERAL
                       | REALNUMERAL
-		      | IMAGNUMERAL
+                      | IMAGNUMERAL
                       | LBRACE <expression> (COMMA <expression>)* RBRACE
                       | LBRACK [<expression> (COMMA <expression>)*] RBRACK
                       | <identifier> LPAREN [<expression> (COMMA

@@ -3,7 +3,7 @@
 pipeline {
     agent {
         docker {
-            image 'stanorg/ci:alpine'
+            image 'stanorg/ci:gpu'
             label 'linux'
         }
     }

@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 pipeline {
-    agent { label 'osx' }
+    agent { label 'gg-osx' }
     options {
         skipDefaultCheckout()
         preserveStashes(buildCount: 5)

@@ -805,8 +805,8 @@ The levels include these optimizations:
     -   [Dead code elimination]
     -   [Copy propagation]
     -   [Constant propagation]
-    -   [Automatic-differentiation level optimization]
 -   **Oexperimental** includes optimizations specified by **O1** and also:
+    -   [Automatic-differentiation level optimization]
     -   [One step loop unrolling]
     -   [Expression propagation]
     -   [Partial evaluation]
@@ -952,6 +952,46 @@ log_prob {
 }
 ```
 
+#### Partial evaluation
+
+Partial evaluation searches for expressions that we can replace with a faster,
+simpler, more memory efficient, or more numerically stable expression with the
+same meaning.
+
+Example Stan program:
+
+```stan
+model {
+  real a = 1 + 1;
+  real b = log(1 - a);
+  real c = a + b * 5;
+}
+```
+
+Compiler representation of program **before partial evaluation** (simplified
+from the output of `--debug-transformed-mir-pretty`):
+
+```
+log_prob {
+  real a = (1 + 1);
+  real b = log((1 - a));
+  real c = (a + (b * 5));
+}
+```
+
+Compiler representation of program **after partial evaluation** (simplified from
+the output of `--debug-optimized-mir-pretty`):
+
+```
+log_prob {
+  real a = 2;
+  real b = log1m(a);
+  real c = fma(b, 5, a);
+}
+```
+
+### **Oexperimental** Optimizations
+
 #### Automatic-differentiation level optimization
 
 Stan variables can have two auto-differentiation (AD) *levels*: AD or non-AD. AD
@@ -997,47 +1037,6 @@ log_prob {
   data real x = (y + 1);
 }
 ```
-
-#### Partial evaluation
-
-Partial evaluation searches for expressions that we can replace with a faster,
-simpler, more memory efficient, or more numerically stable expression with the
-same meaning.
-
-Example Stan program:
-
-```stan
-model {
-  real a = 1 + 1;
-  real b = log(1 - a);
-  real c = a + b * 5;
-}
-```
-
-Compiler representation of program **before partial evaluation** (simplified
-from the output of `--debug-transformed-mir-pretty`):
-
-```
-log_prob {
-  real a = (1 + 1);
-  real b = log((1 - a));
-  real c = (a + (b * 5));
-}
-```
-
-Compiler representation of program **after partial evaluation** (simplified from
-the output of `--debug-optimized-mir-pretty`):
-
-```
-log_prob {
-  real a = 2;
-  real b = log1m(a);
-  real c = fma(b, 5, a);
-}
-```
-
-### **Oexperimental** Optimizations
-
 
 #### One step loop unrolling
 

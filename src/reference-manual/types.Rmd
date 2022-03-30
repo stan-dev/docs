@@ -30,8 +30,8 @@ invocations of the program.
 ## Overview of data types
 
 Arguments for built-in and user-defined functions and local variables
-are required to be basic data types, meaning an unconstrained
-primitive, vector, or matrix type or an array of such.
+are required to be basic data types, meaning an unconstrained scalar,
+vector, or matrix type, or an array of such.
 
 Passing arguments to functions in Stan works just like assignment to
 basic types.  Stan functions are only specified for the basic data
@@ -42,19 +42,24 @@ part of their behavior.
 ### Primitive types {-}
 
 Stan provides two primitive data types, `real` for continuous
-values and `int` for integer values.
+values and `int` for integer values.  These are both considered scalar
+types. 
 
 ### Complex types {-}
 
 Stan provides a complex number data type `complex`, where a complex
 number contains both a real and an imaginary component, both of which
-are of type `real`.
+are of type `real`.  Complex types are considered scalar types.
 
 ### Vector and matrix types {-}
 
-Stan provides three matrix-based data types, `vector` for column
+Stan provides three real-valued matrix data types, `vector` for column
 vectors, `row_vector` for row vectors, and `matrix` for
 matrices.
+
+Stan also provides three complex-valued matrix data types,
+`complex_vector` for column vectors, `complex_row_vector` for row
+vectors, and `complex_matrix` for matrices.
 
 ### Array types {-}
 
@@ -73,9 +78,8 @@ real values, declares `m` to be a two-dimensional array of
 size $6 \times 7$ containing values that are $3 \times 3$ matrices,
 and declares `z` to be a $12 \times 8 \times 15$ array of complex numbers.
 
-Prior to 2.26 Stan models used a different syntax.
-The old syntax has been deprecated and is described
-in the [Deprecated Features] chapter.
+Prior to 2.26 Stan models used a different syntax.  The old syntax has
+been deprecated as described in the [Deprecated Features] chapter.
 
 
 ### Constrained data types {-}
@@ -220,7 +224,9 @@ thus be avoided where possible.
 
 The `complex` data type is a scalar, but unlike `real` and `int`
 types, it contains two components, a real and imaginary component,
-both of which are of type `real`.
+both of which are of type `real`.  That is, the real and imaginary
+components of a complex number are 64-bit, IEEE 754-complaint floating
+point numbers.
 
 ### Constructing and accessing complex numbers
 
@@ -280,12 +286,13 @@ Function arguments also support promotion of integer or real typed
 expressions to type `complex`.
 
 
-## Univariate data types and variable declarations
+## Scalar data types and variable declarations
 
 All variables used in a Stan program must have an explicitly declared
 data type.  The form of a declaration includes the type and the name
-of a variable.  This section covers univariate types, the next section
-vector and matrix types, and the following section array types.
+of a variable.  This section covers scalar types, namely integer,
+real, and complex.  The next section covers vector and matrix types,
+and the following section array types.
 
 ### Unconstrained integer {-}
 
@@ -327,6 +334,16 @@ unconstrained continuous value.
 
 ```stan
 real theta;
+```
+
+## Unconstrained complex {-}
+
+Unconstrained complex numbers are declared using the keyword
+`complex`.  The following example declares `z` to be an unconstrained
+complex variable.
+
+```stan
+complex z;
 ```
 
 
@@ -542,11 +559,11 @@ extensively in the implementation of the [RStanArm package](https://mc-stan.org/
 Stan provides three types of container objects: arrays, vectors, and
 matrices. Vectors and matrices are more limited kinds of data
 structures than arrays.  Vectors are intrinsically one-dimensional
-collections of reals, whereas matrices are intrinsically two
-dimensional.  Vectors, matrices, and arrays are not assignable to one
-another, even if their dimensions are identical.  A $3 \times 4$
-matrix is a different kind of object in Stan than a $3 \times 4$
-array.
+collections of real or complex values, whereas matrices are
+intrinsically two dimensional.  Vectors, matrices, and arrays are not
+assignable to one another, even if their dimensions are identical.  A
+$3 \times 4$ matrix is a different kind of object in Stan than a $3
+\times 4$ array.
 
 The intention of using matrix types is to call out their usage in the
 code.  There are three situations in Stan where *only* vectors and
@@ -559,7 +576,7 @@ matrices may be used,
   multivariate normal distribution arguments).
 
 Vectors and matrices cannot be typed to return integer values.  They
-are restricted to `real` values.^[This may change if Stan is called upon to do complicated integer matrix operations or boolean matrix operations.  Integers are not appropriate inputs for linear algebra functions.]
+are restricted to `real` and `complex` values.
 
 For constructing vectors and matrices in Stan, see [Vector, Matrix,
 and Array Expressions](#vector-matrix-array-expressions.section).
@@ -573,12 +590,12 @@ packages R, MATLAB, BUGS, and JAGS.  General computer programming
 languages, on the other hand, such as C++ and Python, index arrays
 starting from zero.
 
-### Vectors {-}
+### Real vectors {-}
 
-Vectors in Stan are column vectors; see the next subsection for
-information on row vectors.  Vectors are declared with a size (i.e., a
-dimensionality).  For example, a 3-dimensional vector is declared with
-the keyword `vector`, as follows.
+Vectors in Stan are column vectors; see below for information on row
+vectors.  Vectors are declared with a size (i.e., a dimensionality).
+For example, a 3-dimensional real vector is declared with the keyword
+`vector`, as follows.
 
 ```stan
 vector[3] u;
@@ -596,6 +613,18 @@ following example
 ```stan
 vector<offset=42, multiplier=3>[3] u;
 ```
+
+### Complex vectors {-}
+
+Like real vectors, complex vectors are column vectors and are declared
+with a size.  For example, a 3-dimensional complex vector is declared
+with the keyword `complex_vector`, as follows.
+
+```stan
+complex_vector[3] v;
+```
+
+Complex vector declarations do not support any constraints.
 
 ### Unit simplexes {-}
 
@@ -681,6 +710,8 @@ may be assigned to other vectors and other vectors may be assigned to them.
 Constraints will be checked after executing the block in which the
 variables were declared.
 
+
+
 ### Row vectors {-}
 
 Row vectors are declared with the keyword `row_vector`.
@@ -705,6 +736,18 @@ row_vector<offset=-42, multiplier=3>[3] u;
 Row vectors may not be assigned to column vectors, nor may column
 vectors be assigned to row vectors.  If assignments are required, they
 may be accommodated through the transposition operator.
+
+### Complex row vectors {-}
+
+Complex row vectors are declared with the keyword
+`complex_row_vector` and given a size in basic declarations.  For
+example, a 12-dimensional complex row vector `v` would be declared as
+
+```stan
+complex_row_vector[12] v;
+```
+
+Complex row vectors do not allow constraints.
 
 ### Matrices {-}
 
@@ -755,6 +798,17 @@ number of columns of `b`.
 Assignment works by copying values in Stan.  That means any subsequent
 assignment to `a[1]` does not affect `b`, nor does an
 assignment to `b` affect `a`.
+
+### Complex matrices {-}
+
+Complex matrices are declared with the keyword `complex_matrix` and a
+number of rows and columns.  For example,
+
+```stan
+complex_matrix[3, 3] C;
+```
+
+Complex matrices do not allow constraints.
 
 
 ### Covariance matrices {-}
@@ -857,6 +911,19 @@ checks.  The Stan compiler isn't able to catch the fact that an
 attempt may be made to assign a matrix of one dimensionality to a
 matrix of mismatching dimensionality.
 
+## Promoting real to complex matrixes {-}
+
+Real-valued vectors, row vectors and matrices may be assigned to
+complex-valued vectors, row vectors and matrices, respectively.  For
+example, the following is legal.
+
+```stan
+vector[N] v = ...;
+complex_vector[N] u = 2 * v;
+```
+
+Row vectors and matrices work the same way.
+
 
 ### Expressions as size declarations {-}
 
@@ -898,6 +965,15 @@ The type of `m[2]` is `row_vector` because it is the second
 row of `m`.  Thus it is possible to write `m[2][3]` instead
 of `m[2, 3]` to access the third element in the second row.  When
 given a choice, the form `m[2, 3]` is preferred.
+
+Complex versions work the same way,
+
+```stan
+complex_matrix[M, N] m = ...;
+complex_row_vector[N] u = m[3];
+complex_vector[M] v = m[ , 2];
+```
+
 
 #### Array index style {-}
 
@@ -951,11 +1027,11 @@ The variable `n` is declared as an array of five integers as follows.
 array[5] int n;
 ```
 
-A two-dimensional array of real values with three rows and four columns is
-declared with the following.
+A two-dimensional array of complex values with three rows and four columns is
+declared as follows.
 
 ```stan
-array[3, 4] real a;
+array[3, 4] complex a;
 ```
 
 A three-dimensional array `z` of positive reals with five rows, four
@@ -976,11 +1052,12 @@ declares `mu` to be an array of size 3 containing vectors with 7
 elements.  Arrays may also contain matrices.  The example
 
 ```stan
-array[15, 12] matrix[7, 2] mu;
+array[15, 12] complex_matrix[7, 2] mu;
 ```
 
-declares a 15 by 12 array of $7 \times 2$ matrices.  Any of the
-constrained types may also be used in arrays, as in the declaration
+declares a 15 by 12 array of $7 \times 2$ complex matrices.  Any of
+the constrained types may also be used in arrays, as in the
+declaration
 
 ```stan
 array[2, 3, 4] cholesky_factor_cov[5, 6] mu;
@@ -1023,6 +1100,7 @@ y = x[4];  // y == w[5][4] == w[5, 4]
 z = y[3];  // z == w[5][4][3] == w[5, 4, 3]
 ```
 
+Complex-valued arrays work the same way.
 
 
 ### Arrays of matrices and vectors {-}
@@ -1378,6 +1456,8 @@ dimensions `matrix[K, K]` types.
 +-------------------+----------------------+----------------------------------------------+
 |                   |                      | `real<offset=O, multiplier=M>`               |
 +-------------------+----------------------+----------------------------------------------+
+| `complex`         | `complex`            | `complex`                                    |
++-------------------+----------------------+----------------------------------------------+
 | `vector`          | `vector[N]`          | `vector[N]`                                  |
 +-------------------+----------------------+----------------------------------------------+
 |                   |                      | `vector[N]<lower=L>`                         |
@@ -1435,6 +1515,12 @@ dimensions `matrix[K, K]` types.
 |                   | `matrix[K, K]`       | `cholesky_factor_corr[K]`                    |
 +-------------------+----------------------+----------------------------------------------+
 |                   | `matrix[K, K]`       | `cholesky_factor_cov[K]`                     |
++-------------------+----------------------+----------------------------------------------+
+| `complex_vector`  | `complex_vector[M]`  | `complex_vector[M]`                          |
++-------------------+----------------------+----------------------------------------------+
+| `complex_row_vector` | `complex_row_vector[N]` | `complex_row_vector[N]`                |
++-------------------+----------------------+----------------------------------------------+
+| `complex_matrix`  | `complex_matrix[M, N]` | `complex_matrix[M, N]`                     |
 +-------------------+----------------------+----------------------------------------------+
 | `array[] vector`  | `array[M] vector[N]` | `array[M] vector[N]`                         |
 +-------------------+----------------------+----------------------------------------------+
@@ -1524,6 +1610,7 @@ assignable to the variable being declared.  For example,
 
 ```stan
 matrix[3, 2] a = 0.5 * (b + c);
+complex z = 2 + 3i;
 ```
 
 assigns the matrix variable `a` to half of the sum of `b` and `c`.

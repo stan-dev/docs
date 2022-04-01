@@ -1,10 +1,13 @@
 # Complex Numbers
 
-Stan supports complex number variables as well as standard functions.
-In the present release, it is not yet possible to define vectors or
-matrices of complex numbers, but those will be available soon.
+Stan supports complex scalars, matrices, and vectors as well as
+real-based ones.
+
 
 ## Working with complex numbers
+
+This section describes the complex scalar type, including ow to build
+complex numbers, assign them, and use them in arrays and functions.
 
 ### Constructing and accessing complex numbers
 
@@ -121,6 +124,36 @@ a parameter, `mu` and `L_Sigma` may constants defining a prior or
 further parameters defining a hierarchical model.
 
 
+## Complex matrices and vectors
+
+Stan supports complex matrices, vectors, and row vectors.  Variables
+of these types are declared with sizes in the same way as their
+real-based counterparts.
+
+```stan
+complex_vector[3] v;
+complex_row_vector[2] rv;
+complex_matrix[3, 2] m;
+```
+
+We can construct vectors and matrices using brackets in the same way
+as for real-valued vectors and matrices.  For example, given the
+declaration of `rv` above, we could assign it to a constructed row
+vector. 
+
+```stan
+rv =  [2 + 3i, 1.9 - 2.3i];
+```
+
+Complex matrices and vectors support all of the standard arithetmic
+operations including negation, addition, subtraction, and
+multiplication (division involves a solve, and isn't a simple
+arithmetic operation for matrices).  They also support transposition.
+
+Furthermore, it is possible to convert back and forth between arrays
+and matrices using the `to_array` functions.  
+
+
 ## Complex linear regression
 
 Complex valued linear regression with complex predictors and
@@ -132,18 +165,16 @@ for an intercept and slope.
 ```stan
 data {
   int<lower=0> N;
-  array[N] complex x;
-  array[N] complex y;
+  complex_vector[N] x;
+  complex_vector[N] y;
 }
 parameters {
   complex alpha;
   complex beta;
 }
 model {
-  for (n in 1:N) {
-    complex eps_n = y[n] - (alpha + beta * x[n]);  // error
-    eps_n ~ // ...error distribution...
-  }
+  complex_vector[N] eps = y - (alpha + beta * x);
+  eps ~  // ...error distribution...
 }
 ```
 
@@ -167,8 +198,8 @@ parameters {
 // ...
 model {
   // ...
-  get_real(eps_n) ~ normal(0, sigma[1]);
-  get_imag(eps_n) ~ normal(0, sigma[2]);
+  get_real(eps) ~ normal(0, sigma[1]);
+  get_imag(eps) ~ normal(0, sigma[2]);
   sigma ~ //...hyperprior...
 }
 ```
@@ -187,13 +218,17 @@ working with a multivariate covariance matrix, as we do here.
 ```stan
 parameters {
   cholesky_factor_corr[2] L_Omega;  // correlation matrix
-  vector[2] sigma;           // real, imag error scales
+  vector[2] sigma;                  // real, imag error scales
   // ...
 }
 // ...
 model {
-  eps_n ~ multi_normal_cholesky([0, 0]',
-                                diag_pre_multiply(sigma, L_Omega));
+  array[N] vector[2] eps_arr;
+  for (n in 1:N) {
+    eps_arr[n] = { to_real(eps[n]), to_imag(eps[n]) };
+  }    
+  eps_arr ~ multi_normal_cholesky([0, 0]',
+                                  diag_pre_multiply(sigma, L_Omega));
   L_Omega ~ lkj_cholesky(4);  // shrink toward diagonal correlation
   sigma ~ // ... hyperprior ...
 }
@@ -203,6 +238,9 @@ Here, the real and imaginary components of the error get a joint
 distribution with correlation and independent scales.  The error gets
 a multivariate normal distribution with zero mean and a Cholesky
 factor representation of covariance, consisting of a scale vector
-`sigma` and a Cholesky factor or a correlation matrix, `L_Omega`.
-The prior on the correlations is concentrated loosely around diagonal
-covariance, and the prior on the scales is left open.
+`sigma` and a Cholesky factor or a correlation matrix, `L_Omega`.  The
+prior on the correlations is concentrated loosely around diagonal
+covariance, and the prior on the scales is left open.  In order to
+vectorize the call to `multi_normal_cholesky`, the vector of complex
+numbers needs to be converted to an array of size 2 vectors.
+

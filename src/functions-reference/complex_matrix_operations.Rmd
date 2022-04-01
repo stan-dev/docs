@@ -1,15 +1,16 @@
-# Complex Complex_Matrix Operations {#complex-complex_matrix-operations}
-
+# Complex Matrix Operations {#complex-complex_matrix-operations}
 
 ```{r results='asis', echo=FALSE}
 if (knitr::is_html_output()) {
 cat(' * <a href="complex-promotion.html">Complex Promotion</a>\n')
-cat(' * <a href="complex-complex_matrix-arithmetic-operators.html">Complex Complex_Matrix Arithmetic Operators</a>\n')
+cat(' * <a href="integer-valued-complex-matrix-size-functions.html">Integer-Valued Complex Matrix Size Functions</a>\n')
+cat(' * <a href="complex-complex_matrix-arithmetic-operators.html">Complex Matrix Arithmetic Operators</a>\n')
 cat(' * <a href="complex-transposition-operator.html">Complex Transposition Operator</a>\n')
+cat(' * <a href="complex-reductions.html">Complex Reductions</a>\n')
 }
 ```
 
-## Complex Promotion
+## Complex promotion
 
 This chapter provides the details of functions that operate over
 complex matrices, vectors, and row vectors.  These mirror the
@@ -36,6 +37,17 @@ The rules for promotion in Stan are simple:
 * if `T` can be promoted to `U`, then `T[]` can be promoted to `U[]`, and
 * if `T` can be promoted to `U` and `U` can be promoted to `V`.
 
+### Signature selection
+
+When a function is called, the definition requiring the fewest number
+of promotions is used.  For example, calling `vector + vector` the
+real-valued signature is used, but when calling any of `complex_vector
++ vector`, `vector + complex_vector` or `complex_vector +
+complex_vector` is used.  If there is more than one signature matched
+with the minimal number of promotions, the call is ill-defined.  This
+kind of conflict leading to ill-defined calls should never happen with
+Stan built-in functions.
+
 ### Signatures for complex functions {-}
 
 Complex function signatures will only list the fully complex type.
@@ -46,8 +58,40 @@ and one real vector as well, but the documentation elides the implied
 signatures `operator+(complex_vector, vector)` and
 `operator+(vector, complex_vector)`.
 
+### Generic functions work for complex containers {-}
 
-## Complex Complex_Matrix Arithmetic Operators
+Generic functions work for arrays containing complex, complex matrix,
+complex vector, or complex row vector types.  This includes the
+functions `append_array`, `dims`, `head`, `num_elements`, `rep_array`,
+`reverse`, `segment`, `size`, and `tail`.
+
+
+## Integer-valued complex matrix size functions
+
+<!-- int; size; (complex_vector x); -->
+\index{{\tt \bfseries size }!{\tt (complex\_vector x): int}|hyperpage}
+
+`int` **`size`**`(complex_vector x)`<br>\newline
+The size of `x`, i.e., the number of elements
+`r since("2.30")`
+
+<!-- int; size; (complex_row_vector x); -->
+\index{{\tt \bfseries size }!{\tt (complex\_row\_vector x): int}|hyperpage}
+
+`int` **`size`**`(complex_row_vector x)`<br>\newline
+The size of `x`, i.e., the number of elements
+`r since("2.30")`
+
+<!-- int; size; (matrix x); -->
+\index{{\tt \bfseries size }!{\tt (complex\_matrix x): int}|hyperpage}
+
+`int` **`size`**`(matrix x)`<br>\newline
+The size of the matrix `x`.  For example, if `x` is a
+$5 \times 3$ matrix, then `size(x)` is 15.
+`r since("2.30")`
+
+
+## Complex matrix arithmetic operators
 
 Stan supports all basic complex arithmetic operators using infix,
 prefix and postfix operations. This section lists the operations
@@ -330,4 +374,30 @@ The transpose of the vector x, written as `x'`
 `complex_vector` **`operator'`**`(complex_row_vector x)`<br>\newline
 The transpose of the row vector x, written as `x'`
 `r since("2.30")`
+
+
+## Complex reductions
+
+### Sums
+
+<!-- complex; sum; (complex_vector x); -->
+\index{{\tt \bfseries sum }!{\tt (complex_vector x): complex}|hyperpage}
+
+`real` **`sum`**`(complex_vector x)`<br>\newline
+The sum of the values in x, or 0 if x is empty
+`r since("2.30")`
+
+<!-- complex; sum; (complex_row_vector x); -->
+\index{{\tt \bfseries sum }!{\tt (complex\_row\_vector x): complex}|hyperpage}
+
+`complex` **`sum`**`(complex_row_vector x)`<br>\newline
+The sum of the values in x, or 0 if x is empty
+`r since("2.30")`
+
+<!-- real; sum; (complex_matrix x); -->
+\index{{\tt \bfseries sum }!{\tt (complex\_matrix x): complex}|hyperpage}
+
+`complex` **`sum`**`(complex_matrix x)`<br>\newline
+The sum of the values in x, or 0 if x is empty
+`r since("2.0")`
 

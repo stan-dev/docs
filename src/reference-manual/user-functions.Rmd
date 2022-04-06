@@ -98,7 +98,7 @@ through side effects, such as incrementing the log probability
 accumulator, printing, or raising exceptions.
 
 
-### Resolving overloaded function calls
+### Resolving overloads {-}
 
 [Overloaded functions](#function-overloading) alongside [type
 promotion](#promotion) can result in situations where there are multiple valid
@@ -123,6 +123,26 @@ real bar(complex z);
 A call `bar(5)` with an integer argument will be resolved to `bar(real)` because
 it only requires a single promotion, whereas the promotion to a complex number
 requires two promotions.
+
+### Argument promotion {-}
+
+The rules for calling functions work the same way as assignment as far
+as promotion goes.  This means that we can promote arguments to the
+type expected by function arguments.  For example, the following will
+work.
+
+```stan
+real foo(real x) { return ... };
+...
+int a = 5;
+real b = foo(a); // a promoted to type real
+```
+
+In addition to promoting `int` to `real`, Stan also promotes `real` to
+`complex`, and by transitivity, `int` to `complex`.  This also works
+for containers, so an array of `int` may be assigned to an array of
+`real` of the same shape.  And we can also promote `vector` to
+`complex_vector` and similarly for row vectors and matrices.
 
 ### Probability functions in sampling statements {-}
 

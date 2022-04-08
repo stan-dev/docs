@@ -139,7 +139,7 @@ complex_matrix[3, 2] m;
 We can construct vectors and matrices using brackets in the same way
 as for real-valued vectors and matrices.  For example, given the
 declaration of `rv` above, we could assign it to a constructed row
-vector. 
+vector.
 
 ```stan
 rv =  [2 + 3i, 1.9 - 2.3i];
@@ -151,7 +151,7 @@ multiplication (division involves a solve, and isn't a simple
 arithmetic operation for matrices).  They also support transposition.
 
 Furthermore, it is possible to convert back and forth between arrays
-and matrices using the `to_array` functions.  
+and matrices using the `to_array` functions.
 
 
 ## Complex linear regression
@@ -198,10 +198,8 @@ parameters {
 // ...
 model {
   // ...
-  for (n in 1:N)
-    get_real(eps[n]) ~ normal(0, sigma[1]);
-    get_imag(eps[n]) ~ normal(0, sigma[2]);
-  }    
+  get_real(eps) ~ normal(0, sigma[1]);
+  get_imag(eps) ~ normal(0, sigma[2]);
   sigma ~ //...hyperprior...
 }
 ```
@@ -228,7 +226,7 @@ model {
   array[N] vector[2] eps_arr;
   for (n in 1:N) {
     eps_arr[n] = { to_real(eps[n]), to_imag(eps[n]) };
-  }    
+  }
   eps_arr ~ multi_normal_cholesky([0, 0]',
                                   diag_pre_multiply(sigma, L_Omega));
   L_Omega ~ lkj_cholesky(4);  // shrink toward diagonal correlation
@@ -245,4 +243,3 @@ prior on the correlations is concentrated loosely around diagonal
 covariance, and the prior on the scales is left open.  In order to
 vectorize the call to `multi_normal_cholesky`, the vector of complex
 numbers needs to be converted to an array of size 2 vectors.
-

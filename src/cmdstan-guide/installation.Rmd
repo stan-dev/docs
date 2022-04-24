@@ -1,6 +1,116 @@
 # CmdStan Installation
 
-## Installation via `conda`
+The below instructions are meant for using CmdStan as a standalone
+application. If you are using CmdStan wrappers like CmdStanPy or
+CmdStanR, some of the steps outlined below are not required. Please
+consult with the installation instructions of the particular wrapper
+first.
+
+## Install and check the C++ toolchain
+
+To install and use CmdStan a modern C++ compiler (`g++` or `clang++` 
+in most cases) and the `make` utility (`mingw32-make` on Windows) are
+required. The minimum supported versions are 4.9.3 for `g++` and 6.0
+for `clang++`. For the best experience, we recommend using at least
+`g++` version 8 or `clang++` version 10.
+
+See below for instructions on how to check and install the recommended
+toolchain for different operating system.
+
+
+### Linux
+
+On most Linux installations both `g++` and the `make` utility are
+typically pre-installed. To check whether they are available run:
+
+```
+g++ --version
+make --version
+```
+
+If these are at least at `g++` version 4.9.3 or later and
+`make` version 3.81 or later, no additional installations are
+necessary. It may still be desirable to update the C++ compiler
+`g++`, because later versions are faster and consume less memory.
+
+To install the latest version of these tools (or upgrade an older
+version), use the following commands or their equivalent for your
+distribution:
+
+```
+sudo apt install g++
+sudo apt install make
+```
+
+If you can't run `sudo`, you will need to ask your sysadmin
+or cluster administrator to install these tools for you.
+
+### MacOS
+
+On macOS, we recommend using the toolchain that can be
+installed as part of the Apple's Xcode development environment.
+
+Download the latest version of Xcode from the [Apple developer website]((https://developer.apple.com/xcode/))
+or install it [using the Mac App Store](https://itunes.apple.com/us/app/xcode/id497799835).
+
+To test, open the Terminal application and enter:
+```
+clang++ --version
+make --version
+```
+
+If both of the lines above run succesfully, the toolchain is
+available. If you have installed XCode, but don't have `make`,
+you can install the XCode command-line tools via command:
+```
+xcode-select --install
+```
+
+Installing and using `g++` installed from  `homebrew` or
+`macports` is not recommended.
+
+### Windows {#toolchain-windows}
+
+On Windows, we recommend using the Rtools40 toolchain, which
+is available [here](https://cran.r-project.org/bin/windows/Rtools/rtools40.html).
+
+After installation is complete, add the following two paths
+to the front of the `PATH` environment variable:
+```
+C:\Rtools40\usr\bin
+C:\Rtools40\mingw64\bin
+```
+
+The above paths assume that Rtools40 was installed in the
+default location. If a non-default location was chosen,
+please update the paths accordingly.
+
+After updating `PATH`, open a new instances of the Powershell
+and run:
+
+```
+pacman -Syu mingw-w64-x86_64-make --noconfirm
+```
+
+This command will update and install any missing parts of the
+toolchain. Then run the following commands 
+
+```
+Get-Command g++ | Select-Object -ExpandProperty Definition
+Get-Command mingw32-make | Select-Object -ExpandProperty Definition
+```
+
+If the the commands returns the previosly added directory
+`C:\Rtools40\mingw64\bin`, the toolchain was installed 
+succesfully.
+
+CmdStan can also be used with the toolchain from Rtools42
+and Rtools35, but we only recommend using those if you are
+using the CmdStanR wrapper and the respective version of R.
+
+## Installation
+
+### Installation via `conda`
 
 CmdStan can be installed via the package management system [conda](https://docs.conda.io/en/latest/)
 via the [conda-forge channel](https://conda-forge.org/). This
@@ -47,293 +157,80 @@ conda-forge issue tracker,
 [here](https://github.com/conda-forge/cmdstan-feedstock/issues).
 
 
-## Source installation
+### Installation with the CmdStan tarball
 
-To install CmdStan from source you need:
+If you are not using the `conda` package manager, we recommend installing
+CmdStan from the tarballs available on the CmdStan's Github repository.
 
-- A modern C++11 compiler.  [Supported versions](https://github.com/stan-dev/stan/wiki/Coding-Style-and-Idioms#supported-cpp-versions-and-compilers) are
-    + Linux: g++ 4.9.3 or clang 6.0
-    + macOS: the XCode version of clang
-    + Windows: g++ 8.1 (available with RTools 4.0) is recommended; alternatively, g++ 4.9.3 (available with RTools 3.5).
+#### Downloading the CmdStan tarball
 
-- The [GNU-Make](https://www.gnu.org/software/make/manual/make.html)
-utility program or the Windows equivalent `mingw32-make`.
-On macOS, this is part of the XCode command line tools installed via command `xcode-select --install`.
-On Windows, `mingw32-make` is installed as part of RTools: https://cran.rstudio.com/bin/windows/Rtools/.
+The CmdStan tarballs (`tar.gz` files) for the latest release can be found
+[here](https://github.com/stan-dev/cmdstan/releases/latest).
 
-- The CmdStan C++ source code and libraries.
+Windows and macOS users should download the `tar.gz` file named
+`cmdstan-<version>.tar.gz`.
 
-    + [CmdStan releases](https://github.com/stan-dev/cmdstan/releases)  are available from GitHub as a compressed tarfile containing all C++ source code and libraries.  The most recent CmdStan release is always available as https://github.com/stan-dev/cmdstan/releases/latest.
+Linux users should download the `tar.gz` file with the suffix for
+their target CPU architecture. Linux users running on ARM CPU should, for
+example, download the `cmdstan-<version>-arm64.tar.gz`. If running
+on x86 architecture, download the tarball with no architecture suffix
+(`cmdstan-<version>.tar.gz`).
 
-    + To use the current development version you can [clone the GitHub repo](#git-clone.section).
+After downloading the tarball, unzip it to a target folder.
 
-The CmdStan release unpacks into a directory called `cmdstan-<version>` where the
-version string consists of the major.minor.patch version numbers, e.g. `cmdstan-2.23.0`.
-Cloning CmdStan from GitHub creates a directory simply called `cmdstan`.
-Throughout this manual, we refer to this top-level CmdStan source directory as **`<cmdstan-home>`**.
+#### Build CmdStan on Linux or MacOS
 
-
-### Installing the C++ toolchain
-
-The C++ toolchain consists of a modern C++ compiler and the GNU-Make utility,
-described in greater detail in the following section.
-
-#### Linux:  `g++` and `make`
-
-
-On Linux, the C++ compiler command `g++` and the GNU-Make command is `make`.
-These are often installed by default.
-To check, run commands:
+Run the following command inside the unzipped folder:
 
 ```
-g++ --version
-make --version
+make build
 ```
 
-If these are at least at `g++` version 4.9.3 or later and
-`make` version 3.81 or later, no additional installations are
-necessary. It may still be desirable to update the C++ compiler
-`g++`, because later versions are faster.
-
-To install the latest version of these tools (or upgrade an older
-version), use the following commands or their equivalent for your
-distribution, install via the commands:
+For faster installation you can specify the `-j` flag, to use multiple
+cores during building:
 
 ```
-sudo apt install g++
-sudo apt install make
+# build with 4 cores
+make build -j4
 ```
 
-If you can't run `sudo`, you will need to ask your sysadmin
-or cluster administrator to install these tools for you.
+Building can take up to a few minutes. Once the build succesfully
+completes proceed to building the example below.
 
-#### MacOS:  `clang++` and `make`
+#### Build CmdStan on Windows
 
-To install a C++ development
-environment on a Mac, use Apple's Xcode development environment
-https://developer.apple.com/xcode/.
-
-From the [Xcode home page](https://developer.apple.com/xcode/)
-`View in Mac App Store`.
-
-- From the App Store, click `Install`, enter an Apple ID, and wait
-for Xcode to finish installing.
--  Open the Xcode application, click top-level menu `Preferences`,
-click top-row button `Downloads`, click button for
-`Components`, click on the `Install` button to the right of
-the `Command Line Tools` entry, then wait for it to finish
-installing.
-- Click the top-level menu item `Xcode`, then click item `Quit
-Xcode` to quit.
-
-To test, open the Terminal application and enter:
-```
-clang++ --version
-make --version
-```
-
-If you have installed XCode, but don't have `make`, you can install the
-XCode command-line tools via command:
-```
-xcode-select --install
-```
-
-_Note_ MacOS installations may include old version of the `g++` compiler which is a version 4.2.1.
-CmdStan requires g++ at 4.9.3 or later.  Trying to install later versions of g++ using `homebrew`
-or `macports` is no longer recommended; use the XCode toolchain.
-
-
-#### Windows:  `g++` and `mingw32-make`  {#windows-make}
-
-The Windows toolchain consists of programs `g++`, the C++ compiler,
-and `mingw32-make`, the GNU-Make utility.
-To check if these are present,
-open a command shell [^1]
-and type:
-```
-g++ --version
-mingw32-make --version
-```
-
-__Rtools C++ Development Environment__
-
-The simplest way to install a full C++ build environment that will
-work for CmdStan is to use the Rtools package designed for R
-developers on Windows (even if you don't plan to use R).
-
-If you don't have RTools, the latest version is `Rtools40` (released April 2020)
-which can be downloaded from:
-
-- https://cran.r-project.org/bin/windows/Rtools/
-
-After installation is complete, you need to perform one more step:
-you need to add the location of the Rtools compiler and make utilities
-to the `PATH` environment variable.  If you have `Rtools40`, these should be:
-```
-C:\RTools\RTools40\usr\bin
-C:\RTools\RTools40\mingw64\bin
-```
-
-If you have and earlier version of RTools, use `RTools35`:
-```
-C:\RTools\RTools35\usr\bin
-C:\RTools\RTools35\mingw64\bin
-```
-
-See [these instructions](https://helpdeskgeek.com/windows-10/add-windows-path-environment-variable/)
-for details on changing the `PATH`.
-
-__32-bit Builds__
-
-CmdStan defaults to a 64-bit build. On a 32-bit operating system, you must specify
-the make variable `BIT=32` as part of the `make` command, described in the next section.
-
-### GNU-Make utility {#gnu-make}
-
-CmdStan relies on the GNU-make utility to build both the
-Stan model executables and the CmdStan tools.
-
-GNU-Make builds executable programs and libraries from source code by reading files
-called Makefiles which specify how to derive the target program.
-A Makefile consists of a set of recursive rules where each rule
-specifies a target, its dependencies,
-and the specific operations required to build the target.
-Specifying dependencies for a target provides a way to control
-the build process so that targets which depend on other files will
-be updated as needed _only_ when there are changes to those other files.
-Thus Make provides an efficient way to manage complex software.
-
-The CmdStan Makefile is in the `<cmdstan-home>` directory
-and is named `makefile`. This is one of the default
-[GNU Makefile names](https://www.gnu.org/software/make/manual/html_node/Makefile-Names.html),
-which allows you to omit the `-f makefile` argument to the Make command.
-Because the CmdStan Makefile includes several other Makefiles,
-**Make only works properly when invoked from the `<cmdstan-home>` directory**;
-attempts to use this Makefile from another directory by specifying the
-full path to the file `makefile` won't work.
-For example, trying to call Make from another directory by specifying
-the full path the the makefile results in the following set of error messages:
+Run the following command inside the unzipped folder:
 
 ```
-make -f ~/github/stan-dev/cmdstan/makefile
-/Users/mitzi/github/stan-dev/cmdstan/makefile:58: make/stanc: No such file or directory
-/Users/mitzi/github/stan-dev/cmdstan/makefile:59: make/program: No such file or directory
-/Users/mitzi/github/stan-dev/cmdstan/makefile:60: make/tests: No such file or directory
-/Users/mitzi/github/stan-dev/cmdstan/makefile:61: make/command: No such file or directory
-make: *** No rule to make target `make/command'.  Stop.
+mingw32-make build
 ```
 
-Makefile syntax allows general pattern rules based on file suffixes.
-Stan programs must be stored in files with suffix `.stan`; the
-CmdStan makefile rules specify how to transform the Stan source code
-into a binary executable.
-For example, to compile the Stan program `my_program.stan` in directory `../my_dir/`,
-the make target is `../my_dir/my_program` or ` ../my_dir/my_program.exe` (on Windows).
-
-To call Make, you invoke the utility name, either `make` or `mingw32-make`, followed by, in order:
-
-- zero or more [Make program options](https://www.gnu.org/software/make/manual/html_node/Options-Summary.html), then specify any Make variables as a series of
-
-- zero of more Make variables, described below
-
-- zero or more _target_ names; the set of names is determined by the Makefile rules.
+For faster installation you can specify the `-j` flag, to use multiple
+cores during building:
 
 ```
-make <flags> <variables> <targets>
+# build with 4 cores
+mingw32-make build -j4
 ```
 
+Once the installation completes, add the following directory to the
+`PATH` environment variable:
 
-__Makefile Variables__
-
-Make targets can be preceded by any number of Makefile variable name=value pairs.
-For example, to compile `../my_dir/my_program.stan` for an OpenCL (GPU) machine,
-set the makefile variable `STAN_OPENCL` to `TRUE`:
 ```
-> make STAN_OPENCL=TRUE ../my_dir/my_program    # on Windows use mingw32-make
+`<cmdstan-home>/stan/lib/stan_math/lib/tbb`
 ```
-Makefile variables can also be set by creating a file named `local` in the
-CmdStan `make` subdirectory which contains a list of `<VARIABLE>=<VALUE>` pairs,
-one per line.   For example, if you are working on a 32-bit machine,
-you would put the line `BIT=32` into the file `<cmdstan-home>/make/local`
-so that all CmdStan programs and Stan models compile properly.
+where `<cmdstan-home>` should be replaced with the path to the folder
+with the contents of the unzipped tarball. Once the build succesfully
+completes proceed to building the example below.
 
-The complete set of Makefile variables can be found in file
-`<cmdstan-home>/cmdstan/stan/lib/stan_math/make/compiler_flags`.
+### Installation via cloning the CmdStan GitHub repository
 
-__Make Targets__
-
-When invoked without any arguments at all, Make prints a help message:
-```
-> make    # on Windows use mingw32-make
---------------------------------------------------------------------------------
-CmdStan v2.23.0 help
-
-  Build CmdStan utilities:
-    > make build
-
-    This target will:
-    1. Install the Stan compiler bin/stanc from stanc3 binaries.
-    2. Build the print utility bin/print (deprecated; will be removed in v3.0)
-    3. Build the stansummary utility bin/stansummary
-    4. Build the diagnose utility bin/diagnose
-    5. Build all libraries and object files compile and link an executable Stan program
-
-    Note: to build using multiple cores, use the -j option to make, e.g.,
-    for 4 cores:
-    > make build -j4
-
-
-  Build a Stan program:
-
-    Given a Stan program at foo/bar.stan, build an executable by typing:
-    > make foo/bar
-
-    This target will:
-    1. Install the Stan compiler (bin/stanc), as needed.
-    2. Use the Stan compiler to generate C++ code, foo/bar.hpp.
-    3. Compile the C++ code using cc . to generate foo/bar
-
-  Additional make options:
-    STANCFLAGS: defaults to "". These are extra options passed to bin/stanc
-      when generating C++ code. If you want to allow undefined functions in the
-      Stan program, either add this to make/local or the command line:
-          STANCFLAGS = --allow_undefined
-    USER_HEADER: when STANCFLAGS has --allow_undefined, this is the name of the
-      header file that is included. This defaults to "user_header.hpp" in the
-      directory of the Stan program.
-
-
-  Example - bernoulli model: examples/bernoulli/bernoulli.stan
-
-    1. Build the model:
-       > make examples/bernoulli/bernoulli
-    2. Run the model:
-       > examples/bernoulli/bernoulli sample data file=examples/bernoulli/bernoulli.data.R
-    3. Look at the samples:
-       > bin/stansummary output.csv
-
-
-  Clean CmdStan:
-
-    Remove the built CmdStan tools:
-    > make clean-all
-
---------------------------------------------------------------------------------
-```
-
-### Clone the GitHub CmdStan repository {#git-clone.section}
-
-This section can be skipped if you want to build CmdStan using the release tarfile,
-which contains all source files an libraries needed to build CmdStan.
-However, if you wish to use the current (stable) development version of CmdStan,
-you must clone the [CmdStan GitHub repo](https://github.com/stan-dev/cmdstan).
-
-The CmdStan repo contains just the `cmdstan` module;
-the Stan inference engine algorithms and Stan math library functions
-are specified as [submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
-and stored in the GitHub repositories
-[stan](https://github.com/stan-dev/stan) and [math](https://github.com/stan-dev/math),
+The CmdStan repo contains just the `cmdstan` module - the Stan inference
+engine algorithms and Stan math library functions are specified as
+Git [submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
+and stored in the GitHub repositories [stan](https://github.com/stan-dev/stan) and [math](https://github.com/stan-dev/math),
 respectively.
+
 By cloning the CmdStan repository with argument `--recursive`,
 Git automatically initializes and updates each submodule in the repository,
 including nested submodules if any of the submodules
@@ -349,140 +246,53 @@ command line interface and supporting libraries:
 > make build    # on Windows use mingw32-make
 ```
 
+Please check the build steps outlined for installation from a
+release tarball for more details.
+
 The resulting set of directories should have the same structure as the release:
 
 - directory `cmdstan/stan` contains the sub-module `stan` (https://github.com/stan-dev/stan)
 - directory `cmdstan/stan/lib/stan_math` contains the sub-module `math` (https://github.com/stan-dev/math)
 
-### Building CmdStan
+## Running the Bernoulli example
 
-Building CmdStan involves preparing a set of executable programs
-and compiling the command line interface and supporting libraries.
-The CmdStan tools are:
+Upon succesfully installing CmdStan with any of the above approaches,
+compile and run the example model as outlined below.
 
-- `stanc`: the Stan compiler (translates Stan language to C++).
-
-- `stansummary`: a basic posterior analysis tool.
-The `stansummary` utility processes one or more output files from a run
-or set of runs of Stan's HMC sampler.
-For all parameters and quantities of interest in the Stan program,
-`stansummary` reports a set of statistics including mean, standard deviation,
-percentiles, effective number of samples, and $\hat{R}$ values.
-
-- `diagnose`: a basic sampler diagnostic tool which checks for indications
-that the HMC sampler was unable to sample from the full posterior.
-
-CmdStan releases include pre-built binaries of the Stan language
-compiler \url {https://github.com/stan-dev/stanc3}:
-`bin/linux-stanc`, `bin/mac-stanc` and
-`bin/windows-stanc`. The CmdStan makefile `build` task
-copies the appropriate binary to `bin/stanc`. For CmdStan
-installations which have been cloned of downloaded from the CmdStan
-GitHub repository, the makefile task will download the appropriate
-OS-specific binary from the stanc3 repository's nightly release.
-
-Steps to build CmdStan:
-
-- Download the latest release from https://github.com/stan-dev/cmdstan/releases/latest
-or [clone the GitHub repo](#git-clone.section).
-
-- Open a command-line terminal window and change directories to the CmdStan home directory.
-
-- Run the makefile target `build` which instantiates the CmdStan utilities
-and compiles all necessary C++ libraries.
-
+On Linux and MacOS run the following commands:
 ```
-> cd <cmdstan-home>
-> make build    # on Windows use mingw32-make
+make examples/bernoulli/bernoulli
+./examples/bernoulli/bernoulli sample data file=examples/bernoulli/bernoulli.data.json
 ```
 
-If your computer has multiple cores and sufficient ram, the build process
-can be parallelized by providing the `-j` option. For example, to build on 4 cores, type:
+On Windows run:
 ```
-> make -j4 build    # on Windows use mingw32-make
-```
-
-When `make build` is successful, the directory `<cmdstan-home>/bin/`
-will contain the executables `stanc`, `stansummary`, and `diagnose` (on Windows, corresponding `.exe` files)
-and the final lines of console output will show the version of CmdStan
-that has just been built, e.g.:
-```
---- CmdStan v2.23.0 built ---
+mingw32-make examples/bernoulli/bernoulli.exe
+./examples/bernoulli/bernoulli.exe sample data file=examples/bernoulli/bernoulli.data.json
 ```
 
-**Warning:**  _The Make program may take 10+ minutes and consume 2+ GB of memory to build CmdStan._
+If these commands run without issues, the installation was done succesfully.
 
-**Windows only:** CmdStan requires that the Intel TBB library,
-which is built by the above command, can be found by the Windows system.
-This requires that the directory
-`<cmdstan-home>/stan/lib/stan_math/lib/tbb` is part of the
-`PATH` environment variable.
-To permanently make this setting for the current user, you may execute:
-```
-> mingw32-make install-tbb
-```
-After changing the `PATH` environment variable, you must open an new shell
-in order to these setting to take effect.
-(This is not necessary on Mac and Linux systems because they can use the
-absolute path to the Intel TBB library when linking into Stan programs.)
+## Rebuilding CmdStan
 
-
-## Checking the Stan compiler
-
-To check that the CmdStan installation is complete
-and in working order, run the following series of commands
-from the folder which CmdStan was installed.
-
-On Linux/macOS:
+If for any reason, rebuilding CmdStan is required, it can be performed by cleaning
+and building the installation. On Linux and macOS this can be done by running:
 
 ```
-# compile the example
-> make examples/bernoulli/bernoulli
-
-# fit to provided data (results of 10 trials, 2 out of 10 successes)
-> ./examples/bernoulli/bernoulli sample data file=examples/bernoulli/bernoulli.data.json
-
-# default output written to file `output.csv`,
-# default num_samples is 1000, output file should have approx. 1050 lines
-> ls -l output.csv
-
-# run the `bin/stansummary utility to summarize parameter estimates
-> bin/stansummary output.csv
+make clean-all
+make build
 ```
 
-On Windows:
+On Windows run:
 
 ```
-# compile the example
-> mingw32-make examples/bernoulli/bernoulli.exe
-
-# fit to provided data (results of 10 trials, 2 out of 10 successes)
-> ./examples/bernoulli/bernoulli.exe sample data file=examples/bernoulli/bernoulli.data.json
-
-# run the `bin/stansummary.exe utility to summarize parameter estimates
-> bin/stansummary.exe output.csv
+mingw32-make clean-all
+mingw32-make build
 ```
 
-The sample data in file `bernoulli.json.data` specifies 2 out of 10 successes, therefore
-the range `mean(theta)`$\pm$`sd(theta)` should include 0.2.
+## Common problems
 
-## Troubleshooting the installation
-
-Updates to CmdStan, changes in compiler options, or updates to the
-C++ toolchain may result in errors when trying to compile a Stan program.
-Often, these problems can be resolved by removing the existing CmdStan binaries
-and recompiling.  To do this, you must run the makefile commands
-from the `<cmdstan-home>` directory:
-
-```
-> cd <cmdstan-home>
-> make clean-all    # on Windows use mingw32-make
-> make build
-```
-
-### Common problems
-
-This section contains solutions to problems reported on https://discourse.mc-stan.org
+This section contains solutions to problems reported on https://discourse.mc-stan.org.
 
 **Compiler error message about PCH file**
 
@@ -503,16 +313,8 @@ then the call to `mingw32-make` will result in error message:
 ```
 'mingw32-make' is not recognised as an internal or external command
 ```
-To fix this, you should make sure that the RTools installation is
-in your `PATH` environment variable, as described in the [RTools section](#windows-make).
-
-In addition, if you have the RTools 4.0 toolchain, then call the utility `pacman`
-to register the right version of make:
-```
-pacman -Sy mingw-w64-x86_64-make
-```
-See: https://discourse.mc-stan.org/t/cmdstan-installation-on-windows/11287/6
-
+To fix this issue, make sure to follow instructions on [installing the C++
+toolchain on Windows](#toolchain-windows).
 
 **Windows: 'g++' or 'cut' is not recognized**
 
@@ -521,14 +323,6 @@ resulting in the error message:
 ```
 'cut' is not recognized as an internal or external command, operable program or batch file.
 ```
-The solution is to add `mingw_64/bin` directory to the user `PATH` environment variable.  See:
-https://discourse.mc-stan.org/t/errors-when-using-cmdstan-model/14984/21
 
-
-[^1]:
-To open a Windows command shell, first open the __Start Menu__,
-(usually in the lower left of the screen), select option __All Programs__,
-then option __Accessories__, then program __Command Prompt__.
-Alternatively, enter `[Windows+r]` (both keys together on the
-keyboard), and enter `cmd` into the text field that pops up in the Run window,
-then press `[Return]` on the keyboard to run.
+To fix this issue, make sure to follow instructions on [installing the C++
+toolchain on Windows](#toolchain-windows).

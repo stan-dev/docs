@@ -2,6 +2,8 @@
               [<parameters_block>] [<transformed_parameters_block>]
               [<model_block>] [<generated_quantities_block>] EOF
 
+<functions_only> ::= <function_def>* EOF
+
 <function_block> ::= FUNCTIONBLOCK LBRACE <function_def>* RBRACE
 
 <data_block> ::= DATABLOCK LBRACE <top_var_decl_no_assign>* RBRACE
@@ -22,44 +24,52 @@
 
 <identifier> ::= IDENTIFIER
                | TRUNCATE
-               | OFFSET
-               | MULTIPLIER
-               | LOWER
-               | UPPER
-               | ARRAY
+               | <future_keyword>
+
+<future_keyword> ::= OFFSET
+                   | MULTIPLIER
+                   | LOWER
+                   | UPPER
+                   | ARRAY
 
 <decl_identifier> ::= <identifier>
-                    | FUNCTIONBLOCK
-                    | DATABLOCK
-                    | PARAMETERSBLOCK
-                    | MODELBLOCK
-                    | RETURN
-                    | IF
-                    | ELSE
-                    | WHILE
-                    | FOR
-                    | IN
-                    | BREAK
-                    | CONTINUE
-                    | VOID
-                    | INT
-                    | REAL
-                    | VECTOR
-                    | ROWVECTOR
-                    | MATRIX
-                    | ORDERED
-                    | POSITIVEORDERED
-                    | SIMPLEX
-                    | UNITVECTOR
-                    | CHOLESKYFACTORCORR
-                    | CHOLESKYFACTORCOV
-                    | CORRMATRIX
-                    | COVMATRIX
-                    | PRINT
-                    | REJECT
-                    | TARGET
-                    | GETLP
-                    | PROFILE
+                    | <reserved_word>
+
+<reserved_word> ::= FUNCTIONBLOCK
+                  | DATABLOCK
+                  | PARAMETERSBLOCK
+                  | MODELBLOCK
+                  | RETURN
+                  | IF
+                  | ELSE
+                  | WHILE
+                  | FOR
+                  | IN
+                  | BREAK
+                  | CONTINUE
+                  | VOID
+                  | INT
+                  | REAL
+                  | COMPLEX
+                  | VECTOR
+                  | ROWVECTOR
+                  | MATRIX
+                  | COMPLEXVECTOR
+                  | COMPLEXROWVECTOR
+                  | COMPLEXMATRIX
+                  | ORDERED
+                  | POSITIVEORDERED
+                  | SIMPLEX
+                  | UNITVECTOR
+                  | CHOLESKYFACTORCORR
+                  | CHOLESKYFACTORCOV
+                  | CORRMATRIX
+                  | COVMATRIX
+                  | PRINT
+                  | REJECT
+                  | TARGET
+                  | GETLP
+                  | PROFILE
 
 <function_def> ::= <return_type> <decl_identifier> LPAREN [<arg_decl> (COMMA
                    <arg_decl>)*] RPAREN <statement>
@@ -69,16 +79,18 @@
 
 <arg_decl> ::= [DATABLOCK] <unsized_type> <decl_identifier>
 
-<always(x)> ::= x
-
-<unsized_type> ::= ARRAY <always(<unsized_dims>)> <basic_type>
+<unsized_type> ::= ARRAY <unsized_dims> <basic_type>
                  | <basic_type> [<unsized_dims>]
 
 <basic_type> ::= INT
                | REAL
+               | COMPLEX
                | VECTOR
                | ROWVECTOR
                | MATRIX
+               | COMPLEXVECTOR
+               | COMPLEXROWVECTOR
+               | COMPLEXMATRIX
 
 <unsized_dims> ::= LBRACK COMMA* RBRACK
 
@@ -91,7 +103,7 @@
 
 <decl(type_rule, rhs)> ::= type_rule <decl_identifier> <dims>
                            <optional_assignment(rhs)> SEMICOLON
-                         | [<lhs>] type_rule
+                         | [<arr_dims>] type_rule
                            <id_and_optional_assignment(rhs)> (COMMA
                            <id_and_optional_assignment(rhs)>)* SEMICOLON
 
@@ -100,18 +112,30 @@
 <top_var_decl> ::= <decl(<top_var_type>, <expression>)>
 
 <top_var_decl_no_assign> ::= <decl(<top_var_type>, <no_assign>)>
+                           | SEMICOLON
 
 <sized_basic_type> ::= INT
                      | REAL
+                     | COMPLEX
                      | VECTOR LBRACK <expression> RBRACK
                      | ROWVECTOR LBRACK <expression> RBRACK
                      | MATRIX LBRACK <expression> COMMA <expression> RBRACK
+                     | COMPLEXVECTOR LBRACK <expression> RBRACK
+                     | COMPLEXROWVECTOR LBRACK <expression> RBRACK
+                     | COMPLEXMATRIX LBRACK <expression> COMMA <expression>
+                       RBRACK
 
 <top_var_type> ::= INT [LABRACK <range> RABRACK]
                  | REAL <type_constraint>
+                 | COMPLEX <type_constraint>
                  | VECTOR <type_constraint> LBRACK <expression> RBRACK
                  | ROWVECTOR <type_constraint> LBRACK <expression> RBRACK
                  | MATRIX <type_constraint> LBRACK <expression> COMMA
+                   <expression> RBRACK
+                 | COMPLEXVECTOR <type_constraint> LBRACK <expression> RBRACK
+                 | COMPLEXROWVECTOR <type_constraint> LBRACK <expression>
+                   RBRACK
+                 | COMPLEXMATRIX <type_constraint> LBRACK <expression> COMMA
                    <expression> RBRACK
                  | ORDERED LBRACK <expression> RBRACK
                  | POSITIVEORDERED LBRACK <expression> RBRACK
@@ -140,6 +164,8 @@
                 | OFFSET ASSIGN <constr_expression>
                 | MULTIPLIER ASSIGN <constr_expression>
 
+<arr_dims> ::= ARRAY LBRACK <expression> (COMMA <expression>)* RBRACK
+
 <dims> ::= LBRACK <expression> (COMMA <expression>)* RBRACK
 
 <expression> ::= <lhs>
@@ -162,6 +188,7 @@
 
 <common_expression> ::= INTNUMERAL
                       | REALNUMERAL
+                      | IMAGNUMERAL
                       | LBRACE <expression> (COMMA <expression>)* RBRACE
                       | LBRACK [<expression> (COMMA <expression>)*] RBRACK
                       | <identifier> LPAREN [<expression> (COMMA
@@ -202,7 +229,7 @@
                  | RABRACK
                  | GEQ
 
-<indexes> ::= epsilon 
+<indexes> ::= epsilon
             | COLON
             | <expression>
             | <expression> COLON
@@ -265,5 +292,3 @@
 
 <top_vardecl_or_statement> ::= <statement>
                              | <top_var_decl>
-
-

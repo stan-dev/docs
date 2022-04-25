@@ -255,10 +255,11 @@ example, the expression `[ 1, 10, 100 ]` denotes a row vector of
 three elements with real values 1.0, 10.0, and 100.0.
 Applying the transpose operator to a row vector expression produces
 a vector expression.
-This syntax provides a way declare and define small vectors a single line, as follows.
+This syntax provides a way declare and define small vectors a single
+line, as follows. 
 
 ```stan
-row_vector[2] rv2=  [ 1, 2 ];
+row_vector[2] rv2 =  [ 1, 2 ];
 vector[3] v3 = [ 3, 4, 5 ]';
 ```
 
@@ -288,12 +289,24 @@ row_vector[2] vY = [ 100, 1000 ];
 matrix[3, 2] m2 = [ vX', vY, [ 1, 2 ]  ];
 ```
 
+### Complex vector and matrix expressions {-}
+
+Complex vector expressions work the same way as real vector
+expressions.  For example, the following are all legal Stan
+expressions and assignments.
+
+```stan
+complex_vector[3] = [1 + 2i, 3 - 1.7i, 0]';
+complex_row_vector[2] = [12, -2i];
+complex_matrix[2, 3] = [[1 + 2i, 3 - 1.7i, 0],
+                        [3.9 - 1.234i, 176i, 1 + 1i]];
+```
 
 #### No empty vector or matrix expressions {-}
 
 The empty expression `[ ]` is ambiguous and therefore is not
 allowed and similarly expressions such as `[ [ ] ]` or
-`[ [ ], [ ] ]` are not allowed.
+`[ [ ], [ ] ]` are not allowed. 
 
 
 ### Array expressions {-}
@@ -613,10 +626,10 @@ a ? b : c
 ```
 
 is an expression of the promoted type of `b` and `c`.  The
-only promotion allowed in Stan is from integer to real; if one
+only promotion allowed in Stan is integer -> real -> complex; e.g. if one
 argument is of type `int` and the other of type `real`, the
-conditional expression as a whole is of type `real`.  In all
-other cases, the arguments have to be of the same underlying Stan type
+conditional expression as a whole is of type `real`.
+In other cases, the arguments have to be of the same underlying Stan type
 (i.e., constraints don't count, only the shape) and the conditional
 expression is of that type.
 
@@ -1008,7 +1021,8 @@ type of an expression can be resolved at compile time.
 The primitive implementation types for Stan are
 
 ```
-int, real, vector, row_vector,  matrix.
+int, real, complex, vector, row_vector,  matrix, complex_vector,
+complex_row_vector, complex_matrix
 ```
 
 Every basic declared type corresponds to a primitive type;  see the
@@ -1022,21 +1036,24 @@ primitive types.
   result types declared in terms of primitive types plus array
   dimensionality.*
 
-   | type                   | primitive type |
-   | :--------------------- | :------------- |
-   | `int`                  | `int`          |
-   | `real`                 | `real`         |
-   | `matrix`               | `matrix`       |
-   | `cov_matrix`           | `matrix`       |
-   | `corr_matrix`          | `matrix`       |
-   | `cholesky_factor_cov`  | `matrix`       |
-   | `cholesky_factor_corr` | `matrix`       |
-   | `vector`               | `vector`       |
-   | `simplex`              | `vector`       |
-   | `unit_vector`          | `vector`       |
-   | `ordered`              | `vector`       |
-   | `positive_ordered`     | `vector`       |
-   | `row_vector`           | `row_vector`   |
+   | type                   | primitive type       |
+   | :--------------------- | :------------------- |
+   | `int`                  | `int`                |
+   | `real`                 | `real`               |
+   | `vector`               | `vector`             |
+   | `simplex`              | `vector`             |
+   | `unit_vector`          | `vector`             |
+   | `ordered`              | `vector`             |
+   | `positive_ordered`     | `vector`             |
+   | `row_vector`           | `row_vector`         |
+   | `matrix`               | `matrix`             |
+   | `cov_matrix`           | `matrix`             |
+   | `corr_matrix`          | `matrix`             |
+   | `cholesky_factor_cov`  | `matrix`             |
+   | `cholesky_factor_corr` | `matrix`             |
+   | `complex_vector`       | `complex_vector`     |
+   | `complex_row_vector`   | `complex_row_vector` |
+   | `complex_matrix`       | `complex_matrix`     |
 
 
 A full implementation type consists of a primitive implementation type
@@ -1070,26 +1087,48 @@ to complex expressions.
 
 ### Promotion
 
-There are two promotion rules.  First, integer expressions of type
-`int` may be used anywhere an expression of type `real` is used.  An
-integer is promoted to real by casting it in the underlying C++.
+There are two basic promotion rules,
 
-The second promotion rule is that expressions of type `real` may be
-used anywhere an expression of type `complex` is required.  A real
-value is promoted to a complex number with that real component and a
-zero imaginary component.
+1. `int` types may be promoted to `real`, and
+2. `real` types may be promoted to `complex`.
 
-Promotion is transitive, so that integers may be promoted to complex
-numbers in two stages, first converting the integer to real, then
-converting the real value to a complex type.
+Plus, promotion is transitive, so that
+
+3.  if type `U` can be promoted to type `V` and type `V` can be
+promoted to type `T`, then `U` can be promoted to `T`.
+
+The first rule means that expressions of type `int` may be used
+anywhere an expression of type `real` is specified, namely in
+assignment or function argument passing.  An integer is promoted to
+real by casting it in the underlying C++ code.
+
+The remaining rules have to do with covariant typing rules, which say
+that a container of type `U` may be promoted to a container of the
+same shape of type `T` if `U` can be promoted to `T`.  For vector and
+matrix types, this induces three rules,
+
+4. `vector` may be promoted to `complex_vector`,
+5. `row_vector` may be promoted to `complex_row_vector`
+6. `matrix` may be promoted to `complex_matrix`.
+
+For array types, there's a single rule
+
+7. `array[...] U` may be promoted to `array[...] T` if `U` can be
+promoted to `T`.
+
+For example, this means `array[,] int` may be used where `array [,]
+real` or `array [,] complex` is required; as another example, `array[]
+real` may be used anywhere `array[] complex` is required.
 
 
 
 #### Literals {-}
 
 An integer literal expression such as `42` is of type `int`.
-Real literals such as `42.0` are of type `real`.
-
+Real literals such as `42.0` are of type `real`.  Imaginary literals
+such as `-17i` are of type `complex`.  the expression `7 - 2i` acts
+like a complex literal, but technically it combines a real literal `7`
+and an imaginary literal `2i` through subtraction.
 
 #### Variables {-}
 
@@ -1105,20 +1144,26 @@ variables.^[Languages such as C++ and R allow the declaration of a variable of a
 #### Indexing {-}
 
 If `x` is an expression of total dimensionality greater than or equal
-to $N$, then the type of expression `e[i1, ..., iN]` is the same as
-that of `e[i1]...[iN]`, so it suffices to define the type of a
+to $N$, then the type of expression `e[i1, i2, ..., iN]` is the same as
+that of `e[i1][i2]...[iN]`, so it suffices to define the type of a
 singly-indexed function.  Suppose `e` is an expression and `i` is an
 expression of primitive type `int`.  Then
 
-* if `e` is an expression of array dimensionality $K > 0$, then `e[i]`
-  has array dimensionality $K-1$ and the same primitive implementation
-  type as `e`,
-
-* if `e` has implementation type `vector` or `row_vector` of array
-  dimensionality 0, then `e[i]` has implementation type `real`, and
-
+* if `e` is an expression of type `array[i1, i2, ..., iN] T` and `k,` `i1`,
+  ..., `iN` are expressions of type `int`, then 
+  `e[k]` is an expression of type `array[i2, ..., iN] T`,
+* if `e` is an expression of type `array[i] T` with `i` and `k`
+  expressions of type `int`, then `e[k]` is of type `T`,
+* if `e` has implementation type `vector` or `row_vector`,
+    dimensionality 0, then `e[i]` has implementation type `real`,
 * if `e` has implementation type `matrix`, then `e[i]` has type
-  `row_vector`.
+  `row_vector`,
+* if `e` has implementation type `complex_vector` or
+  `complex_row_vector` and `i` is an expression of type `int`, then
+  `e[i]` is an expression of type `complex`, and
+* if `e` has implementation type `complex_matrix`, and `i` is an
+  expression of type `int`, then `e[i]` is an expression of type
+  `complex_row_vector`. 
 
 
 #### Function application {-}
@@ -1133,10 +1178,14 @@ result type.
 In looking up functions, binary operators like `real * real` are
 defined as `operator*(real, real)` in the documentation and index.
 
-In matching a function definition, arguments of type `int` may be
-promoted to type `real` if necessary (see the subsection on type
-promotion in [the function application section](#function-application) for an exact
-specification of Stan's integer-to-real type-promotion rule).
+In matching a function definition, all of the promotion rules are in
+play (integers may be promoted to reals, reals to complex, and
+containers may be promoted if their types are promoted).  For example,
+arguments of type `int` may be promoted to type `real` or `complex` if
+necessary (see the subsection on type promotion in [the function
+application section](#function-application), a `real` argument will be
+promoted to `complex` if necessary, a `vector` will be promoted to
+`complex_vector` if necessary, and so on.
 
 In general, matrix operations return the lowest inferable type.  For
 example, `row_vector * vector` returns a value of type

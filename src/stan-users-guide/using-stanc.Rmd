@@ -62,8 +62,18 @@ used for the implementation of the Stan model in the generated C++ code.
 - `--standalone-functions` - If set, only generate the code for the functions
   defined in the file. This is the default behavior for `.stanfunctions` files.
 
-- `--O` - Allow the compiler to apply all optimizations to the Stan
-  code. **WARNING:** _This is currently an experimental feature!_
+- `--O0` (Default) Do not apply optimizations to the Stan code.
+
+- `--O1` Apply level 1 compiler [optimizations](#optimization) (only basic optimizations).
+
+- `--Oexperimental` **WARNING:** _This is currently an experimental feature whose
+  components are not thoroughly tested and may not improve a programs
+  performance!_ Allow the compiler to apply all [optimizations](#optimization) to the Stan code.
+
+- `--O` **WARNING:** _This is currently an experimental feature whose components
+  are not thoroughly tested and may not improve a programs performance!_ Same as
+  `--Oexperimental`. Allow the compiler to apply all [optimizations](#optimization) to the Stan
+  code.
 
 - `--warn-uninitialized` - Emit warnings about uninitialized variables
   to stderr. Currently an experimental feature.
@@ -247,6 +257,9 @@ in more detail in following sections):
     assigned a value.
 -   *Strict or nonsensical parameter bounds.* A parameter is given questionable
     bounds.
+-   *Nonlinear transformations.* When the left-hand side of a tilde statement
+    (or first argument of a log probability function) contains a nonlinear
+    transform which may require a Jacobian change of variables adjustment.
 
 Some important limitations of pedantic mode are listed at the end of this chapter.
 
@@ -595,6 +608,36 @@ Warning:
   unconstrained and give it a normal(0.5, 0.5) prior distribution.
 ```
 
+### Nonlinear transformations
+
+When a parameter is transformed in a non-linear fashion, an adjustment must be
+applied to account for distortion caused by the transform. This is discussed in
+depth in the [Changes of variables] section.
+
+This portion of pedantic mode tries to detect instances where such an adjustment
+would be necessary and remind the user.
+
+For example, consider the following program.
+
+```stan
+parameters {
+  real y;
+}
+model {
+  log(y) ~ normal(0,1);
+}
+
+```
+
+Pedantic mode produces the following warning.
+
+```
+Warning:
+    Left-hand side of sampling statement (~) may contain a non-linear
+    transform of a parameter or local variable. If it does, you need
+    to include a target += statement with the log absolute determinant
+    of the Jacobian of the transform.
+```
 
 ### Pedantic mode limitations
 
@@ -723,3 +766,561 @@ using either:
   includes were used in atypical locations, such as in the middle of statements.
   We recommend either printing with inlining enabled or reconsidering the use of
   includes in this way.
+
+## Optimization
+
+The stanc3 compiler can optimize the code of Stan model during compilation. The
+optimized model code behaves the same as unoptimized code, but it may be faster,
+more memory efficient, or more numerically stable.
+
+This section introduces the available optimization options and describes their
+effect.
+
+To print out a representation of the optimized Stan program, use the stanc3
+command-line flag `--debug-optimized-mir-pretty`. To print an analagous
+representation of the Stan program prior to optimization, use the flag
+`--debug-transformed-mir-pretty`.
+
+### Optimization levels
+
+To turn optimizations on, the user specifies the desired optimization *level*.
+The level specifies the set of optimizations to use. The chosen optimizations
+are used in a specific order, with some of them applied repeatedly.
+
+Optimization levels are specified by the numbers 0 and 1 and the 'experimental'
+tag:
+
+-   **O0** No optimizations are applied.
+-   **O1** Optimizations that are simple, do not dramatically change the
+    program, and are unlikely to noticeably slow down compile times are applied.
+-   **Oexperimental** All optimizations are applied. Some of these are not
+    thorougly tested and may not always improve a programs performance.
+
+O0 is the default setting.
+
+The levels include these optimizations:
+
+-   **O0** includes no optimizations.
+-   **O1** includes:
+    -   [Dead code elimination]
+    -   [Copy propagation]
+    -   [Constant propagation]
+-   **Oexperimental** includes optimizations specified by **O1** and also:
+    -   [Automatic-differentiation level optimization]
+    -   [One step loop unrolling]
+    -   [Expression propagation]
+    -   [Partial evaluation]
+    -   [Lazy code motion]
+    -   [Function inlining]
+    -   [Static loop unrolling]
+
+In addition, **Oexperimental** will apply more repetitions of the optimizations,
+which may increase compile times.
+
+### **O1** Optimizations
+
+#### Dead code elimination
+
+Dead code is code that does not affect the behavior of the program. Code is not
+dead if it affects `target`, the value of any outside-observable variable like
+transformed parameters or generated quantities, or side effects such as print
+statements. Removing dead code can speed up a program by avoiding unnecessary
+computations.
+
+Example Stan program:
+
+```stan
+model {
+  int i;
+  i = 5;
+  for (j in 1:10);
+  if (0) {
+    print("Dead code");
+  } else {
+    print("Hi!");
+  }
+}
+```
+
+Compiler representation of program **before dead code elimination** (simplified
+from the output of `--debug-transformed-mir-pretty`):
+
+```
+log_prob {
+  int i = 5;
+  for(j in 1:10) {
+    ;
+  }
+  if(0) {
+    FnPrint__("Dead code");
+  } else {
+    FnPrint__("Hi!");
+  }
+}
+```
+
+Compiler representation of program **after dead code elimination** (simplified
+from the output of `--debug-optimized-mir-pretty`):
+
+```
+log_prob {
+  int i;
+  FnPrint__("Hi!");
+}
+```
+
+#### Constant propagation
+
+Constant propagation replaces uses of a variable which is known to have a
+constant value `C` with that constant `C`. This removes the overhead of looking
+up the variable, and also makes many other optimizations possible (such as
+static loop unrolling and partial evaluation).
+
+Example Stan program:
+
+```stan
+transformed data {
+  int n = 100;
+  int a[n];
+  for (i in 1:n) {
+    a[i] = i;
+  }
+}
+```
+
+Compiler representation of program **before constant propagation** (simplified
+from the output of `--debug-transformed-mir-pretty`):
+
+```
+prepare_data {
+  data int n = 100;
+  data array[int, n] a;
+  for(i in 1:n) {
+    a[i] = i;
+  }
+}
+```
+
+Compiler representation of program **after constant propagation** (simplified
+from the output of `--debug-optimized-mir-pretty`):
+
+```
+prepare_data {
+  data int n = 100;
+  data array[int, 100] a;
+  for(i in 1:100) {
+    a[i] = i;
+  }
+}
+```
+
+#### Copy propagation
+
+Copy propagation is similar to [expression propagation], but only
+propagates variables rather than arbitrary expressions. This can reduce the
+complexity of the code for other optimizations such as expression propagation.
+
+Example Stan program:
+
+```stan
+model {
+  int i = 1;
+  int j = i;
+  int k = i + j;
+}
+```
+
+Compiler representation of program **before copy propagation** (simplified from
+the output of `--debug-transformed-mir-pretty`):
+
+```
+log_prob {
+    int i = 1;
+    int j = i;
+    int k = (i + j);
+}
+```
+
+Compiler representation of program **after copy propagation** (simplified from
+the output of `--debug-optimized-mir-pretty`):
+
+```
+log_prob {
+  int i = 1;
+  int j = i;
+  int k = (i + i);
+}
+```
+
+#### Partial evaluation
+
+Partial evaluation searches for expressions that we can replace with a faster,
+simpler, more memory efficient, or more numerically stable expression with the
+same meaning.
+
+Example Stan program:
+
+```stan
+model {
+  real a = 1 + 1;
+  real b = log(1 - a);
+  real c = a + b * 5;
+}
+```
+
+Compiler representation of program **before partial evaluation** (simplified
+from the output of `--debug-transformed-mir-pretty`):
+
+```
+log_prob {
+  real a = (1 + 1);
+  real b = log((1 - a));
+  real c = (a + (b * 5));
+}
+```
+
+Compiler representation of program **after partial evaluation** (simplified from
+the output of `--debug-optimized-mir-pretty`):
+
+```
+log_prob {
+  real a = 2;
+  real b = log1m(a);
+  real c = fma(b, 5, a);
+}
+```
+
+### **Oexperimental** Optimizations
+
+#### Automatic-differentiation level optimization
+
+Stan variables can have two auto-differentiation (AD) *levels*: AD or non-AD. AD
+variables carry gradient information with them, which allows Stan to calculate
+the log-density gradient, but they also have more overhead than non-AD
+variables. It is therefore inefficient for a variable to be AD unnecessarily.
+AD-level optimization sets every variable to be a floating point type unless its
+gradient is necessary.
+
+Example Stan program:
+
+```stan
+data {
+  real y;
+}
+model {
+  real x = y + 1;
+}
+```
+
+Compiler representation of program **before AD-level optimization** (simplified
+from the output of `--debug-transformed-mir-pretty`):
+
+```
+input_vars {
+  real y;
+}
+
+log_prob {
+  real x = (y + 1);
+}
+```
+
+Compiler representation of program **after AD-level optimization** (simplified
+from the output of `--debug-optimized-mir-pretty`):
+
+```
+input_vars {
+  real y;
+}
+
+log_prob {
+  data real x = (y + 1);
+}
+```
+
+#### One step loop unrolling
+
+One step loop unrolling is similar to [static loop unrolling].
+However, this optimization only 'unrolls' the first loop iteration, and can
+therefore work even when the total number of iterations is not predictable. This
+can speed up a program by providing more opportunities for further optimizations
+such as partial evaluation and lazy code motion.
+
+Example Stan program:
+
+```stan
+data {
+  int n;
+}
+transformed data {
+  int x = 0;
+  for (i in 1:n) {
+    x += i;
+  }
+}
+```
+
+Compiler representation of program **before one step static loop unrolling**
+(simplified from the output of `--debug-transformed-mir-pretty`):
+
+```
+prepare_data {
+  data int n = FnReadData__("n")[1];
+  data int x = 0;
+  for(i in 1:n) {
+    x = (x + i);
+  }
+}
+```
+
+Compiler representation of program **after one step static loop unrolling**
+(simplified from the output of `--debug-optimized-mir-pretty`):
+
+```
+prepare_data {
+  data int n = FnReadData__("n")[1];
+  int x = 0;
+  if((n >= 1)) {
+    x = (x + 1);
+    for(i in (1 + 1):n) {
+      x = (x + i);
+    }
+  }
+}
+```
+
+#### Expression propagation
+
+Constant propagation replaces the uses of a variable which
+is known to have a constant value `E` with that constant `E`. This often results
+in recalculating the expression, but provides more opportunities for further
+optimizations such as partial evaluation. Expression propagation is always
+followed by [lazy code motion] to avoid unnecessarily recomputing
+expressions.
+
+Example Stan program:
+
+```stan
+data {
+  int m;
+}
+transformed data {
+  int n = m+1;
+  int a[n];
+  for (i in 1:n-1) {
+    a[i] = i;
+  }
+}
+```
+
+Compiler representation of program **before expression propagation** (simplified
+from the output of `--debug-transformed-mir-pretty`):
+
+```
+prepare_data {
+  data int m = FnReadData__("m")[1];
+  data int n = (m + 1);
+  data array[int, n] a;
+  for(i in 1:(n - 1)) {
+    a[i] = i;
+  }
+}
+```
+
+Compiler representation of program **after expression propagation** (simplified
+from the output of `--debug-optimized-mir-pretty`):
+
+```
+prepare_data {
+  data int m = FnReadData__("m")[1];
+  data int n = (m + 1);
+  data array[int, (m + 1)] a;
+  for(i in 1:((m + 1) - 1)) {
+    a[i] = i;
+  }
+}
+```
+
+#### Lazy code motion
+
+Lazy code motion rearranges the statements and expressions in a program with the
+goals of:
+
+-   Avoiding computing expressions more than once, and
+-   Computing expressions as late as possible (to minimize the strain on the
+    working memory set).
+
+To accomplish these goals, lazy code motion will perform optimizations such as:
+
+-   Moving a repeatedly calculated expression to its own variable (also referred
+    to as *common-subexpression elimination*)
+-   Moving an expression outside of a loop if it does not need to be in the loop
+    (also referred to as *loop-invariant code motion*)
+
+Lazy code motion can make some programs significantly more efficient by avoiding
+redundant or early computations.
+
+Example Stan program:
+
+```stan
+model {
+  real x;
+  real y;
+  real z;
+
+  for (i in 1:10) {
+    x = sqrt(10);
+    y = sqrt(i);
+  }
+  z = sqrt(10);
+}
+```
+
+Compiler representation of program before lazy code motion (simplified from the
+output of `--debug-transformed-mir-pretty`):
+
+```
+log_prob {
+  real x;
+  real y;
+  real z;
+  for(i in 1:10) {
+    x = sqrt(10);
+    y = sqrt(i);
+  }
+  z = sqrt(10);
+}
+```
+
+Compiler representation of program after lazy code motion (simplified from the
+output of `--debug-optimized-mir-pretty`):
+
+```
+log_prob {
+  data real lcm_sym4__;
+  data real lcm_sym3__;
+  real x;
+  real y;
+  lcm_sym4__ = sqrt(10);
+  real z;
+  for(i in 1:10) {
+    x = lcm_sym4__;
+    y = sqrt(i);
+  }
+  z = lcm_sym4__;
+}
+```
+
+#### Function inlining
+
+Function inlining replaces each function call to each user-defined function `f`
+with the body of `f`. It does this by copying the function body to the call site
+and doing appropriately renaming the argument variables. This optimization can
+speed up a program by avoiding the overhead of a function call and providing
+more opportunities for further optimizations (such as partial evaluation).
+
+Example Stan program:
+
+```stan
+functions {
+  int incr(int x) {
+    int y = 1;
+    return x + y;
+  }
+}
+transformed data {
+  int a = 2;
+  int b = incr(a);
+}
+```
+
+Compiler representation of program **before function inlining** (simplified from
+the output of `--debug-transformed-mir-pretty`):
+
+```
+functions {
+  int incr(int x) {
+    int y = 1;
+    return (x + y);
+  }
+}
+
+prepare_data {
+  data int a = 2;
+  data int b = incr(a);
+}
+```
+
+Compiler representation of program **after function inlining** (simplified from
+the output of `--debug-optimized-mir-pretty`):
+
+```
+prepare_data {
+  data int a;
+  a = 2;
+  data int b;
+  data int inline_sym1__;
+  data int inline_sym3__;
+  inline_sym3__ = 0;
+  for(inline_sym4__ in 1:1) {
+    int inline_sym2__;
+    inline_sym2__ = 1;
+    inline_sym3__ = 1;
+    inline_sym1__ = (a + inline_sym2__);
+    break;
+  }
+  b = inline_sym1__;
+}
+```
+
+In this code, the `for` loop and `break` is used to simulate the behavior of a
+`return` statement. The value to be returned is held in `inline_sym1__`. The
+flag variable `inline_sym3__` indicates whether a return has occurred and is
+necessary to handle `return` statements nested inside loops within the function
+body.
+
+
+#### Static loop unrolling
+
+Static loop unrolling takes a loop with a predictable number of iterations
+`X` and replaces it by writing out the loop body `X` times. The loop index in
+each repeat is replaced with the appropriate constant. This optimization can
+speed up a program by avoiding the overhead of a loop and providing more
+opportunities for further optimizations (such as partial evaluation).
+
+Example Stan program:
+
+```stan
+transformed data {
+  int x = 0;
+  for (i in 1:4) {
+    x += i;
+  }
+}
+```
+
+Compiler representation of program **before static loop unrolling** (simplified
+from the output of `--debug-transformed-mir-pretty`):
+
+```
+prepare_data {
+  data int x = 0;
+  for(i in 1:4) {
+    x = (x + i);
+  }
+}
+```
+
+Compiler representation of program **after static loop unrolling** (simplified
+from the output of `--debug-optimized-mir-pretty`):
+
+```
+prepare_data {
+  data int x;
+  x = 0;
+  x = (x + 1);
+  x = (x + 2);
+  x = (x + 3);
+  x = (x + 4);
+}
+```

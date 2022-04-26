@@ -1070,34 +1070,73 @@ Append y to the bottom of x, returning another vector.
 
 ### Fast Fourier transforms
 
+Stan's fast fourier transforms are set up with invertible scaling so
+that the following identities hold for complex vectors `u` and `v`,
+
+```stan
+fft(inv_fft(u)) == u        inv_fft(fft(v)) == v
+```
+
+and for complex matrices `A` and `B`,
+
+```stan
+fft2(inv_fft2(A)) == A      inv_fft2(fft2(B)) == B
+```
+
 <!-- complex_vector; fft; (complex_vector v); -->
 \index{{\tt \bfseries fft }!{\tt (complex\_vector v): complex\_vector}|hyperpage}
 
 `complex_vector` **`fft`**`(complex_vector v)`<br>\newline
 Return the discrete Fourier transform of the specified complex vector `v`.
+This is done with invertible scaling so that `inv_fft(fft(v)) == v`.
+If $v \in \mathbb{C}^N$ is a complex vector with $N$ elements and $u =
+\textrm{fft}(v)$, then
+\[
+u_n = \sum_{m < n}
+v_m \cdot
+\exp\left(\frac{-n \cdot m \cdot 2 \cdot \pi \cdot \sqrt{-1}}{N}\right).
+\]
+
+
 `r since("2.30")`
 
 <!-- complex_matrix; fft2; (complex_matrix m); -->
 \index{{\tt \bfseries fft2 }!{\tt (complex\_matrix m): complex\_matrix}|hyperpage}
 
 `complex_matrix` **`fft2`**`(complex_matrix m)`<br>\newlin
-Return the discrete Fourier transform of the specified complex matrix `m`.
+Return the 2D discrete Fourier transform of the specified complex
+matrix `m`.  The 2D FFT is defined as the result of applying the FFT
+to each row and then to each column.  This is done with invertible
+scaling so that `inv_fft2(fft2(m)) == m`.
 `r since("2.30")`
 
-<!-- complex_vector; inv_fft; (complex_vector v); -->
-\index{{\tt \bfseries inv\_fft }!{\tt (complex\_vector v): complex\_vector}|hyperpage}
 
-`complex_vector` **`inv_fft`**`(complex_vector v)`<br>\newline
+<!-- complex_vector; inv_fft; (complex_vector u); -->
+\index{{\tt \bfseries inv\_fft }!{\tt (complex\_vector u): complex\_vector}|hyperpage}
+
+`complex_vector` **`inv_fft`**`(complex_vector u)`<br>\newline
 Return the inverse of the discrete Fourier transform of the specified complex
-vector `v`.
+vector `u`.  This is done with invertible scaling so that
+`fft(inv_fft(u)) == u`.  If $u \in \mathbb{C}^N$ is a complex vector
+with $N$ elements and $v = \textrm{fft}^{-1}(u)$, then
+\[
+v_n =  \sum_{m < n}
+v_m \cdot
+\exp\left(\frac{n \cdot m \cdot 2 \cdot \pi \cdot \sqrt{-1}}{N}).
+\]
+This only differs from the FFT by the sign inside the exponential.
 `r since("2.30")`
+
 
 <!-- complex_matrix; inv_fft2; (complex_matrix m); -->
 \index{{\tt \bfseries inv\_fft2 }!{\tt (complex\_matrix m): complex\_matrix}|hyperpage}
 
 `complex_matrix` **`inv_fft2`**`(complex_matrix m)`<br>\newline
-Return the inverse of the discrete Fourier transform of the specified complex
-matrix `m`.
+Return the inverse of the 2D discrete Fourier transform of the
+specified complex matrix `m`.  The 2D inverse FFT is defined as the
+result of applying the inverse FFT to each row and then to each
+column. This is done with invertible scaling so that
+`fft2(inv_fft2(m)) = m`.
 `r since("2.30")`
 
 

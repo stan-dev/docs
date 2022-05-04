@@ -9,11 +9,13 @@ cat(' * <a href="complex-transposition-operator.html">Complex Transposition Oper
 cat(' * <a href="complex-elementwise-functions.html">Complex Elementwise Functions</a>\n')
 cat(' * <a href="dot-products-and-specialized-products-for-complex-matrices.html">Dot Products and Specialized Products for Complex Matrices</a>\n')
 cat(' * <a href="complex-reductions.html">Complex Reductions</a>\n')
+cat(' * <a href="vectorized-accessor-functions.html">Vectorized Accessor Functions</a>\n')
 cat(' * <a href="complex-broadcast-functions.html">Complex Broadcast Functions</a>\n')
 cat(' * <a href="diagonal-complex-matrix-functions.html">Diagonal Complex Matrix Functions</a>\n')
 cat(' * <a href="slicing-and-blocking-functions-for-complex-matrices.html">Slicing and Blocking Functions for Complex Matrices</a>\n')
 cat(' * <a href="complex-matrix-concatenation.html">Complex Matrix Concatenation</a>\n')
-cat(' * <a href="complex-matrix-concatenation.">Complex Linear Algebra Functions</a>\n')
+cat(' * <a href="complex-special-matrix-functions.html">Complex Special Matrix Functions</a>\n')
+cat(' * <a href="complex-linear-algebra-functions.html">Complex Linear Algebra Functions</a>\n')
 cat(' * <a href="reverse-functions-for-complex-matrices.html">Reverse Functions for Complex Matrices</a>\n')
 }
 ```
@@ -1067,6 +1069,84 @@ Append y to the bottom of x, returning another vector.
 
 
 ## Complex special matrix functions
+
+### Fast Fourier transforms
+
+Stan's fast Fourier transform functions take the standard definition
+of the discrete Fourier transform (see the definitions below for
+specifics) and scale the inverse transform by one over dimensionality
+so that the following identities hold for complex vectors `u` and `v`,
+
+```
+    fft(inv_fft(u)) == u        inv_fft(fft(v)) == v
+```
+
+and in the 2-dimensional case for complex matrices `A` and `B`,
+
+```
+    fft2(inv_fft2(A)) == A      inv_fft2(fft2(B)) == B
+```
+
+Although the FFT functions only accept complex inputs, real vectors
+and matrices will be promoted to their complex counterparts before
+applying the FFT functions.
+
+
+<!-- complex_vector; fft; (complex_vector v); -->
+\index{{\tt \bfseries fft }!{\tt (complex\_vector v): complex\_vector}|hyperpage}
+
+`complex_vector` **`fft`**`(complex_vector v)`<br>\newline
+Return the discrete Fourier transform of the specified complex vector `v`.
+If $v \in \mathbb{C}^N$ is a complex vector with $N$ elements and $u =
+\textrm{fft}(v)$, then
+\[
+u_n = \sum_{m < n}
+v_m \cdot
+\exp\left(\frac{-n \cdot m \cdot 2 \cdot \pi \cdot \sqrt{-1}}{N}\right).
+\]
+`r since("2.30")`
+
+
+<!-- complex_matrix; fft2; (complex_matrix m); -->
+\index{{\tt \bfseries fft2 }!{\tt (complex\_matrix m): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`fft2`**`(complex_matrix m)`<br>\newline
+Return the 2D discrete Fourier transform of the specified complex
+matrix `m`.  The 2D FFT is defined as the result of applying the FFT
+to each row and then to each column.
+`r since("2.30")`
+
+
+<!-- complex_vector; inv_fft; (complex_vector u); -->
+\index{{\tt \bfseries inv\_fft }!{\tt (complex\_vector u): complex\_vector}|hyperpage}
+
+`complex_vector` **`inv_fft`**`(complex_vector u)`<br>\newline
+Return the inverse of the discrete Fourier transform of the specified complex
+vector `u`.  The inverse FFT (this function) is scaled so that 
+`fft(inv_fft(u)) == u`.  If $u \in \mathbb{C}^N$ is a complex vector
+with $N$ elements and $v = \textrm{fft}^{-1}(u)$, then
+\[
+v_n =  \frac{1}{N} \sum_{m < n}
+u_m \cdot
+\exp\left(\frac{n \cdot m \cdot 2 \cdot \pi \cdot \sqrt{-1}}{N}\right).
+\]
+This only differs from the FFT by the sign inside the exponential and
+the scaling.  The $\frac{1}{N}$ scaling ensures that `fft(inv_fft(u))
+== u` and `inv_fft(fft(v)) == v` for complex vectors `u` and `v`.
+`r since("2.30")`
+
+
+<!-- complex_matrix; inv_fft2; (complex_matrix m); -->
+\index{{\tt \bfseries inv\_fft2 }!{\tt (complex\_matrix m): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`inv_fft2`**`(complex_matrix m)`<br>\newline
+Return the inverse of the 2D discrete Fourier transform of the
+specified complex matrix `m`.  The 2D inverse FFT is defined as the
+result of applying the inverse FFT to each row and then to each
+column. The invertible scaling of the inverse FFT ensures 
+`fft2(inv_fft2(A)) == A` and `inv_fft2(fft2(B)) == B`.
+`r since("2.30")`
+
 
 ### Cumulative sums
 

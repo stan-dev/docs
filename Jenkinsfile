@@ -45,12 +45,10 @@ pipeline {
 
                 /* Build docs */
                 sh "python3 build.py $major_version $minor_version"
+                /* copy to the top-level (unversioned) directories */
+                sh "rm -rf ./docs/functions-reference ./docs/reference-manual ./docs/stan-users-guide/ ./docs/cmdstan-guide"
+                sh "cp -r ./docs/$(major_version)_$(minor_version/* ./docs/"
 
-                /* Add redirects */
-                sh "python3 add_redirects.py $major_version $minor_version functions-reference"
-                sh "python3 add_redirects.py $major_version $minor_version reference-manual"
-                sh "python3 add_redirects.py $major_version $minor_version stan-users-guide"
-                sh "python3 add_redirects.py $major_version $minor_version cmdstan-guide"
                 script {
                     if (params.linkDocs) {
                         /* Link docs to latest */
@@ -98,7 +96,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'a630aebc-6861-4e69-b497-fd7f496ec46b', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
                     sh """#!/bin/bash
                         git checkout -b docs-$major_version-$minor_version
-             
+
                     """
                 }
 

@@ -45,10 +45,13 @@ pipeline {
 
                 /* Build docs */
                 sh "python3 build.py $major_version $minor_version"
+
                 /* copy to the top-level (unversioned) directories */
-                sh "rm -rf ./docs/functions-reference ./docs/reference-manual ./docs/stan-users-guide/ ./docs/cmdstan-guide"
-                sh "cp -r ./docs/"$major_version"_"$minor_version"/* ./docs/"
-                rm "rm ./docs/*.pdf"
+                sh """
+                    rm -rf ./docs/functions-reference ./docs/reference-manual ./docs/stan-users-guide/ ./docs/cmdstan-guide
+                    cp -r ./docs/$major_version"_"$minor_version/* ./docs/
+                    rm ./docs/*.pdf
+                """
 
                 script {
                     if (params.linkDocs) {

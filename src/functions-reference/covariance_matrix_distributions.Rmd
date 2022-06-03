@@ -1,7 +1,8 @@
 # Covariance Matrix Distributions
 
 The covariance matrix distributions have support on symmetric,
-positive-definite $K \times K$ matrices.
+positive-definite $K \times K$ matrices or their Cholesky factors
+(square, lower triangular matrices with positive diagonal elements).
 
 ```{r results='asis', echo=FALSE}
 if (knitr::is_html_output()) {
@@ -67,22 +68,37 @@ transformed data and generated quantities blocks.
 
 ## Wishart distribution, Cholesky Parameterization {#wishart-cholesky-distribution}
 
+The Cholesky parameterization of the Wishart distribution uses a
+Cholesky factor for both the variate and the parameter.  If $S$ and
+$W$ are positive definite matrices with Cholesky factors $L_S$ and
+$L_W$ (i.e., $S = L_S L_S^{\top}$ and $W = L_W L_W^{\top}$), then
+the Cholesky parameterization is defined so that
+\[
+L_W \sim \textrm{WishartCholesky}(\nu, L_S)
+\]
+if and only if
+\[
+W \sim \textrm{Wishart}(\nu, S).
+\]
+
 ### Probability density function
 
-If $K \in \mathbb{N}$, $\nu \in (K-1, \infty)$, and $L_S \in \mathbb{R}^{K \times K}$ is 
-a lower triangular matrix with positive diagonal elements then $L_S L_S^{\top}$ is positive 
-definite. A random lower triangular matrix with positive diagonal $L_W \in \mathbb{R}^{K \times K}$ 
-such that $W = L_WL_W^{\top}$ is distributed 
+If $K \in \mathbb{N}$, $\nu \in (K-1, \infty)$, and $L_S, L_W \in \mathbb{R}^{K \times K}$
+are lower triangular matrixes with positive diagonal elements, then the Cholesky parameterized Wishart density is
 \[
-    \text{WishartCholesky}(L_W \mid \nu,L_S)=\text{Wishart}(L_W L_W^{\top} \mid \nu,L_S L_S^{\top}).
- \] 
-The change of variables to the Cholesky factor of $W$, $L_W$, requires the log absolute Jacobian 
-of the inverse transform from $L_W \to L_W L_W^{\top}$. The log absolute Jacobian of the transform is
+\text{WishartCholesky}(L_W \mid \nu,L_S)
+= \text{Wishart}(L_W L_W^{\top} \mid \nu,L_S L_S^{\top}) \, \left| J_{f^{-1}} \right|,
+\]
+where $J_{f^{-1}}$ is the Jacobian of the (inverse) transform of the variate, $f^{-1}(L_W) = L_W L_W^{\top}$.
+The log absolute determinant is 
 \[ 
-    \log|J| = K \log(2) \sum_{i=1}^K (K - i + 1)\log(l_{ii}).
+\log \left| J_{f^{-1}} \right|
+= K \log(2) \sum_{k=1}^K (K - k + 1) \log {L_{W_{k,\, k}}}.
 \] 
-If an $L_S$ or $L_W$ is provided that is not lower triangular with positive diagonal
-elements, the probability functions will raise errors.
+
+The probability functions will raise errors if $\nu \leq K - 1$ or if
+$L_S$ and $L_W$ are not Cholesky factors (square, lower-triangular
+matrices with positive diagonal elements) of the same size.
 
 ### Stan functions
 
@@ -92,8 +108,7 @@ elements, the probability functions will raise errors.
 `real` **`wishart_cholesky_lpdf`**`(matrix L_W | real nu, matrix L_S)`<br>\newline
 Return the log of the Wishart density for lower-triangular Cholesky factor `L_W`
 given degrees of freedom `nu` and lower-triangular Cholesky factor of the
-scale matrix `L_S`. The lower-triangular Cholesky factors require
-the upper-triangle to be filled with zeros.
+scale matrix `L_S`.
 `r since("2.30")`
 
 <!-- real; wishart_cholesky_lupdf; (matrix L_W | real nu, matrix L_S); -->
@@ -167,24 +182,39 @@ in transformed data and generated quantities blocks.
 
 ## Inverse Wishart distribution, Cholesky Parameterization {#inverse-wishart-cholesky-distribution}
 
+The Cholesky parameterization of the inverse Wishart distribution uses a
+Cholesky factor for both the variate and the parameter.  If $S$ and
+$W$ are positive definite matrices with Cholesky factors $L_S$ and
+$L_W$ (i.e., $S = L_S L_S^{\top}$ and $W = L_W L_W^{\top}$), then
+the Cholesky parameterization is defined so that
+\[
+L_W \sim \textrm{InvWishartCholesky}(\nu, L_S)
+\]
+if and only if
+\[
+W \sim \textrm{InvWishart}(\nu, S).
+\]
+
 ### Probability density function
 
-If $K \in \mathbb{N}$, $\nu \in (K-1, \infty)$, and $L_S \in \mathbb{R}^{K \times K}$ is 
-lower triangular with positive diagonal elements then $L_S L_S^{\top}$ is positive definite. 
-A random lower triangular matrix with positive diagonal $L_W \in \mathbb{R}^{K \times K}$ 
-such that $W = L_WL_W^{\top}$ is distributed  
+If $K \in \mathbb{N}$, $\nu \in (K-1, \infty)$, and $L_S, L_W \in
+\mathbb{R}^{K \times K}$ are lower triangular matrixes with positive
+diagonal elements, then the Cholesky parameterized inverse Wishart
+density is
 \[
 \text{InvWishartCholesky}(L_W \mid \nu,L_S) =
-\text{InvWishart}(L_WL_W^{\top} \mid \nu, L_S L_S^{\top}). 
+\text{InvWishart}(L_WL_W^{\top} \mid \nu, L_S L_S^{\top}) \, \left| J_{f^{-1}} \right|,
 \]
-The change of variables to the Cholesky factor of $W$, $L_W$, requires the log absolute
-Jacobian of the inverse transform from $L_W \to L_W L_W^{\top}$. The log absolute Jacobian 
-of the transform is
+where $J_{f^{-1}}$ is the Jacobian of the (inverse) transform of the variate,
+$f^{-1}(L_W) = L_W L_W^{\top}$.  The log absolute determinant is 
 \[
-\log|J| = K \log(2) \sum_{i=1}^K (K - i + 1)\log(l_{ii}).
+\log \left| J_{f^{-1}} \right|
+= K \log(2) \sum_{k=1}^K (K - k + 1) \log {L_{W_{k,\, k}}}.
 \]
-If an $L_S$ or $L_W$ is provided that is not lower triangular with positive diagonal 
-elements, the probability functions will raise errors.
+
+The probability functions will raise errors if $\nu \leq K - 1$ or if
+$L_S$ and $L_W$ are not Cholesky factors (square, lower-triangular
+matrices with positive diagonal elements) of the same size.
 
 ### Stan functions
 
@@ -194,8 +224,7 @@ elements, the probability functions will raise errors.
 `real` **`inv_wishart_cholesky_lpdf`**`(matrix L_W | real nu, matrix L_S)`<br>\newline
 Return the log of the inverse Wishart density for lower-triangular Cholesky factor `L_W`
 given degrees of freedom `nu` and lower-triangular Cholesky factor of the
-scale matrix `L_S`. The lower-triangular Cholesky factors require
-the upper-triangle to be filled with zeros.
+scale matrix `L_S`.
 `r since("2.30")`
 
 <!-- real; inv_wishart_cholesky_lupdf; (matrix L_W | real nu, matrix L_S); -->
@@ -211,7 +240,7 @@ scale matrix `L_S` dropping constant additive terms.
 \index{{\tt \bfseries inv\_wishart\_rng }!{\tt (real nu, matrix L\_S): matrix}|hyperpage}
 
 `matrix` **`inv_wishart_cholesky_rng`**`(real nu, matrix L_S)`<br>\newline
-Generate the Cholesky factor of a inverse Wishart variate with degrees of freedom `nu` and
+Generate the Cholesky factor of an inverse Wishart variate with degrees of freedom `nu` and
 lower-triangular Cholesky factor of the scale matrix `L_S`; may only be used in
 transformed data and generated quantities blocks.
 `r since("2.30")`

@@ -5,10 +5,10 @@ positive-definite $K \times K$ matrices.
 
 ```{r results='asis', echo=FALSE}
 if (knitr::is_html_output()) {
-cat(' * <a href="inverse-wishart-cholesky-distribution.html">Inverse Wishart Distribution, Cholesky Parameterization</a>\n')
 cat(' * <a href="wishart-distribution.html">Wishart Distribution</a>\n')
 cat(' * <a href="wishart-cholesky-distribution.html">Wishart Distribution, Cholesky Parameterization</a>\n')
 cat(' * <a href="inverse-wishart-distribution.html">Inverse Wishart Distribution</a>\n')
+cat(' * <a href="inverse-wishart-cholesky-distribution.html">Inverse Wishart Distribution, Cholesky Parameterization</a>\n')
 }
 ```
 
@@ -42,44 +42,47 @@ Increment target log probability density with `wishart_lupdf(W | nu, Sigma)`.
 \index{{\tt \bfseries wishart\_lpdf }!{\tt (matrix W \textbar\ real nu, matrix Sigma): real}|hyperpage}
 
 `real` **`wishart_lpdf`**`(matrix W | real nu, matrix Sigma)`<br>\newline
-The log of the Wishart density for symmetric and positive-definite
-matrix W given degrees of freedom nu and symmetric and
-positive-definite scale matrix Sigma
+Return the log of the Wishart density for symmetric and positive-definite
+matrix `W` given degrees of freedom `nu` and symmetric and
+positive-definite scale matrix `Sigma`.
 `r since("2.12")`
 
 <!-- real; wishart_lupdf; (matrix W | real nu, matrix Sigma); -->
 \index{{\tt \bfseries wishart\_lupdf }!{\tt (matrix W \textbar\ real nu, matrix Sigma): real}|hyperpage}
 
 `real` **`wishart_lupdf`**`(matrix W | real nu, matrix Sigma)`<br>\newline
-The log of the Wishart density for symmetric and positive-definite
-matrix W given degrees of freedom nu and symmetric and
-positive-definite scale matrix Sigma dropping constant additive terms
+Return the log of the Wishart density for symmetric and positive-definite
+matrix `W` given degrees of freedom `nu` and symmetric and
+positive-definite scale matrix `Sigma` dropping constant additive terms.
 `r since("2.25")`
 
 <!-- matrix; wishart_rng; (real nu, matrix Sigma); -->
 \index{{\tt \bfseries wishart\_rng }!{\tt (real nu, matrix Sigma): matrix}|hyperpage}
 
 `matrix` **`wishart_rng`**`(real nu, matrix Sigma)`<br>\newline
-Generate a Wishart variate with degrees of freedom nu and symmetric
-and positive-definite scale matrix Sigma; may only be used in
-transformed data and generated quantities blocks
+Generate a Wishart variate with degrees of freedom `nu` and symmetric
+and positive-definite scale matrix `Sigma`; may only be used in
+transformed data and generated quantities blocks.
 `r since("2.0")`
 
-## Wishart distribution, Cholesky Parameterization (#wishart-cholesky-distribution)
+## Wishart distribution, Cholesky Parameterization {#wishart-cholesky-distribution}
 
 ### Probability density function
 
-If $K \in \mathbb{N}$, $\nu \in (K-1, \infty)$, and $L_S \in
-\mathbb{R}^{K \times K}$ is lower triangular and such that $L_S L_S^{\top}$
-is positive definite,then for
-$L_W \in \mathbb{R}^{K \times K}$ is lower triangular and such that $L_WL_W^{\top}$
-is positive definite, \[
-\text{WishartCholesky}(L_W \mid \nu,L_S) =
-\text{Wishart}(W \mid \mu, LL^{\top}). \] If $L$ such that $L \in {L_S, L_W}$  is lower triangular and
-$LL^{top}$ is a $K \times K$ positive definite matrix, then $L_{k, k}$
-must be strictly positive for $k \in 1{:}K$. If an $L$ is provided
-that is not the Cholesky factor of a positive-definite matrix, the
-probability functions will raise errors.
+If $K \in \mathbb{N}$, $\nu \in (K-1, \infty)$, and $L_S \in \mathbb{R}^{K \times K}$ is 
+a lower triangular matrix with positive diagonal elements then $L_S L_S^{\top}$ is positive 
+definite. A random lower triangular matrix with positive diagonal $L_W \in \mathbb{R}^{K \times K}$ 
+such that $W = L_WL_W^{\top}$ is distributed 
+\[
+    \text{WishartCholesky}(L_W \mid \nu,L_S)=\text{Wishart}(L_W L_W^{\top} \mid \nu,L_S L_S^{\top}).
+ \] 
+The change of variables to the Cholesky factor of $W$, $L_W$, requires the log absolute Jacobian 
+of the inverse transform from $L_W \to L_W L_W^{\top}$. The log absolute Jacobian of the transform is
+\[ 
+    \log|J| = K \log(2) \sum_{i=1}^K (K - i + 1)\log(l_{ii}).
+\] 
+If an $L_S$ or $L_W$ is provided that is not lower triangular with positive diagonal
+elements, the probability functions will raise errors.
 
 ### Stan functions
 
@@ -87,8 +90,8 @@ probability functions will raise errors.
 \index{{\tt \bfseries wishart\_cholesky\_lpdf }!{\tt (matrix L\_W \textbar\ real nu, matrix L\_S): real}|hyperpage}
 
 `real` **`wishart_cholesky_lpdf`**`(matrix L_W | real nu, matrix L_S)`<br>\newline
-The log of the Wishart density for lower-triangular Cholesky factor `L_W`
-given degrees of freedom nu and lower-triangular Cholesky factor of the
+Return the log of the Wishart density for lower-triangular Cholesky factor `L_W`
+given degrees of freedom `nu` and lower-triangular Cholesky factor of the
 scale matrix `L_S`. The lower-triangular Cholesky factors require
 the upper-triangle to be filled with zeros.
 `r since("2.30")`
@@ -97,62 +100,16 @@ the upper-triangle to be filled with zeros.
 \index{{\tt \bfseries wishart\_lupdf }!{\tt (matrix L\_W \textbar\ real nu, matrix L\_S): real}|hyperpage}
 
 `real` **`wishart_cholesky_lupdf`**`(matrix L_W | real nu, matrix L_S)`<br>\newline
-The log of the Wishart density for lower-triangular Cholesky factor of `L_W`
-given degrees of freedom nu and lower-triangular Cholesky factor of the
-scale matrix `L_S` dropping constant additive terms
+Return the log of the Wishart density for lower-triangular Cholesky factor of `L_W`
+given degrees of freedom `nu` and lower-triangular Cholesky factor of the
+scale matrix `L_S` dropping constant additive terms.
 `r since("2.30")`
 
 <!-- matrix; wishart_cholesky_rng; (real nu, matrix L_S); -->
 \index{{\tt \bfseries wishart\_rng }!{\tt (real nu, matrix L\_S): matrix}|hyperpage}
 
 `matrix` **`wishart_cholesky_rng`**`(real nu, matrix L_S)`<br>\newline
-Generate the Cholesky factor of a Wishart variate with degrees of freedom nu and
-lower-triangular Cholesky factor of the scale matrix `L_S`; may only be used in
-transformed data and generated quantities blocks
-`r since("2.30")`
-
-## Inverse Wishart distribution, Cholesky Parameterization (#inverse-wishart-cholesky-distribution)
-
-### Probability density function
-
-If $K \in \mathbb{N}$, $\nu \in (K-1, \infty)$, and $L_S \in
-\mathbb{R}^{K \times K}$ is lower triangular and such that $L_S L_S^{\top}$
-is positive definite,then for
-$L_W \in \mathbb{R}^{K \times K}$ is lower triangular and such that $L_WL_W^{\top}$
-is positive definite, \[
-\text{InvWishartCholesky}(L_W \mid \nu,L_S) =
-\text{InvWishart}(W \mid \mu, LL^{\top}). \] If $L$ such that $L \in {L_S, L_W}$  is lower triangular and
-$LL^{top}$ is a $K \times K$ positive definite matrix, then $L_{k, k}$
-must be strictly positive for $k \in 1{:}K$. If an $L$ is provided
-that is not the Cholesky factor of a positive-definite matrix, the
-probability functions will raise errors.
-
-### Stan functions
-
-<!-- real; inv_wishart_cholesky_lpdf; (matrix L_W | real nu, matrix L_S); -->
-\index{{\tt \bfseries inv\_wishart\_cholesky\_lpdf }!{\tt (matrix L\_W \textbar\ real nu, matrix L\_S): real}|hyperpage}
-
-`real` **`inv_wishart_cholesky_lpdf`**`(matrix L_W | real nu, matrix L_S)`<br>\newline
-The log of the inverse Wishart density for lower-triangular Cholesky factor `L_W`
-given degrees of freedom nu and lower-triangular Cholesky factor of the
-scale matrix `L_S`. The lower-triangular Cholesky factors require
-the upper-triangle to be filled with zeros.
-`r since("2.30")`
-
-<!-- real; inv_wishart_cholesky_lupdf; (matrix L_W | real nu, matrix L_S); -->
-\index{{\tt \bfseries inv\_wishart\_lupdf }!{\tt (matrix L\_W \textbar\ real nu, matrix L\_S): real}|hyperpage}
-
-`real` **`inv_wishart_cholesky_lupdf`**`(matrix L_W | real nu, matrix L_S)`<br>\newline
-The log of the inverse Wishart density for lower-triangular Cholesky factor of `L_W`
-given degrees of freedom nu and lower-triangular Cholesky factor of the
-scale matrix `L_S` dropping constant additive terms
-`r since("2.30")`
-
-<!-- matrix; inv_wishart_cholesky_rng; (real nu, matrix L_S); -->
-\index{{\tt \bfseries inv\_wishart\_rng }!{\tt (real nu, matrix L\_S): matrix}|hyperpage}
-
-`matrix` **`inv_wishart_cholesky_rng`**`(real nu, matrix L_S)`<br>\newline
-Generate the Cholesky factor of a inverse Wishart variate with degrees of freedom nu and
+Generate the Cholesky factor of a Wishart variate with degrees of freedom `nu` and
 lower-triangular Cholesky factor of the scale matrix `L_S`; may only be used in
 transformed data and generated quantities blocks
 `r since("2.30")`
@@ -184,25 +141,77 @@ Increment target log probability density with `inv_wishart_lupdf(W | nu, Sigma)`
 \index{{\tt \bfseries inv\_wishart\_lpdf }!{\tt (matrix W \textbar\ real nu, matrix Sigma): real}|hyperpage}
 
 `real` **`inv_wishart_lpdf`**`(matrix W | real nu, matrix Sigma)`<br>\newline
-The log of the inverse Wishart density for symmetric and
-positive-definite matrix W given degrees of freedom nu and symmetric
-and positive-definite scale matrix Sigma
+Return the log of the inverse Wishart density for symmetric and
+positive-definite matrix `W` given degrees of freedom `nu` and symmetric
+and positive-definite scale matrix `Sigma`.
 `r since("2.12")`
 
 <!-- real; inv_wishart_lupdf; (matrix W | real nu, matrix Sigma); -->
 \index{{\tt \bfseries inv\_wishart\_lupdf }!{\tt (matrix W \textbar\ real nu, matrix Sigma): real}|hyperpage}
 
 `real` **`inv_wishart_lupdf`**`(matrix W | real nu, matrix Sigma)`<br>\newline
-The log of the inverse Wishart density for symmetric and
-positive-definite matrix W given degrees of freedom nu and symmetric
-and positive-definite scale matrix Sigma dropping constant additive terms
+Return the log of the inverse Wishart density for symmetric and
+positive-definite matrix `W` given degrees of freedom `nu` and symmetric
+and positive-definite scale matrix `Sigma` dropping constant additive terms.
 `r since("2.25")`
 
 <!-- matrix; inv_wishart_rng; (real nu, matrix Sigma); -->
 \index{{\tt \bfseries inv\_wishart\_rng }!{\tt (real nu, matrix Sigma): matrix}|hyperpage}
 
 `matrix` **`inv_wishart_rng`**`(real nu, matrix Sigma)`<br>\newline
-Generate an inverse Wishart variate with degrees of freedom nu and
-symmetric and positive-definite scale matrix Sigma; may only be used
-in transformed data and generated quantities blocks
+Generate an inverse Wishart variate with degrees of freedom `nu` and
+symmetric and positive-definite scale matrix `Sigma`; may only be used
+in transformed data and generated quantities blocks.
 `r since("2.0")`
+
+
+## Inverse Wishart distribution, Cholesky Parameterization {#inverse-wishart-cholesky-distribution}
+
+### Probability density function
+
+If $K \in \mathbb{N}$, $\nu \in (K-1, \infty)$, and $L_S \in \mathbb{R}^{K \times K}$ is 
+lower triangular with positive diagonal elements then $L_S L_S^{\top}$ is positive definite. 
+A random lower triangular matrix with positive diagonal $L_W \in \mathbb{R}^{K \times K}$ 
+such that $W = L_WL_W^{\top}$ is distributed  
+\[
+\text{InvWishartCholesky}(L_W \mid \nu,L_S) =
+\text{InvWishart}(L_WL_W^{\top} \mid \nu, L_S L_S^{\top}). 
+\]
+The change of variables to the Cholesky factor of $W$, $L_W$, requires the log absolute
+Jacobian of the inverse transform from $L_W \to L_W L_W^{\top}$. The log absolute Jacobian 
+of the transform is
+\[
+\log|J| = K \log(2) \sum_{i=1}^K (K - i + 1)\log(l_{ii}).
+\]
+If an $L_S$ or $L_W$ is provided that is not lower triangular with positive diagonal 
+elements, the probability functions will raise errors.
+
+### Stan functions
+
+<!-- real; inv_wishart_cholesky_lpdf; (matrix L_W | real nu, matrix L_S); -->
+\index{{\tt \bfseries inv\_wishart\_cholesky\_lpdf }!{\tt (matrix L\_W \textbar\ real nu, matrix L\_S): real}|hyperpage}
+
+`real` **`inv_wishart_cholesky_lpdf`**`(matrix L_W | real nu, matrix L_S)`<br>\newline
+Return the log of the inverse Wishart density for lower-triangular Cholesky factor `L_W`
+given degrees of freedom `nu` and lower-triangular Cholesky factor of the
+scale matrix `L_S`. The lower-triangular Cholesky factors require
+the upper-triangle to be filled with zeros.
+`r since("2.30")`
+
+<!-- real; inv_wishart_cholesky_lupdf; (matrix L_W | real nu, matrix L_S); -->
+\index{{\tt \bfseries inv\_wishart\_lupdf }!{\tt (matrix L\_W \textbar\ real nu, matrix L\_S): real}|hyperpage}
+
+`real` **`inv_wishart_cholesky_lupdf`**`(matrix L_W | real nu, matrix L_S)`<br>\newline
+Return the log of the inverse Wishart density for lower-triangular Cholesky factor of `L_W`
+given degrees of freedom `nu` and lower-triangular Cholesky factor of the
+scale matrix `L_S` dropping constant additive terms.
+`r since("2.30")`
+
+<!-- matrix; inv_wishart_cholesky_rng; (real nu, matrix L_S); -->
+\index{{\tt \bfseries inv\_wishart\_rng }!{\tt (real nu, matrix L\_S): matrix}|hyperpage}
+
+`matrix` **`inv_wishart_cholesky_rng`**`(real nu, matrix L_S)`<br>\newline
+Generate the Cholesky factor of a inverse Wishart variate with degrees of freedom `nu` and
+lower-triangular Cholesky factor of the scale matrix `L_S`; may only be used in
+transformed data and generated quantities blocks.
+`r since("2.30")`

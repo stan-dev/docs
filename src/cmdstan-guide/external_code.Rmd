@@ -1,11 +1,11 @@
 # Using external C++ code {#using-external-cpp-code}
 
-The `--allow_undefined` flag can be passed to the call to stanc,
+The `--allow-undefined` flag can be passed to the call to stanc,
 which will allow undefined functions in the Stan language to be parsed
 without an error. We can then include a definition of the function in
 a C++ header file.
 This requires specifying two makefile variables:
-- `STANCFLAGS=--allow_undedefined`
+- `STANCFLAGS=--allow-undefined`
 - `USER_HEADER=<header_file.hpp>`, where `<header_file.hpp>` is the name of a header file that
 defines a function with the same name and signature in a namespace
 that is formed by concatenating the `class_name` argument to
@@ -36,25 +36,30 @@ generated quantities {
 ```
 Here the `make_odds` function is declared but not defined, which
 would ordinarily result in a parser error. However, if you put
-`STANCFLAGS = --allow_undefined` into the `make/local` file
+`STANCFLAGS = --allow-undefined` into the `make/local` file
 or into the `stanc` call, then the stanc compiler will translate
 this program to C++, but the generated C++ code will not compile
 unless you write a file
 such as `examples/bernoulli/make_odds.hpp` with the following lines
-```
-#include <boost/math/tools/promotion.hpp>
+```C++
+#include <stan/model/model_header.hpp>
 #include <ostream>
 
 namespace bernoulli_model_namespace {
-          template <typename T0__>  inline  typename
-          boost::math::tools::promote_args<T0__>::type  make_odds(const T0__&
-theta, std::ostream* pstream__) {
-       return theta / (1 - theta);  }
-       }
+template <typename T0__,
+          stan::require_all_t<stan::is_stan_scalar<T0__>>* = nullptr>
+  stan::promote_args_t<T0__>
+  make_odds(const T0__& theta, std::ostream* pstream__) {
+    return theta / (1 - theta);
+  }
+}
 ```
+The signature for this function needs to match the declaration emitted by stanc. 
+One can inspect the generated `.hpp` file by stanc to determine what is needed.
+
 Given the above, the following `make` invocation should work
 ```
-> make STANCFLAGS=--allow_undefined USER_HEADER=examples/bernoulli/make_odds.hpp examples/bernoulli/bernoulli # on Windows add .exe
+> make STANCFLAGS=--allow-undefined USER_HEADER=examples/bernoulli/make_odds.hpp examples/bernoulli/bernoulli # on Windows add .exe
 ```
 Alternatively, you could put `STANCFLAGS` and `USER_HEADER` into the
 `make/local` file instead of specifying them on the command-line.
@@ -67,4 +72,5 @@ any output. To see the necessary boilerplate look at the corresponding
 lines in the generated C++ file.
 
 For more details about how to write C++ code using the Stan Math
-Library, see https://arxiv.org/abs/1509.07164.
+Library, see the Math library documentation at https://mc-stan.org/math/
+or the paper at https://arxiv.org/abs/1509.07164.

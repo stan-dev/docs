@@ -16,7 +16,7 @@ Repository for the sources and published documentation set, versioned for each S
 	+ `src/reference-manual` - Stan Reference Manual
 	+ `src/stan-users-guide` - Stan Users Guide
 
-* `docs`: the directory `docs` on branch `master` is the [publishing source](https://help.github.com/articles/configuring-a-publishing-source-for-github-pages/) for the project pages site.  Whenever a verified member of the Stan organization pushes to `docs` on branch `master`,
+* `docs`: the directory `docs` on branch `master` is the [publishing source](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site) for the project pages site.  Whenever a verified member of the Stan organization pushes to `docs` on branch `master`,
 GitHub (re)builds and (re)deploys the website.
 
 ## Documentation toolset
@@ -82,9 +82,9 @@ The output will be written to subdirectory `_build`.
 ## GitHub Pages
 
 This repository uses
-[GitHub Pages](https://help.github.com/categories/github-pages-basics)
+[GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages)
 to serve the
-[project pages](https://help.github.com/articles/user-organization-and-project-pages/#project-pages-sites) site
+[project pages](https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#project-pages-sites) site
 with URL https://mc-stan.org/docs.
 The publishing strategy is to serve the contents of the directory `docs` on branch `master`.
 The `docs` directory contains an empty file named `.nojekyll` so that GitHub will treat the contents

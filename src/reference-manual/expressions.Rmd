@@ -55,6 +55,37 @@ integer denotes a power of 10 to multiply.  For instance, `2.7e3`
 and `2.7e+3` denote $2.7 \times 10^3$, whereas `-2E-5` denotes $-2 \times
 10^{-5}$.
 
+### Imaginary literals {-}
+
+A number followed by the character `i` denotes an imaginary number and
+is assigned to the numeric type `complex`.  The number preceding `i`
+may be either a real or integer literal and determines the magnitude
+of the imaginary number.  Examples of well-formed imaginary literals
+include the following.
+
+```
+1i, 2i, -325.786i, 1e10i, 2.87e-10i.
+```
+
+Note that the character `i` by itself is _not_ a well-formed imaginary
+literal.  The unit imaginary number must be written as `1i`.
+
+
+### Complex literals {-}
+
+Stan does not include complex literals directly, but a real or integer
+literal can be added to an imaginary literal to derive an expression
+that behaves like a complex literal.  Examples include the following.
+
+```
+1 + 2i, -3.2e9 + 1e10i
+```
+
+These will be assigned the type `complex`, which is the result of
+adding a real or integer and a complex number.  They will also
+function like literals in the sense that the C++ compiler is able to
+reduce them to a single complex constant at compile time.
+
 
 ## Variables {#variables.section}
 
@@ -110,17 +141,26 @@ the tokens are reserved for future use.
 
 ```
 for, in, while, repeat, until, if, then, else,
-true, false, target
+true, false, target, struct, typedef, export,
+auto, extern, var, static
 ```
 
 Variables should not be named after types, either, and thus may not be
 any of the following.
 
 ```
-int, real, vector, simplex, unit_vector, ordered,
-positive_ordered, row_vector, matrix,
+int, real, complex, vector, simplex, unit_vector,
+ordered, positive_ordered, row_vector, matrix,
 cholesky_factor_corr, cholesky_factor_cov,
 corr_matrix, cov_matrix
+```
+
+The following built in functions are also reserved and
+cannot be used as variable names:
+
+```
+print, reject, profile, get_lp, increment_log_prob,
+target
 ```
 
 The following block identifiers are reserved and cannot be used as variable names:
@@ -128,16 +168,6 @@ The following block identifiers are reserved and cannot be used as variable name
 ```
 functions, model, data, parameters, quantities,
 transformed, generated
-```
-
-#### Reserved names from Stan implementation {-}
-
-Some variable names are reserved because they are used within
-Stan's C++ implementation.  These are
-
-```
-var, fvar, STAN_MAJOR, STAN_MINOR, STAN_PATCH,
-STAN_MATH_MAJOR, STAN_MATH_MINOR, STAN_MATH_PATCH
 ```
 
 
@@ -155,25 +185,29 @@ to halt and report the name and location of the variable causing the
 conflict.
 
 
-#### Reserved names from C++ {-}
+#### Reserved names backend languages {-}
 
-Finally, variable names, including the names of models, should not
-conflict with any of the C++ keywords.
+Stan primarily generates code in C++, which features its own
+reserved words. It is legal to name a variable any of the
+following names, however doing so will lead to it being renamed
+`_stan_NAME` (e.g. `_stan_public`) behind the scenes (in the
+generated C++ code).
 
+<!-- corresponds to the list in stanc3/src/stan_math_backend/Mangle.ml -->
 ```
-alignas, alignof, and, and_eq, asm, auto, bitand, bitor, bool,
-break, case, catch, char, char16_t, char32_t, class, compl,
-const, constexpr, const_cast, continue, decltype, default,
-delete, do, double, dynamic_cast, else, enum, explicit,
-export, extern, false, float, for, friend, goto, if,
-inline, int, long, mutable, namespace, new, noexcept,
-not, not_eq, nullptr, operator, or, or_eq, private,
-protected, public, register, reinterpret_cast, return,
-short, signed, sizeof, static, static_assert, static_cast,
-struct, switch, template, this, thread_local, throw, true,
-try, typedef, typeid, typename, union, unsigned, using,
-virtual, void, volatile, wchar_t, while, xor, xor_eq
+alignas, alignof, and, and_eq, asm, bitand, bitor, bool,
+case, catch, char, char16_t, char32_t, class, compl, const,
+constexpr, const_cast, decltype, default, delete, do,
+double, dynamic_cast, enum, explicit, float, friend, goto,
+inline, long, mutable, namespace, new, noexcept, not, not_eq,
+nullptr, operator, or, or_eq, private, protected, public,
+register, reinterpret_cast, short, signed, sizeof,
+static_assert, static_cast, switch, template, this, thread_local,
+throw, try, typeid, typename, union, unsigned, using, virtual,
+volatile, wchar_t, xor, xor_eq, fvar, STAN_MAJOR, STAN_MINOR,
+STAN_PATCH, STAN_MATH_MAJOR, STAN_MATH_MINOR, STAN_MATH_PATCH
 ```
+<!-- mention python here when TFP backend finished -->
 
 ### Legal characters {-}
 
@@ -184,12 +218,12 @@ The legal characters for variable identifiers are given in the
 *The alphanumeric characters and underscore in base ASCII are the only
 legal characters in Stan identifiers.*
 
- characters |  ASCII code points
-:----------:|:-----------------------------:
-`a -- z`    | 97 -- 122
-`A -- Z`    | 65 --  90
-`0 -- 9`    | 48 --  57
-`_`         |    95
+ | characters | ASCII code points |
+ | :--------: | :---------------: |
+ |  `a -- z`  |     97 -- 122     |
+ |  `A -- Z`  |     65 --  90     |
+ |  `0 -- 9`  |     48 --  57     |
+ |    `_`     |        95         |
 
 Although not the most expressive character set, ASCII is the most
 portable and least prone to corruption through improper character
@@ -221,10 +255,11 @@ example, the expression `[ 1, 10, 100 ]` denotes a row vector of
 three elements with real values 1.0, 10.0, and 100.0.
 Applying the transpose operator to a row vector expression produces
 a vector expression.
-This syntax provides a way declare and define small vectors a single line, as follows.
+This syntax provides a way declare and define small vectors a single
+line, as follows. 
 
 ```stan
-row_vector[2] rv2=  [ 1, 2 ];
+row_vector[2] rv2 =  [ 1, 2 ];
 vector[3] v3 = [ 3, 4, 5 ]';
 ```
 
@@ -242,7 +277,7 @@ This syntax provides a way declare and define a matrix in a single
 line, as follows.
 
 ```stan
-matrix[3,2] m1 = [ [ 1, 2 ], [ 3, 4 ], [5, 6 ] ];
+matrix[3, 2] m1 = [ [ 1, 2 ], [ 3, 4 ], [5, 6 ] ];
 ```
 
 Any expression denoting a row vector can be used in a matrix expression.
@@ -251,15 +286,27 @@ For example, the following code is valid:
 ```stan
 vector[2] vX = [ 1, 10 ]';
 row_vector[2] vY = [ 100, 1000 ];
-matrix[3,2] m2 = [ vX', vY, [ 1, 2 ]  ];
+matrix[3, 2] m2 = [ vX', vY, [ 1, 2 ]  ];
 ```
 
+### Complex vector and matrix expressions {-}
+
+Complex vector expressions work the same way as real vector
+expressions.  For example, the following are all legal Stan
+expressions and assignments.
+
+```stan
+complex_vector[3] = [1 + 2i, 3 - 1.7i, 0]';
+complex_row_vector[2] = [12, -2i];
+complex_matrix[2, 3] = [[1 + 2i, 3 - 1.7i, 0],
+                        [3.9 - 1.234i, 176i, 1 + 1i]];
+```
 
 #### No empty vector or matrix expressions {-}
 
 The empty expression `[ ]` is ambiguous and therefore is not
 allowed and similarly expressions such as `[ [ ] ]` or
-`[ [ ], [ ] ]` are not allowed.
+`[ [ ], [ ] ]` are not allowed. 
 
 
 ### Array expressions {-}
@@ -271,7 +318,7 @@ values 1, 10, and 100.  This syntax is particularly convenient to
 define small arrays in a single line, as follows.
 
 ```stan
-int a[3] = { 1, 10, 100 };
+array[3] int a = { 1, 10, 100 };
 ```
 
 The values may be compound expressions, so it is legal to write
@@ -279,7 +326,7 @@ The values may be compound expressions, so it is legal to write
 arrays directly, as in the following example.
 
 ```stan
-int b[2, 3] = { { 1, 2, 3 }, { 4, 5, 6 } };
+array[2, 3] int b = { { 1, 2, 3 }, { 4, 5, 6 } };
 ```
 
 This way, `b[1]` is `{ 1, 2, 3 }` and `b[2]` is
@@ -290,7 +337,7 @@ out as follows to more clearly indicate the row and column structure
 of the resulting two dimensional array.
 
 ```stan
-int b[2, 3] = { { 1, 2, 3 },
+array[2, 3] int b = { { 1, 2, 3 },
                 { 4, 5, 6 } };
 ```
 
@@ -306,15 +353,15 @@ the result is an array of vectors.
 ```stan
 vector[3] b;
 vector[3] c;
-...
-vector[3] d[2] = { b, c };
+// ...
+array[2] vector[3] d = { b, c };
 ```
 
 The elements may also be a mixture of `int` and `real` typed
 expressions, in which case the result is an array of real values.
 
 ```stan
-real b[2] = { 1, 1.9 };
+array[2] real b = { 1, 1.9 };
 ```
 
 
@@ -338,8 +385,8 @@ non-rectangular array.
 ```
 
 This may appear to be OK, because it is creating a two-dimensional
-integer array (`int[ , ]`) out of two one-dimensional array
-integer arrays (`int[ ]`).  But it is not allowed because the two
+integer array (`array[,] int`) out of two one-dimensional array
+integer arrays (`array[] int`).  But it is not allowed because the two
 one-dimensional arrays are not the same size.  If the elements are
 array expressions, this can be diagnosed at compile time.  If one or
 both expressions is a variable, then that won't be caught until
@@ -358,7 +405,7 @@ expressive power, because a declaration is sufficient to initialize a
 zero-element array.
 
 ```stan
-int a[0];   // a is fully defined as zero element array
+array[0] int a;   // a is fully defined as zero element array
 ```
 
 
@@ -366,18 +413,19 @@ int a[0];   // a is fully defined as zero element array
 
 If an array expression contains only integer elements, such as
 `{ 1, 2, 3 }`, then the result type will be an integer array,
-`int[]`.  This means that the following will *not* be
+`array [] real`.  This means that the following will *not* be
 legal.
 
 ```stan
-real a[2] = { -3, 12 };  // error: int[] can't be assigned to real[]
+array[2] real a = { -3, 12 };
+// error: array [] real can't be assigned to array [] real
 ```
 
 Integer arrays may not be assigned to real values.  However, this
 problem is easily sidestepped by using real literal expressions.
 
 ```stan
-real a[2] = { -3.0, 12.0 };
+array[2] real a = { -3.0, 12.0 };
 ```
 
 Now the types match and the assignment is allowed.
@@ -412,7 +460,7 @@ negation for integer and real-valued expressions.  For example,
 assuming `n` and `m` are integer variables and `x` and
 `y` real variables, the following expressions are legal.
 
-```
+```stan
 3.0 + 0.14
 -15
 2 * 3 + 1
@@ -468,8 +516,9 @@ c = a .* b;
 produces the same result with roughly the same efficiency as the loop
 
 ```stan
-for (n in 1:N)
+for (n in 1:N) {
   c[n] = a[n] * b[n];
+}
 ```
 
 Stan supports exponentiation (`^`) of integer and
@@ -478,7 +527,7 @@ a real-value.  For example, assuming `n` and `m` are integer
 variables and `x` and `y` real variables, the following
 expressions are legal.
 
-```
+```stan
 3 ^ 2
 3.0 ^ -2
 3.0 ^ 0.14
@@ -506,38 +555,40 @@ of function application and array, matrix, and vector indexing. The
 operators are listed in order of precedence, from least tightly
 binding to most tightly binding.  The full set of legal arguments and
 corresponding result types are provided in the function documentation
-for the operators (i.e.,* `operator*(int,int):int` *indicates the
+for the operators (i.e.,* `operator*(int, int):int` *indicates the
 application of the multiplication operator to two integers, which
 returns an integer).  Parentheses may be used to group expressions
 explicitly rather than relying on precedence and
 associativity.*
 
- Op.| Prec. | Assoc. | Placement |Description
-:--:|------:|:------:|:----------|:----------
-`? ~ :` | 10 | right | ternary infix | conditional
-`||` | 9 | left | binary infix | logical or
-`&&` | 8 | left | binary infix | logical and
-`==` | 7 | left | binary infix | equality
-`!=` | 7 | left | binary infix | inequality
-`<` | 6 | left | binary infix | less than
-`<=` | 6 | left | binary infix | less than or equal
-`>` | 6 | left | binary infix | greater than
-`>=` | 6 | left | binary infix | greater than or equal
-`+` | 5 | left | binary infix | addition
-`-` | 5 | left | binary infix | subtraction
-`*` | 4 | left | binary infix | multiplication
-`.*` | 4 | left | binary infix | elementwise multiplication
-`/` | 4 | left | binary infix | (right) division
-`./` | 4 | left | binary infix | elementwise division
-`%` | 4 | left | binary infix | modulus
-`\` | 3 | left | binary infix | left division
-`!` | 2 | n/a | unary prefix | logical negation
-`-` | 2 | n/a | unary prefix | negation
-`+` | 2 | n/a | unary prefix | promotion (no-op in Stan)
-`^` | 1 | right | binary infix | exponentiation
-`'` | 0 | n/a | unary postfix | transposition
-`()` | 0 | n/a | prefix, wrap | function application
-`[]` | 0 | left | prefix, wrap | array, matrix indexing
+ |   Op.   | Prec. | Assoc. | Placement     | Description                |
+ | :-----: | ----: | :----: | :------------ | :------------------------- |
+ | `? ~ :` |    10 | right  | ternary infix | conditional                |
+ |  `||`   |     9 |  left  | binary infix  | logical or                 |
+ |  `&&`   |     8 |  left  | binary infix  | logical and                |
+ |  `==`   |     7 |  left  | binary infix  | equality                   |
+ |  `!=`   |     7 |  left  | binary infix  | inequality                 |
+ |   `<`   |     6 |  left  | binary infix  | less than                  |
+ |  `<=`   |     6 |  left  | binary infix  | less than or equal         |
+ |   `>`   |     6 |  left  | binary infix  | greater than               |
+ |  `>=`   |     6 |  left  | binary infix  | greater than or equal      |
+ |   `+`   |     5 |  left  | binary infix  | addition                   |
+ |   `-`   |     5 |  left  | binary infix  | subtraction                |
+ |   `*`   |     4 |  left  | binary infix  | multiplication             |
+ |  `.*`   |     4 |  left  | binary infix  | elementwise multiplication |
+ |   `/`   |     4 |  left  | binary infix  | (right) division           |
+ |  `./`   |     4 |  left  | binary infix  | elementwise division       |
+ |   `%`   |     4 |  left  | binary infix  | modulus                    |
+ |   `\`   |     3 |  left  | binary infix  | left division              |
+ |  `%/%`  |     3 |  left  | binary infix  | integer division           |
+ |   `!`   |     2 |  n/a   | unary prefix  | logical negation           |
+ |   `-`   |     2 |  n/a   | unary prefix  | negation                   |
+ |   `+`   |     2 |  n/a   | unary prefix  | promotion (no-op in Stan)  |
+ |   `^`   |     1 | right  | binary infix  | exponentiation             |
+ |  `.^`   |     1 | right  | binary infix  | elementwise exponentiation |
+ |   `'`   |     0 |  n/a   | unary postfix | transposition              |
+ |  `()`   |     0 |  n/a   | prefix, wrap  | function application       |
+ |  `[]`   |     0 |  left  | prefix, wrap  | array, matrix indexing     |
 
 Other expression-forming operations, such as function application and
 subscripting bind more tightly than any of the arithmetic operations.
@@ -575,10 +626,10 @@ a ? b : c
 ```
 
 is an expression of the promoted type of `b` and `c`.  The
-only promotion allowed in Stan is from integer to real; if one
+only promotion allowed in Stan is integer -> real -> complex; e.g. if one
 argument is of type `int` and the other of type `real`, the
-conditional expression as a whole is of type `real`.  In all
-other cases, the arguments have to be of the same underlying Stan type
+conditional expression as a whole is of type `real`.
+In other cases, the arguments have to be of the same underlying Stan type
 (i.e., constraints don't count, only the shape) and the conditional
 expression is of that type.
 
@@ -652,23 +703,27 @@ calculating derivatives in some cases and be less efficient than a full
 
 ```stan
 data {
-  real x[10];
-  ...
+  array[10] real x;
+  // ...
+}
 parameters {
-  real z[10];
-  ...
+  array[10] real z;
+  // ...
+}
 model {
   y ~ normal(cond ? x : z, sigma);
-  ...
+  // ...
+}
 ```
 
 would be more efficiently (if not more transparently) coded as
 
 ```stan
-if (cond)
+if (cond) {
   y ~ normal(x, sigma);
-else
+} else {
   y ~ normal(z, sigma);
+}
 ```
 
 The conditional statement, like the conditional operator, only
@@ -682,25 +737,25 @@ derivative calculations.
 
 Stan arrays, matrices, vectors, and row vectors are all accessed
 using the same array-like notation.  For instance, if `x` is a
-variable of type `real[]` (a one-dimensional array of reals)
+variable of type `array [] real` (a one-dimensional array of reals)
 then `x[1]` is the value of the first element of the
 array.
 
 Subscripting has higher precedence than any of the arithmetic
-operations.  For example, `alpha*x[1]` is equivalent to
-`alpha*(x[1])`.
+operations.  For example, `alpha * x[1]` is equivalent to
+`alpha * (x[1])`.
 
 Multiple subscripts may be provided within a single pair of square
-brackets.  If `x` is of type `real[ , ]`, a two-dimensional
-array, then `x[2,501]` is of type `real`.
+brackets.  If `x` is of type `array[,] real`, a two-dimensional
+array, then `x[2, 501]` is of type `real`.
 
 
 ### Accessing subarrays {-}
 
 The subscripting operator also returns subarrays of arrays.  For
-example, if `x` is of type `real[ , , ]`, then `x[2]`
-is of type `real[ , ]`, and `x[2,3]` is of type
-`real[]`.  As a result, the expressions `x[2,3]` and
+example, if `x` is of type `array[,,] real`, then `x[2]`
+is of type `array[,] real`, and `x[2, 3]` is of type
+`array[] real`.  As a result, the expressions `x[2, 3]` and
 `x[2][3]` have the same meaning.
 
 
@@ -718,11 +773,11 @@ or matrix values.  For example, if `m` is of type
 `matrix[ , ]`, a two-dimensional array of matrices, then
 `m[1]` refers to the first row of the array, which is a
 one-dimensional array of matrices.  More than one index may be used,
-so that `m[1,2]` is of type `matrix` and denotes the matrix
+so that `m[1, 2]` is of type `matrix` and denotes the matrix
 in the first row and second column of the array.  Continuing to add
-indices, `m[1,2,3]` is of type `row_vector` and denotes
-the third row of the matrix denoted by `m[1,2]`.  Finally,
-`m[1,2,3,4]` is of type `real` and denotes the value in the
+indices, `m[1, 2, 3]` is of type `row_vector` and denotes
+the third row of the matrix denoted by `m[1, 2]`.  Finally,
+`m[1, 2, 3, 4]` is of type `real` and denotes the value in the
 third row and fourth column of the matrix that is found at the first
 row and second column of the array `m`.
 
@@ -738,17 +793,17 @@ all of the indexes.  A complete table of index types is given in the
 
 **Indexing Options Table.** <a id="index-types-table"></a>
 *Types of indexes and examples with one-dimensional containers of size
-  `N` and an integer array `ii` of type `int[]` size `K`.*
+  `N` and an integer array `ii` of type `array [] real` size `K`.*
 
- index type |    example     |     value
-:----------:|:--------------:|:-----------------:
-integer | `a[11]` | value of `a` at index 11
-integer array | `a[ii]` | `a[ii[1]]`, ..., `a[ii[K]]`
-lower bound | `a[3:]` | `a[3]`, ..., `a[N]`
-upper bound | `a[:5]` | `a[1]`, ..., `a[5]`
-range | `a[2:7]` | `a[2]`, ...,  `a[7]`
-all | `a[:]` | `a[1]`, ..., `a[N]`
-all | `a[]` | `a[1]`, ..., `a[N]`
+ |  index type   | example  |            value            |
+ | :-----------: | :------: | :-------------------------: |
+ |    integer    | `a[11]`  |  value of `a` at index 11   |
+ | integer array | `a[ii]`  | `a[ii[1]]`, ..., `a[ii[K]]` |
+ |  lower bound  | `a[3:]`  |     `a[3]`, ..., `a[N]`     |
+ |  upper bound  | `a[:5]`  |     `a[1]`, ..., `a[5]`     |
+ |     range     | `a[2:7]` |    `a[2]`, ...,  `a[7]`     |
+ |      all      |  `a[:]`  |     `a[1]`, ..., `a[N]`     |
+ |      all      |  `a[]`   |     `a[1]`, ..., `a[N]`     |
 
 
 ### Multiple index semantics {-}
@@ -785,14 +840,14 @@ integer single indexes `i` and `j` and integer array multiple
 indexes `is` and `js`.  The same typing rules apply for all multiple
 indexes.*
 
-  example   |   row index  |   column index  |  result type
-:----------:|:------------:|:---------------:|:--------------:
-`a[i]` | single | n/a | row vector
-`a[is]` | multiple | n/a | matrix
-`a[i, j]` | single | single | real
-`a[i, js]` | single | multiple | row vector
-`a[is, j]` | multiple | single | vector
-`a[is, js]` | multiple | multiple | matrix
+  |   example   | row index | column index | result type |
+  | :---------: | :-------: | :----------: | :---------: |
+  |   `a[i]`    |  single   |     n/a      | row vector  |
+  |   `a[is]`   | multiple  |     n/a      |   matrix    |
+  |  `a[i, j]`  |  single   |    single    |    real     |
+  | `a[i, js]`  |  single   |   multiple   | row vector  |
+  | `a[is, j]`  | multiple  |    single    |   vector    |
+  | `a[is, js]` | multiple  |   multiple   |   matrix    |
 
 Evaluation of matrices with multiple indexes is defined to respect the
 following distributivity conditions.
@@ -829,19 +884,19 @@ Each function has a type signature which determines the allowable type
 of its arguments and its return type.  For instance, the function
 signature for the logarithm function can be expressed as
 
-```
+```stan
 real log(real);
 ```
 
 and the signature for the `lmultiply` function is
 
-`real lmultiply(real,real);`
+`real lmultiply(real, real);`
 
 A function is uniquely determined by its name and its sequence of
 argument types.  For instance, the following two functions are
 different functions.
 
-`real mean(real[]);`
+`real mean(array [] real);`
 
 `real mean(vector);`
 
@@ -874,26 +929,26 @@ of type promotions.
 For example, consider a situation in which the following two function
 signatures have been registered for `foo`.
 
-```
-real foo(real,real);
-int foo(int,int);
+```stan
+real foo(real, real);
+int foo(int, int);
 ```
 
-The use of `foo` in the expression `foo(1.0,1.0)` resolves
-to `foo(real,real)`, and thus the expression `foo(1.0,1.0)`
+The use of `foo` in the expression `foo(1.0, 1.0)` resolves
+to `foo(real, real)`, and thus the expression `foo(1.0, 1.0)`
 itself is assigned a type of `real`.
 
 Because integers may be promoted to real values, the expression
-`foo(1,1)` could potentially match either `foo(real,real)`
-or `foo(int,int)`.  The former requires two type promotions and
-the latter requires none, so `foo(1,1)` is resolved to function
-`foo(int,int)` and is thus assigned the type `int`.
+`foo(1, 1)` could potentially match either `foo(real, real)`
+or `foo(int, int)`.  The former requires two type promotions and
+the latter requires none, so `foo(1, 1)` is resolved to function
+`foo(int, int)` and is thus assigned the type `int`.
 
-The expression `foo(1,1.0)` has argument types `(int,real)`
+The expression `foo(1, 1.0)` has argument types `(int, real)`
 and thus does not explicitly match either function signature.  By
 promoting the integer expression `1` to type `real`, it is
-able to match `foo(real,real)`, and hence the type of the
-function expression `foo(1,1.0)` is `real`.
+able to match `foo(real, real)`, and hence the type of the
+function expression `foo(1, 1.0)` is `real`.
 
 In some cases (though not for any built-in Stan functions), a
 situation may arise in which the function referred to by an
@@ -901,22 +956,22 @@ expression remains ambiguous.  For example, consider a situation in
 which there are exactly two functions named `bar` with the
 following signatures.
 
-```
-real bar(real,int);
-real bar(int,real);
+```stan
+real bar(real, int);
+real bar(int, real);
 ```
 
-With these signatures, the expression `bar(1.0,1)` and
-`bar(1,1.0)` resolve to the first and second of the above
-functions, respectively.  The expression `bar(1.0,1.0)` is
+With these signatures, the expression `bar(1.0, 1)` and
+`bar(1, 1.0)` resolve to the first and second of the above
+functions, respectively.  The expression `bar(1.0, 1.0)` is
 illegal because real values may not be demoted to integers.  The
-expression `bar(1,1)` is illegal for a different reason.  If the
+expression `bar(1, 1)` is illegal for a different reason.  If the
 first argument is promoted to a real value, it matches the first
 signature, whereas if the second argument is promoted to a real value,
 it matches the second signature.  The problem is that these both
 require one promotion, so the function name `bar` is ambiguous.
 If there is not a unique function requiring fewer promotions than all
-others, as with `bar(1,1)` given the two declarations above,
+others, as with `bar(1, 1)` given the two declarations above,
 the Stan compiler will flag the expression as illegal.
 
 
@@ -926,7 +981,7 @@ For most of the distributions supported by Stan, there is a
 corresponding random-number generating function.  These random number
 generators are named by the distribution with the suffix `_rng`.
 For example, a univariate normal random number can be generated by
-`normal_rng(0,1)`;  only the parameters of the distribution,
+`normal_rng(0, 1)`;  only the parameters of the distribution,
 here a location (0) and scale (1) are specified because the variate is
 generated.
 
@@ -966,7 +1021,8 @@ type of an expression can be resolved at compile time.
 The primitive implementation types for Stan are
 
 ```
-int, real, vector, row_vector,  matrix.
+int, real, complex, vector, row_vector,  matrix, complex_vector,
+complex_row_vector, complex_matrix
 ```
 
 Every basic declared type corresponds to a primitive type;  see the
@@ -980,28 +1036,31 @@ primitive types.
   result types declared in terms of primitive types plus array
   dimensionality.*
 
-   type     |   primitive type
-:-----------|:------------------
-`int` | `int`
-`real` | `real`
-`matrix` | `matrix`
-`cov_matrix` | `matrix`
-`corr_matrix` | `matrix`
-`cholesky_factor_cov` | `matrix`
-`cholesky_factor_corr` | `matrix`
-`vector` | `vector`
-`simplex` | `vector`
-`unit_vector` | `vector`
-`ordered` | `vector`
-`positive_ordered` | `vector`
-`row_vector` | `row_vector`
+   | type                   | primitive type       |
+   | :--------------------- | :------------------- |
+   | `int`                  | `int`                |
+   | `real`                 | `real`               |
+   | `vector`               | `vector`             |
+   | `simplex`              | `vector`             |
+   | `unit_vector`          | `vector`             |
+   | `ordered`              | `vector`             |
+   | `positive_ordered`     | `vector`             |
+   | `row_vector`           | `row_vector`         |
+   | `matrix`               | `matrix`             |
+   | `cov_matrix`           | `matrix`             |
+   | `corr_matrix`          | `matrix`             |
+   | `cholesky_factor_cov`  | `matrix`             |
+   | `cholesky_factor_corr` | `matrix`             |
+   | `complex_vector`       | `complex_vector`     |
+   | `complex_row_vector`   | `complex_row_vector` |
+   | `complex_matrix`       | `complex_matrix`     |
 
 
 A full implementation type consists of a primitive implementation type
 and an integer array dimensionality greater than or equal to zero.
 These will be written to emphasize their array-like nature.  For
-example, `int[]` has an array dimensionality of 1, `int` an
-array dimensionality of 0, and `int[ , ,]` an array dimensionality
+example, `array [] real` has an array dimensionality of 1, `int` an
+array dimensionality of 0, and `array [,,] int` an array dimensionality
 of 3. The implementation type `matrix[ , , ]` has a total of five
 dimensions and takes up to five indices, three from the array and two
 from the matrix.
@@ -1011,7 +1070,7 @@ dimensions in an expression such as the following declaration of a
 three-dimensional array of matrices.
 
 ```stan
-matrix[M, N] a[I, J, K];
+array[I, J, K] matrix[M, N] a;
 ```
 
 The matrix `a` is indexed as `a[i, j, k, m, n]` with the array
@@ -1026,12 +1085,50 @@ expression based on a background set of variable declarations.  The
 rules work bottom up from primitive literal and variable expressions
 to complex expressions.
 
+### Promotion
+
+There are two basic promotion rules,
+
+1. `int` types may be promoted to `real`, and
+2. `real` types may be promoted to `complex`.
+
+Plus, promotion is transitive, so that
+
+3.  if type `U` can be promoted to type `V` and type `V` can be
+promoted to type `T`, then `U` can be promoted to `T`.
+
+The first rule means that expressions of type `int` may be used
+anywhere an expression of type `real` is specified, namely in
+assignment or function argument passing.  An integer is promoted to
+real by casting it in the underlying C++ code.
+
+The remaining rules have to do with covariant typing rules, which say
+that a container of type `U` may be promoted to a container of the
+same shape of type `T` if `U` can be promoted to `T`.  For vector and
+matrix types, this induces three rules,
+
+4. `vector` may be promoted to `complex_vector`,
+5. `row_vector` may be promoted to `complex_row_vector`
+6. `matrix` may be promoted to `complex_matrix`.
+
+For array types, there's a single rule
+
+7. `array[...] U` may be promoted to `array[...] T` if `U` can be
+promoted to `T`.
+
+For example, this means `array[,] int` may be used where `array [,]
+real` or `array [,] complex` is required; as another example, `array[]
+real` may be used anywhere `array[] complex` is required.
+
+
 
 #### Literals {-}
 
 An integer literal expression such as `42` is of type `int`.
-Real literals such as `42.0` are of type `real`.
-
+Real literals such as `42.0` are of type `real`.  Imaginary literals
+such as `-17i` are of type `complex`.  the expression `7 - 2i` acts
+like a complex literal, but technically it combines a real literal `7`
+and an imaginary literal `2i` through subtraction.
 
 #### Variables {-}
 
@@ -1047,20 +1144,26 @@ variables.^[Languages such as C++ and R allow the declaration of a variable of a
 #### Indexing {-}
 
 If `x` is an expression of total dimensionality greater than or equal
-to $N$, then the type of expression `e[i1, ..., iN]` is the same as
-that of `e[i1]...[iN]`, so it suffices to define the type of a
+to $N$, then the type of expression `e[i1, i2, ..., iN]` is the same as
+that of `e[i1][i2]...[iN]`, so it suffices to define the type of a
 singly-indexed function.  Suppose `e` is an expression and `i` is an
 expression of primitive type `int`.  Then
 
-* if `e` is an expression of array dimensionality $K > 0$, then `e[i]`
-  has array dimensionality $K-1$ and the same primitive implementation
-  type as `e`,
-
-* if `e` has implementation type `vector` or `row_vector` of array
-  dimensionality 0, then `e[i]` has implementation type `real`, and
-
+* if `e` is an expression of type `array[i1, i2, ..., iN] T` and `k,` `i1`,
+  ..., `iN` are expressions of type `int`, then 
+  `e[k]` is an expression of type `array[i2, ..., iN] T`,
+* if `e` is an expression of type `array[i] T` with `i` and `k`
+  expressions of type `int`, then `e[k]` is of type `T`,
+* if `e` has implementation type `vector` or `row_vector`,
+    dimensionality 0, then `e[i]` has implementation type `real`,
 * if `e` has implementation type `matrix`, then `e[i]` has type
-  `row_vector`.
+  `row_vector`,
+* if `e` has implementation type `complex_vector` or
+  `complex_row_vector` and `i` is an expression of type `int`, then
+  `e[i]` is an expression of type `complex`, and
+* if `e` has implementation type `complex_matrix`, and `i` is an
+  expression of type `int`, then `e[i]` is an expression of type
+  `complex_row_vector`. 
 
 
 #### Function application {-}
@@ -1073,17 +1176,21 @@ function signature is a declaration of the argument types and the
 result type.
 
 In looking up functions, binary operators like `real * real` are
-defined as `operator*(real,real)` in the documentation and index.
+defined as `operator*(real, real)` in the documentation and index.
 
-In matching a function definition, arguments of type `int` may be
-promoted to type `real` if necessary (see the subsection on type
-promotion in [the function application section](#function-application) for an exact
-specification of Stan's integer-to-real type-promotion rule).
+In matching a function definition, all of the promotion rules are in
+play (integers may be promoted to reals, reals to complex, and
+containers may be promoted if their types are promoted).  For example,
+arguments of type `int` may be promoted to type `real` or `complex` if
+necessary (see the subsection on type promotion in [the function
+application section](#function-application), a `real` argument will be
+promoted to `complex` if necessary, a `vector` will be promoted to
+`complex_vector` if necessary, and so on.
 
 In general, matrix operations return the lowest inferable type.  For
 example, `row_vector * vector` returns a value of type
 `real`, which is declared in the function documentation and index
-as `real operator*(row_vector,vector)`.
+as `real operator*(row_vector, vector)`.
 
 
 ## Higher-order functions
@@ -1104,31 +1211,38 @@ or data. The second group of arguments, consisting of a real and integer
 array in all cases, must be expressions involving only data and
 literals.*
 
-  function   |  parameter or data args  |  data args   |  return type
-------------:|:-------------------:|:------------:|:-------------:
-`algebra_solver` | `vector, vector` | `real[], int[]` | `vector`
-`algebra_solver_newton` | `vector, vector` | `real[], int[]` | `vector`
-`integrate_1d`, | `real, real, real[]` | `real[], int[]` | `real`
-`integrate_ode_X`, | `real, real[], real[]` | `real[], int[]` | `real[]`
-`map_rect` | `vector, vector` | `real[], int[]` | `vector`
+  |                function |        parameter or data args        |           data args            |   return type   |
+  | ----------------------: | :----------------------------------: | :----------------------------: | :-------------: |
+  |        `algebra_solver` |           `vector, vector`           | `array [] real, array [] real` |    `vector`     |
+  | `algebra_solver_newton` |           `vector, vector`           | `array [] real, array [] real` |    `vector`     |
+  |         `integrate_1d`, |     `real, real, array [] real`      | `array [] real, array [] real` |     `real`      |
+  |      `integrate_ode_X`, | `real, array [] real, array [] real` | `array [] real, array [] real` | `array [] real` |
+  |              `map_rect` |           `vector, vector`           | `array [] real, array [] real` |    `vector`     |
 
 For example, the `integrate_ode_rk45` function can be used to integrate
 differential equations in Stan:
 
 ```stan
 functions {
-  real[] foo(real t, real[] y, real[] theta, real[] x_r, int[] x_i) {
-    ...
-...
+  array [] real foo(real t,
+                    array [] real y,
+                    array [] real theta,
+                    array [] real x_r,
+                    array [] real x_i) {
+    // ...
+  }
+}
+// ...
 int<lower=1> T;
-real y0[2];
+array[2] real y0;
 real t0;
-real ts[T];
-real theta[1];
-real x_r[0];
-int x_i[0];
-...
-real y_hat[T, 2] = integrate_ode_rk45(foo, y0, t0, ts, theta, x_r, x_i);
+array[T] real ts;
+array[1] real theta;
+array[0] real x_r;
+array[0] int x_i;
+// ...
+array[T, 2] real y_hat = integrate_ode_rk45(foo, y0, t0,
+                                              ts, theta, x_r, x_i);
 ```
 
 The function argument is `foo`, the name of the user-defined
@@ -1142,10 +1256,10 @@ an integer array as arguments and returns 2D real array.
 function types.  The first group of arguments are restricted in type.
 The sequence of trailing arguments can be of any length with any types.*
 
-  function   |  restricted args  | return type
-------------:|:-------------------:|:-------------:
-`ode_X`, | `vector, real, real[]` | `vector[]`
-`reduce_sum` | ```T[], T1, T2``` | `real`
+  |     function |        restricted args        | return type |
+  | -----------: | :---------------------------: | :---------: |
+  |     `ode_X`, | `vector, real, array [] real` | `vector[]`  |
+  | `reduce_sum` |    ```array[] T, T1, T2```    |   `real`    |
 
 `T`, `T1`, and `T2` can be any Stan type.
 
@@ -1154,19 +1268,23 @@ differential equations in Stan:
 
 ```stan
 functions {
-  vector foo(real t, vector y, real theta, vector beta, int[] x_i, int index) {
-    ...
-...
+  vector foo(real t, vector y, real theta, vector beta,
+            array [] real x_i, int index) {
+    // ...
+  }
+}
+// ...
 int<lower=1> T;
 vector[2] y0;
 real t0;
-real ts[T];
+array[T] real ts;
 real theta;
 vector[7] beta;
-int x_i[10];
+array[10] int x_i;
 int index;
-...
-vector[2] y_hat[T] = ode_rk45(foo, y0, t0, ts, theta, beta, x_i, index);
+// ...
+vector[2] y_hat[T] = ode_rk45(foo, y0, t0, ts, theta,
+                              beta, x_i, index);
 ```
 
 The function argument is `foo`, the name of the user-defined

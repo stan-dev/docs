@@ -36,11 +36,11 @@ following function in Stan (see the [user-defined functions
 section](#functions-programming.chapter) for more information on coding
 user-defined functions).
 
-```
-vector system(vector y,        // unknowns
-              vector theta,    // parameters
-              data real[] x_r,      // data (real)
-              int[] x_i) {     // data (integer)
+```stan
+vector system(vector y,              // unknowns
+              vector theta,          // parameters
+              data array[] real x_r, // data (real)
+              array[] int x_i) {     // data (integer)
   vector[2] z;
   z[1] = y[1] - theta[1];
   z[2] = y[1] * y[2] - theta[2];
@@ -60,7 +60,7 @@ signature above.
 The body of the system function here could also be coded using a row
 vector constructor and transposition,
 
-```
+```stan
 return [ y[1] - theta[1],
          y[1] * y[2] - theta[2] ]';
 ```
@@ -93,15 +93,15 @@ parameters](#algebra-control.section).
 
 The following code returns the solution to our nonlinear algebraic system:
 
-```
+```stan
 transformed data {
-  vector[2] y_guess = {1, 1};
-  real x_r[0];
-  int x_i[0];
+  vector[2] y_guess = [1, 1]';
+  array[0] real x_r;
+  array[0] int x_i;
 }
 
 transformed parameters {
-  vector[2] theta = {3, 6};
+  vector[2] theta = [3, 6]';
   vector[2] y;
 
   y = algebra_solver_newton(system, y_guess, theta, x_r, x_i);
@@ -142,7 +142,7 @@ The call to the algebraic solver shown previously uses the default control setti
 allows three additional parameters, all of which must be supplied if any of them is
 supplied.
 
-```
+```stan
 y = algebra_solver_newton(system, y_guess, theta, x_r, x_i,
                           rel_tol, f_tol, max_steps);
 ```

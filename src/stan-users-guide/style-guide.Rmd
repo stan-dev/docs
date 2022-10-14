@@ -6,7 +6,9 @@ recommendations for laying out programs in a text editor.  Although
 these recommendations may seem arbitrary, they are similar to those of
 many teams for many programming languages.  Like rules for typesetting
 text, the goal is to achieve readability without wasting white space
-either vertically or horizontally.
+either vertically or horizontally. This is the style used in the Stan
+documentation, and should align with the auto-formatting ability of
+`stanc3`.
 
 ## Choose a consistent style
 
@@ -28,8 +30,32 @@ sacrificed is laying out expressions on a single line.
 ## File extensions
 
 The recommended file extension for Stan model files is `.stan`.
+Files which contain only function definitions (intended for use with
+`#include`) should be given the `.stanfunctions` extension. A `.stanfunctions`
+file only includes the function definition and does not require 
+the `functions{}` block wrapped around the function. A simple example
+of usage where the function is defined and saved in the file
+`foo.stanfunctions`:
+
+```stan
+real foo(real x, real y) {
+  return sqrt(x * log(y));
+}
+```
+
+The function `foo` can be accessed in the Stan program by including
+the path to the `foo.stanfunctions` file as:
+
+```stan
+functions {
+  #include foo.stanfunctions;
+}
+// ...body...
+```
+
 For Stan data dump files, the recommended extension is `.R`, or
-more informatively, `.data.R`.
+more informatively, `.data.R`. For JSON output, the recommended
+extension is `.json`.
 
 ## Variable naming
 
@@ -37,19 +63,22 @@ The recommended variable naming is to follow C/C++ naming
 conventions, in which variables are lowercase, with the underscore
 character (`_`) used as a separator.  Thus it is preferred to use
 `sigma_y`, rather than the run together `sigmay`, camel-case
-`sigmaY`, or capitalized camel-case `SigmaY`.  Even matrix
-variables should be lowercased.
+`sigmaY`, or capitalized camel-case `SigmaY`. An exception is often
+made for terms appearing in mathematical expressions with standard
+names, like `A` for a matrix.
 
-The exception to the lowercasing recommendation, which also follows
+Another exception to the lowercasing recommendation, which follows
 the C/C++ conventions, is for size constants, for which the
 recommended form is a single uppercase letter.  The reason for this is
 that it allows the loop variables to match.  So loops over the indices of
 an $M \times N$ matrix $a$ would look as follows.
 
-```
-for (m in 1:M)
-  for (n in 1:N)
-     a[m,n] = ...
+```stan
+for (m in 1:M) {
+  for (n in 1:N) {
+     a[m, n] = ...
+  }
+}
 ```
 
 
@@ -63,9 +92,9 @@ The following Stan program corresponds to a direct translation of a
 BUGS model, which uses a different element of `mu` in each
 iteration.
 
-```
+```stan
 model {
-  real mu[N];
+  array[N] real mu;
   for (n in 1:N) {
     mu[n] = alpha * x[n] + beta;
     y[n] ~ normal(mu[n],sigma);
@@ -76,7 +105,7 @@ model {
 Because variables can be reused in Stan and because they should be
 declared locally for clarity, this model should be recoded as follows.
 
-```
+```stan
 model {
   for (n in 1:N) {
     real mu;
@@ -88,10 +117,11 @@ model {
 
 The local variable can be eliminated altogether, as follows.
 
-```
+```stan
 model {
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ normal(alpha * x[n] + beta, sigma);
+  }
 }
 ```
 
@@ -108,12 +138,13 @@ declare a local variable for the structure outside of the block
 in which it is used.  This allows it to be allocated once and then
 reused.
 
-```
+```stan
 model {
   vector[K] mu;
   for (n in 1:N) {
-    for (k in 1:K)
-      mu[k] = ...;
+    for (k in 1:K) {
+      mu[k] = // ...
+    }
     y[n] ~ multi_normal(mu,Sigma);
 }
 ```
@@ -123,42 +154,22 @@ outside of both loops, and used a total of `N` times.
 
 ## Parentheses and brackets
 
-### Optional parentheses for single-statement blocks {-}
+### Braces for single-statement blocks {-}
 
-Single-statement blocks can be rendered in one of two ways.  The fully
-explicit bracketed way is as follows.
+Single-statement blocks can be rendered in several ways.
+The preferred style is fully bracketed with the statement
+appearing on its own line, as follows.
 
-```
+```stan
 for (n in 1:N) {
   y[n] ~ normal(mu,1);
 }
 ```
 
-The following statement without brackets has the same effect.
+The use of loops and conditionals without brackets can be dangerous.
+For instance, consider this program.
 
-```
-for (n in 1:N)
-  y[n] ~ normal(mu,1);
-```
-
-Single-statement blocks can also be written on a single line, as
-in the following example.
-
-```
-for (n in 1:N) y[n] ~ normal(mu,1);
-```
-
-These can be much harder to read than the first example. Only use this
-style if the statement is  simple, as in this example.  Unless
-there are many similar cases, it's almost always clearer to put
-each sampling statement on its own line.
-
-Conditional and looping statements may also be written without brackets.
-
-The use of for loops without brackets can be dangerous.  For instance,
-consider this program.
-
-```
+```stan
 for (n in 1:N)
   z[n] ~ normal(nu,1);
   y[n] ~ normal(mu,1);
@@ -168,14 +179,27 @@ Because Stan ignores whitespace and the parser completes a statement
 as eagerly as possible (just as in C++), the previous program is
 equivalent to the following program.
 
-```
+```stan
 for (n in 1:N) {
   z[n] ~ normal(nu,1);
 }
 y[n] ~ normal(mu,1);
 ```
 
+Therefore, one should prefer to use braces. The only exception is when
+nesting if-else clauses, where the `else` branch contains exactly one
+conditional. Then, it is preferred to place the following `if` on the
+same line, as in the following.
 
+```stan
+if (x) {
+  // ...
+} else if (y) {
+  // ...
+} else {
+  // ...
+}
+```
 
 ### Parentheses in nested operator expressions {-}
 
@@ -194,12 +218,11 @@ the bracketed form `(y[n] > 0) || (x[n] != 0)`.
 ### No open brackets on own line {-}
 
 Vertical space is valuable as it controls how much of a program you
-can see.  The preferred Stan style is as shown in the previous
-section, not as follows.
+can see.  The preferred Stan style is with the opening brace appearing
+at the end of a line.
 
-```
-for (n in 1:N)
-{
+```stan
+for (n in 1:N) {
   y[n] ~ normal(mu,1);
 }
 ```
@@ -207,47 +230,47 @@ for (n in 1:N)
 This also goes for parameters blocks, transformed data blocks,
 which should look as follows.
 
-```
+```stan
 transformed parameters {
   real sigma;
-  ...
+  // ...
 }
 ```
 
+The exception to this rule is local blocks which only exist for
+scoping reasons. The opening brace of these blocks is not associated
+with any control flow or block structure, so it should appear on its
+own line.
 
 
 ## Conditionals
 
-Stan supports the full C++-style conditional syntax,
-allowing real or integer values to act as conditions, as follows.
+While Stan supports the full C++-style conditional syntax,
+allowing real or integer values to act as conditions, real
+values should be avoided. For a real-valued `x`, one should
+use
 
-```
-real x;
-...
-if (x) {
-   // executes if x not equal to 0
-   ...
-}
+```stan
+if (x != 0) { ...
 ```
 
+in place of
 
-### Explicit comparisons of non-Boolean conditions {-}
-
-The preferred form is to write the condition out explicitly for
-integer or real values that are not produced as the result of a
-comparison or boolean operation, as follows.
-
-```
-if (x != 0) ...
+```stan
+if (x) { ...
 ```
 
+
+Beyond stylistic choices, one should be careful using real values
+in a conditional expression, as direct comparison can have unexpected
+results due to numerical accuracy.
 
 ## Functions
 
 Functions are laid out the same way as in languages such as Java and
 C++.  For example,
 
-```
+```stan
 real foo(real x, real y) {
   return sqrt(x * log(y));
 }
@@ -263,11 +286,11 @@ we use two spaces.  The close curly brace appears on its own line.
 If function names or argument lists are long, they can be
 written as
 
-```
+```stan
 matrix
 function_to_do_some_hairy_algebra(matrix thingamabob,
                                   vector doohickey2) {
-  ...body...
+  // ...body...
 }
 ```
 
@@ -278,7 +301,7 @@ Function documentation should follow the Javadoc and Doxygen styles.
 Here's an example repeated from the [documenting functions
 section](#documenting-functions.section).
 
-```
+```stan
 /**
  * Return a data matrix of specified size with rows
  * corresponding to items and the first column filled
@@ -291,7 +314,8 @@ section](#documenting-functions.section).
  * @return Simulated predictor matrix.
  */
 matrix predictors_rng(int N, int K) {
-  ...
+  // ...
+}
 ```
 
 The open comment is `/**`, asterisks are aligned below the first
@@ -314,22 +338,17 @@ layout.
 
 ### Line breaks between statements and declarations {-}
 
-It is dispreferred to have multiple statements or declarations on the
-same line, as in the following example.
+Each statement of a program should appear on its own line.
+Declaring multiple variables of the same type can be
+accomplished in a single statement with the syntax
 
+```stan
+real mu, sigma;
 ```
-transformed parameters {
-  real mu_centered;  real sigma;
-  mu = (mu_raw - mean_mu_raw);    sigma = pow(tau,-2);
-}
-```
-
-These should be broken into four separate lines.
 
 ### No tabs {-}
 
-Stan programs should not contain tab characters.  They are legal and
-may be used anywhere other whitespace occurs.  Using tabs to layout a
+Stan programs should not contain tab characters. Using tabs to layout a
 program is highly unportable because the number of spaces
 represented by a single tab character varies depending on which
 program is doing the rendering and how it is configured.
@@ -337,19 +356,17 @@ program is doing the rendering and how it is configured.
 ### Two-character indents {-}
 
 Stan has standardized on two space characters of indentation, which is
-the standard convention for C/C++ code.  Another sensible choice is
-four spaces, which is the convention for Java and Python.  Just be
-consistent.
+the standard convention for C/C++ code.
 
 ### Space between `if`, `{` and condition
 
-Use a space after `if`s.  For instance, use `if (x < y) ...`, not
-`if(x < y) ...`.
+Use a space after `if`s.  For instance, use `if (x < y) {...`, not
+`if(x < y){ ...`.
 
-### No space For function calls {-}
+### No space for function calls {-}
 
-There is no space between a function name and the function it applies
-to.  For instance, use `normal(0,1)`, not `normal (0,1)`.
+There should not be space between a function name and the arguments
+it applies to.  For instance, use `normal(0, 1)`, not `normal (0,1)`.
 
 ### Spaces around operators {-}
 
@@ -357,31 +374,62 @@ There should be spaces around binary operators.  For instance, use
 `y[1] = x`, not `y[1]=x`, use `(x + y) * z` not
 `(x+y)*z`.
 
+Unary operators are written without a space, such as in `-x`, `!y`.
+
+### No spaces in type constraints {-}
+Another exception to the above rule is when the assignment operator
+(`=`) is used inside a type constraint, such as
+
+```stan
+real<lower=0> x;
+```
+
+Spaces should still be used in arithmetic and following commas, as in
+```stan
+real<lower=0, upper=a * x + b> x;
+```
+
 ### Breaking expressions across lines {-}
 
-Sometimes expressions are too long to fit on a single line.  In that case, the recommended form is to break *before* an operator,^[This is the usual convention in both typesetting and other programming languages. Neither R nor BUGS allows breaks before an operator because they allow newlines to signal the end of an expression or statement.]  aligning the operator to indicate scoping.  For example, use the following form (though not the content; inverting matrices is almost always a bad idea).
+Sometimes expressions are too long to fit on a single line.  In that case,
+the recommended form is to break *before* an
+operator,^[This is the usual convention in both typesetting and other programming languages. Neither R nor BUGS allows breaks before an operator because they allow newlines to signal the end of an expression or statement.]
+aligning the operator to a term above to indicate scoping.
+For example, use the following form
 
+```stan
+vector[J] p_distance = Phi((distance_tolerance - overshot)
+                           ./ ((x + overshot) * sigma_distance))
+                       - Phi((-overshot)
+                             ./ ((x + overshot) * sigma_distance));
 ```
-target += (y - mu)' * inv(Sigma) * (y - mu);
-```
 
-Here, the multiplication operator (`*`) is aligned to clearly
-signal the multiplicands in the product.
+Here, the elementwise division operator (`./`) is aligned to clearly
+signal the division is occuring inside the parethenesis, while the
+subtraction indicates it is between the function applications (`Phi`).
 
-For function arguments, break after a comma and line the next
-argument up underneath as follows.
+For functions with multiple arguments, break after a comma and
+line the next argument up underneath as follows.
 
-```
+```stan
 y[n] ~ normal(alpha + beta * x + gamma * y,
               pow(tau,-0.5));
 ```
 
 
-### Optional spaces after commas {-}
+### Spaces after commas {-}
 
-Optionally use spaces after commas in function arguments for clarity.
-For example, `normal(alpha * x[n] + beta,sigma)` can also be
-written as `normal(alpha * x[n] + beta, sigma)`.
+Commas should always be followed by spaces, including in function
+arguments, sequence literals, between variable declarations, etc.
+
+For example,
+```stan
+normal(alpha * x[n] + beta, sigma);
+```
+is preferred over
+```stan
+normal(alpha * x[n] + beta,sigma);
+```
 
 
 
@@ -399,5 +447,3 @@ Mac OS X with a single line-feed (LF) character (ASCII code point
 `0x0A`).  Newlines are signaled in Windows using two characters,
 a carriage return (CR) character (ASCII code point `0x0D`)
 followed by a line-feed (LF) character.
-
-

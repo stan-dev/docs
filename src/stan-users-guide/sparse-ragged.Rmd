@@ -17,17 +17,20 @@ are $J$ students and $K$ questions, and if every student answers every
 question, then it is practical to declare the data as a $J \times K$
 array of answers.
 
-```
+```stan
 data {
   int<lower=1> J;
   int<lower=1> K;
-  int<lower=0,upper=1> y[J, K];
-  ...
+  array[J, K] int<lower=0, upper=1> y;
+  // ...
 model {
-  for (j in 1:J)
-    for (k in 1:K)
+  for (j in 1:J) {
+    for (k in 1:K) {
       y[j, k] ~ bernoulli_logit(delta[k] * (alpha[j] - beta[k]));
-  ...
+    }
+  }
+  // ...
+}
 ```
 
 ```{r results="asis"}
@@ -101,19 +104,22 @@ other entries undefined.
 Letting $N$ be the number of $y$ that are defined, here $N=6$,
 the data and model can be formulated as follows.
 
-```
+```stan
 data {
-  ...
+  // ...
   int<lower=1> N;
-  int<lower=1,upper=J> jj[N];
-  int<lower=1,upper=K> kk[N];
-  int<lower=0,upper=1> y[N];
-  ...
+  array[N] int<lower=1, upper=J> jj;
+  array[N] int<lower=1, upper=K> kk;
+  array[N] int<lower=0, upper=1> y;
+  // ...
+}
 model {
-  for (n in 1:N)
+  for (n in 1:N) {
     y[n] ~ bernoulli_logit(delta[kk[n]]
                            * (alpha[jj[n]] - beta[kk[n]]));
-  ...
+  }
+  // ...
+}
 ```
 
 In the situation where there are no missing values, the two model
@@ -166,7 +172,7 @@ cat(ifelse(knitr::is_html_output(), "</td></tr></table>",
 
 On the left is the definition of a ragged data structure $y$ with three rows of
 different sizes ($y_1$ is size 3, $y_2$ size 2, and $y_3$ size 4).  On the right
-is an example of how to code the data in Stan, using a single vector $y$ to hold
+is an example of how to code the data in Stan, using a single vector $z$ to hold
 all the values and a separate array of integers $s$ to hold the group row sizes.
 In this example, $y_1 = z_{1:3}$, $y_2 = z_{4:5}$, and $y_3 = z_{6:9}$.
 
@@ -188,13 +194,14 @@ row.
 
 The model can then be coded up using slicing operations as follows.
 
-```
+```stan
 data {
   int<lower=0> N;   // # observations
   int<lower=0> K;   // # of groups
   vector[N] y;      // observations
-  int s[K];         // group sizes
-  ...
+  array[K] int s;   // group sizes
+  // ...
+}
 model {
   int pos;
   pos = 1;

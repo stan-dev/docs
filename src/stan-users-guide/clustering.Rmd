@@ -77,7 +77,7 @@ $$
 so that the log multivariate normal can be implemented directly up to a proportion
 by
 $$
-\mathrm{normal}\left( y_n | \mu_k, \mathrm{diag\_matrix}({\bf 1}) \right)
+\mathrm{normal}\left( y_n \mid \mu_k, \mathrm{diag\_matrix}({\bf 1}) \right)
 \propto \exp \left (- \frac{1}{2} \sum_{d=1}^D \left( \mu_{k,d} - y_{n,d}
   \right)^2 \right).
 $$
@@ -90,35 +90,39 @@ mean $\mu_k$ to the data point $y_n$.
 Consider the following Stan program for implementing $K$-means
 clustering.
 
-```
+```stan
 data {
-  int<lower=0> N;  // number of data points
-  int<lower=1> D;  // number of dimensions
-  int<lower=1> K;  // number of clusters
-  vector[D] y[N];  // observations
+  int<lower=0> N;        // number of data points
+  int<lower=1> D;        // number of dimensions
+  int<lower=1> K;        // number of clusters
+  array[N] vector[D] y;  // observations
 }
 transformed data {
   real<upper=0> neg_log_K;
   neg_log_K = -log(K);
 }
 parameters {
-  vector[D] mu[K]; // cluster means
+  array[K] vector[D] mu; // cluster means
 }
 transformed parameters {
-  real<upper=0> soft_z[N, K]; // log unnormalized clusters
-  for (n in 1:N)
-    for (k in 1:K)
+  array[N, K] real<upper=0> soft_z; // log unnormalized clusters
+  for (n in 1:N) {
+    for (k in 1:K) {
       soft_z[n, k] = neg_log_K
                      - 0.5 * dot_self(mu[k] - y[n]);
+    }
+  }
 }
 model {
   // prior
-  for (k in 1:K)
+  for (k in 1:K) {
     mu[k] ~ std_normal();
+  }
 
   // likelihood
-  for (n in 1:N)
+  for (n in 1:N) {
     target += log_sum_exp(soft_z[n]);
+  }
 }
 ```
 
@@ -285,32 +289,35 @@ training data with documents of known categories can be coded in Stan
 as follows
 
 
-```
+```stan
 data {
   // training data
   int<lower=1> K;               // num topics
   int<lower=1> V;               // num words
   int<lower=0> M;               // num docs
   int<lower=0> N;               // total word instances
-  int<lower=1,upper=K> z[M];    // topic for doc m
-  int<lower=1,upper=V> w[N];    // word n
-  int<lower=1,upper=M> doc[N];  // doc ID for word n
+  array[M] int<lower=1, upper=K> z;    // topic for doc m
+  array[N] int<lower=1, upper=V> w;    // word n
+  array[N] int<lower=1, upper=M> doc;  // doc ID for word n
   // hyperparameters
   vector<lower=0>[K] alpha;     // topic prior
   vector<lower=0>[V] beta;      // word prior
 }
 parameters {
   simplex[K] theta;             // topic prevalence
-  simplex[V] phi[K];            // word dist for topic k
+  array[K] simplex[V] phi;      // word dist for topic k
 }
 model {
   theta ~ dirichlet(alpha);
-  for (k in 1:K)
+  for (k in 1:K) {
     phi[k] ~ dirichlet(beta);
-  for (m in 1:M)
+  }
+  for (m in 1:M) {
     z[m] ~ categorical(theta);
-  for (n in 1:N)
+  }
+  for (n in 1:N) {
     w[n] ~ categorical(phi[z[doc[n]]]);
+  }
 }
 ```
 
@@ -344,21 +351,27 @@ The last step shows how the `log_sum_exp` function can be used
 to stabilize the numerical calculation and return a result on the log
 scale.
 
-```
+```stan
 model {
-  real gamma[M, K];
+  array[M, K] real gamma;
   theta ~ dirichlet(alpha);
-  for (k in 1:K)
+  for (k in 1:K) {
     phi[k] ~ dirichlet(beta);
-  for (m in 1:M)
-    for (k in 1:K)
-      gamma[m, k] = categorical_lpmf(k \mid theta);
-  for (n in 1:N)
-    for (k in 1:K)
+  }
+  for (m in 1:M) {
+    for (k in 1:K) {
+      gamma[m, k] = categorical_lpmf(k | theta);
+    }
+  }
+  for (n in 1:N) {
+    for (k in 1:K) {
       gamma[doc[n], k] = gamma[doc[n], k]
-                         + categorical_lpmf(w[n] \mid phi[k]);
-  for (m in 1:M)
+                         + categorical_lpmf(w[n] | phi[k]);
+    }
+  }
+  for (m in 1:M) {
     target += log_sum_exp(gamma[m]);
+  }
 }
 ```
 
@@ -371,7 +384,7 @@ $$
 Given $\gamma$, the posterior probability that document
 $m$ is assigned category $k$ is
 $$
-\mathrm{Pr}[z_m = k|w,\alpha,\beta]
+\mathrm{Pr}[z_m = k \mid w,\alpha,\beta]
 =
 \exp \left(
 \gamma_{m,k}
@@ -499,30 +512,33 @@ Applying the marginal derived in the last section to the data
 structure described in this section leads to the following Stan
 program for LDA.
 
-```
+```stan
 data {
   int<lower=2> K;               // num topics
   int<lower=2> V;               // num words
   int<lower=1> M;               // num docs
   int<lower=1> N;               // total word instances
-  int<lower=1,upper=V> w[N];    // word n
-  int<lower=1,upper=M> doc[N];  // doc ID for word n
+  array[N] int<lower=1, upper=V> w;    // word n
+  array[N] int<lower=1, upper=M> doc;  // doc ID for word n
   vector<lower=0>[K] alpha;     // topic prior
   vector<lower=0>[V] beta;      // word prior
 }
 parameters {
-  simplex[K] theta[M];          // topic dist for doc m
-  simplex[V] phi[K];            // word dist for topic k
+  array[M] simplex[K] theta;    // topic dist for doc m
+  array[K] simplex[V] phi;      // word dist for topic k
 }
 model {
-  for (m in 1:M)
+  for (m in 1:M) {
     theta[m] ~ dirichlet(alpha);  // prior
-  for (k in 1:K)
+  }
+  for (k in 1:K) {
     phi[k] ~ dirichlet(beta);     // prior
+  }
   for (n in 1:N) {
-    real gamma[K];
-    for (k in 1:K)
+    array[K] real gamma;
+    for (k in 1:K) {
       gamma[k] = log(theta[doc[n], k]) + log(phi[k, w[n]]);
+    }
     target += log_sum_exp(gamma);  // likelihood;
   }
 }
@@ -552,9 +568,9 @@ the correlated topic model by replacing the Dirichlet topic prior
 `alpha` in the data declaration with the mean and covariance of
 the multivariate logistic normal prior.
 
-```
+```stan
 data {
-  ... data as before without alpha ...
+  // ... data as before without alpha ...
   vector[K] mu;          // topic mean
   cov_matrix[K] Sigma;   // topic covariance
 }
@@ -564,20 +580,22 @@ Rather than drawing the simplex parameter `theta` from a
 Dirichlet, a parameter `eta` is drawn from a multivariate normal
 distribution and then transformed using softmax into a simplex.
 
-```
+```stan
 parameters {
-  simplex[V] phi[K];     // word dist for topic k
-  vector[K] eta[M];      // topic dist for doc m
+  array[K] simplex[V] phi;     // word dist for topic k
+  array[M] vector[K] eta;      // topic dist for doc m
 }
 transformed parameters {
-  simplex[K] theta[M];
-  for (m in 1:M)
+  array[M] simplex[K] theta;
+  for (m in 1:M) {
     theta[m] = softmax(eta[m]);
+  }
 }
 model {
-  for (m in 1:M)
+  for (m in 1:M) {
     eta[m] ~ multi_normal(mu, Sigma);
-  ... model as before w/o prior for theta ...
+  }
+  // ... model as before w/o prior for theta ...
 }
 ```
 
@@ -590,20 +608,21 @@ from the data block to the parameters block and providing them with
 priors in the model.  A relatively efficient and interpretable prior
 for the covariance matrix `Sigma` may be encoded as follows.
 
-```
-... data block as before, but without alpha ...
+```stan
+// ... data block as before, but without alpha ...
 parameters {
   vector[K] mu;              // topic mean
   corr_matrix[K] Omega;      // correlation matrix
   vector<lower=0>[K] sigma;  // scales
-  vector[K] eta[M];          // logit topic dist for doc m
-  simplex[V] phi[K];         // word dist for topic k
+  array[M] vector[K] eta;    // logit topic dist for doc m
+  array[K] simplex[V] phi;   // word dist for topic k
 }
 transformed parameters {
-  ... eta as above ...
+  // ... eta as above ...
   cov_matrix[K] Sigma;       // covariance matrix
-  for (m in 1:K)
+  for (m in 1:K) {
     Sigma[m, m] = sigma[m] * sigma[m] * Omega[m, m];
+  }
   for (m in 1:(K-1)) {
     for (n in (m+1):K) {
       Sigma[m, n] = sigma[m] * sigma[n] * Omega[m, n];
@@ -615,7 +634,7 @@ model {
   mu ~ normal(0, 5);      // vectorized, diffuse
   Omega ~ lkj_corr(2.0);  // regularize to unit correlation
   sigma ~ cauchy(0, 5);   // half-Cauchy due to constraint
-  ... words sampled as above ...
+  // ... words sampled as above ...
 }
 ```
 
@@ -623,7 +642,7 @@ The $\textsf{LKJCorr}$ distribution with shape $\alpha > 0$ has support
 on correlation matrices (i.e., symmetric positive definite with unit
 diagonal).  Its density is defined by
 $$
-\mathsf{LkjCorr}(\Omega|\alpha) \propto \mathrm{det}(\Omega)^{\alpha - 1}
+\mathsf{LkjCorr}(\Omega\mid\alpha) \propto \mathrm{det}(\Omega)^{\alpha - 1}
 $$
 With a scale of $\alpha = 2$, the weakly informative prior favors a
 unit correlation matrix.  Thus the compound effect of this prior on

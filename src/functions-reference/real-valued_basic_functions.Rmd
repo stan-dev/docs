@@ -47,17 +47,17 @@ When applied to a simple real value, the result is a real value.  When
 applied to arrays, vectorized functions like `exp()` are defined
 elementwise.  For example,
 
-```
+```stan
  // declare some variables for arguments
  real x0;
- real x1[5];
- real x2[4, 7];
- ...
+ array[5] real x1;
+ array[4, 7] real x2;
+ // ...
  // declare some variables for results
  real y0;
- real y1[5];
- real y2[4, 7];
- ...
+ array[5] real y1;
+ array[4, 7] real y2;
+ // ...
  // calculate and assign results
  y0 = exp(x0);
  y1 = exp(x1);
@@ -67,16 +67,18 @@ elementwise.  For example,
 When `exp` is applied to an array, it applies elementwise.  For
 example, the statement above,
 
-```
+```stan
  y2 = exp(x2);
 ```
 
 produces the same result for `y2` as the explicit loop
 
-```
- for (i in 1:4)
-   for (j in 1:7)
-     y2[i, j] = exp(x2[i, j]);
+```stan
+for (i in 1:4) {
+  for (j in 1:7) {
+    y2[i, j] = exp(x2[i, j]);
+  }
+}
 ```
 
 #### Vector and matrix arguments
@@ -84,15 +86,15 @@ produces the same result for `y2` as the explicit loop
 Vectorized functions also apply elementwise to vectors and matrices.
 For example,
 
-```
+```stan
  vector[5] xv;
  row_vector[7] xrv;
  matrix[10, 20] xm;
- 
+
  vector[5] yv;
  row_vector[7] yrv;
  matrix[10, 20] ym;
- 
+
  yv = exp(xv);
  yrv = exp(xrv);
  ym = exp(xm);
@@ -100,11 +102,11 @@ For example,
 
 Arrays of vectors and matrices work the same way.  For example,
 
-```
- matrix[17, 93] u[12];
- 
- matrix[17, 93] z[12];
- 
+```stan
+ array[12] matrix[17, 93] u;
+
+ array[12] matrix[17, 93] z;
+
  z = exp(u);
 ```
 
@@ -119,9 +121,9 @@ Arrays work the same way, so that if `n2` is a one dimensional array
 of integers, then `exp(n2)` will be a one-dimensional array of reals
 with the same number of elements as `n2`.  For example,
 
-```
- int n1[23];
- real z1[23];
+```stan
+ array[23] int n1;
+ array[23] real z1;
  z1 = exp(n1);
 ```
 
@@ -140,20 +142,20 @@ When applied to two scalar values, the result is a scalar value.  When
 applied to two arrays, or combination of a scalar value and an array,
 vectorized functions like `pow()` are defined elementwise.  For example,
 
-```
+```stan
  // declare some variables for arguments
  real x00;
  real x01;
- real x10[5];
- real x11[5];
- real x20[4, 7];
- real x21[4, 7];
- ...
+ array[5] real x10;
+ array[5]real x11;
+ array[4, 7] real x20;
+ array[4, 7] real x21;
+ // ...
  // declare some variables for results
  real y0;
- real y1[5];
- real y2[4, 7];
- ...
+ array[5] real y1;
+ array[4, 7] real y2;
+ // ...
  // calculate and assign results
  y0 = pow(x00, x01);
  y1 = pow(x10, x11);
@@ -163,30 +165,34 @@ vectorized functions like `pow()` are defined elementwise.  For example,
 When `pow` is applied to two arrays, it applies elementwise.  For
 example, the statement above,
 
-```
+```stan
  y2 = pow(x20, x21);
 ```
 
 produces the same result for `y2` as the explicit loop
 
-```
- for (i in 1:4)
-   for (j in 1:7)
-     y2[i, j] = pow(x20[i, j], x21[i, j]);
+```stan
+for (i in 1:4) {
+  for (j in 1:7) {
+    y2[i, j] = pow(x20[i, j], x21[i, j]);
+  }
+}
 ```
 
 Alternatively, if a combination of an array and a scalar are
 provided, the scalar value is broadcast to be applied to each
 value of the array. For example, the following statement:
-```
+```stan
 y2 = pow(x20, x00);
 ```
 
 produces the same result for `y2` as the explicit loop:
-```
- for (i in 1:4)
-   for (j in 1:7)
-     y2[i, j] = pow(x20[i, j], x00);
+```stan
+for (i in 1:4) {
+  for (j in 1:7) {
+    y2[i, j] = pow(x20[i, j], x00);
+  }
+}
 ```
 
 #### Vector and matrix arguments
@@ -195,17 +201,17 @@ Vectorized binary functions also apply elementwise to vectors and matrices,
 and to combinations of these with scalar values.
 For example,
 
-```
+```stan
  real x00;
  vector[5] xv00;
  vector[5] xv01;
  row_vector[7] xrv;
  matrix[10, 20] xm;
- 
+
  vector[5] yv;
  row_vector[7] yrv;
  matrix[10, 20] ym;
- 
+
  yv = pow(xv00, xv01);
  yrv = pow(xrv, x00);
  ym = pow(x00, xm);
@@ -213,11 +219,11 @@ For example,
 
 Arrays of vectors and matrices work the same way.  For example,
 
-```
- matrix[17, 93] u[12];
- 
- matrix[17, 93] z[12];
- 
+```stan
+ array[12] matrix[17, 93] u;
+
+ array[12] matrix[17, 93] z;
+
  z = pow(u, x00);
 ```
 
@@ -229,22 +235,22 @@ j, k], x00)`.
 Vectorised binary functions require that both inputs, unless one is a real,
 be containers of the same type and size. For example, the following statements
 are legal:
-```
+```stan
  vector[5] xv;
  row_vector[7] xrv;
  matrix[10, 20] xm;
- 
+
  vector[5] yv = pow(xv, xv)
  row_vector[7] yrv = pow(xrv, xrv)
  matrix[10, 20] = pow(xm, xm)
 ```
 
 But the following statements are not:
-```
+```stan
  vector[5] xv;
  vector[7] xv2;
  row_vector[5] xrv;
- 
+
  // Cannot mix different types
  vector[5] yv = pow(xv, xrv)
 
@@ -259,21 +265,21 @@ functions, one argument can be a container of any type while the other can be
 an integer array, as long as the dimensions of both are the same. For example,
 the following statements are legal:
 
-```
+```stan
  vector[5] xv;
  matrix[5, 5] xm;
- int xi[5];
- int xii[5, 5];
- 
+ array[5] int xi;
+ array[5, 5] int xii;
+
  vector[5] yv = bessel_first_kind(xi, xv);
  matrix[5, 5] ym = bessel_first_kind(xii, xm);
 ```
 
 Whereas these are not:
-```
+```stan
  vector[5] xv;
  matrix[5, 5] xm;
- int xi[7];
+ array[7] int xi;
 
  // Dimensions of containers do not match
  vector[5] yv = bessel_first_kind(xi, xv);
@@ -288,65 +294,74 @@ Constants are represented as functions with no arguments and must be
 called as such.  For instance, the mathematical constant $\pi$ must be
 written in a Stan program as `pi()`.
 
-<!-- real; pi; () -->
+<!-- real; pi; (); -->
 \index{{\tt \bfseries pi }!{\tt (): real}|hyperpage}
 
 `real` **`pi`**`()`<br>\newline
 $\pi$, the ratio of a circle's circumference to its diameter
+`r since("2.0")`
 
-<!-- real; e; () -->
+<!-- real; e; (); -->
 \index{{\tt \bfseries e }!{\tt (): real}|hyperpage}
 
 `real` **`e`**`()`<br>\newline
 $e$, the base of the natural logarithm
+`r since("2.0")`
 
-<!-- real; sqrt2; () -->
+<!-- real; sqrt2; (); -->
 \index{{\tt \bfseries sqrt2 }!{\tt (): real}|hyperpage}
 
 `real` **`sqrt2`**`()`<br>\newline
 The square root of 2
+`r since("2.0")`
 
-<!-- real; log2; () -->
+<!-- real; log2; (); -->
 \index{{\tt \bfseries log2 }!{\tt (): real}|hyperpage}
 
 `real` **`log2`**`()`<br>\newline
 The natural logarithm of 2
+`r since("2.0")`
 
-<!-- real; log10; () -->
+<!-- real; log10; (); -->
 \index{{\tt \bfseries log10 }!{\tt (): real}|hyperpage}
 
 `real` **`log10`**`()`<br>\newline
 The natural logarithm of 10
+`r since("2.0")`
 
 ## Special values
 
-<!-- real; not_a_number; () -->
+<!-- real; not_a_number; (); -->
 \index{{\tt \bfseries not\_a\_number }!{\tt (): real}|hyperpage}
 
 `real` **`not_a_number`**`()`<br>\newline
 Not-a-number, a special non-finite real value returned to signal an
 error
+`r since("2.0")`
 
-<!-- real; positive_infinity; () -->
+<!-- real; positive_infinity; (); -->
 \index{{\tt \bfseries positive\_infinity }!{\tt (): real}|hyperpage}
 
 `real` **`positive_infinity`**`()`<br>\newline
 Positive infinity, a special non-finite real value larger than all
 finite numbers
+`r since("2.0")`
 
-<!-- real; negative_infinity; () -->
+<!-- real; negative_infinity; (); -->
 \index{{\tt \bfseries negative\_infinity }!{\tt (): real}|hyperpage}
 
 `real` **`negative_infinity`**`()`<br>\newline
 Negative infinity, a special non-finite real value smaller than all
 finite numbers
+`r since("2.0")`
 
-<!-- real; machine_precision; () -->
+<!-- real; machine_precision; (); -->
 \index{{\tt \bfseries machine\_precision }!{\tt (): real}|hyperpage}
 
 `real` **`machine_precision`**`()`<br>\newline
 The smallest number $x$ such that $(x + 1) \neq 1$ in floating-point
 arithmetic on the current hardware platform
+`r since("2.0")`
 
 ## Log probability function {#get-log-prob}
 
@@ -371,21 +386,23 @@ display the log probability accumulator at various stages of execution
 to see where it becomes ill defined.
 
 [^fn_lp]: This function used to be called `get_lp()`, but that   name
-has been deprecated; using it will print a warning.  The   function
-`get_lp()` will be removed in a future release.
+has been deprecated; using it will print a warning.  The function
+`get_lp()` will be removed in Stan 2.32.0.
 
-<!-- real; target; () -->
+<!-- real; target; (); -->
 \index{{\tt \bfseries target }!{\tt (): real}|hyperpage}
 
 `real` **`target`**`()`<br>\newline
 Return the current value of the log probability accumulator.
+`r since("2.10")`
 
-<!-- real; get_lp; () -->
+<!-- real; get_lp; (); -->
 \index{{\tt \bfseries get\_lp }!{\tt (): real}|hyperpage}
 
 `real` **`get_lp`**`()`<br>\newline
 Return the current value of the log probability accumulator;
 **deprecated;** - use `target()` instead.
+`r since("2.5, scheduled for removal in 2.32.0")`
 
 Both `target` and the deprecated `get_lp` act like other functions
 ending in `_lp`, meaning that they may only may only be used in the
@@ -411,7 +428,6 @@ carried out by first promoting the integer value.
 
 `int` **`operator<`**`(int x, int y)`<br>\newline
 
-
 <!-- int; operator<; (real x, real y); -->
 \index{{\tt \bfseries operator\_logical\_less\_than }!{\tt (real x, real y): int}|hyperpage}
 
@@ -419,12 +435,12 @@ carried out by first promoting the integer value.
 Return 1 if x is less than y and 0 otherwise. \[ \text{operator<}(x,y)
 = \begin{cases} 1 & \text{if $x < y$} \\ 0 & \text{otherwise}
 \end{cases} \]
+`r since("2.0")`
 
 <!-- int; operator<=; (int x, int y); -->
 \index{{\tt \bfseries operator\_logical\_less\_than\_equal }!{\tt (int x, int y): int}|hyperpage}
 
 `int` **`operator<=`**`(int x, int y)`<br>\newline
-
 
 <!-- int; operator<=; (real x, real y); -->
 \index{{\tt \bfseries operator\_logical\_less\_than\_equal }!{\tt (real x, real y): int}|hyperpage}
@@ -433,12 +449,12 @@ Return 1 if x is less than y and 0 otherwise. \[ \text{operator<}(x,y)
 Return 1 if x is less than or equal y and 0 otherwise. \[
 \text{operator<=}(x,y) = \begin{cases} 1 & \text{if $x \leq y$} \\ 0 &
 \text{otherwise} \end{cases} \]
+`r since("2.0")`
 
 <!-- int; operator>; (int x, int y); -->
 \index{{\tt \bfseries operator\_logical\_greater\_than }!{\tt (int x, int y): int}|hyperpage}
 
 `int` **`operator>`**`(int x, int y)`<br>\newline
-
 
 <!-- int; operator>; (real x, real y); -->
 \index{{\tt \bfseries operator\_logical\_greater\_than }!{\tt (real x, real y): int}|hyperpage}
@@ -447,12 +463,12 @@ Return 1 if x is less than or equal y and 0 otherwise. \[
 Return 1 if x is greater than y and 0 otherwise. \[ \text{operator>} =
 \begin{cases} 1 & \text{if $x > y$} \\ 0 & \text{otherwise}
 \end{cases} \]
+`r since("2.0")`
 
 <!-- int; operator>=; (int x, int y); -->
 \index{{\tt \bfseries operator\_logical\_greater\_than\_equal }!{\tt (int x, int y): int}|hyperpage}
 
 `int` **`operator>=`**`(int x, int y)`<br>\newline
-
 
 <!-- int; operator>=; (real x, real y); -->
 \index{{\tt \bfseries operator\_logical\_greater\_than\_equal }!{\tt (real x, real y): int}|hyperpage}
@@ -461,26 +477,26 @@ Return 1 if x is greater than y and 0 otherwise. \[ \text{operator>} =
 Return 1 if x is greater than or equal to y and 0 otherwise. \[
 \text{operator>=} = \begin{cases} 1 & \text{if $x \geq y$} \\ 0 &
 \text{otherwise} \end{cases} \]
+`r since("2.0")`
 
 <!-- int; operator==; (int x, int y); -->
-\index{{\tt \bfseries operator\_logial\_equal }!{\tt (int x, int y): int}|hyperpage}
+\index{{\tt \bfseries operator\_logical\_equal }!{\tt (int x, int y): int}|hyperpage}
 
 `int` **`operator==`**`(int x, int y)`<br>\newline
 
-
 <!-- int; operator==; (real x, real y); -->
-\index{{\tt \bfseries operator\_logial\_equal }!{\tt (real x, real y): int}|hyperpage}
+\index{{\tt \bfseries operator\_logical\_equal }!{\tt (real x, real y): int}|hyperpage}
 
 `int` **`operator==`**`(real x, real y)`<br>\newline
 Return 1 if x is equal to y and 0 otherwise. \[ \text{operator==}(x,y)
 = \begin{cases} 1 & \text{if $x = y$} \\ 0 & \text{otherwise}
 \end{cases} \]
+`r since("2.0")`
 
 <!-- int; operator!=; (int x, int y); -->
 \index{{\tt \bfseries operator\_logical\_not\_equal }!{\tt (int x, int y): int}|hyperpage}
 
 `int` **`operator!=`**`(int x, int y)`<br>\newline
-
 
 <!-- int; operator!=; (real x, real y); -->
 \index{{\tt \bfseries operator\_logical\_not\_equal }!{\tt (real x, real y): int}|hyperpage}
@@ -489,6 +505,7 @@ Return 1 if x is equal to y and 0 otherwise. \[ \text{operator==}(x,y)
 Return 1 if x is not equal to y and 0 otherwise. \[
 \text{operator!=}(x,y) = \begin{cases} 1 & \text{if $x \neq y$} \\ 0 &
 \text{otherwise} \end{cases} \]
+`r since("2.0")`
 
 ### Boolean operators
 
@@ -505,43 +522,59 @@ b) || (((c >= d) && (e != f)))`.
 \index{{\tt \bfseries operator\_negation }!{\tt (int x): int}|hyperpage}
 
 `int` **`operator!`**`(int x)`<br>\newline
-
+Return 1 if x is zero and 0 otherwise. \[ \text{operator!}(x) =
+\begin{cases} 0 & \text{if $x \neq 0$} \\ 1 & \text{if $x = 0$}
+\end{cases} \]
+`r since("2.0")`
 
 <!-- int; operator!; (real x); -->
 \index{{\tt \bfseries operator\_negation }!{\tt (real x): int}|hyperpage}
 
 `int` **`operator!`**`(real x)`<br>\newline
 Return 1 if x is zero and 0 otherwise. \[ \text{operator!}(x) =
-\begin{cases} 0 & \text{if $x \neq 0$} \\ 1 & \text{if $x = 0$}
+\begin{cases} 0 & \text{if $x \neq 0.0$} \\ 1 & \text{if $x = 0.0$}
 \end{cases} \]
+**deprecated;** - use `operator==` instead.
+`r since("2.0, deprecated in 2.31")`
 
 <!-- int; operator&&; (int x, int y); -->
 \index{{\tt \bfseries operator\_logical\_and }!{\tt (int x, int y): int}|hyperpage}
 
 `int` **`operator&&`**`(int x, int y)`<br>\newline
 
+Return 1 if x is unequal to 0 and y is unequal to 0. \[
+\mathrm{operator\&\&}(x,y) = \begin{cases} 1 & \text{if $x \neq 0$}
+\text{ and } y \neq 0\\ 0 & \text{otherwise} \end{cases} \]
+`r since("2.0")`
 
 <!-- int; operator&&; (real x, real y); -->
 \index{{\tt \bfseries operator\_logical\_and }!{\tt (real x, real y): int}|hyperpage}
 
 `int` **`operator&&`**`(real x, real y)`<br>\newline
-Return 1 if x is unequal to 0 and y is unequal to 0. \[
-\mathrm{operator\&\&}(x,y) = \begin{cases} 1 & \text{if $x \neq 0$}
-\text{ and } y \neq 0\\ 0 & \text{otherwise} \end{cases} \]
+Return 1 if x is unequal to 0.0 and y is unequal to 0.0. \[
+\mathrm{operator\&\&}(x,y) = \begin{cases} 1 & \text{if $x \neq 0.0$}
+\text{ and } y \neq 0.0\\ 0 & \text{otherwise} \end{cases} \]
+**deprecated**
+`r since("2.0, deprecated in 2.31")`
 
 <!-- int; operator||; (int x, int y); -->
 \index{{\tt \bfseries operator\_logical\_or }!{\tt (int x, int y): int}|hyperpage}
 
 `int` **`operator||`**`(int x, int y)`<br>\newline
-
+Return 1 if x is unequal to 0 or y is unequal to 0. \[
+\text{operator||}(x,y) = \begin{cases} 1 & \text{if $x \neq 0$}
+\textrm{ or } y \neq 0\\ 0 & \text{otherwise} \end{cases} \]
+`r since("2.0")`
 
 <!-- int; operator||; (real x, real y); -->
 \index{{\tt \bfseries operator\_logical\_or }!{\tt (real x, real y): int}|hyperpage}
 
 `int` **`operator||`**`(real x, real y)`<br>\newline
-Return 1 if x is unequal to 0 or y is unequal to 0. \[
-\text{operator||}(x,y) = \begin{cases} 1 & \text{if $x \neq 0$}
-\textrm{ or } y \neq 0\\ 0 & \text{otherwise} \end{cases} \]
+Return 1 if x is unequal to 0.0 or y is unequal to 0.0. \[
+\text{operator||}(x,y) = \begin{cases} 1 & \text{if $x \neq 0.0$}
+\textrm{ or } y \neq 0.0\\ 0 & \text{otherwise} \end{cases} \]
+**deprecated**
+`r since("2.0, deprecated in 2.31")`
 
 #### Boolean operator short circuiting
 
@@ -572,18 +605,21 @@ operations.  For instance, `step(a-b)` evaluates to 1 if `a` is
 greater than `b` and evaluates to 0 otherwise. `step` is a step-like
 functions; see the warning in section [step functions](#step-functions) applied to
 expressions dependent on parameters.
+`r since("2.0")`
 
 <!-- int; is_inf; (real x); -->
 \index{{\tt \bfseries is\_inf }!{\tt (real x): int}|hyperpage}
 
 `int` **`is_inf`**`(real x)`<br>\newline
 Return 1 if x is infinite (positive or negative) and 0 otherwise.
+`r since("2.5")`
 
 <!-- int; is_nan; (real x); -->
 \index{{\tt \bfseries is\_nan }!{\tt (real x): int}|hyperpage}
 
 `int` **`is_nan`**`(real x)`<br>\newline
 Return 1 if x is NaN and 0 otherwise.
+`r since("2.5")`
 
 Care must be taken because both of these indicator functions are
 step-like and thus can cause discontinuities in gradients when applied
@@ -604,6 +640,7 @@ y` and `-x`, respectively.
 
 `real` **`operator+`**`(real x, real y)`<br>\newline
 Return the sum of x and y. \[ (x + y) = \text{operator+}(x,y) = x+y \]
+`r since("2.0")`
 
 <!-- real; operator-; (real x, real y); -->
 \index{{\tt \bfseries operator\_subtract }!{\tt (real x, real y): real}|hyperpage}
@@ -611,6 +648,7 @@ Return the sum of x and y. \[ (x + y) = \text{operator+}(x,y) = x+y \]
 `real` **`operator-`**`(real x, real y)`<br>\newline
 Return the difference between x and y. \[ (x - y) =
 \text{operator-}(x,y) = x - y \]
+`r since("2.0")`
 
 <!-- real; operator*; (real x, real y); -->
 \index{{\tt \bfseries operator\_multiply }!{\tt (real x, real y): real}|hyperpage}
@@ -618,6 +656,7 @@ Return the difference between x and y. \[ (x - y) =
 `real` **`operator*`**`(real x, real y)`<br>\newline
 Return the product of x and y. \[ (x * y) = \text{operator*}(x,y) = xy
 \]
+`r since("2.0")`
 
 <!-- real; operator/; (real x, real y); -->
 \index{{\tt \bfseries operator\_divide }!{\tt (real x, real y): real}|hyperpage}
@@ -625,6 +664,7 @@ Return the product of x and y. \[ (x * y) = \text{operator*}(x,y) = xy
 `real` **`operator/`**`(real x, real y)`<br>\newline
 Return the quotient of x and y. \[ (x / y) = \text{operator/}(x,y) =
 \frac{x}{y} \]
+`r since("2.0")`
 
 <!-- real; operator^; (real x, real y); -->
 \index{{\tt \bfseries operator\_pow }!{\tt (real x, real y): real}|hyperpage}
@@ -632,6 +672,7 @@ Return the quotient of x and y. \[ (x / y) = \text{operator/}(x,y) =
 `real` **`operator^`**`(real x, real y)`<br>\newline
 Return x raised to the power of y. \[ (x^\mathrm{\wedge}y) =
 \text{operator}^\mathrm{\wedge}(x,y) = x^y \]
+`r since("2.5")`
 
 ### Unary prefix operators
 
@@ -641,12 +682,14 @@ Return x raised to the power of y. \[ (x^\mathrm{\wedge}y) =
 `real` **`operator-`**`(real x)`<br>\newline
 Return the negation of the subtrahend x. \[ \text{operator-}(x) = (-x)
 \]
+`r since("2.0")`
 
 <!-- real; operator+; (real x); -->
 \index{{\tt \bfseries operator\_add }!{\tt (real x): real}|hyperpage}
 
 `real` **`operator+`**`(real x)`<br>\newline
 Return the value of x. \[ \text{operator+}(x) = x \]
+`r since("2.0")`
 
 ## Step-like functions {#step-functions}
 
@@ -660,11 +703,24 @@ used in the   data, transformed data, or generated quantities blocks.*
 
 ### Absolute value functions
 
+<!-- T; abs; (T x); -->
+\index{{\tt \bfseries abs }!{\tt (T x): T}|hyperpage}
+
+`T` **`abs`**`(T x)`<br>\newline
+The absolute value of x.
+
+This function works elementwise over containers such as vectors.
+Given a type `T` which is `real` `vector`, `row_vector`, `matrix`, or an array
+of those types, `abs` returns the same type where each element has had its
+absolute value taken.
+`r since("2.0, vectorized in 2.30")`
+
 <!-- R; fabs; (T x); -->
 \index{{\tt \bfseries fabs }!{\tt (T x): R}|hyperpage}
 
 `R` **`fabs`**`(T x)`<br>\newline
 absolute value of x
+`r since("2.0, vectorized in 2.13, deprecated in 2.30")`
 
 <!-- real; fdim; (real x, real y); -->
 \index{{\tt \bfseries fdim }!{\tt (real x, real y): real}|hyperpage}
@@ -674,12 +730,14 @@ Return the positive difference between x and y, which is x - y if x is
 greater than y and 0 otherwise; see warning above.
 \[ \text{fdim}(x,y) = \begin{cases} x-y &
 \text{if } x \geq y \\ 0 & \text{otherwise} \end{cases} \]
+`r since("2.0")`
 
 <!-- R; fdim; (T1 x, T2 y); -->
 \index{{\tt \bfseries fdim }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`fdim`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `fdim` function
+`r since("2.25")`
 
 ### Bounds functions
 
@@ -690,12 +748,15 @@ Vectorized implementation of the `fdim` function
 Return the minimum of x and y; see warning above.
 \[ \text{fmin}(x,y) = \begin{cases} x &
 \text{if } x \leq y \\ y & \text{otherwise} \end{cases} \]
+`r since("2.0")`
 
 <!-- R; fmin; (T1 x, T2 y); -->
 \index{{\tt \bfseries fmin }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`fmin`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `fmin` function
+`r since("2.25")`
+
 <!-- real; fmax; (real x, real y); -->
 \index{{\tt \bfseries fmax }!{\tt (real x, real y): real}|hyperpage}
 
@@ -703,12 +764,14 @@ Vectorized implementation of the `fmin` function
 Return the maximum of x and y; see warning above.
 \[ \text{fmax}(x,y) = \begin{cases} x &
 \text{if } x \geq y \\ y & \text{otherwise} \end{cases} \]
+`r since("2.0")`
 
 <!-- R; fmax; (T1 x, T2 y); -->
 \index{{\tt \bfseries fmax }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`fmax`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `fmax` function
+`r since("2.25")`
 
 ### Arithmetic functions
 
@@ -719,12 +782,14 @@ Vectorized implementation of the `fmax` function
 Return the real value remainder after dividing x by y; see warning above.
 \[ \text{fmod}(x,y) = x - \left\lfloor \frac{x}{y} \right\rfloor \, y \]
 The operator $\lfloor u \rfloor$ is the floor operation; see below.
+`r since("2.0")`
 
 <!-- R; fmod; (T1 x, T2 y); -->
 \index{{\tt \bfseries fmod }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`fmod`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `fmod` function
+`r since("2.25")`
 
 ### Rounding functions
 
@@ -747,6 +812,7 @@ of these in the future, but as of now, there is no good workaround.
 floor of x, which is the largest integer less than or equal to x,
 converted to a real value; see warning at start of section
 [step-like functions](#step-functions)
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; ceil; (T x); -->
 \index{{\tt \bfseries ceil }!{\tt (T x): R}|hyperpage}
@@ -755,6 +821,7 @@ converted to a real value; see warning at start of section
 ceiling of x, which is the smallest integer greater than or equal to
 x, converted to a real value; see warning at start of section
 [step-like functions](#step-functions)
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; round; (T x); -->
 \index{{\tt \bfseries round }!{\tt (T x): R}|hyperpage}
@@ -762,6 +829,7 @@ x, converted to a real value; see warning at start of section
 `R` **`round`**`(T x)`<br>\newline
 nearest integer to x, converted to a real value; see warning at start
 of section [step-like functions](#step-functions)
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; trunc; (T x); -->
 \index{{\tt \bfseries trunc }!{\tt (T x): R}|hyperpage}
@@ -769,6 +837,7 @@ of section [step-like functions](#step-functions)
 `R` **`trunc`**`(T x)`<br>\newline
 integer nearest to but no larger in magnitude than x, converted to a
 double value; see warning at start of section [step-like functions](#step-functions)
+`r since("2.0, vectorized in 2.13")`
 
 ## Power and logarithm functions
 
@@ -777,77 +846,91 @@ double value; see warning at start of section [step-like functions](#step-functi
 
 `R` **`sqrt`**`(T x)`<br>\newline
 square root of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; cbrt; (T x); -->
 \index{{\tt \bfseries cbrt }!{\tt (T x): R}|hyperpage}
 
 `R` **`cbrt`**`(T x)`<br>\newline
 cube root of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; square; (T x); -->
 \index{{\tt \bfseries square }!{\tt (T x): R}|hyperpage}
 
 `R` **`square`**`(T x)`<br>\newline
 square of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; exp; (T x); -->
 \index{{\tt \bfseries exp }!{\tt (T x): R}|hyperpage}
 
 `R` **`exp`**`(T x)`<br>\newline
 natural exponential of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; exp2; (T x); -->
 \index{{\tt \bfseries exp2 }!{\tt (T x): R}|hyperpage}
 
 `R` **`exp2`**`(T x)`<br>\newline
 base-2 exponential of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; log; (T x); -->
 \index{{\tt \bfseries log }!{\tt (T x): R}|hyperpage}
 
 `R` **`log`**`(T x)`<br>\newline
 natural logarithm of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; log2; (T x); -->
 \index{{\tt \bfseries log2 }!{\tt (T x): R}|hyperpage}
 
 `R` **`log2`**`(T x)`<br>\newline
 base-2 logarithm of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; log10; (T x); -->
 \index{{\tt \bfseries log10 }!{\tt (T x): R}|hyperpage}
 
 `R` **`log10`**`(T x)`<br>\newline
 base-10 logarithm of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- real; pow; (real x, real y); -->
 \index{{\tt \bfseries pow }!{\tt (real x, real y): real}|hyperpage}
 
 `real` **`pow`**`(real x, real y)`<br>\newline
 Return x raised to the power of y. \[ \text{pow}(x,y) = x^y \]
+`r since("2.0")`
 
 <!-- R; pow; (T1 x, T2 y); -->
 \index{{\tt \bfseries pow }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`pow`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `pow` function
+`r since("2.25")`
+
 <!-- R; inv; (T x); -->
 \index{{\tt \bfseries inv }!{\tt (T x): R}|hyperpage}
 
 `R` **`inv`**`(T x)`<br>\newline
 inverse of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; inv_sqrt; (T x); -->
 \index{{\tt \bfseries inv\_sqrt }!{\tt (T x): R}|hyperpage}
 
 `R` **`inv_sqrt`**`(T x)`<br>\newline
 inverse of the square root of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; inv_square; (T x); -->
 \index{{\tt \bfseries inv\_square }!{\tt (T x): R}|hyperpage}
 
 `R` **`inv_square`**`(T x)`<br>\newline
 inverse of the square of x
+`r since("2.0, vectorized in 2.13")`
 
 ## Trigonometric functions
 
@@ -858,48 +941,57 @@ inverse of the square of x
 Return the length of the hypotenuse of a right triangle with sides of
 length x and y. \[ \text{hypot}(x,y) = \begin{cases} \sqrt{x^2+y^2} &
 \text{if } x,y\geq 0 \\ \textrm{NaN} & \text{otherwise} \end{cases} \]
+`r since("2.0")`
 
 <!-- R; hypot; (T1 x, T2 y); -->
 \index{{\tt \bfseries hypot }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`hypot`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `hypot` function
+`r since("2.25")`
+
 <!-- R; cos; (T x); -->
 \index{{\tt \bfseries cos }!{\tt (T x): R}|hyperpage}
 
 `R` **`cos`**`(T x)`<br>\newline
 cosine of the angle x (in radians)
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; sin; (T x); -->
 \index{{\tt \bfseries sin }!{\tt (T x): R}|hyperpage}
 
 `R` **`sin`**`(T x)`<br>\newline
 sine of the angle x (in radians)
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; tan; (T x); -->
 \index{{\tt \bfseries tan }!{\tt (T x): R}|hyperpage}
 
 `R` **`tan`**`(T x)`<br>\newline
 tangent of the angle x (in radians)
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; acos; (T x); -->
 \index{{\tt \bfseries acos }!{\tt (T x): R}|hyperpage}
 
 `R` **`acos`**`(T x)`<br>\newline
 principal arc (inverse) cosine (in radians) of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; asin; (T x); -->
 \index{{\tt \bfseries asin }!{\tt (T x): R}|hyperpage}
 
 `R` **`asin`**`(T x)`<br>\newline
 principal arc (inverse) sine (in radians) of x
+`r since("2.0")`
 
 <!-- R; atan; (T x); -->
 \index{{\tt \bfseries atan }!{\tt (T x): R}|hyperpage}
 
 `R` **`atan`**`(T x)`<br>\newline
 principal arc (inverse) tangent (in radians) of x, with values from
-$-\pi$ to $\pi$
+$-\pi/2$ to $\pi/2$
+`r since("2.0, vectorized in 2.13")`
 
 <!-- real; atan2; (real y, real x); -->
 \index{{\tt \bfseries atan2 }!{\tt (real y, real x): real}|hyperpage}
@@ -907,6 +999,7 @@ $-\pi$ to $\pi$
 `real` **`atan2`**`(real y, real x)`<br>\newline
 Return the principal arc (inverse) tangent (in radians) of y divided
 by x, \[ \text{atan2}(y, x) = \arctan\left(\frac{y}{x}\right) \]
+`r since("2.0, vectorized in 2.13")`
 
 ## Hyperbolic trigonometric functions
 
@@ -915,36 +1008,42 @@ by x, \[ \text{atan2}(y, x) = \arctan\left(\frac{y}{x}\right) \]
 
 `R` **`cosh`**`(T x)`<br>\newline
 hyperbolic cosine of x (in radians)
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; sinh; (T x); -->
 \index{{\tt \bfseries sinh }!{\tt (T x): R}|hyperpage}
 
 `R` **`sinh`**`(T x)`<br>\newline
 hyperbolic sine of x (in radians)
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; tanh; (T x); -->
 \index{{\tt \bfseries tanh }!{\tt (T x): R}|hyperpage}
 
 `R` **`tanh`**`(T x)`<br>\newline
 hyperbolic tangent of x (in radians)
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; acosh; (T x); -->
 \index{{\tt \bfseries acosh }!{\tt (T x): R}|hyperpage}
 
 `R` **`acosh`**`(T x)`<br>\newline
 inverse hyperbolic cosine (in radians)
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; asinh; (T x); -->
 \index{{\tt \bfseries asinh }!{\tt (T x): R}|hyperpage}
 
 `R` **`asinh`**`(T x)`<br>\newline
 inverse hyperbolic cosine (in radians)
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; atanh; (T x); -->
 \index{{\tt \bfseries atanh }!{\tt (T x): R}|hyperpage}
 
 `R` **`atanh`**`(T x)`<br>\newline
 inverse hyperbolic tangent (in radians) of x
+`r since("2.0, vectorized in 2.13")`
 
 ## Link functions {#link-functions}
 
@@ -957,18 +1056,21 @@ as a link function (see section [probability-related functions](#Phi-function)).
 
 `R` **`logit`**`(T x)`<br>\newline
 log odds, or logit, function applied to x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; inv_logit; (T x); -->
 \index{{\tt \bfseries inv\_logit }!{\tt (T x): R}|hyperpage}
 
 `R` **`inv_logit`**`(T x)`<br>\newline
 logistic sigmoid function applied to x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; inv_cloglog; (T x); -->
 \index{{\tt \bfseries inv\_cloglog }!{\tt (T x): R}|hyperpage}
 
 `R` **`inv_cloglog`**`(T x)`<br>\newline
 inverse of the complementary log-log function applied to x
+`r since("2.0, vectorized in 2.13")`
 
 ## Probability-related functions {#Phi-function}
 
@@ -984,25 +1086,37 @@ distribution function (and its complement).
 
 `R` **`erf`**`(T x)`<br>\newline
 error function, also known as the Gauss error function, of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; erfc; (T x); -->
 \index{{\tt \bfseries erfc }!{\tt (T x): R}|hyperpage}
 
 `R` **`erfc`**`(T x)`<br>\newline
 complementary error function of x
+`r since("2.0, vectorized in 2.13")`
+
+<!-- R; inv_erfc; (T x); -->
+\index{{\tt \bfseries inv\_erfc }!{\tt (T x): R}|hyperpage}
+
+`R` **`inv_erfc`**`(T x)`<br>\newline
+inverse of the complementary error function of x
+`r since("2.29, vectorized in 2.29")`
 
 <!-- R; Phi; (T x); -->
 \index{{\tt \bfseries phi }!{\tt (T x): R}|hyperpage}
 
 `R` **`Phi`**`(T x)`<br>\newline
 standard normal cumulative distribution function of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; inv_Phi; (T x); -->
 \index{{\tt \bfseries inv\_phi }!{\tt (T x): R}|hyperpage}
 
 `R` **`inv_Phi`**`(T x)`<br>\newline
-standard normal inverse cumulative distribution function of p,
-otherwise known as the quantile function
+Return the value of the inverse standard normal cdf $\Phi^{-1}$ at the
+specified quantile `x`. The details of the algorithm can be found in [@Wichura:1988].
+Quantile arguments below 1e-16 are untested; quantiles above 0.999999999 result in increasingly large errors.
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; Phi_approx; (T x); -->
 \index{{\tt \bfseries phi\_approx }!{\tt (T x): R}|hyperpage}
@@ -1011,6 +1125,7 @@ otherwise known as the quantile function
 fast approximation of the unit (may replace `Phi` for probit
 regression with maximum absolute error of 0.00014, see
 [@BowlingEtAl:2009] for details)
+`r since("2.0, vectorized in 2.13")`
 
 ### Other probability-related functions
 
@@ -1021,14 +1136,16 @@ regression with maximum absolute error of 0.00014, see
 Return the log loss function for for predicting $\hat{y} \in [0,1]$
 for boolean outcome $y \in \{0,1\}$. \[
 \mathrm{binary\_log\_loss}(y,\hat{y}) = \begin{cases} -\log \hat{y} &
-\text{if } y = 0\\ -\log (1 - \hat{y}) & \text{otherwise} \end{cases}
+\text{if } y = 1\\ -\log (1 - \hat{y}) & \text{otherwise} \end{cases}
 \]
+`r since("2.0")`
 
 <!-- R; binary_log_loss; (T1 x, T2 y); -->
 \index{{\tt \bfseries binary\_log\_loss }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`binary_log_loss`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `binary_log_loss` function
+`r since("2.25")`
 
 <!-- real; owens_t; (real h, real a); -->
 \index{{\tt \bfseries owens\_t }!{\tt (real h, real a): real}|hyperpage}
@@ -1038,12 +1155,14 @@ Return the Owen's T function for the probability of the event $X > h$
 and $0<Y<aX$ where X and Y are independent standard normal random
 variables. \[ \mathrm{owens\_t}(h,a) = \frac{1}{2\pi} \int_0^a
 \frac{\exp(-\frac{1}{2}h^2(1+x^2))}{1+x^2}dx \]
+`r since("2.25")`
 
 <!-- R; owens_t; (T1 x, T2 y); -->
 \index{{\tt \bfseries owens\_t }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`owens_t`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `owens_t` function
+`r since("2.25")`
 
 ## Combinatorial functions {#betafun}
 
@@ -1055,12 +1174,14 @@ Return the beta function applied to alpha and beta. The beta function,
 $\text{B}(\alpha,\beta)$, computes the normalizing constant for the beta
 distribution, and is defined for $\alpha > 0$ and $\beta > 0$. See section
 [appendix](#beta-appendix) for definition of $\text{B}(\alpha, \beta)$.
+`r since("2.25")`
 
 <!-- R; beta; (T1 x, T2 y); -->
 \index{{\tt \bfseries beta }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`beta`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `beta` function
+`r since("2.25")`
 
 <!-- real; inc_beta; (real alpha, real beta, real x); -->
 \index{{\tt \bfseries inc\_beta }!{\tt (real alpha, real beta, real x): real}|hyperpage}
@@ -1068,6 +1189,16 @@ Vectorized implementation of the `beta` function
 `real` **`inc_beta`**`(real alpha, real beta, real x)`<br>\newline
 Return the regularized incomplete beta function up to x applied to alpha and beta.
 See section [appendix](#inc-beta-appendix) for a definition.
+`r since("2.10")`
+
+<!-- real; inv_inc_beta; (real alpha, real beta, real p); -->
+\index{{\tt \bfseries inv\_inc\_beta }!{\tt (real alpha, real beta, real p): real}|hyperpage}
+
+`real` **`inv_inc_beta`**`(real alpha, real beta, real p)`<br>\newline
+Return the inverse of the regularized incomplete beta function. The return value
+`x` is the value that solves `p = inc_beta(alpha, beta, x)`.
+See section [appendix](#inc-beta-appendix) for a definition of the `inc_beta`.
+`r since("2.30")`
 
 <!-- real; lbeta; (real alpha, real beta); -->
 \index{{\tt \bfseries lbeta }!{\tt (real alpha, real beta): real}|hyperpage}
@@ -1079,12 +1210,14 @@ normalizing constant for the beta distribution, and is defined for
 $\alpha > 0$ and $\beta > 0$. \[ \text{lbeta}(\alpha,\beta) = \log
 \Gamma(a) + \log \Gamma(b) - \log \Gamma(a+b) \] See section
 [appendix](#beta-appendix) for definition of $\text{B}(\alpha, \beta)$.
+`r since("2.0")`
 
 <!-- R; lbeta; (T1 x, T2 y); -->
 \index{{\tt \bfseries lbeta }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`lbeta`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `lbeta` function
+`r since("2.25")`
 
 <!-- R; tgamma; (T x); -->
 \index{{\tt \bfseries tgamma }!{\tt (T x): R}|hyperpage}
@@ -1095,12 +1228,14 @@ of the factorial function to continuous variables, defined so that
 $\Gamma(n+1) = n!$. See for a full definition of $\Gamma(x)$. The
 function is defined for positive numbers and non-integral negative
 numbers,
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; lgamma; (T x); -->
 \index{{\tt \bfseries lgamma }!{\tt (T x): R}|hyperpage}
 
 `R` **`lgamma`**`(T x)`<br>\newline
 natural logarithm of the gamma function applied to x,
+`r since("2.0, vectorized in 2.15")`
 
 <!-- R; digamma; (T x); -->
 \index{{\tt \bfseries digamma }!{\tt (T x): R}|hyperpage}
@@ -1109,6 +1244,7 @@ natural logarithm of the gamma function applied to x,
 digamma function applied to x. The digamma function is the derivative
 of the natural logarithm of the Gamma function. The function is
 defined for positive numbers and non-integral negative numbers
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; trigamma; (T x); -->
 \index{{\tt \bfseries trigamma }!{\tt (T x): R}|hyperpage}
@@ -1116,6 +1252,7 @@ defined for positive numbers and non-integral negative numbers
 `R` **`trigamma`**`(T x)`<br>\newline
 trigamma function applied to x. The trigamma function is the second
 derivative of the natural logarithm of the Gamma function
+`r since("2.0, vectorized in 2.13")`
 
 <!-- real; lmgamma; (int n, real x); -->
 \index{{\tt \bfseries lmgamma }!{\tt (int n, real x): real}|hyperpage}
@@ -1127,12 +1264,14 @@ $\Gamma_n$ with n dimensions applied to x. \[ \text{lmgamma}(n,x) =
 \Gamma\left(x + \frac{1 - j}{2}\right) & \text{if } x\not\in
 \{\dots,-3,-2,-1,0\}\\ \textrm{error} & \text{otherwise} \end{cases}
 \]
+`r since("2.0")`
 
 <!-- R; lmgamma; (T1 x, T2 y); -->
 \index{{\tt \bfseries lmgamma }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`lmgamma`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `lmgamma` function
+`r since("2.25")`
 
 <!-- real; gamma_p; (real a, real z); -->
 \index{{\tt \bfseries gamma\_p }!{\tt (real a, real z): real}|hyperpage}
@@ -1142,12 +1281,14 @@ Return the normalized lower incomplete gamma function of a and z
 defined for positive a and nonnegative z. \[ \mathrm{gamma\_p}(a,z) =
 \begin{cases} \frac{1}{\Gamma(a)}\int_0^zt^{a-1}e^{-t}dt & \text{if }
 a > 0, z \geq 0 \\ \textrm{error} & \text{otherwise} \end{cases} \]
+`r since("2.0")`
 
 <!-- R; gamma_p; (T1 x, T2 y); -->
 \index{{\tt \bfseries gamma\_p }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`gamma_p`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `gamma_p` function
+`r since("2.25")`
 
 <!-- real; gamma_q; (real a, real z); -->
 \index{{\tt \bfseries gamma\_q }!{\tt (real a, real z): real}|hyperpage}
@@ -1158,12 +1299,14 @@ defined for positive a and nonnegative z. \[ \mathrm{gamma\_q}(a,z) =
 \begin{cases} \frac{1}{\Gamma(a)}\int_z^\infty t^{a-1}e^{-t}dt &
 \text{if } a > 0, z \geq 0 \\[6pt] \textrm{error} & \text{otherwise}
 \end{cases} \]
+`r since("2.0")`
 
 <!-- R; gamma_q; (T1 x, T2 y); -->
 \index{{\tt \bfseries gamma\_q }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`gamma_q`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `gamma_q` function
+`r since("2.25")`
 
 <!-- real; binomial_coefficient_log; (real x, real y); -->
 \index{{\tt \bfseries binomial\_coefficient\_log }!{\tt (real x, real y): real}|hyperpage}
@@ -1176,12 +1319,14 @@ function is written as $\binom{x}{y}$ and pronounced "x choose y."
 This function generalizes to real numbers using the gamma function.
 For $0 \leq y \leq x$, \[ \mathrm{binomial\_coefficient\_log}(x,y) =
 \log\Gamma(x+1) - \log\Gamma(y+1) - \log\Gamma(x-y+1). \]
+`r since("2.0, deprecated since 2.10, scheduled for removal in 2.32")`
 
 <!-- R; binomial_coefficient_log; (T1 x, T2 y); -->
 \index{{\tt \bfseries binomial\_coefficient\_log }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`binomial_coefficient_log`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `binomial_coefficient_log` function
+`r since("2.25")`
 
 <!-- int; choose; (int x, int y); -->
 \index{{\tt \bfseries choose }!{\tt (int x, int y): int}|hyperpage}
@@ -1194,12 +1339,14 @@ function but returns an integer rather than a real number with no
 non-zero decimal places. For $0 \leq y \leq x$, the binomial
 coefficient function can be defined via the factorial function \[
 \text{choose}(x,y) = \frac{x!}{\left(y!\right)\left(x - y\right)!}. \]
+`r since("2.14")`
 
 <!-- R; choose; (T1 x, T2 y); -->
 \index{{\tt \bfseries choose }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`choose`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `choose` function
+`r since("2.25")`
 
 <!-- real; bessel_first_kind; (int v, real x); -->
 \index{{\tt \bfseries bessel\_first\_kind }!{\tt (int v, real x): real}|hyperpage}
@@ -1209,12 +1356,14 @@ Return the Bessel function of the first kind with order v applied to
 x. \[ \mathrm{bessel\_first\_kind}(v,x) = J_v(x), \] where \[
 J_v(x)=\left(\frac{1}{2}x\right)^v \sum_{k=0}^\infty
 \frac{\left(-\frac{1}{4}x^2\right)^k}{k!\, \Gamma(v+k+1)} \]
+`r since("2.5")`
 
 <!-- R; bessel_first_kind; (T1 x, T2 y); -->
 \index{{\tt \bfseries bessel\_first\_kind }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`bessel_first_kind`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `bessel_first_kind` function
+`r since("2.25")`
 
 <!-- real; bessel_second_kind; (int v, real x); -->
 \index{{\tt \bfseries bessel\_second\_kind }!{\tt (int v, real x): real}|hyperpage}
@@ -1225,12 +1374,14 @@ x defined for positive x and v. For $x,v > 0$, \[
 \mathrm{bessel\_second\_kind}(v,x) = \begin{cases} Y_v(x) & \text{if }
 x > 0 \\ \textrm{error} & \text{otherwise} \end{cases} \] where \[
 Y_v(x)=\frac{J_v(x)\cos(v\pi)-J_{-v}(x)}{\sin(v\pi)} \]
+`r since("2.5")`
 
 <!-- R; bessel_second_kind; (T1 x, T2 y); -->
 \index{{\tt \bfseries bessel\_second\_kind }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`bessel_second_kind`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `bessel_second_kind` function
+`r since("2.25")`
 
 <!-- real; modified_bessel_first_kind; (int v, real z); -->
 \index{{\tt \bfseries modified\_bessel\_first\_kind }!{\tt (int v, real z): real}|hyperpage}
@@ -1241,12 +1392,14 @@ applied to z defined for all z and integer v. \[
 \mathrm{modified\_bessel\_first\_kind}(v,z) = I_v(z) \] where \[
 {I_v}(z) = \left(\frac{1}{2}z\right)^v\sum_{k=0}^\infty
 \frac{\left(\frac{1}{4}z^2\right)^k}{k!\Gamma(v+k+1)} \]
+`r since("2.1")`
 
 <!-- R; modified_bessel_first_kind; (T1 x, T2 y); -->
 \index{{\tt \bfseries modified\_bessel\_first\_kind }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`modified_bessel_first_kind`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `modified_bessel_first_kind` function
+`r since("2.25")`
 
 <!-- real; log_modified_bessel_first_kind; (real v, real z); -->
 \index{{\tt \bfseries log\_modified\_bessel\_first\_kind }!{\tt (real v, real z): real}|hyperpage}
@@ -1254,12 +1407,14 @@ Vectorized implementation of the `modified_bessel_first_kind` function
 `real` **`log_modified_bessel_first_kind`**`(real v, real z)`<br>\newline
 Return the log of the modified Bessel function of the first kind. v does
 not have to be an integer.
+`r since("2.26")`
 
 <!-- R; log_modified_bessel_first_kind; (T1 x, T2 y); -->
 \index{{\tt \bfseries log\_modified\_bessel\_first\_kind }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`log_modified_bessel_first_kind`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `log_modified_bessel_first_kind` function
+`r since("2.26")`
 
 <!-- real; modified_bessel_second_kind; (int v, real z); -->
 \index{{\tt \bfseries modified\_bessel\_second\_kind }!{\tt (int v, real z): real}|hyperpage}
@@ -1271,12 +1426,14 @@ applied to z defined for positive z and integer v. \[
 \text{if } z > 0 \\ \textrm{error} & \text{if } z \leq 0 \end{cases}
 \] where \[ {K_v}(z) = \frac{\pi}{2}\cdot\frac{I_{-v}(z) -
 I_{v}(z)}{\sin(v\pi)} \]
+`r since("2.1")`
 
 <!-- R; modified_bessel_second_kind; (T1 x, T2 y); -->
 \index{{\tt \bfseries modified\_bessel\_second\_kind }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`modified_bessel_second_kind`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `modified_bessel_second_kind` function
+`r since("2.25")`
 
 <!-- real; falling_factorial; (real x, real n); -->
 \index{{\tt \bfseries falling\_factorial }!{\tt (real x, real n): real}|hyperpage}
@@ -1286,12 +1443,14 @@ Return the falling factorial of x with power n defined for positive x
 and real n. \[ \mathrm{falling\_factorial}(x,n) = \begin{cases} (x)_n
 & \text{if } x > 0 \\ \textrm{error} & \text{if } x \leq 0 \end{cases}
 \] where \[ (x)_n=\frac{\Gamma(x+1)}{\Gamma(x-n+1)} \]
+`r since("2.0")`
 
 <!-- R; falling_factorial; (T1 x, T2 y); -->
 \index{{\tt \bfseries falling\_factorial }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`falling_factorial`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `falling_factorial` function
+`r since("2.25")`
 
 <!-- real; lchoose; (real x, real y); -->
 \index{{\tt \bfseries lchoose }!{\tt (real x, real y): real}|hyperpage}
@@ -1303,6 +1462,14 @@ function is written as $\binom{x}{y}$ and pronounced "x choose y."
 This function generalizes to real numbers using the gamma function.
 For $0 \leq y \leq x$, \[ \mathrm{binomial\_coefficient\_log}(x,y) =
 \log\Gamma(x+1) - \log\Gamma(y+1) - \log\Gamma(x-y+1). \]
+`r since("2.10")`
+
+<!-- R; lchoose; (T1 x, T2 y); -->
+\index{{\tt \bfseries lchoose }!{\tt (T1 x, T2 y): R}|hyperpage}
+
+`R` **`lchoose`**`(T1 x, T2 y)`<br>\newline
+Vectorized implementation of the `lchoose` function
+`r since("2.29")`
 
 <!-- real; log_falling_factorial; (real x, real n); -->
 \index{{\tt \bfseries log\_falling\_factorial }!{\tt (real x, real n): real}|hyperpage}
@@ -1312,6 +1479,7 @@ Return the log of the falling factorial of x with power n defined for
 positive x and real n. \[ \mathrm{log\_falling\_factorial}(x,n) =
 \begin{cases} \log (x)_n & \text{if } x > 0 \\ \textrm{error} &
 \text{if } x \leq 0 \end{cases} \]
+`r since("2.0")`
 
 <!-- real; rising_factorial; (real x, int n); -->
 \index{{\tt \bfseries rising\_factorial }!{\tt (real x, int n): real}|hyperpage}
@@ -1321,12 +1489,14 @@ Return the rising factorial of x with power n defined for positive x
 and integer n. \[ \mathrm{rising\_factorial}(x,n) = \begin{cases} x^{(n)}
 & \text{if } x > 0 \\ \textrm{error} & \text{if } x \leq 0 \end{cases}
 \] where \[ x^{(n)}=\frac{\Gamma(x+n)}{\Gamma(x)} \]
+`r since("2.20")`
 
 <!-- R; rising_factorial; (T1 x, T2 y); -->
 \index{{\tt \bfseries rising\_factorial }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`rising_factorial`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `rising_factorial` function
+`r since("2.25")`
 
 <!-- real; log_rising_factorial; (real x, real n); -->
 \index{{\tt \bfseries log\_rising\_factorial }!{\tt (real x, real n): real}|hyperpage}
@@ -1336,12 +1506,14 @@ Return the log of the rising factorial of x with power n defined for
 positive x and real n. \[ \mathrm{log\_rising\_factorial}(x,n) =
 \begin{cases} \log x^{(n)} & \text{if } x > 0 \\ \textrm{error} &
 \text{if } x \leq 0 \end{cases} \]
+`r since("2.0")`
 
 <!-- R; log_rising_factorial; (T1 x, T2 y); -->
 \index{{\tt \bfseries log\_rising\_factorial }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`log_rising_factorial`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `log_rising_factorial` function
+`r since("2.25")`
 
 ## Composed functions {#composed-functions}
 
@@ -1355,6 +1527,7 @@ using more basic Stan functions.
 
 `R` **`expm1`**`(T x)`<br>\newline
 natural exponential of x minus 1
+`r since("2.0, vectorized in 2.13")`
 
 <!-- real; fma; (real x, real y, real z); -->
 \index{{\tt \bfseries fma }!{\tt (real x, real y, real z): real}|hyperpage}
@@ -1362,6 +1535,7 @@ natural exponential of x minus 1
 `real` **`fma`**`(real x, real y, real z)`<br>\newline
 Return z plus the result of x multiplied by y. \[ \text{fma}(x,y,z) =
 (x \times y) + z \]
+`r since("2.0")`
 
 <!-- real; multiply_log; (real x, real y); -->
 \index{{\tt \bfseries multiply\_log }!{\tt (real x, real y): real}|hyperpage}
@@ -1372,12 +1546,14 @@ _**Warning:**_ This function is deprecated and should be replaced with
 \[ \mathrm{multiply\_log}(x,y) = \begin{cases} 0 & \text{if } x = y =
 0 \\ x \log y & \text{if } x, y \neq 0 \\ \text{NaN} &
 \text{otherwise} \end{cases} \]
+`r since("2.0, deprecated since 2.10, scheduled for removal in 2.32")`
 
 <!-- R; multiply_log; (T1 x, T2 y); -->
 \index{{\tt \bfseries multiply\_log }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`multiply_log`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `multiply_log` function
+`r since("2.25")`
 
 <!-- real; ldexp; (real x, int y); -->
 \index{{\tt \bfseries ldexp }!{\tt (real x, int y): real}|hyperpage}
@@ -1385,12 +1561,14 @@ Vectorized implementation of the `multiply_log` function
 `real` **`ldexp`**`(real x, int y)`<br>\newline
 Return the product of x and two raised to the y power. \[
 \text{ldexp}(x,y) = x 2^y  \]
+`r since("2.25")`
 
 <!-- R; ldexp; (T1 x, T2 y); -->
 \index{{\tt \bfseries ldexp }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`ldexp`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `ldexp` function
+`r since("2.25")`
 
 <!-- real; lmultiply; (real x, real y); -->
 \index{{\tt \bfseries lmultiply }!{\tt (real x, real y): real}|hyperpage}
@@ -1400,36 +1578,42 @@ Return the product of x and the natural logarithm of y. \[
 \text{lmultiply}(x,y) = \begin{cases} 0 & \text{if } x = y = 0 \\ x
 \log y & \text{if } x, y \neq 0 \\ \text{NaN} & \text{otherwise}
 \end{cases} \]
+`r since("2.10")`
 
 <!-- R; lmultiply; (T1 x, T2 y); -->
 \index{{\tt \bfseries lmultiply }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`lmultiply`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `lmultiply` function
+`r since("2.25")`
 
 <!-- R; log1p; (T x); -->
 \index{{\tt \bfseries log1p }!{\tt (T x): R}|hyperpage}
 
 `R` **`log1p`**`(T x)`<br>\newline
 natural logarithm of 1 plus x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; log1m; (T x); -->
 \index{{\tt \bfseries log1m }!{\tt (T x): R}|hyperpage}
 
 `R` **`log1m`**`(T x)`<br>\newline
 natural logarithm of 1 minus x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; log1p_exp; (T x); -->
 \index{{\tt \bfseries log1p\_exp }!{\tt (T x): R}|hyperpage}
 
 `R` **`log1p_exp`**`(T x)`<br>\newline
 natural logarithm of one plus the natural exponentiation of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; log1m_exp; (T x); -->
 \index{{\tt \bfseries log1m\_exp }!{\tt (T x): R}|hyperpage}
 
 `R` **`log1m_exp`**`(T x)`<br>\newline
 logarithm of one minus the natural exponentiation of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- real; log_diff_exp; (real x, real y); -->
 \index{{\tt \bfseries log\_diff\_exp }!{\tt (real x, real y): real}|hyperpage}
@@ -1440,12 +1624,14 @@ exponentiation of x and the natural exponentiation of y. \[
 \mathrm{log\_diff\_exp}(x,y) = \begin{cases} \log(\exp(x)-\exp(y)) &
 \text{if } x > y \\[6pt] \textrm{NaN} & \text{otherwise} \end{cases}
 \]
+`r since("2.0")`
 
 <!-- R; log_diff_exp; (T1 x, T2 y); -->
 \index{{\tt \bfseries log\_diff\_exp }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`log_diff_exp`**`(T1 x, T2 y)`<br>\newline
 Vectorized implementation of the `log_diff_exp` function
+`r since("2.25")`
 
 <!-- real; log_mix; (real theta, real lp1, real lp2); -->
 \index{{\tt \bfseries log\_mix }!{\tt (real theta, real lp1, real lp2): real}|hyperpage}
@@ -1457,6 +1643,14 @@ proportion theta, defined by \begin{eqnarray*}
 \theta \exp(\lambda_1) + \left( 1 - \theta \right) \exp(\lambda_2)
 \right) \\[3pt] & = & \mathrm{log\_sum\_exp}\!\left(\log(\theta) +
 \lambda_1, \ \log(1 - \theta) + \lambda_2\right). \end{eqnarray*}
+`r since("2.6")`
+
+<!-- R; log_mix; (T1 theta, T2 lp1, T3 lp3); -->
+\index{{\tt \bfseries log\_mix }!{\tt (T1 theta, T2 lp1, T3 lp2): real}|hyperpage}
+
+`R` **`log_mix`**`(T1 theta, T2 lp1, T3 lp3)`<br>\newline
+Vectorized implementation of the `log_mix` function
+`r since("2.26")`
 
 <!-- real; log_sum_exp; (real x, real y); -->
 \index{{\tt \bfseries log\_sum\_exp }!{\tt (real x, real y): real}|hyperpage}
@@ -1465,24 +1659,28 @@ proportion theta, defined by \begin{eqnarray*}
 Return the natural logarithm of the sum of the natural exponentiation
 of x and the natural exponentiation of y. \[
 \mathrm{log\_sum\_exp}(x,y) = \log(\exp(x)+\exp(y)) \]
+`r since("2.0")`
 
 <!-- R; log_inv_logit; (T x); -->
 \index{{\tt \bfseries log\_inv\_logit }!{\tt (T x): R}|hyperpage}
 
 `R` **`log_inv_logit`**`(T x)`<br>\newline
 natural logarithm of the inverse logit function of x
+`r since("2.0, vectorized in 2.13")`
 
 <!-- R; log_inv_logit_diff; (T1 x, T2 y); -->
 \index{{\tt \bfseries log\_inv\_logit\_diff }!{\tt (T1 x, T2 y): R}|hyperpage}
 
 `R` **`log_inv_logit_diff`**`(T1 x, T2 y)`<br>\newline
 natural logarithm of the difference of the inverse logit function of x and the inverse logit function of y
+`r since("2.25")`
 
 <!-- R; log1m_inv_logit; (T x); -->
 \index{{\tt \bfseries log1m\_inv\_logit }!{\tt (T x): R}|hyperpage}
 
 `R` **`log1m_inv_logit`**`(T x)`<br>\newline
 natural logarithm of 1 minus the inverse logit function of x
+`r since("2.0, vectorized in 2.13")`
 
 ## Special functions {#special-functions}
 
@@ -1492,9 +1690,11 @@ natural logarithm of 1 minus the inverse logit function of x
 `R` **`lambert_w0`**`(T x)`<br>\newline
 
 Implementation of the $W_0$ branch of the Lambert W function, i.e., solution to the function $W_0(x) \exp^{ W_0(x)} = x$
+`r since("2.25")`
 
 <!-- R; lambert_wm1; (T x); -->
 \index{{\tt \bfseries lambert\_wm1 }!{\tt (T x): R}|hyperpage}
 
 `R` **`lambert_wm1`**`(T x)`<br>\newline
 Implementation of the $W_{-1}$ branch of the Lambert W function, i.e., solution to the function $W_{-1}(x) \exp^{W_{-1}(x)} = x$
+`r since("2.25")`

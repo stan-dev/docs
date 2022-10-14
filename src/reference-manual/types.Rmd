@@ -10,7 +10,6 @@ statistical languages such as R or BUGS.
 
 The motivation for strong, static typing is threefold.
 
-
 1. Strong typing forces the programmer's intent to be declared with
   the variable, making programs easier to comprehend and hence easier
   to debug and maintain.
@@ -23,7 +22,6 @@ The motivation for strong, static typing is threefold.
   intermediate value errors as soon as they occur rather than allowing
   them to propagate and potentially pollute final results.
 
-
 Strong typing disallows assigning the same variable to objects of
 different types at different points in the program or in different
 invocations of the program.
@@ -31,10 +29,9 @@ invocations of the program.
 
 ## Overview of data types
 
-
 Arguments for built-in and user-defined functions and local variables
-are required to be basic data types, meaning an unconstrained
-primitive, vector, or matrix type or an array of such.
+are required to be basic data types, meaning an unconstrained scalar,
+vector, or matrix type, or an array of such.
 
 Passing arguments to functions in Stan works just like assignment to
 basic types.  Stan functions are only specified for the basic data
@@ -45,13 +42,24 @@ part of their behavior.
 ### Primitive types {-}
 
 Stan provides two primitive data types, `real` for continuous
-values and `int` for integer values.
+values and `int` for integer values.  These are both considered scalar
+types. 
+
+### Complex types {-}
+
+Stan provides a complex number data type `complex`, where a complex
+number contains both a real and an imaginary component, both of which
+are of type `real`.  Complex types are considered scalar types.
 
 ### Vector and matrix types {-}
 
-Stan provides three matrix-based data types, `vector` for column
+Stan provides three real-valued matrix data types, `vector` for column
 vectors, `row_vector` for row vectors, and `matrix` for
 matrices.
+
+Stan also provides three complex-valued matrix data types,
+`complex_vector` for column vectors, `complex_row_vector` for row
+vectors, and `complex_matrix` for matrices.
 
 ### Array types {-}
 
@@ -61,23 +69,18 @@ For example,
 
 ```stan
 array[10] real x;
-array[6,7] matrix[3, 3] m;
+array[6, 7] matrix[3, 3] m;
+array[12, 8, 15] complex z;
 ```
 
 declares `x` to be a one-dimensional array of size 10 containing
-real values, and declares `m` to be a two-dimensional array of
-size $6 \times 7$ containing values that are $3 \times 3$ matrices.
+real values, declares `m` to be a two-dimensional array of
+size $6 \times 7$ containing values that are $3 \times 3$ matrices,
+and declares `z` to be a $12 \times 8 \times 15$ array of complex numbers.
 
-Prior to 2.26 Stan models used a different syntax, with the array
-dimensions defined after the variable identifier. 
-Equivalent declarations of `x` and `m` with the pre-2.26 syntax:
+Prior to 2.26 Stan models used a different syntax.  The old syntax has
+been deprecated as described in the [Deprecated Features] chapter.
 
-```stan
-real x[10];
-matrix[3, 3] m[6, 7];
-```
-
-Using the syntax with the `array` keyword is advised.
 
 ### Constrained data types {-}
 
@@ -88,13 +91,13 @@ transformed data, transformed parameter, and generated quantities
 block, and the transform from unconstrained to constrained space in
 the parameters block.
 
-All of the basic data types may be given lower and upper bounds using
-syntax such as
+All of the basic data types other than `complex` may be given lower
+and upper bounds using syntax such as
 
 ```stan
-int<lower = 1> N;
-real<upper = 0> log_p;
-vector<lower = -1, upper = 1>[3] rho;
+int<lower=1> N;
+real<upper=0> log_p;
+vector<lower=-1, upper=1>[3] rho;
 ```
 
 There are also special data types for structured vectors and
@@ -123,7 +126,9 @@ It is worth calling out the most important aspect of constrained data
 types:
 
 <div style="margin:0 2em 0 2em">
-*The model must have support (non-zero density, equivalently finite log density) at parameter values that satisfy the declared constraints.*
+*The model must have support (non-zero density, equivalently finite
+log density) at parameter values that satisfy the declared
+constraints.*
 </div>
 
 If this condition is violated with parameter values that satisfy
@@ -215,13 +220,79 @@ Internally, the integer representation is cast to a floating-point
 representation.  This operation is not without overhead and should
 thus be avoided where possible.
 
+## Complex numerical data type
 
-## Univariate data types and variable declarations
+The `complex` data type is a scalar, but unlike `real` and `int`
+types, it contains two components, a real and imaginary component,
+both of which are of type `real`.  That is, the real and imaginary
+components of a complex number are 64-bit, IEEE 754-complaint floating
+point numbers.
+
+### Constructing and accessing complex numbers
+
+Imaginary literals are written in mathematical notation using a
+numeral followed by the suffix `i`.  For example, the following
+example constructs a complex number $2 - 1.3i$ and assigns it to
+the variable `z`.
+
+```stan
+complex z = 2 - 1.3i;
+real re = get_real(z);  // re has value 2.0
+real im = get_imag(z);  // im has value -1.3
+```
+
+The getter functions then extract the real and imaginary components of
+`z` and assign them to `re` and `im` respectively.
+
+The function `to_complex` constructs a complex number from its real
+and imaginary components.  The functional form needs to be used
+whenever the components are not literal numerals, as in the following
+example.
+
+```stan
+vector[K] re;
+vector[K] im;
+// ...
+for (k in 1:K) {
+  complex z = to_complex(re[k], im[k]);
+  // ...
+}
+```
+
+### Promoting real to complex
+
+Expressions of type `real` may be assigned to variables of type
+`complex`.  For example, the following is a valid sequence of Stan
+statements.
+
+```stan
+real x = 5.0;
+complex z = x;  // get_real(z) == 5.0, get_imag(z) == 0
+```
+
+The real number assigned to a complex number determine's the complex
+number's real component, with the imaginary component set to zero.
+
+Assignability is transitive, so that expressions of type `int` may
+also be assigned to variables of type `complex`, as in the following
+example.
+
+```stan
+int n = 2;
+complex z = n;
+```
+
+Function arguments also support promotion of integer or real typed
+expressions to type `complex`.
+
+
+## Scalar data types and variable declarations
 
 All variables used in a Stan program must have an explicitly declared
 data type.  The form of a declaration includes the type and the name
-of a variable.  This section covers univariate types, the next section
-vector and matrix types, and the following section array types.
+of a variable.  This section covers scalar types, namely integer,
+real, and complex.  The next section covers vector and matrix types,
+and the following section array types.
 
 ### Unconstrained integer {-}
 
@@ -251,7 +322,7 @@ that is zero or one, a lower and upper bound must be provided, as in
 the following example.
 
 ```stan
-int<lower=0,upper=1> cond;
+int<lower=0, upper=1> cond;
 ```
 
 
@@ -263,6 +334,16 @@ unconstrained continuous value.
 
 ```stan
 real theta;
+```
+
+### Unconstrained complex {-}
+
+Unconstrained complex numbers are declared using the keyword
+`complex`.  The following example declares `z` to be an unconstrained
+complex variable.
+
+```stan
+complex z;
 ```
 
 
@@ -291,9 +372,8 @@ To ensure `rho` takes on values between $-1$ and $1$, use the
 following declaration.
 
 ```stan
-real<lower=-1,upper=1> rho;
+real<lower=-1, upper=1> rho;
 ```
-
 
 #### Infinite constraints {-}
 
@@ -336,7 +416,7 @@ Finally, we can combine both declarations to declare a variable with offset
 $1$ and multiplier $2$.
 
 ```stan
-real<offset=1,multiplier=2> x;
+real<offset=1, multiplier=2> x;
 ```
 
 As an example, we can give `x` a normal distribution with non-centered
@@ -344,14 +424,14 @@ parameterization as follows.
 
 ```stan
 parameters {
-  real<offset=mu,multiplier=sigma> x;
+  real<offset=mu, multiplier=sigma> x;
 }
 model {
   x ~ normal(mu, sigma);
 }
 ```
 
-Recall that the centered parameterization is achieved with the code 
+Recall that the centered parameterization is achieved with the code
 
 ```stan
 parameters {
@@ -366,7 +446,7 @@ or equivalently
 
 ```stan
 parameters {
-  real<offset=0,multiplier=1> x;
+  real<offset=0, multiplier=1> x;
 }
 model {
   x ~ normal(mu, sigma);
@@ -378,7 +458,7 @@ model {
 Bounds (and offset and multiplier)
 for integer or real variables may be arbitrary expressions.
 The only requirement is that they only include variables that have
-been declared (though not necessarily defined) before the declaration.
+been declared (though not necessarily defined) before the declaration.  array[N] row_vector[D] x;
 If the bounds themselves are parameters, the behind-the-scenes
 variable transform accounts for them in the log Jacobian.
 
@@ -396,7 +476,7 @@ parameters {
 
 This declares a real-valued parameter `phi` to take values
 greater than the value of the real-valued data variable `lb`.
-Constraints may be complex expressions, but must be of type `int`
+Constraints may be arbitrary expressions, but must be of type `int`
 for integer variables and of type `real` for real variables
 (including constraints on vectors, row vectors, and matrices).
 Variables used in constraints can be any variable that has been
@@ -421,14 +501,14 @@ A more subtle case involves declarations of parameters or transformed
 parameters based on parameters declared previously.  For example, the
 following program will work as intended.
 
-```
+```stan
 parameters {
   real a;
-  real<lower = a> b;  // enforces a < b
+  real<lower=a> b;  // enforces a < b
 }
 transformed parameters {
   real c;
-  real<lower = c> d;
+  real<lower=c> d;
   c = a;
   d = b;
 }
@@ -450,10 +530,13 @@ following program fragment.
 
 ```stan
 data {
-  int<lower = 0, upper = 1> include_alpha;
-  ...
+  int<lower=0, upper=1> include_alpha;
+  // ...
+}
 parameters {
   vector[include_alpha ? N : 0] alpha;
+  // ...
+}
 ```
 
 If `include_alpha` is true, the model will include the vector
@@ -476,16 +559,15 @@ extensively in the implementation of the [RStanArm package](https://mc-stan.org/
 Stan provides three types of container objects: arrays, vectors, and
 matrices. Vectors and matrices are more limited kinds of data
 structures than arrays.  Vectors are intrinsically one-dimensional
-collections of reals, whereas matrices are intrinsically two
-dimensional.  Vectors, matrices, and arrays are not assignable to one
-another, even if their dimensions are identical.  A $3 \times 4$
-matrix is a different kind of object in Stan than a $3 \times 4$
-array.
+collections of real or complex values, whereas matrices are
+intrinsically two dimensional.  Vectors, matrices, and arrays are not
+assignable to one another, even if their dimensions are identical.  A
+$3 \times 4$ matrix is a different kind of object in Stan than a $3
+\times 4$ array.
 
 The intention of using matrix types is to call out their usage in the
 code.  There are three situations in Stan where *only* vectors and
 matrices may be used,
-
 
 * matrix arithmetic operations (e.g., matrix multiplication)
 * linear algebra functions (e.g., eigenvalues and determinants),
@@ -493,17 +575,16 @@ matrices may be used,
 * multivariate function parameters and outcomes (e.g.,
   multivariate normal distribution arguments).
 
-
-
 Vectors and matrices cannot be typed to return integer values.  They
-are restricted to `real` values.^[This may change if Stan is called upon to do complicated integer matrix operations or boolean matrix operations.  Integers are not appropriate inputs for linear algebra functions.]
+are restricted to `real` and `complex` values.
 
-For constructing vectors and matrices in Stan, see [Vector, Matrix, and Array Expressions](#vector-matrix-array-expressions.section).
+For constructing vectors and matrices in Stan, see [Vector, Matrix,
+and Array Expressions](#vector-matrix-array-expressions.section).
 
 ### Indexing from 1 {-}
 
 Vectors and matrices, as well as arrays, are indexed starting from one
-in Stan.  This follows the convention in statistics and linear
+(1) in Stan.  This follows the convention in statistics and linear
 algebra as well as their implementations in the statistical software
 packages R, MATLAB, BUGS, and JAGS.  General computer programming
 languages, on the other hand, such as C++ and Python, index arrays
@@ -511,10 +592,10 @@ starting from zero.
 
 ### Vectors {-}
 
-Vectors in Stan are column vectors; see the next subsection for
-information on row vectors.  Vectors are declared with a size (i.e., a
-dimensionality).  For example, a 3-dimensional vector is declared with
-the keyword `vector`, as follows.
+Vectors in Stan are column vectors; see below for information on row
+vectors.  Vectors are declared with a size (i.e., a dimensionality).
+For example, a 3-dimensional real vector is declared with the keyword
+`vector`, as follows.
 
 ```stan
 vector[3] u;
@@ -530,8 +611,20 @@ vector<lower=0>[3] u;
 Similarly, they may be declared with a offset and/or multiplier, as in the
 following example
 ```stan
-vector<offset=42,multiplier=3>[3] u;
+vector<offset=42, multiplier=3>[3] u;
 ```
+
+### Complex vectors {-}
+
+Like real vectors, complex vectors are column vectors and are declared
+with a size.  For example, a 3-dimensional complex vector is declared
+with the keyword `complex_vector`, as follows.
+
+```stan
+complex_vector[3] v;
+```
+
+Complex vector declarations do not support any constraints.
 
 ### Unit simplexes {-}
 
@@ -547,7 +640,6 @@ be a unit $5$-simplex by
 simplex[5] theta;
 ```
 
-
 Unit simplexes are implemented as vectors and may be assigned to other
 vectors and vice-versa.  Simplex variables, like other constrained
 variables, are validated to ensure they contain simplex values; for
@@ -562,7 +654,6 @@ longer warmup periods, tighter tolerances for optimization with more
 iterations, and in either case, with less dispersed parameter
 initialization or custom initialization if there are informative
 priors for some parameters.
-
 
 ### Unit vectors {-}
 
@@ -602,7 +693,6 @@ assigned to other vectors and other vectors may be assigned to them.
 Constraints will be checked after executing the block in which the
 variables were declared.
 
-
 ### Positive, ordered vectors {-}
 
 There is also a positive, ordered vector type which operates similarly
@@ -620,6 +710,8 @@ may be assigned to other vectors and other vectors may be assigned to them.
 Constraints will be checked after executing the block in which the
 variables were declared.
 
+
+
 ### Row vectors {-}
 
 Row vectors are declared with the keyword `row_vector`.
@@ -633,17 +725,29 @@ row_vector[1093] u;
 Constraints are declared as for vectors, as in the following example
 of a 10-vector with values between -1 and 1.
 ```stan
-row_vector<lower=-1,upper=1>[10] u;
+row_vector<lower=-1, upper=1>[10] u;
 ```
 Offset and multiplier are also similar as for the following 3-row-vector with
 offset -42 and multiplier 3.
 ```stan
-row_vector<offset=-42,multiplier=3>[3] u;
+row_vector<offset=-42, multiplier=3>[3] u;
 ```
 
 Row vectors may not be assigned to column vectors, nor may column
 vectors be assigned to row vectors.  If assignments are required, they
 may be accommodated through the transposition operator.
+
+### Complex row vectors {-}
+
+Complex row vectors are declared with the keyword
+`complex_row_vector` and given a size in basic declarations.  For
+example, a 12-dimensional complex row vector `v` would be declared as
+
+```stan
+complex_row_vector[12] v;
+```
+
+Complex row vectors do not allow constraints.
 
 ### Matrices {-}
 
@@ -694,6 +798,17 @@ number of columns of `b`.
 Assignment works by copying values in Stan.  That means any subsequent
 assignment to `a[1]` does not affect `b`, nor does an
 assignment to `b` affect `a`.
+
+### Complex matrices {-}
+
+Complex matrices are declared with the keyword `complex_matrix` and a
+number of rows and columns.  For example,
+
+```stan
+complex_matrix[3, 3] C;
+```
+
+Complex matrices do not allow constraints.
 
 
 ### Covariance matrices {-}
@@ -784,7 +899,7 @@ Constrained variables of all types may be assigned to other variables
 of the same unconstrained type and vice-versa.  Matching is interpreted strictly
 as having the same basic type and number of array dimensions.
 Constraints are not considered, but basic data types are. For instance, a
-variable declared to be `real<lower=0,upper=1>` could be assigned
+variable declared to be `real<lower=0, upper=1>` could be assigned
 to a variable declared as `real` and vice-versa.  Similarly, a
 variable declared as `matrix[3, 3]` may be assigned to a variable
 declared as `cov_matrix[3]` or
@@ -795,6 +910,19 @@ to ensure constraints are enforced.  This includes run-time size
 checks.  The Stan compiler isn't able to catch the fact that an
 attempt may be made to assign a matrix of one dimensionality to a
 matrix of mismatching dimensionality.
+
+### Promoting real to complex matrixes {-}
+
+Real-valued vectors, row vectors and matrices may be assigned to
+complex-valued vectors, row vectors and matrices, respectively.  For
+example, the following is legal.
+
+```stan
+vector[N] v = ...;
+complex_vector[N] u = 2 * v;
+```
+
+Row vectors and matrices work the same way.
 
 
 ### Expressions as size declarations {-}
@@ -807,7 +935,7 @@ For example, the following is legal.
 
 ```stan
 data {
-  int<lower=0> N_observed;    int<lower=0> N_missing;
+  int<lower=0> N_observed, N_missing;
   // ...
 transformed parameters {
   vector[N_observed + N_missing] y;
@@ -837,6 +965,15 @@ The type of `m[2]` is `row_vector` because it is the second
 row of `m`.  Thus it is possible to write `m[2][3]` instead
 of `m[2, 3]` to access the third element in the second row.  When
 given a choice, the form `m[2, 3]` is preferred.
+
+Complex versions work the same way,
+
+```stan
+complex_matrix[M, N] m = ...;
+complex_row_vector[N] u = m[3];
+complex_vector[M] v = m[ , 2];
+```
+
 
 #### Array index style {-}
 
@@ -890,11 +1027,11 @@ The variable `n` is declared as an array of five integers as follows.
 array[5] int n;
 ```
 
-A two-dimensional array of real values with three rows and four columns is
-declared with the following.
+A two-dimensional array of complex values with three rows and four columns is
+declared as follows.
 
 ```stan
-array[3, 4] real a;
+array[3, 4] complex a;
 ```
 
 A three-dimensional array `z` of positive reals with five rows, four
@@ -915,11 +1052,12 @@ declares `mu` to be an array of size 3 containing vectors with 7
 elements.  Arrays may also contain matrices.  The example
 
 ```stan
-array[15, 12] matrix[7, 2] mu;
+array[15, 12] complex_matrix[7, 2] mu;
 ```
 
-declares a 15 by 12 array of $7 \times 2$ matrices.  Any of the
-constrained types may also be used in arrays, as in the declaration
+declares a 15 by 12 array of $7 \times 2$ complex matrices.  Any of
+the constrained types may also be used in arrays, as in the
+declaration
 
 ```stan
 array[2, 3, 4] cholesky_factor_cov[5, 6] mu;
@@ -928,23 +1066,6 @@ array[2, 3, 4] cholesky_factor_cov[5, 6] mu;
 of a $2 \times 3 \times 4$ array of $5 \times 6$ Cholesky factors of
 covariance matrices.
 
-#### Array syntax before Stan 2.26
-
-Before Stan 2.26, arrays were declared by enclosing the dimensions
-in square brackets following the name of the variable.
-
-The pre-Stan 2.26 array syntax for the above examples is as follows.
-
-```stan
-int n[5];
-real a[3, 4];
-real<lower=0> z[5, 4, 2];
-vector[7] mu[3];
-matrix[7, 2] mu[15, 12];
-cholesky_factor_cov[5, 6] mu[2, 3, 4];
-```
-
-Both syntaxes can be used, though the `array` keyword syntax is recommended.
 
 ### Accessing array elements and subarrays {-}
 
@@ -979,6 +1100,7 @@ y = x[4];  // y == w[5][4] == w[5, 4]
 z = y[3];  // z == w[5][4][3] == w[5, 4, 3]
 ```
 
+Complex-valued arrays work the same way.
 
 
 ### Arrays of matrices and vectors {-}
@@ -996,12 +1118,12 @@ real x;
 With these declarations, the following assignments are legal.
 
 ```stan
-b = a[1];      // result is array of vectors
+b = a[1];       // result is array of vectors
 c = a[1, 3];    // result is vector
-c = b[3];      //   same result as above
-x = a[1, 3, 5];  // result is scalar
+c = b[3];       //   same result as above
+x = a[1, 3, 5]; // result is scalar
 x = b[3, 5];    //   same result as above
-x = c[5];      //   same result as above
+x = c[5];       //   same result as above
 ```
 
 Row vectors and other derived vector types (simplex and ordered)
@@ -1010,7 +1132,7 @@ behave the same way in terms of indexing.
 Consider the following matrix, vector and scalar declarations.
 
 ```stan
-array[3,4] matrix[6, 5] d;
+array[3, 4] matrix[6, 5] d;
 array[4] matrix[6, 5] e;
 matrix[6, 5] f;
 row_vector[5] g;
@@ -1020,16 +1142,16 @@ real x;
 With these declarations, the following definitions are legal.
 
 ```stan
-e = d[1];        // result is array of matrices
-f = d[1,3];      // result is matrix
-f = e[3];        //   same result as above
-g = d[1,3,2];    // result is row vector
-g = e[3,2];      //   same result as above
-g = f[2];        //   same result as above
-x = d[1,3,5,2];  // result is scalar
-x = e[3,5,2];    //   same result as above
-x = f[5,2];      //   same result as above
-x = g[2];        //   same result as above
+e = d[1];           // result is array of matrices
+f = d[1, 3];        // result is matrix
+f = e[3];           //   same result as above
+g = d[1, 3, 2];     // result is row vector
+g = e[3, 2];        //   same result as above
+g = f[2];           //   same result as above
+x = d[1, 3, 5, 2];  // result is scalar
+x = e[3, 5, 2];     //   same result as above
+x = f[5, 2];        //   same result as above
+x = g[2];           //   same result as above
 ```
 
 As shown, the result `f[2]` of supplying a single index to a
@@ -1042,12 +1164,12 @@ Subarrays of arrays may be assigned by indexing on the left-hand side
 of an assignment statement.  For example, the following is legal.
 
 ```stan
-array[I,J,K] real x;
-array[J,K] real y;
+array[I, J, K] real x;
+array[J, K] real y;
 array[K] real z;
 // ...
 x[1] = y;
-x[1,1] = z;
+x[1, 1] = z;
 ```
 
 The sizes must match.  Here, `x[1]` is a `J` by `K`
@@ -1101,8 +1223,8 @@ The same holds for matrices, where 2-dimensional arrays may not be
 assigned to matrices or vice-versa.
 
 ```stan
-array[3,4] real a;
-matrix[3,4] b;
+array[3, 4] real a;
+matrix[3, 4] b;
 // ...
 a = b;  // illegal assignment of matrix to array
 b = a;  // illegal assignment of array to matrix
@@ -1115,7 +1237,7 @@ A $1 \times N$ matrix cannot be assigned a row vector or
 vice versa.
 
 ```stan
-matrix[1,4] a;
+matrix[1, 4] a;
 row_vector[4] b;
 // ...
 a = b;  // illegal assignment of row vector to matrix
@@ -1125,7 +1247,7 @@ b = a;  // illegal assignment of matrix to row vector
 Similarly, an $M \times 1$ matrix may not be assigned to a column vector.
 
 ```stan
-matrix[4,1] a;
+matrix[4, 1] a;
 vector[4] b;
 // ...
 a = b;  // illegal assignment of column vector to matrix
@@ -1241,13 +1363,198 @@ not part of the Stan programming language, but rather a convention
 adopted in this document to enable a concise description of a type.
 
 Because size information is not part of a data type, data types will
-be written without size information.  For instance, `real[]` is the
+be written without size information.  For instance, `array[] real` is the
 type of one-dimensional array of reals and `matrix` is the type of
 matrices.  The three-dimensional integer array type is written as
-`int[ , ,]`, indicating the number slots available for indexing.
-Similarly, `vector[ , ]` is the type of a two-dimensional array of
+`array[,,] int`, indicating the number slots available for indexing.
+Similarly, `array[,] vector` is the type of a two-dimensional array of
 vectors.
 
+
+
+## Variable declaration
+
+Variables in Stan are declared by giving a type and a name. For example
+
+```stan
+int N;
+vector[N] y;
+array[5] matrix[3, 4] A;
+```
+
+declares a variable `N` that is an integer, a variable `y` that is
+a vector of length `N` (the previously declared variable), and a
+variable `A`, which is a length-5 array where each element is a 3 by 4
+matrix.
+
+There are several different places a variable is declared in Stan. They are
+block variables, like those inside `data`, which can have
+[constraints](#constrained-data-types) and must include sizes for their types,
+like in the above examples. Local variables, like those defined inside loops
+or local blocks cannot be constrained, but still include sizes. Finally,
+variables declared as [function parameters](#argument-types-and-qualifiers)
+are not constrained types and _exclude_ sizes.
+
+```stan
+// valid block variables, but not locals or function parameters
+vector<lower=0>[N] u;
+
+// valid as a block or local variable, but not a function parameter
+array[3] int is;
+
+// function parameters exclude sizes and cannot be constrained
+void pretty_print_tri_lower(matrix x) { ... }
+```
+
+
+In the following table, the leftmost column is a list of the
+unconstrained and undimensioned basic types; these are used as
+function return types and argument types.  The middle column is of
+unconstrained types with dimensions; these are used as local variable
+types. The variables `M` and `N` indicate number of columns and rows,
+respectively.  The variable `K` is used for square matrices, i.e., `K`
+denotes both the number of rows and columns.
+The rightmost column lists the corresponding constrained types.
+An expression of any right-hand
+column type may be assigned to its corresponding left-hand column basic
+type.  At runtime, dimensions are checked for consistency for all
+variables; containers of any sizes may be assigned to function
+arguments.  The constrained matrix types `cov_matrix[K]`,
+`corr_matrix[K]`, `cholesky_factor_cov[K]`, and
+`cholesky_factor_corr[K]` are only assignable to matrices of
+dimensions `matrix[K, K]` types.
+
++---------------------+-------------------------+----------------------------------------------+
+| Function Argument   |        Local            |                   Block                      |
+|     (unsized)       |    (unconstrained)      |               (constrained)                  |
++:====================+:========================+:=============================================+
+| `int`               | `int`                   | `int`                                        |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `int<lower=L>`                               |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `int<upper=U>`                               |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `int<lower=L, upper=U>`                      |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `int<offset=O>`                              |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `int<multiplier=M>`                          |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `int<offset=O, multiplier=M>`                |
++---------------------+-------------------------+----------------------------------------------+
+| `real`              | `real`                  | `real`                                       |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `real<lower=L>`                              |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `real<upper=U>`                              |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `real<lower=L, upper=U>`                     |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `real<offset=O>`                             |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `real<multiplier=M>`                         |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `real<offset=O, multiplier=M>`               |
++---------------------+-------------------------+----------------------------------------------+
+| `complex`           | `complex`               | `complex`                                    |
++---------------------+-------------------------+----------------------------------------------+
+| `vector`            | `vector[N]`             | `vector[N]`                                  |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `vector[N]<lower=L>`                         |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `vector[N]<upper=U>`                         |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `vector[N]<lower=L, upper=U>`                |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `vector[N]<offset=O>`                        |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `vector[N]<multiplier=M>`                    |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `vector[N]<offset=O, multiplier=M>`          |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `ordered[N]`                                 |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `positive_ordered[N]`                        |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `simplex[N]`                                 |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `unit_vector[N]`                             |
++---------------------+-------------------------+----------------------------------------------+
+| `row_vector`        | `row_vector[N]`         | `row_vector[N]`                              |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `row_vector[N]<lower=L>`                     |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `row_vector[N]<upper=U>`                     |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `row_vector[N]<lower=L, upper=U>`            |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `row_vector[N]<offset=O>`                    |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `row_vector[N]<multiplier=M>`                |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `row_vector[N]<offset=O, multiplier=M>`      |
++---------------------+-------------------------+----------------------------------------------+
+| `matrix`            | `matrix[M, N]`          | `matrix[M, N]`                               |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `matrix[M, N]<lower=L>`                      |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `matrix[M, N]<upper=U>`                      |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `matrix[M, N]<lower=L, uppers=U>`            |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `matrix[M, N]<offset=O>`                     |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `matrix[M, N]<multiplier=M>`                 |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `matrix[M, N]<offset=O, multiplier=M>`       |
++---------------------+-------------------------+----------------------------------------------+
+|                     | `matrix[K, K]`          | `corr_matrix[K]`                             |
++---------------------+-------------------------+----------------------------------------------+
+|                     | `matrix[K, K]`          | `cov_matrix[K]`                              |
++---------------------+-------------------------+----------------------------------------------+
+|                     | `matrix[K, K]`          | `cholesky_factor_corr[K]`                    |
++---------------------+-------------------------+----------------------------------------------+
+|                     | `matrix[K, K]`          | `cholesky_factor_cov[K]`                     |
++---------------------+-------------------------+----------------------------------------------+
+| `complex_vector`    | `complex_vector[M]`     | `complex_vector[M]`                          |
++---------------------+-------------------------+----------------------------------------------+
+| `complex_row_vector`| `complex_row_vector[N]` | `complex_row_vector[N]`                      |
++---------------------+-------------------------+----------------------------------------------+
+| `complex_matrix`    | `complex_matrix[M, N]`  | `complex_matrix[M,N]`                        |
++---------------------+-------------------------+----------------------------------------------+
+| `array[] vector`    | `array[M] vector[N]`    | `array[M] vector[N]`                         |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `array[M] vector[N]<lower=L>`                |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `array[M] vector[N]<upper=U>`                |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `array[M] vector[N]<lower=L, upper=U>`       |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `array[M] vector[N]<offset=O>`               |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `array[M] vector[N]<multiplier=M>`           |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `array[M] vector[N]<offset=O, multiplier=M>` |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `array[M] ordered[N]`                        |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `array[M] positive_ordered[N]`               |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `array[M] simplex[N]`                        |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `array[M] unit_vector[N]`                    |
++---------------------+-------------------------+----------------------------------------------+
+
+<a name="id:constrained-types.figure"></a>
+
+Additional array types follow the same basic template as the final
+example in the table and can contain any of the previous types.
+The unsized version of arrays with more than one dimension is
+specified by using commas, e.g. `array[ , ]` is a 2-D array.
+
+For more on how function arguments and return types are declared,
+consult the [User's Guide chapter on
+functions](https://mc-stan.org/docs/stan-users-guide/basic-functions-section.html#type-declarations-for-functions).
 
 ## Compound variable declaration and definition
 
@@ -1285,16 +1592,19 @@ variables.  In all other cases, the type of the expression on the
 right-hand side of the assignment must be identical to the type of the
 variable being declared.
 
-Any type may be assigned.  For example,
+Variables of any type may have values assigned to them.  For example,
 
 ```stan
 matrix[3, 2] a = b;
 ```
 
-declares a matrix variable `a` and assigns it to the value of `b`,
-which must be of type `matrix` for the compound statement to be well
-formed.  The sizes of matrices are not part of their static typing and
-cannot be validated until run time.
+declares a $3 \times 2$ matrix variable `a` and assigns a copy
+of the value of `b` to the variable `a`.  The variable `b` must
+be of type `matrix` for the statement to be well formed.  For
+the code to execute successfully, `b` must be the same shape as `a`,
+but this cannot be validated until run time.  Because a copy is
+assigned, subsequent changes to `a` do not affect `b` and subsequent
+changes to `b` do not affect `a`.
 
 
 ### Right-hand side expressions {-}
@@ -1312,6 +1622,13 @@ of type `matrix`.  For example, `b` could be of type `matrix` and `c`
 of type `real`, because adding a matrix to a scalar produces a matrix,
 and the multiplying by a scalar produces another matrix.
 
+Similarly,
+
+```stan
+complex z = 2 + 3i;
+```
+
+assigns the  the complex number $2 + 3i$ to the complex scalar `z`.
 The right-hand side expression can be a call to a user defined
 function, allowing general algorithms to be applied that might not be
 otherwise expressible as simple expressions (e.g., iterative or
@@ -1324,3 +1641,44 @@ Any variable that is in scope and any function that is available in
 the block in which the compound declaration and definition appears may
 be used in the expression on the right-hand side of the compound
 declaration and definition statement.
+
+
+## Declaring multiple variables at once
+
+Stan will interpret multiple comma-separated variable names following a single
+type as declaring multiple new variables.
+This is available for all variable declarations in all blocks.
+
+### Types for multiple declarations {-}
+
+The code:
+
+```stan
+real x, y;
+```
+is equivalent to
+
+```stan
+real x;
+real y;
+```
+
+As a result, all declarations on the same line must be of the same type.
+
+### Combining with other features {-}
+
+The ability to declare multiple variables can be combined with assignments
+whenever a declare-define is valid, as documented in
+[the section introducing compound declarations and definitions](#compound-variable-declaration-and-definition)
+:
+
+```stan
+real x = 3, y = 5.6;
+```
+
+[Constrained data types](#constrained-data-types) can also be declared
+together, so long as the constraint for each variable is the same:
+
+```stan
+real<lower=0> x, y;
+```

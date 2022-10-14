@@ -29,10 +29,17 @@ def pushd(new_dir):
     os.chdir(previous_dir)
 
 def shexec(command):
-    returncode = subprocess.call(command, shell=True)
+    returncode = subprocess.call(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if returncode != 0:
         print('Command {} failed'.format(command))
         raise Exception(returncode)
+
+def check_bookdown_at_least_0_23():
+    command = ["Rscript", "-e", "utils::packageVersion(\"bookdown\") > 0.22"]
+    check = subprocess.run(command, capture_output=True, text=True)
+    if not 'TRUE' in check.stdout:
+        print("R Package bookdown version must be at least 0.23, see README for build tools requirements")
+        sys.exit(1)
 
 def safe_rm(fname):
     if os.path.exists(fname):
@@ -43,13 +50,16 @@ def make_docs(docspath, version, document, formats):
     srcpath = os.path.join(path, "src", document)
     with pushd(srcpath):
         if ("pdf" in formats):
+            print('render {} as pdf'.format(document))
             command = "Rscript -e \"bookdown::render_book(\'index.Rmd\', output_format=\'bookdown::pdf_book\')\""
             shexec(command)
             srcpdf = os.path.join(srcpath, "_book", "_main.pdf")
             pdfname = ''.join([document,'-',version,".pdf"])
             pdfpath = os.path.join(docspath, pdfname)
             shutil.move(srcpdf, pdfpath)
+            print('output file: {}'.format(pdfpath))
         if ("html" in formats):
+            print('render {} as html'.format(document))
             command = "Rscript -e \"bookdown::render_book(\'index.Rmd\', output_format=\'bookdown::gitbook\')\""
             shexec(command)
             [safe_rm(f) for f in ("stan-manual.css", "_main.rds")]
@@ -58,11 +68,16 @@ def make_docs(docspath, version, document, formats):
             shutil.rmtree(htmlpath, ignore_errors=True)
             command = ' '.join(["mv _book", htmlpath])
             shexec(command)
+            print('output dir: {}'.format(htmlpath))
         else:
             [safe_rm(f) for f in ("stan-manual.css", "_main.rds")]
             shutil.rmtree("_book", ignore_errors=True)
 
 def main():
+    if sys.version_info < (3, 7):
+        print('requires Python 3.7 or higher, found {}'.format(sys.version))
+        sys.exit(1)
+    check_bookdown_at_least_0_23()
     global all_docs
     global all_formats
     if (len(sys.argv) > 2):

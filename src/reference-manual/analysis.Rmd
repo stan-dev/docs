@@ -352,11 +352,16 @@ N_{\mathrm{eff}}
 \frac{N}{1 + 2 \sum_{t = 1}^{\infty} \rho_t}.
 $$
 
-Effective sample size $N_{\mathrm{eff}}$ can be larger than $N$ in
-case of antithetic Markov chains, which have negative autocorrelations
-on odd lags. The no-U-turn sampling (NUTS) algorithm used in Stan can
-produce $N_{\mathrm{eff}}>N$ for parameters which have close to
-Gaussian posterior and little dependency on other parameters.
+
+For independent draws, the effective sample size is just the number of
+iterations.  For correlated draws, the effective sample size will be
+lower than the number of iterations.  For anticorrelated draws, the
+effective sample size can be larger than the number of iterations.  In
+this latter case, MCMC can work better than independent sampling for
+some estimation problems.  Hamiltonian Monte Carlo, including the
+no-U-turn sampler used by default in Stan, can produce anticorrelated
+draws if the posterior is close to Gaussian with little posterior
+correlation.
 
 
 ### Estimation of effective sample size
@@ -459,9 +464,12 @@ see @Geyer:2011 for more details of the MCMC central limit theorem.
 
 ### Thinning samples
 
-In the typical situation, the autocorrelation, $\rho_t$, decreases as
-the lag, $t$, increases.  When this happens, thinning the samples will
-reduce the autocorrelation.
+In complex posteriors, draws are almost always positively correlated.
+In these situations, the autocorrelation at lag $t$, $\rho_t$,
+decreases as the lag, $t$, increases.  In this situation, thinning the
+sample by keeping only every $N$-th draw will reduce the
+autocorrelation of the resulting chain.  This is particularly useful
+if we need to save storage or re-use the draws for inference.
 
 For instance, consider generating one thousand posterior draws in one
 of the following two ways.
@@ -472,16 +480,20 @@ of the following two ways.
 
 Even though both produce a sample consisting one thousand draws, the
 second approach with thinning can produce a higher effective sample
-size.  That's because the autocorrelation $\rho_t$ for the thinned
-sequence is equivalent to $\rho_{10t}$ in the unthinned sequence, so
-the sum of the autocorrelations will be lower and thus the effective
-sample size higher.
+size when the draws are positively correlated.  That's because the
+autocorrelation $\rho_t$ for the thinned sequence is equivalent to
+$\rho_{10t}$ in the unthinned sequence, so the sum of the
+autocorrelations will be lower and thus the effective sample size
+higher.
 
 Now contrast the second approach above with the unthinned alternative,
 
 * Generate 10,000 draws after convergence and save every draw.
 
-This will have a higher effective sample than the thinned sample
-consisting of every tenth drawn.  Therefore, it should be emphasized
-that *the only reason to thin a sample is to reduce memory
-requirements*.
+This will typically have a higher effective sample than the thinned
+sample consisting of every tenth drawn.  But the gap might not be very
+large.  To summarize, *the only reason to thin a sample is to reduce
+memory requirements*.
+
+If draws are anticorrelated, then thinning will increase correlation
+and reduce the overall effective sample size.

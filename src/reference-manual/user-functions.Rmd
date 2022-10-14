@@ -36,10 +36,46 @@ real foo(real mu, real sigma);
 
 declares a function named `foo` with two argument variables of
 types `real` and `real`.  The arguments are named `mu`
-and `sigma`, but that is not part of the declaration.  Two
-user-defined functions may *not* have the same name even if they have
-different sequences of argument types.
+and `sigma`, but that is not part of the declaration.
 
+### Function overloading
+Multiple user-defined functions may have the same name if they have
+different sequences of [argument types](#argument-types-and-qualifiers).
+This is known as function overloading.
+
+For example, the following two functions are both defined with the name `add_up`
+
+```stan
+real add_up(real a, real b){
+  return a + b;
+}
+
+real add_up(real a, real b, real c){
+  return a + b + c;
+}
+```
+
+The return types of overloaded functions do not need to be the same. One could define an additional `add_up` function as follows
+
+```stan
+int add_up(int a, int b){
+  return a + b;
+}
+```
+
+That being said, functions may **not** use the same name if their signature _only_ differs by the
+return type.
+
+For example, the following is not permitted
+```stan
+// illegal
+real baz(int x);
+int baz(int x);
+```
+
+Function names used in the Stan standard library may be overloaded by
+user-defined functions. Exceptions to this are the `reduce_sum` family of
+functions and ODE integrators, which cannot be overloaded.
 
 ## Calling functions
 
@@ -61,6 +97,52 @@ statements.  Such uses are only appropriate for functions that act
 through side effects, such as incrementing the log probability
 accumulator, printing, or raising exceptions.
 
+
+### Resolving overloads {-}
+
+[Overloaded functions](#function-overloading) alongside [type
+promotion](#promotion) can result in situations where there are multiple valid
+interpretations of a function call. Stan requires that there be a unique
+signature which minimizes the number of promotions required.
+
+Consider the following two overloaded functions
+```stan
+real foo(int a, real b);
+real foo(real a, int b);
+```
+These functions do **not** have a unique minimum when called with two integer arguments
+`foo(1,2)`, and therefore cannot be called as such.
+
+Promotion of integers to complex numbers is considered as two separate
+promotions, one from `int` to `real` and a second from `real` to `complex`.
+Consider the following functions with `real` and `complex` signatures
+```stan
+real bar(real x);
+real bar(complex z);
+```
+A call `bar(5)` with an integer argument will be resolved to `bar(real)` because
+it only requires a single promotion, whereas the promotion to a complex number
+requires two promotions.
+
+### Argument promotion {-}
+
+The rules for calling functions work the same way as assignment as far
+as promotion goes.  This means that we can promote arguments to the
+type expected by function arguments.  For example, the following will
+work.
+
+```stan
+real foo(real x) { return ... };
+...
+int a = 5;
+real b = foo(a); // a promoted to type real
+```
+
+In addition to promoting `int` to `real`, Stan also promotes `real` to
+`complex`, and by transitivity, `int` to `complex`.  This also works
+for containers, so an array of `int` may be assigned to an array of
+`real` of the same shape.  And we can also promote `vector` to
+`complex_vector` and similarly for row vectors and matrices.
 
 ### Probability functions in sampling statements {-}
 
@@ -104,11 +186,10 @@ return type for a function with side effects.
 
 ### Base variable type declaration {-}
 
-The base variable types are `integer`, `real`,
-`vector`, `row_vector`, and `matrix`.  No lower-bound
-or upper-bound constraints are allowed (e.g., `real<lower=0>` is
-illegal).  Specialized types are also not allowed (e.g.,
-`simplex` is illegal) .
+The base variable types are `integer`, `real`, `complex`, `vector`,
+`row_vector`, and `matrix`.  No lower-bound or upper-bound constraints
+are allowed (e.g., `real<lower=0>` is illegal).  Specialized
+constrained types are also not allowed (e.g., `simplex` is illegal).
 
 
 ### Dimensionality declaration {-}
@@ -116,8 +197,8 @@ illegal).  Specialized types are also not allowed (e.g.,
 Arguments and return types may be arrays, and these are indicated with
 optional brackets and commas as would be used for indexing.  For
 example, `int` denotes a single integer argument or return,
-whereas `real[ ]` indicates a one-dimensional array of reals,
-`real[ , ]` a two-dimensional array and `real[ , , ]` a
+whereas `array[] real` indicates a one-dimensional array of reals,
+`array[,] real` a two-dimensional array and `array[,,] real` a
 three-dimensional array; whitespace is optional, as usual.
 
 The dimensions for vectors and matrices are not included, so that
@@ -158,7 +239,7 @@ In user-defined functions, the qualifier `data` may be placed before
 an argument type declaration to indicate that the argument must be
 data only.  For example,
 
-```
+```stan
 real foo(data real x) {
   return x^2;
 }
@@ -263,7 +344,7 @@ If there are `_lupdf` and `_lupmf` functions used inside the following
 call to `foo_lpdf`, they will be forced to normalize (return the equivalent
 of their `_lpdf` and `_lpmf` forms):
 
-```
+```stan
 target += foo_lpdf(z | phi);
 ```
 
@@ -329,8 +410,11 @@ These rules disqualify
 
 ```stan
 real foo(real x) {
-  if (x > 2) return 1.0;
-  else if (x <= 2) return -1.0;
+  if (x > 2) {
+    return 1.0;
+  } else if (x <= 2) {
+    return -1.0;
+  }
 }
 ```
 
@@ -341,7 +425,9 @@ real foo(real x) {
   real y;
   y = x;
   while (x < 10) {
-    if (x > 0) return x;
+    if (x > 0) {
+      return x;
+    }
     y = x / 2;
   }
 }
@@ -353,12 +439,13 @@ this case.  The rules for returns allow
 
 ```stan
 real log_fancy(real x) {
-  if (x < 1e-30)
+  if (x < 1e-30) {
     return x;
-  else if (x < 1e-14)
+  } else if (x < 1e-14) {
     return x * x;
-  else
+  } else {
     return log(x);
+  }
 }
 ```
 
@@ -433,8 +520,11 @@ code to compute Fibonacci numbers.
 int fib(int n);
 
 int fib(int n) {
-  if (n < 2) return n;
-  else return fib(n-1) + fib(n-2);
+  if (n < 2) {
+    return n;
+  } else {
+    return fib(n-1) + fib(n-2);
+  }
 }
 ```
 

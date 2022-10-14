@@ -23,13 +23,12 @@ The data and parameters blocks do not allow statements of any kind
 because these blocks are solely used to declare the data variables for
 input and the parameter variables for sampling.  All other blocks
 allow statements.  In these blocks, both variable declarations and
-statements are allowed.  The first statement that is not a variable
-declaration ends the list of block variable declarations.  See
-the [blocks chapter](#blocks.chapter) for more information about the block structure of
-Stan programs.
+statements are allowed.  All top-level variables in a block are
+considered block variables. See the [blocks chapter](#blocks.chapter)
+for more information about the block structure of Stan programs.
 
 
-## Assignment statement {#assignment-statement.section}
+## Assignment statements {#assignment-statement.section}
 
 An assignment statement consists of a variable (possibly multivariate
 with indexing information) and an expression.  Executing an
@@ -83,7 +82,7 @@ sets the value in the first column of the first row of `Sigma` to one.
 
 Assignments to subcomponents of larger multi-variate data structures
 are supported by Stan.  For example, `a` is an array of type
-`real[ , ]` and `b` is an array of type `real[]`, then
+`array[,] real` and `b` is an array of type `array[] real`, then
 the following two statements are both well-formed.
 
 ```stan
@@ -101,6 +100,21 @@ x = Y[1];
 Y[1] = Y[2];
 Y[2] = x;
 ```
+
+### Promotion {-}
+
+Stan allows assignment of lower types to higher types, but not
+vice-versa.  That is, we can assign an expression of type `int` to an
+lvalue of type `real`, and we can assign an expression of type `real`
+to an lvalue of type `complex`.  Furthermore, promotion is transitive,
+so that we can assign an expression of type `int` to an lvalue of type
+`complex`.
+
+Promotion extends to containers, so that arrays of `int` can be
+promoted to arrays of `real` during assignment, and arrays of `real`
+can be assigned to an lvalue of type array of `complex`.  Similarly,
+an expression of type `vector` may be assigned to an lvalue of type
+`complex_vector`, and similarly for row vectors and matrices.
 
 
 ### Lvalue summary {-}
@@ -206,19 +220,18 @@ are also listed in the index prefaced by `operator`, e.g.,
 
 **Compound Arithmetic/Assignment Table.**
 <a id="compound-arithmetic-assign-table"></a>
-*Stan allows compound arithmetic and assignment
-statements of the forms listed in the table above.  The compound
-form is legal whenever the corresponding long form would be legal
-and it has the same effect.*
+_Stan allows compound arithmetic and assignment statements of the
+forms listed in the table.  The compound form is legal whenever the
+corresponding long form would be legal and it has the same effect._
 
- operation  |   compound  |   unfolded
-:-----------|:------------|:-------------
-addition | `x += y` | `x = x + y`
-subtraction | `x -= y` | `x = x - y`
-multiplication | `x *= y` | `x = x * y`
-division | `x /= y` | `x = x / y`
-elementwise multiplication | `x .*= y` | `x = x .* y`
-elementwise division | `x ./= y` | `x = x ./ y`
+ | operation                  | compound  | unfolded     |
+ | :------------------------- | :-------- | :----------- |
+ | addition                   | `x += y`  | `x = x + y`  |
+ | subtraction                | `x -= y`  | `x = x - y`  |
+ | multiplication             | `x *= y`  | `x = x * y`  |
+ | division                   | `x /= y`  | `x = x / y`  |
+ | elementwise multiplication | `x .*= y` | `x = x .* y` |
+ | elementwise division       | `x ./= y` | `x = x ./ y` |
 
 
 ## Increment log density {#increment-log-prob.section}
@@ -317,9 +330,10 @@ and returns the unnormalized density. The same is true for `_lpmf` and `_lupmf`.
 #### Relation to compound addition and assignment {-}
 
 The increment log density statement looks syntactically like compound
-addition and assignment (see the [compound arithmetic/assignment section](#compound-arithmetic-assignment.section), it is treated as a
-primitive statement because `target` is not itself a variable.
-So, even though
+addition and assignment (see the [compound arithmetic/assignment
+section](#compound-arithmetic-assignment.section), it is treated as a
+primitive statement because `target` is not itself a variable. So,
+even though
 
 ```stan
 target += lp;
@@ -353,7 +367,7 @@ Stan supports writing probability statements also in sampling
 notation, such as
 
 ```stan
-y ~ normal(mu,sigma);
+y ~ normal(mu, sigma);
 ```
 
 The name "sampling statement" is meant to be suggestive, not
@@ -411,7 +425,7 @@ y ~ normal(mu, sigma);
 and explicitly incrementing the log probability function, as in
 
 ```stan
-target += normal_lpdf(y | mu,sigma);
+target += normal_lpdf(y | mu, sigma);
 ```
 
 The sampling statement drops all the terms in the log probability
@@ -628,10 +642,11 @@ behaves the same way as the following more verbose form.
 
 ```stan
 y ~ normal(0, 1);
-if (y < -0.5 || y > 2.1)
+if (y < -0.5 || y > 2.1) {
   target += negative_infinity();
-else
+} else {
   target += -log_diff_exp(normal_lcdf(2.1 | 0, 1),
+}
                           normal_lcdf(-0.5 | 0, 1));
 ```
 
@@ -653,12 +668,13 @@ behaves in the same way as the following code.
 
 ```stan
 y ~ poisson(3.7);
-if (y < 2 || y > 10)
+if (y < 2 || y > 10) {
   target += negative_infinity();
-else
+} else {
   target += -log_sum_exp(poisson_lpmf(2 | 3.7),
                          log_diff_exp(poisson_lcdf(10 | 3.7),
                                       poisson_lcdf(2 | 3.7)));
+}
 ```
 
 Recall that `log_sum_exp(a, b)` is just the arithmetically stable form
@@ -678,10 +694,11 @@ following code.
 
 ```stan
 y ~ normal(0, 1);
-if (y < -0.5)
+if (y < -0.5) {
   target += negative_infinity();
-else
+} else {
   target += -normal_lccdf(-0.5 | 0, 1);
+}
 ```
 
 The `normal_lccdf` function is the normal complementary cumulative
@@ -699,11 +716,12 @@ behaves the same way as
 
 ```stan
 y ~ poisson(3.7);
-if (y < 2)
+if (y < 2) {
   target += negative_infinity();
-else
+} else {
   target += -log_sum_exp(poisson_lpmf(2 | 3.7),
                          poisson_lccdf(2 | 3.7));
+}
 ```
 
 
@@ -720,10 +738,11 @@ produces the same result as the following code.
 
 ```stan
 target += normal_lpdf(y | 0, 1);
-if (y > 2.1)
+if (y > 2.1) {
   target += negative_infinity();
-else
+} else {
   target += -normal_lcdf(2.1 | 0, 1);
+}
 ```
 
 With only an upper bound, the discrete case does not need a boundary
@@ -737,10 +756,11 @@ behaves the same way as the following code.
 
 ```stan
 y ~ poisson(3.7);
-if (y > 10)
+if (y > 10) {
   target += negative_infinity();
-else
+} else {
   target += -poisson_lcdf(10 | 3.7);
+}
 ```
 
 
@@ -780,7 +800,7 @@ with truncation.
 ## For loops
 
 Suppose `N` is a variable of type `int`, `y` is a one-dimensional
-array of type `real[]`, and `mu` and `sigma` are variables of type
+array of type `array[] real`, and `mu` and `sigma` are variables of type
 `real`.  Furthermore, suppose that `n` has not been defined as a
 variable. Then the following is a well-formed for-loop statement.
 
@@ -853,8 +873,9 @@ sum the values of an array directly using code such as the following.
 
 ```stan
 total = 0.0;
-for (n in 1:N)
+for (n in 1:N) {
   total = total + x[n];
+}
 ```
 
 After the for loop is executed, the variable `total` will hold
@@ -884,9 +905,9 @@ containers.  If `ys` is an expression denoting a container (vector,
 row vector, matrix, or array) with elements of type `T`, then the
 following is a well-formed foreach statement.
 
-```
+```stan
 for (y in ys) {
-  ... do something with y ...
+  // ... do something with y ...
 }
 ```
 
@@ -896,27 +917,30 @@ The order in which elements of `ys` are visited is defined for container types a
 
 * `matrix`: elements visited in column-major order, `y` is of type `double`
 
-* `T[]`: elements visited in order, `y` is of type `T`.
+* `array[] T`: elements visited in order, `y` is of type `T`.
 
-Consequently, if `ys` is a two dimensional array `real[ , ]`, `y` will
-be a one-dimensional array of real values (type `real[]`).  If 'ys` is
+Consequently, if `ys` is a two dimensional array `array[,] real`, `y` will
+be a one-dimensional array of real values (type `array[] real`).  If 'ys` is
 a matrix, then `y` will be a real value (type `real`).  To loop over
 all values of a two-dimensional array using foreach statements would
 require a doubly-nested loop,
 
-```
-real yss[2, 3];
-for (ys in yss)
-  for (y in ys)
-    ... do something with y ...
+```stan
+array[2, 3] real yss;
+for (ys in yss) {
+  for (y in ys) {
+    // ... do something with y ...
+  }
+}
 ```
 
 whereas a matrix can be looped over in one foreach statement
 
-```
+```stan
 matrix[2, 3] yss;
-for (y in yss)
-   ... do something with y...
+for (y in yss) {
+   // ... do something with y...
+}
 ```
 
 In both cases, the loop variable `y` is of type `real.  The elements
@@ -946,7 +970,7 @@ else
 There must be a single leading `if` clause, which may be followed
 by any number of `else if` clauses, all of which may be
 optionally followed by an `else` clause.  Each condition must be
-a real or integer value, with non-zero values interpreted as true and
+an integer value, with non-zero values interpreted as true and
 the zero value as false.
 
 The entire sequence of if-then-else clauses forms a single conditional
@@ -968,7 +992,7 @@ while (condition)
   body
 ```
 
-The condition must be an integer or real expression and the body can
+The condition must be an integer expression and the body can
 be any statement (or sequence of statements in curly braces).
 
 Evaluation of a while loop starts by evaluating the condition.  If the
@@ -999,8 +1023,9 @@ any statement, for loops with bodies consisting of a single statement
 can be written as follows.
 
 ```stan
-for (n in 1:N)
-  y[n] ~ normal(mu,sigma);
+for (n in 1:N) {
+  y[n] ~ normal(mu, sigma);
+}
 ```
 
 To put multiple statements inside the body of a for loop, a block is
@@ -1008,7 +1033,7 @@ used, as in the following example.
 
 ```stan
 for (n in 1:N) {
-  lambda[n] ~ gamma(alpha,beta);
+  lambda[n] ~ gamma(alpha, beta);
   y[n] ~ poisson(lambda[n]);
 }
 ```
@@ -1027,7 +1052,7 @@ for (n in 1:N)
 
 The problem is that the body of the for loop is taken to be the
 statement directly following it, which is
-`y[n] ~ normal(mu,sigma)`.  This leaves the probability statement for
+`y[n] ~ normal(mu, sigma)`.  This leaves the probability statement for
 `z[n]` hanging, as is clear from the following equivalent
 program.
 
@@ -1104,8 +1129,9 @@ for (m in 1:M) {
      int n = 2 * m;
      sum += n;
   }
-  for (n in 1:N)
+  for (n in 1:N) {
     sum += x[m, n];
+  }
 }
 ```
 
@@ -1114,6 +1140,7 @@ embedded block and so has scope within that block.  The for loop
 defines its own local block implicitly over the statement following it
 in which the loop variable is defined.  As far as Stan is concerned,
 these two uses of `n` are unrelated.
+
 
 
 ## Break and continue statements <a id="break-continue-statements"></a>
@@ -1141,7 +1168,9 @@ program:
 
 ```stan
 while (1) {
-  if (n < 0) break;
+  if (n < 0) {
+    break;
+  }
   foo(n);
   n = n - 1;
 }
@@ -1176,7 +1205,9 @@ array `x`,
 real sum;
 sum = 0;
 for (n in 1:size(x)) {
-  if (x[n] <= 0) continue;
+  if (x[n] <= 0) {
+    continue;
+  }
   sum += x[n];
 }
 ```
@@ -1193,8 +1224,9 @@ reversing the conditional,
 real sum;
 sum = 0;
 for (n in 1:size(x)) {
-  if (x[n] > 0)
+  if (x[n] > 0) {
     sum += x[n];
+  }
 }
 ```
 
@@ -1213,14 +1245,16 @@ If there is a loop nested within a loop, a `break` or
 
 ```stan
 while (cond1) {
-  ...
+  // ...
   while (cond2) {
-    ...
-    if (cond3) break;
-    ...
+    // ...
+    if (cond3) {
+      break;
+    }
+    // ...
   }
   // execution continues here after break
-  ...
+  // ...
 }
 ```
 
@@ -1278,6 +1312,15 @@ and a $2 \times 3$-matrix as
 [[1, 2, 3], [4, 5, 6]]
 ```
 
+Complex numbers print as pairs.  For example, the pair of statements
+
+```stan
+complex z = to_complex(1.2, -3.5);
+print(z)
+```
+
+will print as `(1.2,-3.5)`, with no space after the comma or within
+the parentheses.
 
 Printing a more readable version of arrays or matrices can be done
 with loops.  An example is the print statement in the following
@@ -1288,8 +1331,9 @@ transformed data {
   matrix[2, 2] u;
   u[1, 1] = 1.0;   u[1, 2] = 4.0;
   u[2, 1] = 9.0;   u[2, 2] = 16.0;
-  for (n in 1:2)
+  for (n in 1:2) {
     print("u[", n, "] = ", u[n]);
+  }
 }
 ```
 
@@ -1321,16 +1365,14 @@ step, and the `generated quantities` block once per iteration.
 
 String literals begin and end with a double quote character
 (`"`).  The characters between the double quote characters may be
-the space character or any visible ASCII character, with the exception
-of the backslash character (`\`) and double quote character
-(`"`).  The full list of visible ASCII characters is as follows,
+any byte sequence, with the exception of the double quote character.
 
-```
-a b c d e f g h i j k l m n o p q r s t u v w x y z
-A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
-0 1 2 3 4 5 6 7 8 9 0 { } [ ] ( ) < >
-~ @ # $ ` ^ & * _ ' - + = | / ! ? . , ; :
-```
+The Stan interfaces preserve the byte sequences which they receive.
+The encoding of these byte sequences as characters and their rendering
+as glyphs will be handled by whatever display mechanism is being used to
+monitor Stan's output (e.g., a terminal, a Jupyter notebook, RStudio, etc.).
+Stan does not enforce a character encoding for strings, and no attempt is
+made to validate the bytes as legal ASCII, UTF-8, etc.
 
 
 ### Debug by `print` {-}
@@ -1374,8 +1416,9 @@ example, the following code handles the case where a variable `x`'s
 value is negative.
 
 ```stan
-if (x < 0)
+if (x < 0) {
   reject("x must not be negative; found x=", x);
+}
 ```
 
 
@@ -1437,11 +1480,13 @@ parameters {
   real a;
   real<lower=a> b;
   real<lower=a, upper=b> theta;
-  ...
+  // ...
+}
 model {
   // **wrong** needs explicit truncation
   theta ~ normal(0, 1);
-  ...
+  // ...
+}
 ```
 
 This program is wrong because its truncation bounds on `theta`
@@ -1466,8 +1511,9 @@ functions.  In this case, it is wrong to try to deal with truncation
 through constraints.
 
 ```stan
-  if (theta < a || theta > b)
+  if (theta < a || theta > b) {
     reject("theta not in (a, b)");
+  }
   // still **wrong**, needs T[a,b]
   theta ~ normal(0, 1);
 ```

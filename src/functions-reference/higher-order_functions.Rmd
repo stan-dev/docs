@@ -44,13 +44,29 @@ The signature of the algebraic system is then:
  vector algebra_system (vector y, ...)
 ```
 
+There is no type restriction for the variadic arguments
+and each argument can be passed as data or parameter.
+However users should use parameter arguments only when nescessary
+and mark data arguments with the keyword `data`.
+In the below example, the last variadic argument, $x$, is restricted to being data:
+
+```stan
+  vector algebra_system (vector y, vector theta, data vector x)
+```
+
+Distinguishing data and parameter is important for computational reasons.
+Augmenting the total number of parameters increases the cost of propagating derivatives
+through the solution to the algebraic equation,
+and ultimately the computational cost of evaluating the gradients.
+
+
 ### Call to the algebraic solver
 
 `vector` **`solve_newton`**`(function algebra_system, vector y_guess, ...)`<br>\newline
 Solves the algebraic system, given an initial guess, using Newton's method.
 `r since("2.31")`
 
-`vector` **`solve_newton_tol`**`(function algebra_system, vector y_guess, data real scaling_step, data real f_tol, int max_steps)`<br>\newline
+`vector` **`solve_newton_tol`**`(function algebra_system, vector y_guess, data real scaling_step, data real f_tol, int max_steps, ...)`<br>\newline
 Solves the algebraic system, given an initial guess, using Newton's method with additional control parameters for the solver.
 `r since("2.31")`
 
@@ -58,7 +74,7 @@ Solves the algebraic system, given an initial guess, using Newton's method with 
 Solves the algebraic system, given an initial guess, using Powell's hybrid method.
 `r since("2.31")`
 
-`vector` **`solve_powell_tol`**`(function algebra_system, vector y_guess, data real rel_tol, data real f_tol, int max_steps)`<br>\newline
+`vector` **`solve_powell_tol`**`(function algebra_system, vector y_guess, data real rel_tol, data real f_tol, int max_steps, ...)`<br>\newline
 Solves the algebraic system, given an initial guess, using Powell's hybrid method with additional control parameters for the solver.
 `r since("2.31")`
 

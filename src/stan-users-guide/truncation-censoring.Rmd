@@ -35,9 +35,7 @@ parameters {
   real<lower=0> sigma;
 }
 model {
-  for (n in 1:N) {
-    y[n] ~ normal(mu, sigma) T[ , U];
-  }
+  y ~ normal(mu, sigma) T[ , U];
 }
 ```
 
@@ -57,12 +55,10 @@ will evaluate to $-\infty$.  For instance, if variate `y` is
 sampled with the statement.
 
 ```stan
-for (n in 1:N) {
-  y[n] ~ normal(mu, sigma) T[L, U];
-}
+y ~ normal(mu, sigma) T[L, U];
 ```
 
-then if the value of `y[n]` is less than the value of `L`
+then if any value inside `y` is less than the value of `L`
 or greater than the value of `U`, the sampling statement produces
 a zero-probability estimate.  For user-defined truncation, this
 zeroing outside of truncation bounds must be handled explicitly.
@@ -123,9 +119,7 @@ parameters {
 model {
   L ~ // ...
   U ~ // ...
-  for (n in 1:N) {
-    y[n] ~ normal(mu, sigma) T[L, U];
-  }
+  y ~ normal(mu, sigma) T[L, U];
 }
 ```
 
@@ -257,5 +251,3 @@ model {
   target += N_cens * normal_lcdf(L | mu, sigma);
 }
 ```
-
-

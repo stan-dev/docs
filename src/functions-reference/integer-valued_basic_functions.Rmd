@@ -9,6 +9,7 @@ cat(' * <a href="int-arithmetic.html">Integer-Valued Arithmetic Operators</a>\n'
 cat(' * <a href="absolute-functions.html">Absolute Functions</a>\n')
 cat(' * <a href="bound-functions.html">Bound Functions</a>\n')
 cat(' * <a href="size-functions.html">Size Functions</a>\n')
+cat(' * <a href="casting-functions.html">Casting Functions</a>\n')
 }
 ```
 
@@ -123,8 +124,17 @@ of the result is platform dependent. \[ \mathrm{operator\%}(x, y) \ =
 \index{{\tt \bfseries operator\_subtract }!{\tt (int x): int}|hyperpage}
 
 `int` **`operator-`**`(int x)`<br>\newline
-The negation of the subtrahend x \[ \text{operator-}(x) = -x
+The negation of the subtrahend x \[ \text{operator-}(x) = -x \]
 `r since("2.0")`
+
+<!-- T; operator-; (T x); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (T x): T}|hyperpage}
+
+`T` **`operator-`**`(T x)`<br>\newline
+Vectorized version of `operator-`. If `T x` is a (possibly nested) array of
+integers, `-x` is the same shape array where each individual integer is negated.
+`r since("2.31")`
+
 
 <!-- int; operator+; (int x); -->
 \index{{\tt \bfseries operator\_add }!{\tt (int x): int}|hyperpage}
@@ -196,3 +206,33 @@ Return the maximum of x and y. \[ \text{max}(x, y) = \begin{cases} x &
 
 Return the size of `x` which for scalar-valued `x` is 1
 `r since("2.26")`
+
+## Casting functions
+
+It is possible to cast real numbers to integers as long as the real
+value is `data`. See
+[data only qualifiers](https://mc-stan.org/docs/reference-manual/argument-types-and-qualifiers.html#data-only-qualifiers)
+in the Stan Reference Manual.
+
+<!-- int; to_int; (data real x); -->
+\index{{\tt \bfseries to\_int }!{\tt (data real x): int}|hyperpage}
+
+`int` **`to_int`**`(data real x)`<br>\newline
+
+Return the value `x` truncated to an integer. This will throw an error
+if the value of `x` is too big to represent as a 32-bit signed integer.
+
+This is similar to `trunc` (see [Rounding functions]) but the return type is of
+type `int`. For example, `to_int(3.9)` is `3`, and `to_int(-3.9)` is `-3`.
+`r since("2.31")`
+
+
+<!-- int; to_int; (data real x); -->
+\index{{\tt \bfseries to\_int }!{\tt (data R x): I}|hyperpage}
+
+`I` **`to_int`**`(data T x)`<br>\newline
+
+The vectorized version of `to_int`. This function accepts a (possibly nested)
+array of reals and returns an array of the same shape where each element has
+been truncated to an integer.
+`r since("2.31")`

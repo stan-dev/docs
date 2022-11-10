@@ -793,8 +793,32 @@ probability, which in turn results in the sample being rejected.
 
 #### Vectorizing truncated distributions {-}
 
-Stan does not (yet) support vectorization of distribution functions
-with truncation.
+Vectorization of distribution functions with truncation
+is available if the underlying distribution, `lcdf`, and `lccdf` functions
+meet the required signatures.
+
+The equivalent code for a vectorized truncation depends on which of the
+variables are non-scalars (arrays, vectors, etc.):
+
+1. If the variate `y` is the only non-scalar, the result is the same as
+   described in the above sections, but the `lcdf`/`lccdf` calculation is multiplied
+   by `size(y)`.
+
+2. If the other arguments to the distribution are non-scalars, then the
+   vectorized version of the `lcdf`/`lccdf` is used. These functions return the
+   sum of their terms, so no multiplication by the size is needed.
+
+3. The exception to the above is when a non-variate is a vector and both a lower
+   and upper bound are specified in the truncation. In this case, a for loop is
+   generated over the elements of the non-scalar arguments. This is required
+   since the `log_diff_exp` of two sums is not the same as the sum of the
+   pairwise `log_diff_exp` operations.
+
+Note that while a lower-and-upper truncated distrubution may generate a
+for-loop internally as part of translating the truncation statement, this is
+still preferable to manually constructing a loop, since the distribution
+function itself can still be evaluated in a vectorized manner.
+
 
 
 ## For loops
@@ -970,7 +994,7 @@ else
 There must be a single leading `if` clause, which may be followed
 by any number of `else if` clauses, all of which may be
 optionally followed by an `else` clause.  Each condition must be
-a real or integer value, with non-zero values interpreted as true and
+an integer value, with non-zero values interpreted as true and
 the zero value as false.
 
 The entire sequence of if-then-else clauses forms a single conditional
@@ -992,7 +1016,7 @@ while (condition)
   body
 ```
 
-The condition must be an integer or real expression and the body can
+The condition must be an integer expression and the body can
 be any statement (or sequence of statements in curly braces).
 
 Evaluation of a while loop starts by evaluating the condition.  If the

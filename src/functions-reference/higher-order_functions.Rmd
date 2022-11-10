@@ -7,7 +7,7 @@ by name to the higher-order functions.
 
 ```{r results='asis', echo=FALSE}
 if (knitr::is_html_output()) {
-cat(' * <a href="functions-algebraic-solver.html">Algebraic Equation Solver</a>\n')
+cat(' * <a href="functions-algebraic-solver.html">Algebraic Equation Solvers</a>\n')
 cat(' * <a href="functions-ode-solver.html">Ordinary Differential Equation (ODE) Solvers</a>\n')
 cat(' * <a href="functions-1d-integrator.html">1D Integrator</a>\n')
 cat(' * <a href="functions-reduce.html">Reduce-Sum</a>\n')
@@ -15,91 +15,69 @@ cat(' * <a href="functions-map.html">Map-Rect</a>\n')
 }
 ```
 
-## Algebraic equation solver {#functions-algebraic-solver}
+## Algebraic equation solvers {#functions-algebraic-solver}
 
 Stan provides two built-in algebraic equation solvers,
-respectively based on Powell's and Newton's methods.
-The Newton method constitutes a more recent addition to Stan;
+respectively based on the Newton method and the Powell "dog leg" hybrid method.
+Empirically the Newton method is found to be faster and
 its use is recommended for most problems.
-Although they look like other function applications, 
-algebraic solvers are special in two ways.
 
-First, an algebraic solver is a higher-order function, i.e. it takes
+An algebraic solver is a higher-order function, i.e. it takes
 another function as one of its arguments. Other functions in
-Stan which share this feature are the ordinary differential equation
-solvers (see section [Ordinary Differential Equation (ODE) Solvers](#functions-ode-solver)).
+Stan which share this feature are the differential equation
+solvers (see section [Ordinary Differential Equation (ODE) Solvers](#functions-ode-solver) and
+[Differential Algebraic Equation (DAE) solver](#functions-dae-solver)).
 Ordinary Stan functions do not allow functions as arguments.
 
-Second, some of the arguments of the algebraic solvers are restricted
-to data only expressions. These expressions must not contain variables
-other than those declared in the data or transformed data blocks.
-Ordinary Stan functions place no restriction on the origin of
-variables in their argument expressions.
 
 ### Specifying an algebraic equation as a function
 
 An algebraic system is specified as an ordinary function in Stan
-within the function block. The algebraic system function must have
-this signature:
+within the function block. The function must return a `vector`
+and takes in, as its first argument, the unknowns $y$ we wish to solve for,
+also passed as a `vector`.
+This argument is followed by additional arguments as specified by the user;
+we  call such arguments _variadic arguments_ and denote them `...`.
+The signature of the algebraic system is then:
 
 ```stan
- vector algebra_system(vector y, vector theta,
-                              data array[] real x_r, array[] int x_i)
+ vector algebra_system (vector y, ...)
 ```
 
-The algebraic system function should return the value of the algebraic
-function which goes to 0, when we plug in the solution to the
-algebraic system.
+There is no type restriction for the variadic arguments
+and each argument can be passed as data or parameter.
+However users should use parameter arguments only when nescessary
+and mark data arguments with the keyword `data`.
+In the below example, the last variadic argument, $x$, is restricted to being data:
 
-The argument of this function are:
+```stan
+  vector algebra_system (vector y, vector theta, data vector x)
+```
 
-*   *`y`*, the unknowns we wish to solve for
+Distinguishing data and parameter is important for computational reasons.
+Augmenting the total number of parameters increases the cost of propagating derivatives
+through the solution to the algebraic equation,
+and ultimately the computational cost of evaluating the gradients.
 
-*   *`theta`*, parameter values used to evaluate the algebraic system
-
-*   *`x_r`*, data values used to evaluate the algebraic system
-
-*   *`x_i`*, integer data used to evaluate the algebraic system
-
-The algebraic system function separates parameter values, *`theta`*,
-from data values, *`x_r`*, for efficiency in propagating the derivatives
-through the algebraic system.
 
 ### Call to the algebraic solver
 
-<!-- vector; algebra_solver; (function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i); -->
-\index{{\tt \bfseries algebra\_solver }!{\tt (function algebra\_system, vector y\_guess, vector theta, data array[] real x\_r, array[] int x\_i): vector}|hyperpage}
-
-`vector` **`algebra_solver`**`(function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i)`<br>\newline
-Solves the algebraic system, given an initial guess, using the Powell
-hybrid algorithm.
-`r since("2.17")`
-
-<!-- vector; algebra_solver; (function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i, data real rel_tol, data real f_tol, int max_steps); -->
-\index{{\tt \bfseries algebra\_solver }!{\tt (function algebra\_system, vector y\_guess, vector theta, data  array[] real x\_r, array[] int x\_i, data real rel\_tol, data real f\_tol, int max\_steps): vector}|hyperpage}
-
-`vector` **`algebra_solver`**`(function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i, data real rel_tol, data real f_tol, int max_steps)`<br>\newline
-Solves the algebraic system, given an initial guess, using the Powell
-hybrid algorithm with additional control parameters for the solver.
-`r since("2.17")`
-
-*Note:* In future releases, the function `algebra_solver` will be deprecated
-and replaced with `algebra_solver_powell`.
-
-<!-- vector; algebra_solver_newton; (function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i); -->
-\index{{\tt \bfseries algebra\_solver\_newton }!{\tt (function algebra\_system, vector y\_guess, vector theta, data array[] real x\_r, array[] int x\_i): vector}|hyperpage}
-
-`vector` **`algebra_solver_newton`**`(function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i)`<br>\newline
+`vector` **`solve_newton`**`(function algebra_system, vector y_guess, ...)`<br>\newline
 Solves the algebraic system, given an initial guess, using Newton's method.
-`r since("2.24")`
+`r since("2.31")`
 
-<!-- vector; algebra_solver_newton; (function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i, data real rel_tol, data real f_tol, int max_steps); -->
-\index{{\tt \bfseries algebra\_solver\_newton }!{\tt (function algebra\_system, vector y\_guess, vector theta, data array[] real x\_r, array[] int x\_i, data real rel\_tol, data real f\_tol, int max\_steps): vector}|hyperpage}
+`vector` **`solve_newton_tol`**`(function algebra_system, vector y_guess, data real scaling_step, data real f_tol, int max_steps, ...)`<br>\newline
+Solves the algebraic system, given an initial guess, using Newton's method with additional control parameters for the solver.
+`r since("2.31")`
 
-`vector` **`algebra_solver_newton`**`(function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i, data real rel_tol, data real f_tol, int max_steps)`<br>\newline
-Solves the algebraic system, given an initial guess, using Newton's method
-with additional control parameters for the solver.
-`r since("2.24")`
+`vector` **`solve_powell`**`(function algebra_system, vector y_guess, ...)`<br>\newline
+Solves the algebraic system, given an initial guess, using Powell's hybrid method.
+`r since("2.31")`
+
+`vector` **`solve_powell_tol`**`(function algebra_system, vector y_guess, data real rel_tol, data real f_tol, int max_steps, ...)`<br>\newline
+Solves the algebraic system, given an initial guess, using Powell's hybrid method with additional control parameters for the solver.
+`r since("2.31")`
+
 
 #### Arguments to the algebraic solver
 
@@ -107,36 +85,54 @@ The arguments to the algebraic solvers are as follows:
 
 * *`algebra_system`*: function literal referring to a function
 specifying the system of algebraic equations with signature
-`(vector, vector, array[] real, array[] int):vector`.   The arguments represent (1)
-unknowns, (2) parameters, (3) real data, and   (4) integer data,
+`(vector, ...):vector`.   The arguments represent (1)
+unknowns, (2) additional parameter and/or data arguments,
 and the return value contains the value of the algebraic function,
 which goes to 0 when we plug in the solution to the algebraic system,
 
 *   *`y_guess`*: initial guess for the solution, type `vector`,
 
-*   *`theta`*: parameters only, type `vector`,
+*   *`...`*: variadic arguments.
 
-*   *`x_r`*: real data only, type `array[] real`, and
+The algebraic solvers admit control parameters.
+While Stan provides default values, the user should be prepared to adjust
+the control parameters.
+The following controls are available:
 
-*   *`x_i`*: integer data only, type `array[] int`.
 
-For more fine-grained control of the algebraic solver, these
-parameters can also be provided:
+*  *`scaling_step`*: _for the Newton solver only_, the scaled-step
+                     stopping tolerance, type `real`, data only.
+                     If a Newton step is smaller
+                     than the scaling step tolerance, the code breaks,
+                     assuming the solver is no longer making significant
+                     progress. If set to 0, this constraint is ignored.
+                     Default value is $10^{-3}$.
 
-*   *`rel_tol`*: relative tolerance for the algebraic solver, type
-`real`, data only,
+*   *`rel_tol`*: _for the Powell solver only_, the relative tolerance, type
+`real`, data only. The relative tolerance is the estimated relative error
+of the solver and serves to test if a satisfactory solution has been found.
+Default value is $10^{-10}$.
 
 *   *`function_tol`*: function tolerance for the algebraic solver,
-type `real`, data only,
+type `real`, data only. After convergence of the solver, the proposed solution
+is plugged into the algebraic system and its norm is compared to the function tolerance.
+If the norm is below the function tolerance, the solution is deemed acceptable.
+Default value is $10^{-6}$.
 
 *   *`max_num_steps`*: maximum number of steps to take in the
-algebraic solver, type `int`, data only.
+algebraic solver, type `int`, data only. If the solver reaches this number of steps,
+it breaks and returns an error message. Default value is $200$.
+
+The difference in which control parameters are available has to do with the underlying
+implementations for the solvers and the control parameters these implementations support.
+The Newton solver is based on KINSOL from the SUNDIAL suites,
+while the Powell solver uses a module from the Eigen library.
 
 #### Return value
 
 The return value for the algebraic solver is an object of type
 `vector`, with values which, when plugged in as `y` make the algebraic
-function go to 0.
+function go to 0 (approximately, within the specified function tolerance).
 
 #### Sizes and parallel arrays
 
@@ -144,36 +140,31 @@ Certain sizes have to be consistent. The initial guess, return value
 of the solver, and return value of the algebraic function must all be
 the same size.
 
-The parameters, real data, and integer data will be passed from the
-solver directly to the system function.
 
 #### Algorithmic details
 
-Stan offers two algebraic solvers: `algebra_solver` and `algebra_solver_newton`.
-`algebra_solver` is baed on the Powell hybrid method [@Powell:1970],
-which in turn uses first-order derivatives. The Stan code builds on
+Stan offers two methods to solve algebraic equations.
+`solve_newton` and `solve_newton_tol` use the Newton method,
+a first-order derivative based numerical solver.
+The Stan code builds on the implementation in KINSOL
+from the SUNDIALS suite [@Hindmarsh:2005].
+For many problems, we find that the Newton method is faster
+than the Powell method.
+If however Newton's method performs poorly, either failing to or requiring an excessively
+long time to converge, the user should be prepared to switch to the Powell method.
+
+`solve_powell` and `solve_powell_tol` are based on the Powell hybrid method [@Powell:1970],
+which also uses first-order derivatives. The Stan code builds on
 the implementation of the hybrid solver in the unsupported module for
 nonlinear optimization problems of the Eigen library [@Eigen:2013].
 This solver is in turn based on the algorithm developed for the
 package MINPACK-1 [@minpack:1980].
 
-`algebra_solver_newton`, uses Newton's method,
-also a first-order derivative based numerical solver.
-The Stan code builds on the implementation in KINSOL
-from the SUNDIALS suite [@Hindmarsh:2005].
-For many problems, we find that `algebra_solver_newton` is faster 
-than Powell's method.
-If however Newton's method performs poorly, either failing to or requiring an excessively
-long time to converge, the user should be prepared to switch
-to `algebra_solver`.
+For both solvers, derivatives are propagated through the solution to the
+algebraic solution using the implicit function theorem and an adjoint method
+of automatic differentiation;
+for a discussion on this topic, see [@Gabeler:2021, @Margossian:2022].
 
-
-For both solvers, the Jacobian of the solution
-with respect to auxiliary parameters is
-computed using the implicit function theorem. Intermediate Jacobians
-(of the algebraic function's output with respect to the unknowns y
-and with respect to the auxiliary parameters theta) are computed using
-Stan's automatic differentiation.
 
 ## Ordinary differential equation (ODE) solvers {#functions-ode-solver}
 
@@ -435,18 +426,18 @@ also represented by `...` in the DAE solver call, must match the types of the ar
 
 ### The DAE solver
 
-<!-- array[] vector; dae; (function residual, vector initial_state, vector initial_state_derivative, real initial_time, array[] real times, ...); -->
-\index{{\tt \bfseries dae }!{\tt (function residual, vector initial\_state, vector initial\_state\_derivative, real initial\_time, array[] real times, ...): array[] vector}|hyperpage}
+<!-- array[] vector; dae; (function residual, vector initial_state, vector initial_state_derivative, data real initial_time, data array[] real times, ...); -->
+\index{{\tt \bfseries dae }!{\tt (function residual, vector initial\_state, vector initial\_state\_derivative, data real initial\_time, data array[] real times, ...): array[] vector}|hyperpage}
 
-`array[] vector` **`dae`**`(function residual, vector initial_state, vector initial_state_derivative, real initial_time, array[] real times, ...)`<br>\newline
+`array[] vector` **`dae`**`(function residual, vector initial_state, vector initial_state_derivative, data real initial_time, data array[] real times, ...)`<br>\newline
 Solves the DAE system using the backward differentiation formula (BDF)
 method [@serban_user:2021].
 `r since("2.29")`
 
-<!-- array[] vector; dae_tol; (function residual, vector initial_state, vector initial_state_derivative, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...); -->
-\index{{\tt \bfseries dae\_tol }!{\tt (function residual, vector initial\_state, vector initial\_state\_derivative, real initial\_time, array[] real times, data real rel\_tol, data real abs\_tol, int max\_num\_steps, ...): array[] vector}|hyperpage}
+<!-- array[] vector; dae_tol; (function residual, vector initial_state, vector initial_state_derivative, data real initial_time, data array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...); -->
+\index{{\tt \bfseries dae\_tol }!{\tt (function residual, vector initial\_state, vector initial\_state\_derivative, data real initial\_time, data array[] real times, data real rel\_tol, data real abs\_tol, int max\_num\_steps, ...): array[] vector}|hyperpage}
 
-`array[] vector` **`dae_tol`**`(function residual, vector initial_state, vector initial_state_derivative, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...)`<br>\newline
+`array[] vector` **`dae_tol`**`(function residual, vector initial_state, vector initial_state_derivative, data real initial_time, data array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...)`<br>\newline
 Solves the DAE system for the times provided using the backward differentiation formula (BDF) method with additional control
 parameters for the solver.
 `r since("2.29")`
@@ -488,15 +479,15 @@ The arguments to the DAE solver are
 
 *   *`initial_state_derivative`*: time derivative of the initial state, type `vector`,
 
-*   *`initial_time`*: initial time, type `real`,
+*   *`initial_time`*: initial time, type `data real`,
 
-*   *`times`*: solution times, type `array[] real`,
+*   *`times`*: solution times, type `data array[] real`,
 
 *   *`...`*: sequence of arguments that will be passed through unmodified
 to the DAE residual function. The types here must match the types in the `...`
 arguments of the DAE residual function.
 
-For `dae_tol`, the following three 
+For `dae_tol`, the following three
 parameters must be provided after `times` and before the `...` arguments:
 
 *   `data`   *`rel_tol`*: relative tolerance for the DAE solver, type `real`,
@@ -515,7 +506,7 @@ or functions of parameters or transformed parameters.
 
 #### Consistency of the initial conditions
 
-The user is responsible to ensure 
+The user is responsible to ensure
 the residual function becomes zero at the initial time, `t0`, when the
 arguments `initial_state` and `initial_state_derivative` are
 introduced as `state` and `state_derivative`, respectively.
@@ -531,7 +522,7 @@ the `times` argument.
 The sizes must match, and in particular, the following groups are of
 the same size:
 
-*   state variables and state derivatives passed into the residual function, 
+*   state variables and state derivatives passed into the residual function,
 the residual returned by the residual function, initial state and
 initial state derivatives passed into the solver, and length of each vector in the output,
 
@@ -769,4 +760,3 @@ the size of the parallel arrays of job-specific/local parameters
 `theta`, real data `x_r`, and integer data `x_r`. The shared/global
 parameters `phi` are passed to each invocation of `f`.
 `r since("2.18")`
-

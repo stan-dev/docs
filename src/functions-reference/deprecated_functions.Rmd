@@ -57,6 +57,14 @@ $$ 1.0 / 2.0 = 0.5 $$
 *Replacement*: Use the integer division operator `operator%/%` instead.
 
 
+## Real arguments to logical operators `operator&&`, `operator||`, and `operator!`
+
+*Deprecated*: A nonzero real number (even NaN) is interpreted as true and
+a zero is interpreted as false.
+
+*Replacement*: Explicit `x != 0` comparison is preferred instead.
+
+
 ## integrate_ode_rk45, integrate_ode_adams, integrate_ode_bdf ODE Integrators {#functions-old-ode-solver}
 
 These ODE integrator functions have been replaced by those described in:
@@ -217,6 +225,126 @@ solver,
 
 *   parameters, real data and integer data passed to the solver will
 be passed to the system function
+
+
+## algebra_solver, algebra_solver_newton algebraic solvers {#functions-old-algebra-solver}
+
+These algebraic solver functions have been replaced by those described in:
+
+```{r results='asis', echo=FALSE}
+if (knitr::is_html_output()) {
+  cat(' * <a href="functions-algebraic-solver.html">Algebraic Equation Solvers</a>\n')
+}
+```
+
+### Specifying an algebraic equation as a function
+
+An algebraic system is specified as an ordinary function in Stan
+within the function block. The algebraic system function must have
+this signature:
+
+```stan
+ vector algebra_system(vector y, vector theta,
+                              data array[] real x_r, array[] int x_i)
+```
+
+The algebraic system function should return the value of the algebraic
+function which goes to 0, when we plug in the solution to the
+algebraic system.
+
+The argument of this function are:
+
+*   *`y`*, the unknowns we wish to solve for
+
+*   *`theta`*, parameter values used to evaluate the algebraic system
+
+*   *`x_r`*, data values used to evaluate the algebraic system
+
+*   *`x_i`*, integer data used to evaluate the algebraic system
+
+The algebraic system function separates parameter values, *`theta`*,
+from data values, *`x_r`*, for efficiency in propagating the derivatives
+through the algebraic system.
+
+### Call to the algebraic solver
+
+
+`vector` **`algebra_solver`**`(function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i)`<br>\newline
+Solves the algebraic system, given an initial guess, using the Powell
+hybrid algorithm.
+`r since("2.17, deprecated in 2.31")`
+
+<!-- vector; algebra_solver; (function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i, data real rel_tol, data real f_tol, int max_steps); -->
+\index{{\tt \bfseries algebra\_solver }!{\tt (function algebra\_system, vector y\_guess, vector theta, data  array[] real x\_r, array[] int x\_i, data real rel\_tol, data real f\_tol, int max\_steps): vector}|hyperpage}
+
+`vector` **`algebra_solver`**`(function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i, data real rel_tol, data real f_tol, int max_steps)`<br>\newline
+Solves the algebraic system, given an initial guess, using the Powell
+hybrid algorithm with additional control parameters for the solver.
+`r since("2.17, deprecated in 2.31")`
+
+*Note:* In future releases, the function `algebra_solver` will be deprecated
+and replaced with `algebra_solver_powell`.
+
+<!-- vector; algebra_solver_newton; (function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i); -->
+\index{{\tt \bfseries algebra\_solver\_newton }!{\tt (function algebra\_system, vector y\_guess, vector theta, data array[] real x\_r, array[] int x\_i): vector}|hyperpage}
+
+`vector` **`algebra_solver_newton`**`(function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i)`<br>\newline
+Solves the algebraic system, given an initial guess, using Newton's method.
+`r since("2.24, deprecated in 2.31")`
+
+<!-- vector; algebra_solver_newton; (function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i, data real rel_tol, data real f_tol, int max_steps); -->
+\index{{\tt \bfseries algebra\_solver\_newton }!{\tt (function algebra\_system, vector y\_guess, vector theta, data array[] real x\_r, array[] int x\_i, data real rel\_tol, data real f\_tol, int max\_steps): vector}|hyperpage}
+
+`vector` **`algebra_solver_newton`**`(function algebra_system, vector y_guess, vector theta, data array[] real x_r, array[] int x_i, data real rel_tol, data real f_tol, int max_steps)`<br>\newline
+Solves the algebraic system, given an initial guess, using Newton's method
+with additional control parameters for the solver.
+`r since("2.24, deprecated in 2.31")`
+
+#### Arguments to the algebraic solver
+
+The arguments to the algebraic solvers are as follows:
+
+* *`algebra_system`*: function literal referring to a function
+specifying the system of algebraic equations with signature
+`(vector, vector, array[] real, array[] int):vector`.   The arguments represent (1)
+unknowns, (2) parameters, (3) real data, and   (4) integer data,
+and the return value contains the value of the algebraic function,
+which goes to 0 when we plug in the solution to the algebraic system,
+
+*   *`y_guess`*: initial guess for the solution, type `vector`,
+
+*   *`theta`*: parameters only, type `vector`,
+
+*   *`x_r`*: real data only, type `array[] real`, and
+
+*   *`x_i`*: integer data only, type `array[] int`.
+
+For more fine-grained control of the algebraic solver, these
+parameters can also be provided:
+
+*   *`rel_tol`*: relative tolerance for the algebraic solver, type
+`real`, data only,
+
+*   *`function_tol`*: function tolerance for the algebraic solver,
+type `real`, data only,
+
+*   *`max_num_steps`*: maximum number of steps to take in the
+algebraic solver, type `int`, data only.
+
+#### Return value
+
+The return value for the algebraic solver is an object of type
+`vector`, with values which, when plugged in as `y` make the algebraic
+function go to 0.
+
+#### Sizes and parallel arrays
+
+Certain sizes have to be consistent. The initial guess, return value
+of the solver, and return value of the algebraic function must all be
+the same size.
+
+The parameters, real data, and integer data will be passed from the
+solver directly to the system function.
 
 
 ## Exponentiated quadratic covariance functions {#cov_exp_quad}

@@ -10,9 +10,11 @@ The `method` argument is required.  It can be specified overtly as the
 a keyword-value pair `method=<inference>` or implicitly as one of the following:
     + `sample` - obtain a sample from the posterior using HMC
     + `optimize` - penalized maximum likelihood estimation
-    + `variational` - automatic variational inference 
+    + `variational` - automatic variational inference
     + `generate_quantities` - run model's `generated quantities` block on existing sample
-to obtain new quantities of interest.    
+to obtain new quantities of interest.
+    + `log_prob` - compute the log probability and gradient of the model for one
+      set of parameters.
     + `diagnose` - compute and compare sampler gradient calculations to finite differences.
 
 - `data` - specifies the input data file, if any.
@@ -65,11 +67,11 @@ The keyword value pair `diagnostic_file=<filepath>` specifies the location of th
 auxiliary output file. By default, no auxiliary output file is produced.
 This option is only valid for the iterative algorithms `sample` and `variational`.
 
-The keyword value pair `refresh=<int>` specifies the 
+The keyword value pair `refresh=<int>` specifies the
 number of iterations between progress messages written to the terminal window.
 The default value is 100 iterations.
 
-The keyword value pair `sig_figs=<int>` specifies the 
+The keyword value pair `sig_figs=<int>` specifies the
 number of significant digits for all numerical values in the output files.
 Allowable values are between 1 and 18, which is the maximum amount of precision
 available for 64-bit floating point arithmetic.
@@ -157,7 +159,6 @@ CmdStan provides a `help` and `help-all` mechanism that displays either the
 available top-level or keyword-specific key-value argument pairs.
 To display top-level help, call the CmdStan executable with keyword `help`:
 ```
-> ./bernoulli help
 Usage: ./bernoulli <arg1> <subarg1_1> ... <subarg1_m> ... <arg_n> <subarg_n_1> ... <subarg_n_m>
 
 Begin by selecting amongst the following inference methods and diagnostics,
@@ -166,6 +167,7 @@ Begin by selecting amongst the following inference methods and diagnostics,
   variational  Variational inference
   diagnose    Model diagnostics
   generate_quantities  Generate quantities of interest
+  log_prob    Return the log density up to a constant and its gradients, given supplied parameters
 
 Or see help information with
   help        Prints help
@@ -177,8 +179,10 @@ Additional configuration available by specifying
   init        Initialization method: "x" initializes randomly between [-x, x], "0" initializes to 0, anything else identifies a file of values
   random      Random number configuration
   output      File output options
+  num_threads  Number of threads available to the program. To use this argument, re-compile this model with STAN_THREADS=true.
 
 See ./bernoulli <arg1> [ help | help-all ] for details on individual arguments.
+
 ```
 
 ## Error messages and return codes

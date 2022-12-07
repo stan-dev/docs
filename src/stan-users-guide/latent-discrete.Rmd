@@ -1047,15 +1047,15 @@ Throughout, the model under consideration consists of both continuous parameters
 
 Estimating expectations {-}
 
-When performing Bayesian inference, interest often centers on estimating some (constant) low-dimensional summary statistics of the posterior distribution. Mathematically, we are interested in estimating $\mu$, say, where $\mu = \mathbb{E}(g(\Theta, Z))$ and $g(\cdot)$ is an arbitrary function. An example of such a quantity is $\mathbb{E}(\Theta)$, the posterior mean of the continuous parameters, where we would take $g(\theta, z) = \theta$. To estimate $\mu$ the most common approach is to draw a series of values, at least approximately, from the posterior distribution of the parameters of interest. The numerical values of these draws can then be used to calculate the quantities of interest. Often, this process of calculation is trivial, but more care is required when working with marginalized posteriors as we describe in this section.
+When performing Bayesian inference, interest often centers on estimating some (constant) low-dimensional summary statistics of the posterior distribution. Mathematically, we are interested in estimating $\mu$, say, where $\mu = \mathbb{E}(g(\Theta, Z))$ and $g(\cdot)$ is an arbitrary function. An example of such a quantity is $\mathbb{E}(\Theta)$, the posterior mean of the continuous parameters, where we would take $g(\theta, z) = \theta$. To estimate $\mu$ the most common approach is to sample a series of values, at least approximately, from the posterior distribution of the parameters of interest. The numerical values of these draws can then be used to calculate the quantities of interest. Often, this process of calculation is trivial, but more care is required when working with marginalized posteriors as we describe in this section.
 
 If both $\Theta$ and $Z$ were continuous, Stan could be used to sample $M$ draws from the joint posterior $p_{\Theta, Z}(\theta, z)$ and then estimate $\mu$ with
 $$   
 \hat{\mu} = \frac{1}{M} \sum_{i = 1}^M {g(\theta^{(i)}, z^{(i)})}.
 $$
-Given $Z$ is discrete, however, Stan cannot be used to sample from the joint posterior (or even to do optimization). Instead, as outlined in the previous sections describing specific models, the user can first marginalize out $Z$ from the joint posterior to give the marginalized posterior $p_\Theta(\theta)$. This marginalized posterior can then be implemented in Stan as usual, and Stan will give samples $\{\theta^{(i)}\}_{i = 1}^M$ from the marginalized posterior. 
+Given $Z$ is discrete, however, Stan cannot be used to sample from the joint posterior (or even to do optimization). Instead, as outlined in the previous sections describing specific models, the user can first marginalize out $Z$ from the joint posterior to give the marginalized posterior $p_\Theta(\theta)$. This marginalized posterior can then be implemented in Stan as usual, and Stan will give draws $\{\theta^{(i)}\}_{i = 1}^M$ from the marginalized posterior. 
 
-Using only the samples $\{\theta^{(i)}\}_{i = 1}^M$, how can we estimate $\mathbb{E}(g(\Theta, Z))$? We can use a conditional estimator. That is, for each function $g$ of interest we can compute
+Using only the draws $\{\theta^{(i)}\}_{i = 1}^M$, how can we estimate $\mathbb{E}(g(\Theta, Z))$? We can use a conditional estimator. That is, for each function $g$ of interest we can compute
 $$    
 h(\Theta) = \mathbb{E}(g(\Theta, Z) \mid \Theta)
 $$
@@ -1118,7 +1118,7 @@ $$
 {\sum_{k = 1}^K \textrm{Pr}(Y \mid Z = k, \Theta = \theta^{(i)}) 
 \textrm{Pr}(Z = k \mid \Theta = \theta^{(i)})}.
 $$
-Here, $\textrm{Pr}(Y \mid \Theta = \theta^{(i)}, Z = k)$ is the likelihood conditional on a particular value of the latent variables. Crucially, all elements of the expression can be calculated using the samples from the posterior of the continuous parameters and knowledge of the model structure. Note that for certain models, such as zero-inflated count models [Section 5.6], some values of the latent parameters and data may by incompatible, giving exactly zero probabilities.
+Here, $\textrm{Pr}(Y \mid \Theta = \theta^{(i)}, Z = k)$ is the likelihood conditional on a particular value of the latent variables. Crucially, all elements of the expression can be calculated using the draws from the posterior of the continuous parameters and knowledge of the model structure. Note that for certain models, such as zero-inflated count models [Section 5.6], some values of the latent parameters and data may by incompatible, giving exactly zero probabilities.
 
 Other than the use of Bayes's theorem, $\textrm{Pr}(Z = k \mid \theta = \theta^{(i)}, Y)$ can also be extracted by coding the Stan model to include the conditional probability explicitly (as is done for the Dawid--Skene model in [Section 7.4]).
 

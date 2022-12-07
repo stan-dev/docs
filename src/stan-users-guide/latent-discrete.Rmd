@@ -1075,15 +1075,15 @@ Fortunately, the discrete nature of $Z$ makes evaluating $\mathbb{E}[g(\Theta, Z
 $$    
 h(\Theta)
 = \mathbb{E}[g(\Theta, Z) \mid \Theta]
-= \sum_{k} g(\Theta, k) \textrm{Pr}(Z = k \mid \Theta),
+= \sum_{k} g(\Theta, k) \textrm{Pr}[Z = k \mid \Theta],
 $$
-where we sum over the possible values of the latent discrete parameters. An essential part of this formula is the probability of the discrete parameters conditional on the continuous parameters, $\textrm{Pr}(Z = k \mid \Theta)$. More detail on how this quantity can be calculated is included below. Note that if $Z$ takes infinitely many values then computing the infinite sums will involve, potentially computationally expensive, approximation. 
+where we sum over the possible values of the latent discrete parameters. An essential part of this formula is the probability of the discrete parameters conditional on the continuous parameters, $\textrm{Pr}[Z = k \mid \Theta]$. More detail on how this quantity can be calculated is included below. Note that if $Z$ takes infinitely many values then computing the infinite sums will involve, potentially computationally expensive, approximation. 
 
 When $g(\theta, z)$ is a function of either $\theta$ or $z$ only, the above formula simplifies further. First, when $g(\theta, z) = g(\theta)$,
 $$    
 h(\Theta) 
-= \sum_{k} g(\Theta) \textrm{Pr}(Z = k \mid \Theta)
-= g(\Theta) \sum_{k} \textrm{Pr}(Z = k \mid \Theta) 
+= \sum_{k} g(\Theta) \textrm{Pr}[Z = k \mid \Theta]
+= g(\Theta) \sum_{k} \textrm{Pr}[Z = k \mid \Theta] 
 = g(\Theta).
 $$
 This means that we can estimate $\mathbb{E}[g(\Theta)]$ with the standard, seemingly unconditional, estimator:
@@ -1094,32 +1094,32 @@ Even after marginalization, computing expectations of functions of the continuou
 
 Second, when $g(\theta, z) = g(z)$:
 $$
-h(\Theta) = \sum_{k} g(k) \textrm{Pr}(Z = k \mid \Theta).
+h(\Theta) = \sum_{k} g(k) \textrm{Pr}[Z = k \mid \Theta].
 $$
-An important special case of this result is when $g(\theta, z) = \textrm{I}(z = k)$, where $\textrm{I}$ is the indicator function. This choice allows us to recover the probability mass function of the discrete random variable $Z$, since $\mathbb{E}[\textrm{I}(Z = k)] = \textrm{Pr}(Z = k)$. In this case,
+An important special case of this result is when $g(\theta, z) = \textrm{I}(z = k)$, where $\textrm{I}$ is the indicator function. This choice allows us to recover the probability mass function of the discrete random variable $Z$, since $\mathbb{E}[\textrm{I}(Z = k)] = \textrm{Pr}[Z = k]$. In this case,
 $$    
 h(\Theta) 
-= \sum_{k} \textrm{I}(z = k) \textrm{Pr}(Z = k \mid \Theta)
-= \textrm{Pr}(Z = k \mid \Theta).
+= \sum_{k} \textrm{I}(z = k) \textrm{Pr}[Z = k \mid \Theta]
+= \textrm{Pr}[Z = k \mid \Theta].
 $$
-The quantity $\textrm{Pr}(Z = k)$ can therefore be estimated with:
+The quantity $\textrm{Pr}[Z = k]$ can therefore be estimated with:
 $$
-\frac{1}{M} \sum_{i = 1}^M \textrm{Pr}(Z = k \mid \Theta = \theta^{(i)}).
+\frac{1}{M} \sum_{i = 1}^M \textrm{Pr}[Z = k \mid \Theta = \theta^{(i)}].
 $$
-When calculating this conditional probability it is important to remember that we are also conditioning on the observed data, $Y$. That is, we are really estimating $\textrm{Pr}(Z = k \mid Y)$ with
+When calculating this conditional probability it is important to remember that we are also conditioning on the observed data, $Y$. That is, we are really estimating $\textrm{Pr}[Z = k \mid Y]$ with
 $$
-\frac{1}{M} \sum_{i = 1}^M \textrm{Pr}(Z = k \mid \Theta = \theta^{(i)}, Y).
+\frac{1}{M} \sum_{i = 1}^M \textrm{Pr}[Z = k \mid \Theta = \theta^{(i)}, Y].
 $$
 This point is important as it suggests one of the main ways of calculating the required conditional probability. Using Bayes's theorem gives us:
 $$    
-\textrm{Pr}(Z = k \mid \Theta = \theta^{(i)}, Y) 
-= \frac{\textrm{Pr}(Y \mid Z = k, \Theta = \theta^{(i)}) 
-\textrm{Pr}(Z = k \mid \Theta = \theta^{(i)})}
-{\sum_{k = 1}^K \textrm{Pr}(Y \mid Z = k, \Theta = \theta^{(i)}) 
-\textrm{Pr}(Z = k \mid \Theta = \theta^{(i)})}.
+\textrm{Pr}[Z = k \mid \Theta = \theta^{(i)}, Y]
+= \frac{\textrm{Pr}[Y \mid Z = k, \Theta = \theta^{(i)}]
+\textrm{Pr}[Z = k \mid \Theta = \theta^{(i)}]}
+{\sum_{k = 1}^K \textrm{Pr}[Y \mid Z = k, \Theta = \theta^{(i)}] 
+\textrm{Pr}[Z = k \mid \Theta = \theta^{(i)}]}.
 $$
-Here, $\textrm{Pr}(Y \mid \Theta = \theta^{(i)}, Z = k)$ is the likelihood conditional on a particular value of the latent variables. Crucially, all elements of the expression can be calculated using the draws from the posterior of the continuous parameters and knowledge of the model structure. Note that for certain models, such as zero-inflated count models [Section 5.6], some values of the latent parameters and data may by incompatible, giving exactly zero probabilities.
+Here, $\textrm{Pr}[Y \mid \Theta = \theta^{(i)}, Z = k]$ is the likelihood conditional on a particular value of the latent variables. Crucially, all elements of the expression can be calculated using the draws from the posterior of the continuous parameters and knowledge of the model structure. Note that for certain models, such as zero-inflated count models [Section 5.6], some values of the latent parameters and data may by incompatible, giving exactly zero probabilities.
 
-Other than the use of Bayes's theorem, $\textrm{Pr}(Z = k \mid \theta = \theta^{(i)}, Y)$ can also be extracted by coding the Stan model to include the conditional probability explicitly (as is done for the Dawid--Skene model in [Section 7.4]).
+Other than the use of Bayes's theorem, $\textrm{Pr}[Z = k \mid \theta = \theta^{(i)}, Y]$ can also be extracted by coding the Stan model to include the conditional probability explicitly (as is done for the Dawid--Skene model in [Section 7.4]).
 
 For a longer introduction to the mathematics of marginalization in Stan, which also covers the connections between Rao--Blackwellization and marginalization, see [Pullin et al.\ (2021)](https://arxiv.org/abs/2010.09335).

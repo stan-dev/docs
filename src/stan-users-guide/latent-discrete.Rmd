@@ -1047,7 +1047,7 @@ Throughout, the model under consideration consists of both continuous parameters
 
 Estimating expectations {-}
 
-When performing Bayesian inference, interest often centers on estimating some (constant) low-dimensional summary statistics of the posterior distribution. Mathematically, we are interested in estimating $\mu$, say, where $\mu = \mathbb{E}(g(\Theta, Z))$ and $g(\cdot)$ is an arbitrary function. An example of such a quantity is $\mathbb{E}(\Theta)$, the posterior mean of the continuous parameters, where we would take $g(\theta, z) = \theta$. To estimate $\mu$ the most common approach is to sample a series of values, at least approximately, from the posterior distribution of the parameters of interest. The numerical values of these draws can then be used to calculate the quantities of interest. Often, this process of calculation is trivial, but more care is required when working with marginalized posteriors as we describe in this section.
+When performing Bayesian inference, interest often centers on estimating some (constant) low-dimensional summary statistics of the posterior distribution. Mathematically, we are interested in estimating $\mu$, say, where $\mu = \mathbb{E}[g(\Theta, Z)]$ and $g(\cdot)$ is an arbitrary function. An example of such a quantity is $\mathbb{E}[\Theta]$, the posterior mean of the continuous parameters, where we would take $g(\theta, z) = \theta$. To estimate $\mu$ the most common approach is to sample a series of values, at least approximately, from the posterior distribution of the parameters of interest. The numerical values of these draws can then be used to calculate the quantities of interest. Often, this process of calculation is trivial, but more care is required when working with marginalized posteriors as we describe in this section.
 
 If both $\Theta$ and $Z$ were continuous, Stan could be used to sample $M$ draws from the joint posterior $p_{\Theta, Z}(\theta, z)$ and then estimate $\mu$ with
 $$   
@@ -1055,26 +1055,26 @@ $$
 $$
 Given $Z$ is discrete, however, Stan cannot be used to sample from the joint posterior (or even to do optimization). Instead, as outlined in the previous sections describing specific models, the user can first marginalize out $Z$ from the joint posterior to give the marginalized posterior $p_\Theta(\theta)$. This marginalized posterior can then be implemented in Stan as usual, and Stan will give draws $\{\theta^{(i)}\}_{i = 1}^M$ from the marginalized posterior. 
 
-Using only the draws $\{\theta^{(i)}\}_{i = 1}^M$, how can we estimate $\mathbb{E}(g(\Theta, Z))$? We can use a conditional estimator. That is, for each function $g$ of interest we can compute
+Using only the draws $\{\theta^{(i)}\}_{i = 1}^M$, how can we estimate $\mathbb{E}[g(\Theta, Z)]$? We can use a conditional estimator. That is, for each function $g$ of interest we can compute
 $$    
-h(\Theta) = \mathbb{E}(g(\Theta, Z) \mid \Theta)
+h(\Theta) = \mathbb{E}[g(\Theta, Z) \mid \Theta]
 $$
-and then estimate $\mathbb{E}(g(\Theta, Z))$ with
+and then estimate $\mathbb{E}[g(\Theta, Z)]$ with
 $$    
 \hat{\mu} = \frac{1}{M} \sum_{i = 1}^M h(\theta^{(i)}).
 $$
 This estimator is justified by the law of iterated expectation, the fact that
 $$    
-\mathbb{E}(h(\Theta)) = \mathbb{E}(\mathbb{E}(g(\Theta, Z) \mid \Theta)) = \mathbb{E}(g(\Theta, Z)) = \mu.
+\mathbb{E}[h(\Theta)] = \mathbb{E}[\mathbb{E}[g(\Theta, Z] \mid \Theta)] = \mathbb{E}[g(\Theta, Z)] = \mu.
 $$
-Using this marginalized estimator provides a way to estimate the expectation of any function $g(\cdot)$ for all combinations of discrete or continuous parameters in the model. However, it presents a possible new challenge: evaluating the conditional expectation $\mathbb{E}(g(\Theta, Z) \mid \Theta)$.
+Using this marginalized estimator provides a way to estimate the expectation of any function $g(\cdot)$ for all combinations of discrete or continuous parameters in the model. However, it presents a possible new challenge: evaluating the conditional expectation $\mathbb{E}[g(\Theta, Z) \mid \Theta]$.
 
 Evaluating the conditional expectation {-}
 
-Fortunately, the discrete nature of $Z$ makes evaluating $\mathbb{E}(g(\Theta, Z) \mid \Theta)$ easy. The function $h(\Theta)$ can be written as:
+Fortunately, the discrete nature of $Z$ makes evaluating $\mathbb{E}[g(\Theta, Z) \mid \Theta]$ easy. The function $h(\Theta)$ can be written as:
 $$    
 h(\Theta)
-= \mathbb{E}(g(\Theta, Z) \mid \Theta) 
+= \mathbb{E}[g(\Theta, Z) \mid \Theta]
 = \sum_{k} g(\Theta, k) \textrm{Pr}(Z = k \mid \Theta),
 $$
 where we sum over the possible values of the latent discrete parameters. An essential part of this formula is the probability of the discrete parameters conditional on the continuous parameters, $\textrm{Pr}(Z = k \mid \Theta)$. More detail on how this quantity can be calculated is included below. Note that if $Z$ takes infinitely many values then computing the infinite sums will involve, potentially computationally expensive, approximation. 
@@ -1086,7 +1086,7 @@ h(\Theta)
 = g(\Theta) \sum_{k} \textrm{Pr}(Z = k \mid \Theta) 
 = g(\Theta).
 $$
-This means that we can estimate $\mathbb{E}(g(\Theta))$ with the standard, seemingly unconditional, estimator:
+This means that we can estimate $\mathbb{E}[g(\Theta)]$ with the standard, seemingly unconditional, estimator:
 $$    
 \frac{1}{M} \sum_{i = 1}^M g(\theta^{(i)}).
 $$
@@ -1096,7 +1096,7 @@ Second, when $g(\theta, z) = g(z)$:
 $$
 h(\Theta) = \sum_{k} g(k) \textrm{Pr}(Z = k \mid \Theta).
 $$
-An important special case of this result is when $g(\theta, z) = \textrm{I}(z = k)$, where $\textrm{I}$ is the indicator function. This choice allows us to recover the probability mass function of the discrete random variable $Z$, since $\mathbb{E}(\textrm{I}(Z = k)) = \textrm{Pr}(Z = k)$. In this case,
+An important special case of this result is when $g(\theta, z) = \textrm{I}(z = k)$, where $\textrm{I}$ is the indicator function. This choice allows us to recover the probability mass function of the discrete random variable $Z$, since $\mathbb{E}[\textrm{I}(Z = k)] = \textrm{Pr}(Z = k)$. In this case,
 $$    
 h(\Theta) 
 = \sum_{k} \textrm{I}(z = k) \textrm{Pr}(Z = k \mid \Theta)

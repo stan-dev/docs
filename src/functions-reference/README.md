@@ -5,8 +5,15 @@ Steps to build functions manual:
 2.  Install on OS and ensure on PATH: pandoc, pandoc-citeproc,
 pdflatex
 
-3.  In a shell, change directories to this directory, <stan>/src/docs/functions
+3.  To build single manual, such as cmdstan-guide, functions-reference, reference-manual, or stan-users-guide, using Rscript
+    a. In shell change directory to `docs/src/<MANUAL>`
+    b. In shell, execute 
+       ```
+       # build html
+       > Rscript -e "bookdown::render_book('index.Rmd', output_format='bookdown::gitbook')"
+       # build pdf
+       > Rscript -e "bookdown::render_book('index.Rmd', output_format='bookdown::pdf_book')"
+       ```
+       The output will be written to subdirectory `_build`.
 
-4.  In the shell, execute ./_build.sh
-
-5.  The root of the final HTML will be in _book/index.html and the final pdf document will be in \_book/\_main.pdf.
+4. For other build options see `docs/README.md`

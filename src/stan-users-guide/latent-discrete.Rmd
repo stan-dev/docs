@@ -804,7 +804,7 @@ predictors.
 
 
 
-## Data coding and diagnostic accuracy models
+## Data coding and diagnostic accuracy models {#data-coding-models.section}
 
 Although seemingly disparate tasks, the rating/coding/annotation of
 items with categories and diagnostic testing for disease or other
@@ -1037,3 +1037,91 @@ the probability mass function of $z_i$ in the posterior.   These may
 be averaged across the iterations to provide the posterior probability
 distribution over each $z_i$.
 
+## The mathematics of recovering marginalized parameters {#marginalization-mathematics.section}
+
+### Introduction {-}
+
+This section describes in more detail the mathematics of statistical inference using the output of marginalized Stan models, such as those presented in the last three sections. It provides a mathematical explanation of why and how certain manipulations of Stan's output produce valid summaries of the posterior distribution when discrete parameters have been marginalized out of a statistical model. Ultimately, however, fully understanding the mathematics in this section is *not* necessary to fit models with discrete parameters using Stan.  
+
+Throughout, the model under consideration consists of both continuous parameters, $\Theta$, and discrete parameters, $Z$. It is also assumed that $Z$ can only take finitely many values, as is the case for all the models described in this chapter of the User's Guide. To simplify notation, any conditioning on data is suppressed in this section, except where specified. As with all Bayesian analyses, however, all inferences using models with marginalized parameters are made conditional on the observed data. 
+
+### Estimating expectations {-}
+
+When performing Bayesian inference, interest often centers on estimating some (constant) low-dimensional summary statistics of the posterior distribution. Mathematically, we are interested in estimating $\mu$, say, where $\mu = \mathbb{E}[g(\Theta, Z)]$ and $g(\cdot)$ is an arbitrary function. An example of such a quantity is $\mathbb{E}[\Theta]$, the posterior mean of the continuous parameters, where we would take $g(\theta, z) = \theta$. To estimate $\mu$ the most common approach is to sample a series of values, at least approximately, from the posterior distribution of the parameters of interest. The numerical values of these draws can then be used to calculate the quantities of interest. Often, this process of calculation is trivial, but more care is required when working with marginalized posteriors as we describe in this section.
+
+If both $\Theta$ and $Z$ were continuous, Stan could be used to sample $M$ draws from the joint posterior $p_{\Theta, Z}(\theta, z)$ and then estimate $\mu$ with
+$$   
+\hat{\mu} = \frac{1}{M} \sum_{i = 1}^M {g(\theta^{(i)}, z^{(i)})}.
+$$
+Given $Z$ is discrete, however, Stan cannot be used to sample from the joint posterior (or even to do optimization). Instead, as outlined in the previous sections describing specific models, the user can first marginalize out $Z$ from the joint posterior to give the marginalized posterior $p_\Theta(\theta)$. This marginalized posterior can then be implemented in Stan as usual, and Stan will give draws $\{\theta^{(i)}\}_{i = 1}^M$ from the marginalized posterior. 
+
+Using only these draws, how can we estimate $\mathbb{E}[g(\Theta, Z)]$? We can use a conditional estimator. We explain in more detail below, but at a high level the idea is that, for each function $g$ of interest, we compute
+$$    
+h(\Theta) = \mathbb{E}[g(\Theta, Z) \mid \Theta]
+$$
+and then estimate $\mathbb{E}[g(\Theta, Z)]$ with
+$$    
+\hat{\mu} = \frac{1}{M} \sum_{i = 1}^M h(\theta^{(i)}).
+$$
+This estimator is justified by the law of iterated expectation, the fact that
+$$    
+\mathbb{E}[h(\Theta)] = \mathbb{E}[\mathbb{E}[g(\Theta, Z] \mid \Theta)] = \mathbb{E}[g(\Theta, Z)] = \mu.
+$$
+Using this marginalized estimator provides a way to estimate the expectation of any function $g(\cdot)$ for all combinations of discrete or continuous parameters in the model. However, it presents a possible new challenge: evaluating the conditional expectation $\mathbb{E}[g(\Theta, Z) \mid \Theta]$.
+
+### Evaluating the conditional expectation {-}
+
+Fortunately, the discrete nature of $Z$ makes evaluating $\mathbb{E}[g(\Theta, Z) \mid \Theta]$ easy. The function $h(\Theta)$ can be written as:
+$$    
+h(\Theta)
+= \mathbb{E}[g(\Theta, Z) \mid \Theta]
+= \sum_{k} g(\Theta, k) \Pr[Z = k \mid \Theta],
+$$
+where we sum over the possible values of the latent discrete parameters. An essential part of this formula is the probability of the discrete parameters conditional on the continuous parameters, $\Pr[Z = k \mid \Theta]$. More detail on how this quantity can be calculated is included below. Note that if $Z$ takes infinitely many values then computing the infinite sums will involve, potentially computationally expensive, approximation. 
+
+When $g(\theta, z)$ is a function of either $\theta$ or $z$ only, the above formula simplifies further.
+
+In the first case, where $g(\theta, z) = g(\theta)$, we have:
+\begin{align*}
+h(\Theta)
+&= \sum_{k} g(\Theta) \Pr[Z = k \mid \Theta] \\
+&= g(\Theta) \sum_{k} \Pr[Z = k \mid \Theta] \\
+&= g(\Theta).
+\end{align*}
+This means that we can estimate $\mathbb{E}[g(\Theta)]$ with the standard, seemingly unconditional, estimator:
+$$    
+\frac{1}{M} \sum_{i = 1}^M g(\theta^{(i)}).
+$$
+Even after marginalization, computing expectations of functions of the continuous parameters can be performed as if no marginalization had taken place.
+
+In the second case, where $g(\theta, z) = g(z)$, the conditional expectation instead simplifies as follows:
+$$
+h(\Theta) = \sum_{k} g(k) \Pr[Z = k \mid \Theta].
+$$
+An important special case of this result is when $g(\theta, z) = \textrm{I}(z = k)$, where $\textrm{I}$ is the indicator function. This choice allows us to recover the probability mass function of the discrete random variable $Z$, since $\mathbb{E}[\textrm{I}(Z = k)] = \Pr[Z = k]$. In this case,
+$$    
+h(\Theta) 
+= \sum_{k} \textrm{I}(z = k) \Pr[Z = k \mid \Theta]
+= \Pr[Z = k \mid \Theta].
+$$
+The quantity $\Pr[Z = k]$ can therefore be estimated with:
+$$
+\frac{1}{M} \sum_{i = 1}^M \Pr[Z = k \mid \Theta = \theta^{(i)}].
+$$
+When calculating this conditional probability it is important to remember that we are also conditioning on the observed data, $Y$. That is, we are really estimating $\Pr[Z = k \mid Y]$ with
+$$
+\frac{1}{M} \sum_{i = 1}^M \Pr[Z = k \mid \Theta = \theta^{(i)}, Y].
+$$
+This point is important as it suggests one of the main ways of calculating the required conditional probability. Using Bayes's theorem gives us
+$$    
+\Pr[Z = k \mid \Theta = \theta^{(i)}, Y]
+= \frac{\Pr[Y \mid Z = k, \Theta = \theta^{(i)}]
+\Pr[Z = k \mid \Theta = \theta^{(i)}]}
+{\sum_{k = 1}^K \Pr[Y \mid Z = k, \Theta = \theta^{(i)}] 
+\Pr[Z = k \mid \Theta = \theta^{(i)}]}.
+$$
+Here, $\Pr[Y \mid \Theta = \theta^{(i)}, Z = k]$ is the likelihood conditional on a particular value of the latent variables. Crucially, all elements of the expression can be calculated using the draws from the posterior of the continuous parameters and knowledge of the model structure.
+
+Other than the use of Bayes's theorem, $\Pr[Z = k \mid \theta = \theta^{(i)}, Y]$ can also be extracted by coding the Stan model to include the conditional probability explicitly (as is done for the [Dawid--Skene model](#data-coding-models.section)).
+
+For a longer introduction to the mathematics of marginalization in Stan, which also covers the connections between Rao--Blackwellization and marginalization, see @PullinEtAl:2021.

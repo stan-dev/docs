@@ -29,10 +29,11 @@ def pushd(new_dir):
     os.chdir(previous_dir)
 
 def shexec(command):
-    returncode = subprocess.call(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if returncode != 0:
+    ret = subprocess.run(command, shell=True, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    if ret.returncode != 0:
         print('Command {} failed'.format(command))
-        raise Exception(returncode)
+        print(ret.stderr)
+        raise Exception(ret.returncode)
 
 def check_bookdown_at_least_0_23():
     command = ["Rscript", "-e", "utils::packageVersion(\"bookdown\") > 0.22"]
@@ -91,11 +92,11 @@ def main():
     path = os.getcwd()
     docspath = os.path.join(path, "docs", stan_version)
     if (not(os.path.exists(docspath))):
-        try:  
+        try:
             os.makedirs(docspath)
-        except OSError:  
+        except OSError:
             print("Creation of the directory %s failed" % docspath)
-        else:  
+        else:
             print("Successfully created the directory %s " % docspath)
 
     docset = all_docs

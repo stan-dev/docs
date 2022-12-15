@@ -13,8 +13,8 @@ Repository for the sources and published documentation set, versioned for each S
 * `src` : directory of source files for Stan and CmdStan guides and reference manuals, each in its own named subdirectory:
     + `src/cmdstan-guide` - CmdStan Guide
     + `src/functions-reference` - Stan Functions Reference
-	+ `src/reference-manual` - Stan Reference Manual
-	+ `src/stan-users-guide` - Stan Users Guide
+    + `src/reference-manual` - Stan Reference Manual
+    + `src/stan-users-guide` - Stan Users Guide
 
 * `docs`: the directory `docs` on branch `master` is the [publishing source](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site) for the project pages site.  Whenever a verified member of the Stan organization pushes to `docs` on branch `master`,
 GitHub (re)builds and (re)deploys the website.

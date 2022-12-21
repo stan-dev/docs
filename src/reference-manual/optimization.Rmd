@@ -1,5 +1,3 @@
-
-
 # Optimization {#optimization-algorithms.chapter}
 
 Stan provides optimization algorithms which find modes of the density
@@ -14,6 +12,17 @@ optimizer. Newton's method is the least efficient of the three, but
 has the advantage of setting its own stepsize.
 
 ## General configuration
+
+All of the optimizers have the option of including the
+the log absolute Jacobian determinant of inverse parameter transforms
+in the log probability computation.
+Without the Jacobian adjustment, optimization
+returns the maxiumum likelihood estimate (MLE),
+$\mathrm{argmax}_{\theta}\ p(y | \theta)$,
+the value which maximizes the likelihood of the data given the parameters.
+Applying the Jacobian adjustment produces the maximum a posteriori estimate (MAP),
+the maximum value of the posterior distribution,
+$\mathrm{argmax}_{\theta}\ p(y | \theta)\,p(\theta)$.
 
 All of the optimizers are iterative and allow the maximum number of
 iterations to be specified;  the default maximum number of iterations
@@ -125,11 +134,6 @@ memory usage, although this is unlikely to be an issue for typical
 Stan models.
 
 
-## General configuration options
-
-The general configuration options for optimization are the same as
-those for MCMC.
-
 
 ## Writing models for optimization
 
@@ -140,9 +144,6 @@ deviation parameter $\sigma$ constrained so that $\sigma > 0$, it can
 be much more efficient to declare a parameter `sigma` with no
 constraints.  This allows the optimizer to easily get close to 0
 without having to tend toward $-\infty$ on the $\log \sigma$ scale.
-
-The Jacobian adjustment is not an issue for posterior modes, because
-Stan turns off the built-in Jacobian adjustments for optimization.
 
 With unconstrained parameterizations of parameters with constrained
 support, it is important to provide a custom initialization that is

@@ -449,18 +449,30 @@ distributions other than the Poisson.  Zero inflation does not work
 for continuous distributions in Stan because of issues with
 derivatives; in particular, there is no way to add a point mass to a
 continuous distribution, such as zero-inflating a normal as a
-regression coefficient prior.
+regression coefficient prior. Hurdle models can be formulated as
+combination of point mass at zero and continuous distribution for
+positive values.
 
 
 ### Zero inflation {-}
 
 Consider the following example for zero-inflated Poisson
-distributions.  It uses a parameter `theta` here there is a
-probability $\theta$ of drawing a zero, and a probability $1 - \theta$
-of drawing from $\textsf{Poisson}(\lambda)$ (now $\theta$ is being
+distributions.  There is a
+probability $\theta$ of observing a zero, and a probability $1 - \theta$
+of observing a count with a $\textsf{Poisson}(\lambda)$ distribution
+(now $\theta$ is being
 used for mixing proportions because $\lambda$ is the traditional
-notation for a Poisson mean parameter).  The probability function is
-thus
+notation for a Poisson mean parameter). Given the probability $\theta$
+and the intensity $\lambda$, the distribution for $y_n$ can be written as
+$$
+y_n \sim 
+\begin{cases}
+ 0 & \quad\text{with probability } \theta, \text{ and}\\
+ \textsf{Poisson}(y_n \mid \lambda) & \quad\text{with probability } 1-\theta.
+\end{cases}
+$$
+
+Stan does not support conditional sampling statements (with `~`) conditional on some parameter, and we need to consider the corresponding likelihood
 $$
 p(y_n \mid \theta,\lambda)
 =
@@ -469,8 +481,8 @@ p(y_n \mid \theta,\lambda)
 (1-\theta) \times \textsf{Poisson}(y_n \mid \lambda) &\quad\text{if } y_n > 0.
 \end{cases}
 $$
+The log likelihood can be implemented directly in Stan (with `target +=`) as follows.
 
-The log probability function can be implemented directly in Stan as follows.
 
 ```stan
 data {
@@ -484,19 +496,20 @@ parameters {
 model {
   for (n in 1:N) {
     if (y[n] == 0) {
-      target += log_sum_exp(bernoulli_lpmf(1 | theta),
-                            bernoulli_lpmf(0 | theta)
+      target += log_sum_exp(log(theta),
+                            log1m(theta)
                               + poisson_lpmf(y[n] | lambda));
     } else {
-      target += bernoulli_lpmf(0 | theta)
+      target += log1m(theta)
                   + poisson_lpmf(y[n] | lambda);
     }
   }
 }
 ```
 
+The `log1m(theta)` computes `log(1-theta)`, but is more computationally stable.
 The `log_sum_exp(lp1,lp2)` function adds the log probabilities
-on the linear scale; it is defined to be equal to `log(exp(lp1) + exp(lp2))`, but is more arithmetically stable and faster.
+on the linear scale; it is defined to be equal to `log(exp(lp1) + exp(lp2))`, but is more computationally stable and faster.
 
 #### Optimizing the zero-inflated Poisson model {-}
 
@@ -539,10 +552,10 @@ model {
   // ...
    target
      += N_zero
-          * log_sum_exp(bernoulli_lpmf(1 | theta),
-                        bernoulli_lpmf(0 | theta)
+          * log_sum_exp(log(theta),
+                        log1m(theta)
                           + poisson_lpmf(0 | lambda));
-   target += N_nonzero * bernoulli_lpmf(0 | theta);
+   target += N_nonzero * log1m(theta);
    target += poisson_lpmf(y_nonzero | lambda);
   // ...
 }
@@ -558,7 +571,18 @@ terms will add zeros.
 
 The hurdle model is similar to the zero-inflated model, but more
 flexible in that the zero outcomes can be deflated as well as
-inflated.  The probability mass function for the hurdle likelihood is
+inflated. Given the probability $\theta$ and the intensity $\lambda$,
+the distribution for $y_n$ can be written as
+$$
+y_n \sim 
+\begin{cases}
+ 0 & \quad\text{with probability } \theta, \text{and }\\
+ \textsf{Poisson}_{x\neq 0}(y_n \mid \lambda) & \quad\text{with probability } 1-\theta,
+\end{cases}
+$$
+Where $\textsf{Poisson}_{x\neq 0}$ is a truncated Poisson distribution, truncated at $0$.
+
+The corresponding likelihood function for the hurdle model is
 defined by
 $$
 p(y\mid\theta,\lambda)
@@ -571,28 +595,11 @@ p(y\mid\theta,\lambda)
 &\quad\text{if } y > 0,
 \end{cases}
 $$
-
-
 where $\textsf{PoissonCDF}$ is the cumulative distribution function for
-the Poisson distribution.  The hurdle model is even more straightforward to
+the Poisson distribution and and $1 - \textsf{PoissonCDF}(0 \mid \lambda)$ is the relative normalization term for the truncated Poisson (truncated at $0$).
+
+The hurdle model is even more straightforward to
 program in Stan, as it does not require an explicit mixture.
-
-```stan
-if (y[n] == 0) {
-  1 ~ bernoulli(theta);
-} else {
-  0 ~ bernoulli(theta);
-  y[n] ~ poisson(lambda) T[1, ];
-}
-```
-
-The Bernoulli statements are just shorthand for adding $\log \theta$
-and $\log (1 - \theta)$ to the log density.  The `T[1,]` after the
-Poisson indicates that it is truncated below at 1; see the [truncation
-section](#truncation.section) for more about truncation and the
-[Poisson regression section](#poisson.section) for the specifics of
-the Poisson CDF.  The net effect is equivalent to the direct
-definition of the log likelihood.
 
 ```stan
 if (y[n] == 0) {

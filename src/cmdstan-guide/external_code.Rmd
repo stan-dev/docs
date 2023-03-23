@@ -181,3 +181,21 @@ inline stan::math::var my_dot_self(const EigVec &v, std::ostream *pstream__)
 For more details about how to write C++ code using the Stan Math
 Library, see the Math library documentation at https://mc-stan.org/math/
 or the paper at https://arxiv.org/abs/1509.07164.
+
+## Special functions: RNGs, distributions, editing `target`
+
+Some functions have special meanings in Stan and place additional requirements
+on their signatures if used in external C++.
+
+- RNGs must end with `_rng`. They will be passed a "base RNG object" as the
+  second to last argument, before the pointer to the ostream. We recommend
+  making this a template, since it may change, but at the moment it is always a
+  `boost::random::ecuyer1988` object.
+- Functions which edit the `target` directly must end with `_lp` and will be
+  passed a reference to `lp__` and a reference to a `stan::math::accumulator`
+  object as the final parameters before the ostream pointer. They are also
+  expected to have a boolean template parameter `propto__` which controls
+  whether or not constant terms can be dropped.
+- Probability distributions must end with `_lpdf` or `_lpmf` and will be passed
+  a boolean template parameter `propto__` which controls whether or not constant
+  terms can be dropped.

@@ -4,19 +4,24 @@ The `--allow-undefined` flag can be passed to the call to stanc,
 which will allow undefined functions in the Stan language to be parsed
 without an error. We can then include a definition of the function in
 a C++ header file.
+
 This requires specifying two makefile variables:
+
 - `STANCFLAGS=--allow-undefined`
 - `USER_HEADER=<header_file.hpp>`, where `<header_file.hpp>` is the name of a header file that
-defines a function with the same name and signature in a namespace
-that is formed by concatenating the `class_name` argument to
-stanc documented above to the string `_namespace`
+  defines a function with the same name and a compatible signature. This function can appear in
+  the global namespace or in the model namespace, which is defined as the name of
+  the model (either the file name, or the `--name` argument to stanc) followed by `_namespace`.
 
+This is an advanced feature which is only recommended to users familiar with the
+internals of Stan's Math library. Most existing C++ code will need to be
+modified to work with Stan, to varying degrees.
 
 As an example, consider the following variant of the Bernoulli example
 
 ```stan
 functions {
-  real make_odds(real theta);
+  real make_odds(data real theta);
 }
 data {
   int<lower=0> N;
@@ -42,20 +47,30 @@ this program to C++, but the generated C++ code will not compile
 unless you write a file
 such as `examples/bernoulli/make_odds.hpp` with the following lines
 ```C++
-#include <stan/model/model_header.hpp>
 #include <ostream>
 
-namespace bernoulli_model_namespace {
-template <typename T0__,
-          stan::require_all_t<stan::is_stan_scalar<T0__>>* = nullptr>
-  stan::promote_args_t<T0__>
-  make_odds(const T0__& theta, std::ostream* pstream__) {
-    return theta / (1 - theta);
-  }
+double make_odds(const double& theta, std::ostream *pstream__) {
+  return theta / (1 - theta);
 }
 ```
-The signature for this function needs to match the declaration emitted by stanc. 
-One can inspect the generated `.hpp` file by stanc to determine what is needed.
+
+The signature for this function needs to fulfill all the usages in the C++
+class emitted by stanc. The `pstream__` argument is mandatory
+in the signature but need not be used if your function does not print
+any output. Because `make_odds` was declared with a `data` argument and only
+used in `generated quantites`, a signature which accepts and returns `double` is
+acceptable. Functions which will have parameters passed as input in the
+`transformed parameters` or `model` blocks will require the ability to accept
+Stan's autodiff types. If you wish to autodiff through this function, the
+simplest option is to make it a template, like
+
+```C++
+template <typename T>
+T make_odds(const T &theta, std::ostream *pstream__)
+{
+    return theta / (1 - theta);
+}
+```
 
 Given the above, the following `make` invocation should work
 ```
@@ -65,12 +80,122 @@ Alternatively, you could put `STANCFLAGS` and `USER_HEADER` into the
 `make/local` file instead of specifying them on the command-line.
 
 If the function were more complicated and involved functions in the
-Stan Math Library, then you would need to prefix the function calls
-with `stan::math::`  The `pstream__` argument is mandatory
-in the signature but need not be used if your function does not print
-any output. To see the necessary boilerplate look at the corresponding
-lines in the generated C++ file.
+Stan Math Library, then you would need to add
+`#include <stan/model/model_header.hpp>` and prefix the function calls
+with `stan::math::`.
+
+## Derivative specializations
+
+External C++ functions are currently the only way to encode a function with a
+known analytic gradient outside the Stan Math Library. This is done very
+similarly to how a function would be added to the Math library with a
+reverse-mode specialization. The following code is adapted from the [Stan Math
+documentation](https://mc-stan.org/math/getting_started.html).
+
+Suppose you have the following (nonsensical) model which relies on a function
+called `my_dot_self`. We will implement this as a copy of the built-in
+`dot_self` function.
+
+```stan
+functions {
+  // both overloads end up using the same C++ template
+  real my_dot_self(vector theta);
+  real my_dot_self(row_vector theta);
+}
+data {
+  int<lower=0> N;
+  vector[N] input_data;
+}
+transformed data {
+  // no autodiff for data - will call using doubles
+  real ds = my_dot_self(input_data);
+}
+parameters {
+  row_vector[N] thetas;
+}
+model {
+  thetas ~ normal(0,1);
+  // autodiff - will call using stan::math::var types
+  input_data ~ normal(thetas, my_dot_self(thetas));
+}
+```
+
+If you wanted to autodiff through this function, the following header would
+suffice^[Details of programming in the Stan Math style are omitted from this
+section, it is presented only as an example]:
+
+```C++
+#include <stan/model/model_header.hpp>
+#include <ostream>
+
+template <typename EigVec, stan::require_eigen_vector_t<EigVec> * = nullptr>
+inline stan::value_type_t<EigVec> my_dot_self(const EigVec &x, std::ostream *pstream__)
+{
+    const auto &x_ref = stan::math::to_ref(x);
+    stan::value_type_t<EigVec> sum_x = 0.0;
+    for (int i = 0; i < x.size(); ++i)
+    {
+        sum_x += x_ref.coeff(i) * x_ref.coeff(i);
+    }
+    return sum_x;
+}
+```
+
+However, we know the derivative of this function directly. To leverage this, we
+could use a more complicated form which has two function templates that
+differentiate themselves based on whether or not derivatives are required:
+
+```C++
+#include <stan/model/model_header.hpp>
+#include <ostream>
+
+template <typename EigVec, stan::require_eigen_vector_t<EigVec> * = nullptr,
+          stan::require_not_st_var<EigVec> * = nullptr>
+inline double my_dot_self(const EigVec &x, std::ostream *pstream__)
+{
+    auto x_ref = stan::math::to_ref(x);
+    double sum = 0.0;
+    for (int i = 0; i < x.size(); ++i)
+    {
+        sum += x_ref.coeff(i) * x_ref.coeff(i);
+    }
+    return sum;
+}
+
+template <typename EigVec, stan::require_eigen_vt<stan::is_var, EigVec> * = nullptr>
+inline stan::math::var my_dot_self(const EigVec &v, std::ostream *pstream__)
+{
+    // (1) put v into our memory arena
+    stan::arena_t<EigVec> arena_v(v);
+    // (2) calculate forward pass using
+    // (3) the .val() method for matrices of var types
+    stan::math::var res = my_dot_self(arena_v.val(), pstream__);
+    // (4) Place a callback for the reverse pass on the callback stack.
+    stan::math::reverse_pass_callback(
+        [res, arena_v]() mutable
+        { arena_v.adj() += 2.0 * res.adj() * arena_v.val(); });
+    return res;
+}
+```
 
 For more details about how to write C++ code using the Stan Math
 Library, see the Math library documentation at https://mc-stan.org/math/
 or the paper at https://arxiv.org/abs/1509.07164.
+
+## Special functions: RNGs, distributions, editing `target`
+
+Some functions have special meanings in Stan and place additional requirements
+on their signatures if used in external C++.
+
+- RNGs must end with `_rng`. They will be passed a "base RNG object" as the
+  second to last argument, before the pointer to the ostream. We recommend
+  making this a template, since it may change, but at the moment it is always a
+  `boost::random::ecuyer1988` object.
+- Functions which edit the `target` directly must end with `_lp` and will be
+  passed a reference to `lp__` and a reference to a `stan::math::accumulator`
+  object as the final parameters before the ostream pointer. They are also
+  expected to have a boolean template parameter `propto__` which controls
+  whether or not constant terms can be dropped.
+- Probability distributions must end with `_lpdf` or `_lpmf` and will be passed
+  a boolean template parameter `propto__` which controls whether or not constant
+  terms can be dropped.

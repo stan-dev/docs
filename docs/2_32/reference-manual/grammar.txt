@@ -1,0 +1,294 @@
+<program> ::= [<function_block>] [<data_block>] [<transformed_data_block>]
+              [<parameters_block>] [<transformed_parameters_block>]
+              [<model_block>] [<generated_quantities_block>] EOF
+
+<functions_only> ::= <function_def>* EOF
+
+<function_block> ::= FUNCTIONBLOCK LBRACE <function_def>* RBRACE
+
+<data_block> ::= DATABLOCK LBRACE <top_var_decl_no_assign>* RBRACE
+
+<transformed_data_block> ::= TRANSFORMEDDATABLOCK LBRACE
+                             <top_vardecl_or_statement>* RBRACE
+
+<parameters_block> ::= PARAMETERSBLOCK LBRACE <top_var_decl_no_assign>*
+                       RBRACE
+
+<transformed_parameters_block> ::= TRANSFORMEDPARAMETERSBLOCK LBRACE
+                                   <top_vardecl_or_statement>* RBRACE
+
+<model_block> ::= MODELBLOCK LBRACE <vardecl_or_statement>* RBRACE
+
+<generated_quantities_block> ::= GENERATEDQUANTITIESBLOCK LBRACE
+                                 <top_vardecl_or_statement>* RBRACE
+
+<identifier> ::= IDENTIFIER
+               | TRUNCATE
+               | <future_keyword>
+
+<future_keyword> ::= OFFSET
+                   | MULTIPLIER
+                   | LOWER
+                   | UPPER
+                   | ARRAY
+
+<decl_identifier> ::= <identifier>
+                    | <reserved_word>
+
+<reserved_word> ::= FUNCTIONBLOCK
+                  | DATABLOCK
+                  | PARAMETERSBLOCK
+                  | MODELBLOCK
+                  | RETURN
+                  | IF
+                  | ELSE
+                  | WHILE
+                  | FOR
+                  | IN
+                  | BREAK
+                  | CONTINUE
+                  | VOID
+                  | INT
+                  | REAL
+                  | COMPLEX
+                  | VECTOR
+                  | ROWVECTOR
+                  | MATRIX
+                  | COMPLEXVECTOR
+                  | COMPLEXROWVECTOR
+                  | COMPLEXMATRIX
+                  | ORDERED
+                  | POSITIVEORDERED
+                  | SIMPLEX
+                  | UNITVECTOR
+                  | CHOLESKYFACTORCORR
+                  | CHOLESKYFACTORCOV
+                  | CORRMATRIX
+                  | COVMATRIX
+                  | PRINT
+                  | REJECT
+                  | TARGET
+                  | GETLP
+                  | PROFILE
+
+<function_def> ::= <return_type> <decl_identifier> LPAREN [<arg_decl> (COMMA
+                   <arg_decl>)*] RPAREN <statement>
+
+<return_type> ::= VOID
+                | <unsized_type>
+
+<arg_decl> ::= [DATABLOCK] <unsized_type> <decl_identifier>
+
+<unsized_type> ::= ARRAY <unsized_dims> <basic_type>
+                 | <basic_type> [<unsized_dims>]
+
+<basic_type> ::= INT
+               | REAL
+               | COMPLEX
+               | VECTOR
+               | ROWVECTOR
+               | MATRIX
+               | COMPLEXVECTOR
+               | COMPLEXROWVECTOR
+               | COMPLEXMATRIX
+
+<unsized_dims> ::= LBRACK COMMA* RBRACK
+
+<no_assign> ::= UNREACHABLE
+
+<optional_assignment(rhs)> ::= [ASSIGN rhs]
+
+<id_and_optional_assignment(rhs)> ::= <decl_identifier>
+                                      <optional_assignment(rhs)>
+
+<decl(type_rule, rhs)> ::= type_rule <decl_identifier> <dims>
+                           <optional_assignment(rhs)> SEMICOLON
+                         | [<arr_dims>] type_rule
+                           <id_and_optional_assignment(rhs)> (COMMA
+                           <id_and_optional_assignment(rhs)>)* SEMICOLON
+
+<var_decl> ::= <decl(<sized_basic_type>, <expression>)>
+
+<top_var_decl> ::= <decl(<top_var_type>, <expression>)>
+
+<top_var_decl_no_assign> ::= <decl(<top_var_type>, <no_assign>)>
+                           | SEMICOLON
+
+<sized_basic_type> ::= INT
+                     | REAL
+                     | COMPLEX
+                     | VECTOR LBRACK <expression> RBRACK
+                     | ROWVECTOR LBRACK <expression> RBRACK
+                     | MATRIX LBRACK <expression> COMMA <expression> RBRACK
+                     | COMPLEXVECTOR LBRACK <expression> RBRACK
+                     | COMPLEXROWVECTOR LBRACK <expression> RBRACK
+                     | COMPLEXMATRIX LBRACK <expression> COMMA <expression>
+                       RBRACK
+
+<top_var_type> ::= INT [LABRACK <range> RABRACK]
+                 | REAL <type_constraint>
+                 | COMPLEX <type_constraint>
+                 | VECTOR <type_constraint> LBRACK <expression> RBRACK
+                 | ROWVECTOR <type_constraint> LBRACK <expression> RBRACK
+                 | MATRIX <type_constraint> LBRACK <expression> COMMA
+                   <expression> RBRACK
+                 | COMPLEXVECTOR <type_constraint> LBRACK <expression> RBRACK
+                 | COMPLEXROWVECTOR <type_constraint> LBRACK <expression>
+                   RBRACK
+                 | COMPLEXMATRIX <type_constraint> LBRACK <expression> COMMA
+                   <expression> RBRACK
+                 | ORDERED LBRACK <expression> RBRACK
+                 | POSITIVEORDERED LBRACK <expression> RBRACK
+                 | SIMPLEX LBRACK <expression> RBRACK
+                 | UNITVECTOR LBRACK <expression> RBRACK
+                 | CHOLESKYFACTORCORR LBRACK <expression> RBRACK
+                 | CHOLESKYFACTORCOV LBRACK <expression> [COMMA <expression>]
+                   RBRACK
+                 | CORRMATRIX LBRACK <expression> RBRACK
+                 | COVMATRIX LBRACK <expression> RBRACK
+
+<type_constraint> ::= [LABRACK <range> RABRACK]
+                    | LABRACK <offset_mult> RABRACK
+
+<range> ::= LOWER ASSIGN <constr_expression> COMMA UPPER ASSIGN
+            <constr_expression>
+          | UPPER ASSIGN <constr_expression> COMMA LOWER ASSIGN
+            <constr_expression>
+          | LOWER ASSIGN <constr_expression>
+          | UPPER ASSIGN <constr_expression>
+
+<offset_mult> ::= OFFSET ASSIGN <constr_expression> COMMA MULTIPLIER ASSIGN
+                  <constr_expression>
+                | MULTIPLIER ASSIGN <constr_expression> COMMA OFFSET ASSIGN
+                  <constr_expression>
+                | OFFSET ASSIGN <constr_expression>
+                | MULTIPLIER ASSIGN <constr_expression>
+
+<arr_dims> ::= ARRAY LBRACK <expression> (COMMA <expression>)* RBRACK
+
+<dims> ::= LBRACK <expression> (COMMA <expression>)* RBRACK
+
+<expression> ::= <lhs>
+               | <non_lhs>
+
+<non_lhs> ::= <expression> QMARK <expression> COLON <expression>
+            | <expression> <infixOp> <expression>
+            | <prefixOp> <expression>
+            | <expression> <postfixOp>
+            | <non_lhs> LBRACK <indexes> RBRACK
+            | <common_expression>
+
+<constr_expression> ::= <constr_expression> <arithmeticBinOp>
+                        <constr_expression>
+                      | <prefixOp> <constr_expression>
+                      | <constr_expression> <postfixOp>
+                      | <constr_expression> LBRACK <indexes> RBRACK
+                      | <common_expression>
+                      | <identifier>
+
+<common_expression> ::= INTNUMERAL
+                      | REALNUMERAL
+                      | IMAGNUMERAL
+                      | LBRACE <expression> (COMMA <expression>)* RBRACE
+                      | LBRACK [<expression> (COMMA <expression>)*] RBRACK
+                      | <identifier> LPAREN [<expression> (COMMA
+                        <expression>)*] RPAREN
+                      | TARGET LPAREN RPAREN
+                      | GETLP LPAREN RPAREN
+                      | <identifier> LPAREN <expression> BAR [<expression>
+                        (COMMA <expression>)*] RPAREN
+                      | LPAREN <expression> RPAREN
+
+<prefixOp> ::= BANG
+             | MINUS
+             | PLUS
+
+<postfixOp> ::= TRANSPOSE
+
+<infixOp> ::= <arithmeticBinOp>
+            | <logicalBinOp>
+
+<arithmeticBinOp> ::= PLUS
+                    | MINUS
+                    | TIMES
+                    | DIVIDE
+                    | IDIVIDE
+                    | MODULO
+                    | LDIVIDE
+                    | ELTTIMES
+                    | ELTDIVIDE
+                    | HAT
+                    | ELTPOW
+
+<logicalBinOp> ::= OR
+                 | AND
+                 | EQUALS
+                 | NEQUALS
+                 | LABRACK
+                 | LEQ
+                 | RABRACK
+                 | GEQ
+
+<indexes> ::= epsilon
+            | COLON
+            | <expression>
+            | <expression> COLON
+            | COLON <expression>
+            | <expression> COLON <expression>
+            | <indexes> COMMA <indexes>
+
+<printables> ::= <expression>
+               | <string_literal>
+               | <printables> COMMA <printables>
+
+<lhs> ::= <identifier>
+        | <lhs> LBRACK <indexes> RBRACK
+
+<statement> ::= <atomic_statement>
+              | <nested_statement>
+
+<atomic_statement> ::= <lhs> <assignment_op> <expression> SEMICOLON
+                     | <identifier> LPAREN [<expression> (COMMA
+                       <expression>)*] RPAREN SEMICOLON
+                     | INCREMENTLOGPROB LPAREN <expression> RPAREN SEMICOLON
+                     | <expression> TILDE <identifier> LPAREN [<expression>
+                       (COMMA <expression>)*] RPAREN [<truncation>] SEMICOLON
+                     | TARGET PLUSASSIGN <expression> SEMICOLON
+                     | BREAK SEMICOLON
+                     | CONTINUE SEMICOLON
+                     | PRINT LPAREN <printables> RPAREN SEMICOLON
+                     | REJECT LPAREN <printables> RPAREN SEMICOLON
+                     | RETURN <expression> SEMICOLON
+                     | RETURN SEMICOLON
+                     | SEMICOLON
+
+<assignment_op> ::= ASSIGN
+                  | ARROWASSIGN
+                  | PLUSASSIGN
+                  | MINUSASSIGN
+                  | TIMESASSIGN
+                  | DIVIDEASSIGN
+                  | ELTTIMESASSIGN
+                  | ELTDIVIDEASSIGN
+
+<string_literal> ::= STRINGLITERAL
+
+<truncation> ::= TRUNCATE LBRACK [<expression>] COMMA [<expression>] RBRACK
+
+<nested_statement> ::= IF LPAREN <expression> RPAREN <statement> ELSE
+                       <statement>
+                     | IF LPAREN <expression> RPAREN <statement>
+                     | WHILE LPAREN <expression> RPAREN <statement>
+                     | FOR LPAREN <identifier> IN <expression> COLON
+                       <expression> RPAREN <statement>
+                     | FOR LPAREN <identifier> IN <expression> RPAREN
+                       <statement>
+                     | PROFILE LPAREN <string_literal> RPAREN LBRACE
+                       <vardecl_or_statement>* RBRACE
+                     | LBRACE <vardecl_or_statement>* RBRACE
+
+<vardecl_or_statement> ::= <statement>
+                         | <var_decl>
+
+<top_vardecl_or_statement> ::= <statement>
+                             | <top_var_decl>

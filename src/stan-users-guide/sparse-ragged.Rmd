@@ -1,4 +1,5 @@
-# Sparse and Ragged Data Structures  {#sparse-ragged.chapter}
+# Sparse and Ragged Data Structures(稀疏与不规则数据结构)  {#sparse-ragged.chapter}
+翻译者：郭鑫
 
 Stan does not directly support either sparse or ragged data
 structures, though both can be accommodated with some programming
@@ -7,7 +8,9 @@ introduces a special-purpose sparse matrix times dense vector
 multiplication, which should be used where applicable; this chapter
 covers more general data structures.
 
-## Sparse data structures
+Stan不直接支持稀疏或不规则数据结构，尽管两者都可以通过一些编程来调节。[稀疏矩阵](#sparse-matrices.chapter) 这一章节介绍了一种专用的稀疏矩阵乘稠密向量乘法，应酌情使用；本章涵盖了更通用的数据结构。
+
+## Sparse data structures(稀疏数据结构)
 
 Coding sparse data structures is as easy as moving from a matrix-like
 data structure to a database-like data structure.  For example,
@@ -17,6 +20,7 @@ are $J$ students and $K$ questions, and if every student answers every
 question, then it is practical to declare the data as a $J \times K$
 array of answers.
 
+对稀疏数据结构进行编码就像从类似矩阵的数据结构移动到类似数据库的数据结构一样容易。例如，考虑[项目-响应模型](#item-response-models.section) 中讨论的IRT模型的稀疏数据编码。有$J$个学生和$K$个问题，如果每个学生都回答了每个问题，那么将数据声明为$J\times K$的答案数组是可行的。 
 ```stan
 data {
   int<lower=1> J;
@@ -87,6 +91,7 @@ columns, $jj$ and $kk$, denote the indexes and the final column, $y$, the value.
 For example, the fifth row of the database-like data structure on the right
 indicates that $y_{2,4} = 1$.
 
+左边是稀疏矩阵$y$的定义，使用R的NA表示法(Stan不支持)。右边是相同稀疏矩阵$y$的类似数据库的编码，可以直接在Stan中使用。前两列$jj$和$kk$表示索引，最后一列$y$表示值。例如，右侧类似数据库的数据结构的第五行表示$y_{2,4}=1$。
 
 When not every student is given every question, the dense array coding
 will no longer work, because Stan does not support undefined values.
@@ -101,8 +106,12 @@ the right-hand example in the example. This says that
 $y_{1,1} = 0$, $y_{1,2} = 1$, and so on, up to $y_{3,2} = 1$, with all
 other entries undefined.
 
+当不是每个学生都被问到每个问题时，稠密数组编码将不再有效，因为Stan不支持未定义的值。稀疏数据示例显示了一个$J=3$和$K=4$的示例，缺少的响应显示为NA，如R中所示。Stan中不支持R的NA值，因此无法直接使用此数据结构。相反，它必须像在数据库中一样转换为“长格式”，列指示$j$和$k$索引以及值。例如，使用$jj$和$kk$作为索引(见 @GelmanHill:2007)，数据结构可以按照示例中右侧示例的方式进行编码。这意味着$y_{1,1}＝0$，$y_{1,2}＝1$，依此类推，直到$y_{3,2}＝1$为止，所有其他条目都未定义。
+
 Letting $N$ be the number of $y$ that are defined, here $N=6$,
 the data and model can be formulated as follows.
+
+假设$N$是定义的$y$的数量，这里$N=6$，数据和模型可以公式化如下。
 
 ```stan
 data {
@@ -125,20 +134,27 @@ model {
 In the situation where there are no missing values, the two model
 formulations produce exactly the same log posterior density.
 
+在没有缺失值的情况下，两个模型公式产生完全相同的对数后验密度。
 
-## Ragged data structures {#ragged-data-structs.section}
+## Ragged data structures(不规则数据结构) {#ragged-data-structs.section}
 
 Ragged arrays are arrays that are not rectangular, but have different
 sized entries.  This kind of structure crops up when there are
 different numbers of observations per entry.
+
+不规则数组是非矩形的数组，但具有不同大小的条目。当每个条目的观测值数量不同时，这种结构就会出现。
 
 A general approach to dealing with ragged structure is to move to a
 full database-like data structure as discussed in the previous
 section.  A more compact approach is possible with some indexing into
 a linear array.
 
+处理不规则结构的一般方法是迁移到上一节中讨论的完整类似数据库的数据结构。通过将一些结构索引到线性数组中，可以实现更紧凑的方法。
+
 For example, consider a data structure for three groups, each of which
 has a different number of observations.
+
+例如，考虑三个组的数据结构，每个组具有不同数量的观测值。
 
 ```{r results="asis"}
 cat(ifelse(knitr::is_html_output(), "<table><tr><td>",
@@ -176,12 +192,19 @@ is an example of how to code the data in Stan, using a single vector $z$ to hold
 all the values and a separate array of integers $s$ to hold the group row sizes.
 In this example, $y_1 = z_{1:3}$, $y_2 = z_{4:5}$, and $y_3 = z_{6:9}$.
 
+左边是不规则的数据结构 $y$ 的定义，具有三行不同大小($y_1$ 大小为3，$y_2$大小为 2，$y_3$ 大小为 4)。右侧是如何在Stan中对数据进行编码的示例，使用单个向量 $z$ 来保存所有值，并使用单独的整数数组 $s$ 来保存组行大小。在此示例中，$y_1 = z_{1:3}$，$y_2 = z_{4:5}$，$y_3 = z_{6:9}$。
+
 Suppose the model is a  simple varying intercept model, which,
 using vectorized notation, would yield a log-likelihood
+
+假设该模型是一个简单的变化截距模型，它使用矢量化表示法，将产生对数似然
+
 $$
 \sum_{n=1}^3 \log \textsf{normal}(y_n \mid \mu_n, \sigma).
 $$
 There's no direct way to encode this in Stan.
+
+没有直接的方法可以在 Stan 中对此进行编码。
 
 A full database type structure could be used, as in the sparse
 example, but this is inefficient, wasting space for unnecessary
@@ -192,7 +215,11 @@ indicated on the right of the example. This coding uses a
 single array for the values and a separate array for the sizes of each
 row.
 
+可以使用完整的数据库类型结构，如稀疏示例所示，但这效率低下，浪费了不必要的索引空间，并且不允许基于矢量的密度操作。对此数据进行编码的更好方法是作为单个值列表，使用单独的数据结构指示每个子数组的大小。这在示例的右侧指示。此编码对值使用单个数组，对每行的大小使用单独的数组。
+
 The model can then be coded up using slicing operations as follows.
+
+然后可以使用切片操作对模型进行编码，如下所示。
 
 ```stan
 data {
@@ -213,3 +240,5 @@ model {
 
 This coding allows for efficient vectorization, which is worth the
 copy cost entailed by the `segment()` vector slicing operation.
+
+这种编码允许有效的矢量化，对于`segment()`矢量切片操作所需的复制成本而言是值得的。

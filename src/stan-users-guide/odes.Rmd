@@ -235,7 +235,7 @@ data {
 model {
 }
 generated quantities {
-  vector[2] y_sim[T] = ode_rk45(sho, y0, t0, ts, theta);
+  array[T] vector[2] y_sim = ode_rk45(sho, y0, t0, ts, theta);
   // add measurement error
   for (t in 1:T) {
     y_sim[t, 1] += normal_rng(0, 0.1);
@@ -255,7 +255,7 @@ This program illustrates the way in which the ODE solver is called in
 a Stan program,
 
 ```stan
-vector[2] y_sim[T] = ode_rk45(sho, y0, t0, ts, theta);
+array[T] vector[2] y_sim = ode_rk45(sho, y0, t0, ts, theta);
 ```
 
 this returns the solution of the ODE initial value problem defined
@@ -321,7 +321,7 @@ parameters {
   real theta;
 }
 model {
-  vector[2] mu[T] = ode_rk45(sho, y0, t0, ts, theta);
+  array[T] vector[2] mu = ode_rk45(sho, y0, t0, ts, theta);
   sigma ~ normal(0, 2.5);
   theta ~ std_normal();
   y0 ~ std_normal();
@@ -389,7 +389,7 @@ arguments must be supplied with this signature (there are no
 defaults).
 
 ```stan
-vector[2] y_sim[T] = ode_bdf_tol(sho, y0, t0, ts,
+array[T] vector[2] y_sim = ode_bdf_tol(sho, y0, t0, ts,
                                  relative_tolerance,
                                  absolute_tolerance,
                                  max_num_steps,
@@ -516,7 +516,7 @@ ODE state separately. The harmonic oscillator example call from above
 becomes:
 
 ```stan
-vector[2] y_sim[T]
+array[T] vector[2] y_sim
     = ode_adjoint_tol_ctl(sho, y0, t0, ts,
                           relative_tolerance/9.0,                // forward tolerance
                           rep_vector(absolute_tolerance/9.0, 2), // forward tolerance

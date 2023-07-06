@@ -18,10 +18,9 @@ data {
   // ...
 ```
 
-Function definitions and declarations may appear in any order, subject
-to the condition that a function must be declared before it is used.
-[Forward declarations](#forward-declarations.section) are allowed in
-order to support recursive functions.
+Function definitions and declarations may appear in any order.
+[Forward declarations](#forward-declarations.section) are allowed but
+not required.
 
 
 ## Function names
@@ -259,6 +258,11 @@ close curly brace (`}`).  The body may contain local variable declarations at th
 top of the function body's block and these scope the same way as local
 variables used in any other statement block.
 
+Any user-defined function may be used in the function body regardless
+of the order in which the function definitions appear in the file.
+Self-recursive and mutually recursive functions are possible
+without any additional declarations.
+
 The only restrictions on statements in function bodies are external,
 and determine whether the log probability accumulator or random
 number generators are available;  see the rest of this section for details.
@@ -465,8 +469,7 @@ used as a return type---arguments may not be declared to be of type
 
 ### Usage as statement {-}
 
-A void function may be used as a statement after the function is
-declared;  see the [section on forward declarations](#forward-declarations.section) for rules on declaration.
+A void function may be used as a statement.
 
 Because there is no return, such a usage is only for side effects,
 such as incrementing the log probability function, printing, or
@@ -482,9 +485,9 @@ In a return statement within a void function's definition, the
 
 ## Declarations {#forward-declarations.section}
 
-In general, functions must be declared before they are used.  Stan
-supports forward declarations, which look like function definitions
-without bodies.  For example,
+In general, functions do not need to be declared before they are used.
+Despite this, Stan supports forward declarations, which look like
+function definitions without bodies.  For example,
 
 ```stan
 real unit_normal_lpdf(real y);
@@ -505,28 +508,8 @@ A user-defined Stan function may be declared and then later defined,
 or just defined without being declared.  No other combination of
 declaration and definition is legal, so that, for instance, a function
 may not be declared more than once, nor may it be defined more than
-once.  If there is a declaration, there must be a definition.  These
+once.  However, functions with different argument types are considered
+distinct even if they have the same name; see the [section on function overloading](#function-overloading).
+If there is a declaration, there must be a definition.  These
 rules together ensure that all the declared functions are eventually
 defined.
-
-
-### Recursive functions {-}
-
-Forward declarations allow the definition of self-recursive or
-mutually recursive functions.  For instance, consider the following
-code to compute Fibonacci numbers.
-
-```stan
-int fib(int n);
-
-int fib(int n) {
-  if (n < 2) {
-    return n;
-  } else {
-    return fib(n-1) + fib(n-2);
-  }
-}
-```
-
-Without the forward declaration in the first line, the body of the
-definition would not compile.

@@ -1,22 +1,22 @@
 # Parallelization {#parallelization}
 
-Stan provides three ways of parallelizing execution of a Stan model: 
+Stan provides three ways of parallelizing execution of a Stan model:
 
 - multi-threading with Intel Threading Building Blocks (TBB),
-- multi-processing with Message Passing Interface (MPI) and 
+- multi-processing with Message Passing Interface (MPI) and
 - manycore processing with OpenCL.
 
 ## Multi-threading with TBB
 
-In order to exploit multi-threading in a Stan model, the models must be 
+In order to exploit multi-threading in a Stan model, the models must be
 rewritten to use the `reduce_sum` and `map_rect` functions. For instructions
 on how to rewrite Stan models to use these functions see [Stan's User guide chapter on parallelization](https://mc-stan.org/docs/stan-users-guide/parallelization.html), [the reduce_sum case study](https://mc-stan.org/users/documentation/case-studies/reduce_sum_tutorial.html) or the [Multithreading and Map-Reduce tutorial](https://github.com/rmcelreath/cmdstan_map_rect_tutorial).
 
 ### Compiling
 
 Once a model is rewritten to use the above-mentioned functions, the model
-must be compiled with the `STAN_THREADS` makefile flag. The flag can be 
-supplied in the `make` call but we recommend writing the flag to the 
+must be compiled with the `STAN_THREADS` makefile flag. The flag can be
+supplied in the `make` call but we recommend writing the flag to the
 `make/local` file.
 
 An example of the contents of `make/local` to enable threading with TBB:
@@ -34,7 +34,7 @@ make path/to/model
 
 Before running a multi-threaded model, we need to specify the maximum number of threads
 the program can run (total threads for all chains). This is done by setting the `num_threads`
-argument. Valid values for `num_threads` are positive integers and -1. If `num_threads` is set 
+argument. Valid values for `num_threads` are positive integers and -1. If `num_threads` is set
 to -1, all available cores will be used.
 
 Generally, this number should not exceed the number of available cores for best performance.
@@ -58,18 +58,18 @@ with 8 total threads available:
 
 ## Multi-processing with MPI
 
-In order to use multi-processing with MPI in a Stan model, the models must be 
+In order to use multi-processing with MPI in a Stan model, the models must be
 rewritten to use the [`map_rect` function](https://mc-stan.org/docs/2_26/functions-reference/functions-map.html). By using MPI, the model can be parallelized across multiple cores or a cluster. MPI with Stan is supported on MacOS and Linux.
 
 ### Dependencies
 
-Compiling and running Stan models with MPI requires that the system 
+Compiling and running Stan models with MPI requires that the system
 has an MPI implementation installed. For Unix systems the most commonly used
 implementations are [MPICH](https://www.mpich.org/) and [OpenMPI](https://www.open-mpi.org/).
 
 ### Compiling
 
-Once a model is rewritten to use `map_rect`, additional makefile flags 
+Once a model is rewritten to use `map_rect`, additional makefile flags
 must be written to the `make/local`. These are:
 
 - `STAN_MPI`: Enables the use of MPI with Stan if `true`.
@@ -138,7 +138,7 @@ Also use `clinfo` to verify successful installation of OpenCL runtimes.
 
   Install `Radeon Software for Linux` available [here](https://www.amd.com/en/support/kb/release-notes/rn-amdgpu-unified-linux-20-40).
 
-- Windows: 
+- Windows:
 
   We recommend installing the open source [OCL-SDK](https://github.com/GPUOpen-LibrariesAndSDKs/OCL-SDK/releases).
 
@@ -153,8 +153,8 @@ Follow Intel's install instructions given [here](https://software.intel.com/cont
 ### Compiling
 
 In order to enable the OpenCL backend the model
-must be compiled with the `STAN_OPENCL` makefile flag. The flag can be 
-supplied in the `make` call but we recommend writing the flag to the 
+must be compiled with the `STAN_OPENCL` makefile flag. The flag can be
+supplied in the `make` call but we recommend writing the flag to the
 `make/local` file.
 
 An example of the contents of `make/local` to enable parallelization
@@ -162,6 +162,12 @@ with OpenCL:
 
 ```
 STAN_OPENCL=true
+```
+
+If you are using OpenCL with an integrated GPU you also need to add the `INTEGRATED_OPENCL` flag, as the sharing of memory between CPU and GPU is slightly different with integrated graphics:
+
+```
+INTEGRATED_OPENCL=true
 ```
 
 The model is then compiled as normal:

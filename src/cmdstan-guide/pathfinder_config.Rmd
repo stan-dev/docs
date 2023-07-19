@@ -1,0 +1,99 @@
+# Pathfinder Algorithm
+
+The Pathfinder algorithm is a variational method for approximately
+sampling from differentiable log densities.
+Starting from a random
+initialization, Pathfinder locates normal approximations to the target
+density along a quasi-Newton optimization path, with local covariance
+estimated using the inverse Hessian estimates produced by the
+L-BFGS optimizer.  Pathfinder returns draws from the Gaussian approximation
+with the lowest estimated Kullback-Leibler (KL) divergence to the true
+posterior.
+
+The full set of configuration options available for the `pathfinder` method is
+reported at the beginning of the pathfinder output file as CSV comments.
+When the example model `bernoulli.stan` is run with `method=pathfinder`
+via the command line with all default arguments,
+the resulting Stan CSV file header comments show the complete set
+of default configuration options:
+```
+method = pathfinder
+  pathfinder
+    init_alpha = 0.001 (Default)
+    tol_obj = 9.9999999999999998e-13 (Default)
+    tol_rel_obj = 10000 (Default)
+    tol_grad = 1e-08 (Default)
+    tol_rel_grad = 10000000 (Default)
+    tol_param = 1e-08 (Default)
+    history_size = 5 (Default)
+    num_psis_draws = 2000 (Default)
+    num_paths = 4 (Default)
+    max_lbfgs_iters = 2000 (Default)
+    num_draws = 2000 (Default)
+    num_elbo_draws = 25 (Default)
+```
+
+The arguments `init_alpha` through `history_size` are used by the L-BFGS algorithm.
+The remaining arguments are used by the Pathfinder algorithm.
+
+## Pathfinder Configuration
+
+- `num_psis_draws` - Number of draws from PSIS sample (multi-path pathfinder).
+Must be a positive integer.  Default value is $2000$.
+
+- `num_paths` - Number of single pathfinders.
+Must be a positive integer.  Default value is $4$.
+
+- `max_lbfgs_iters` - Maximum number of L-BFGS iterations.
+Must be a positive integer.  Default value is $2000$.
+
+- `num_draws` - Number of approximate posterior draws for each single pathfinder.
+Must be a positive integer.  Default value is $2000$.
+
+- `num_elbo_draws` - Number of Monte Carlo draws to evaluate ELBO.
+Must be a positive integer.  Default value is $25$.
+
+
+## L-BFGS Configuration
+
+- `init_alpha` - The initial step size parameter.
+Must be a positive real number. Default value is $0.001$
+
+- `tol_obj` - Convergence tolerance on changes in objective function value.
+Must be a positive real number. Default value is $1^{-12}$.
+
+- `tol_rel_obj` - Convergence tolerance on relative changes in objective function value.
+Must be a positive real number. Default value is $1^{4}$.
+
+- `tol_grad` - Convergence tolerance on the norm of the gradient.
+Must be a positive real number. Default value is $1^{-8}$.
+
+- `tol_rel_grad` - Convergence tolerance on the relative norm of the gradient.
+Must be a positive real number. Default value is $1^{7}$.
+
+- `tol_param` - Convergence tolerance on changes in parameter value.
+Must be a positive real number. Default value is $1^{-8}$.
+
+- `history_size`  - The size of the history it uses to approximate the Hessian.
+The value should be less than the dimensionality of the parameter space and,
+in general, relatively small values ($5$-$10$) are sufficient; the default value is $5$.
+
+
+
+## CSV output
+
+The output file consists of the following pieces of information:
+
+- The full set of configuration options available for the `pathfinder` method is
+reported at the beginning of the sampler output file as CSV comments.
+
+- The CSV header row consists of columns `lp_approx__`, `lp__`, and the Stan model parameters, transformed parameters, and generated quantities.
+
+- The data rows contain the corresponding values from either the PSIS sample (multi-path) or the single pathfinder sample.
+
+- The last rows are comments with timing information.
+
+
+
+
+

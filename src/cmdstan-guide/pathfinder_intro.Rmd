@@ -1,8 +1,8 @@
 # Variational Inference using Pathfinder
 
-The Pathfinder algorithm is a variational method for approximately
-sampling from differentiable log densities.
-Starting from a random
+The CmdStan method `pathfinder` uses the Pathfinder algorithm of @zhang_pathfinder:2022.
+Pathfinder is a variational method for approximately
+sampling from differentiable log densities. Starting from a random
 initialization, Pathfinder locates normal approximations to the target
 density along a quasi-Newton optimization path, with local covariance
 estimated using the inverse Hessian estimates produced by the
@@ -21,13 +21,11 @@ A single run of the Pathfinder algorithm generates a set of approximate draws.
 Inference is improved by running multiple Pathfinder runs and using
 Pareto-smoothed importance resampling (PSIS) of the resulting sets of draws.
 This better matches non-normal target densities and also eliminates minor modes.
-By default, the `pathfinder` method uses 4 independent Pathfinder runs.
+By default, the `pathfinder` method uses 4 independent Pathfinder runs,
+each of which 
 
-The executable does not need to be recompiled in order to
-switch to Pathfinder, and the data input format is the
-same. The following is a minimal call to Stan's variational inference
-algorithm using defaults for everything but the location of the data
-file.
+The following is a minimal call the Pathfinder algorithm using defaults
+for everything but the location of the data file.
 
 ```
 > ./bernoulli pathfinder data file=bernoulli.data.R
@@ -36,9 +34,6 @@ file.
 Executing this command prints both output to the console and csv files.
 
 The first part of the console output reports on the configuration used.
-Here it indicates the default mean-field setting of the variational
-inference algorithm. It also indicates the default parameter sizes and
-tolerances for monitoring the algorithm's convergence.
 ```
 method = pathfinder
   pathfinder
@@ -49,17 +44,17 @@ method = pathfinder
     tol_rel_grad = 10000000 (Default)
     tol_param = 1e-08 (Default)
     history_size = 5 (Default)
-    num_psis_draws = 2000 (Default)
+    num_psis_draws = 1000 (Default)
     num_paths = 4 (Default)
-    max_lbfgs_iters = 2000 (Default)
-    num_draws = 2000 (Default)
+    max_lbfgs_iters = 1000 (Default)
+    num_draws = 1000 (Default)
     num_elbo_draws = 25 (Default)
 id = 1 (Default)
 data
   file = examples/bernoulli/bernoulli.data.json
 init = 2 (Default)
 random
-  seed = 1133530291 (Default)
+  seed = 1995513073 (Default)
 output
   file = output.csv (Default)
   diagnostic_file =  (Default)
@@ -67,14 +62,10 @@ output
   sig_figs = -1 (Default)
   profile_file = profile.csv (Default)
 num_threads = 1 (Default)
-
-num_iterations: 2000
-num_multi_draws: 2000
 ```
 The rest of the output describes the progression of the algorithm.
 
 By default, the Pathfinder algorithm runs 4 single-path Pathfinders in parallel, the uses importance resampling on the set of returned draws to produce the specified number of draws.
-
 ```
 Path [1] :Initial log joint density = -11.543343
 Path [1] : Iter      log prob        ||dx||      ||grad||     alpha      alpha0      # evals       ELBO    Best ELBO        Notes 
@@ -97,7 +88,6 @@ Total log probability function evaluations:8404
 
 Pathfinder output is written into a set of StanCSV files; one file which contains the importance resampled draws
 from multi-path Pathfinder, and one file which contains the output of each single-path Pathfinder run.
-
 Given an output file name, CmdStan adds suffixes to the base filename to distinguish between the output files.
 For the default output file name `output.csv`, the resulting set of CSV files are
 ```
@@ -137,8 +127,3 @@ The contents of the individual pathfinders have the same structure, except that 
 # Elapsed Time: 0.003000 seconds (Pathfinder)
 # 
 ```
-
-For further details, see
-Zhang, Lu, Bob Carpenter, Andrew Gelman, and Aki Vehtari. 2022.
-_Pathfinder: Parallel quasi-Newton variational inference._
-arxiv 2108.03782. https://doi.org/10.48550/arXiv.2108.03782

@@ -1,6 +1,7 @@
-# Pathfinder Algorithm
+# Pathfinder Method for Approximate Bayesian Inference
 
-The Pathfinder algorithm is a variational method for approximately
+The CmdStan method `pathfinder` uses the Pathfinder algorithm of @zhang_pathfinder:2022.
+Pathfinder is a variational method for approximately
 sampling from differentiable log densities.
 Starting from a random
 initialization, Pathfinder locates normal approximations to the target
@@ -26,10 +27,10 @@ method = pathfinder
     tol_rel_grad = 10000000 (Default)
     tol_param = 1e-08 (Default)
     history_size = 5 (Default)
-    num_psis_draws = 2000 (Default)
+    num_psis_draws = 1000 (Default)
     num_paths = 4 (Default)
-    max_lbfgs_iters = 2000 (Default)
-    num_draws = 2000 (Default)
+    max_lbfgs_iters = 1000 (Default)
+    num_draws = 1000 (Default)
     num_elbo_draws = 25 (Default)
 ```
 
@@ -39,16 +40,16 @@ The remaining arguments are used by the Pathfinder algorithm.
 ## Pathfinder Configuration
 
 - `num_psis_draws` - Number of draws from PSIS sample (multi-path pathfinder).
-Must be a positive integer.  Default value is $2000$.
+Must be a positive integer.  Default value is $1000$.
 
 - `num_paths` - Number of single pathfinders.
 Must be a positive integer.  Default value is $4$.
 
 - `max_lbfgs_iters` - Maximum number of L-BFGS iterations.
-Must be a positive integer.  Default value is $2000$.
+Must be a positive integer.  Default value is $1000$.
 
 - `num_draws` - Number of approximate posterior draws for each single pathfinder.
-Must be a positive integer.  Default value is $2000$.
+Must be a positive integer.  Default value is $1000$.
 
 - `num_elbo_draws` - Number of Monte Carlo draws to evaluate ELBO.
 Must be a positive integer.  Default value is $25$.
@@ -78,11 +79,23 @@ Must be a positive real number. Default value is $1^{-8}$.
 The value should be less than the dimensionality of the parameter space and,
 in general, relatively small values ($5$-$10$) are sufficient; the default value is $5$.
 
+## Output CSV files
+
+Pathfinder output is written into a set of StanCSV files; one file which contains the importance resampled draws
+from multi-path Pathfinder, and one file which contains the output of each single-path Pathfinder run.
+Given an output file name, CmdStan adds suffixes to the base filename to distinguish between the output files.
+For the default output file name `output.csv`, the resulting set of CSV files are
+```
+output_pathfinder.csv
+output_1.csv
+output_2.csv
+output_3.csv
+output_4.csv
+```
 
 
-## CSV output
 
-The output file consists of the following pieces of information:
+The CSV files sample files have the following structure:
 
 - The full set of configuration options available for the `pathfinder` method is
 reported at the beginning of the sampler output file as CSV comments.
@@ -95,5 +108,73 @@ reported at the beginning of the sampler output file as CSV comments.
 
 
 
+## Diagnostic JSON files
 
 
+
+The `output` configuration option `diagnostic_file` records the approximations to the target density
+at each point along the trajectory of the L-BFGS optimization algorithms for each of the single-path Pathfinders.
+To see how this works, we run Pathfinder on the centered-parameterization of the `eight-schools` model,
+where the posterior distribution has a funnel shape.
+```
+> .eight_schools data file=eight_schools.data.R output diagnostic_file=diags.json
+```
+This results in output csv files, as well as a set of diagnostic json files
+```
+path_1.json
+path_2.json
+path_3.json
+path_4.json
+```
+
+Each JSON file contains a record of the ELBO evaluations along the L-BFGS trajectory:
+
+```
+{
+  "0": {
+    "iter": 0,
+    "unconstrained_parameters": [1.00595, -0.503687, 1.79367, 0.99083, 0.498077, -0.65816, 1.49176, -1.22647, 1.62911, 0.767445],
+    "grads": [-0.868919, 0.45198, -0.107675, -0.0123304, 0.163172, 0.354362, -0.108746, 0.673306, -0.102268, -4.51445]
+  },
+  "1": {
+    "iter": 1,
+    "unconstrained_parameters": [1.00595, -0.503687, 1.79367, 0.99083, 0.498077, -0.65816, 1.49176, -1.22647, 1.62911, 0.767445],
+    "grads": [-0.868919, 0.45198, -0.107675, -0.0123304, 0.163172, 0.354362, -0.108746, 0.673306, -0.102268, -4.51445],
+    "history_size": 1,
+    "lbfgs_success": true,
+    "pathfinder_success": true,
+    "x_center": [0.126047, -0.065048, 1.55708, 0.958509, 0.628075, -0.217041, 1.32032, -0.561338, 1.42988, 1.23213],
+    "logDetCholHk": -2.6839,
+    "L_approx": [[-0.0630456, -0.0187959], [0, 1.08328]],
+    "Qk": [[-0.361073, 0.5624], [0.183922, -0.279474], [-0.0708175, 0.15715], [-0.00917823, 0.0215802], [0.0606019, -0.0814513], [0.164071, -0.285769], [-0.057723, 0.112428], [0.276376, -0.424348], [-0.0620524, 0.131786], [-0.846488, -0.531094]],
+    "alpha": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    "full": false,
+    "lbfgs_note": ""
+  },
+  ...,
+  "171": {
+    "iter": 171,
+    "unconstrained_parameters": [1.60479, 1.60479, 1.60479, 1.60479, 1.60479, 1.60479, 1.60479, 1.60479, 1.60479, -35.7821],
+    "grads": [2.66927e+15, -0.117312, -0.0639521, -2.66927e+15, -0.0445885, 0.0321579, 0.00499827, -0.163952, -0.032084, 6.4073],
+    "history_size": 5,
+    "lbfgs_success": true,
+    "pathfinder_success": true,
+    "x_center": [5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, -2.02979e+17],
+    "logDetCholHk": 299.023,
+    "L_approx": [[4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, -1.70162e+08], [0, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 0, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 0, 0, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 0, 0, 0, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 0, 0, 0, 0, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 0, 0, 0, 0, 0, 2.89552e+16]],
+    "Qk": [],
+    "alpha": [1.11027e-12, 2.24669e-12, 2.05603e-12, 3.71177e-12, 5.7855e-12, 1.80169e-12, 3.40291e-12, 2.29699e-12, 3.43423e-12, 1.25815e-08],
+    "full": true,
+    "lbfgs_note": ""
+  },
+  "172": {
+    "iter": 172,
+    "unconstrained_parameters": [1.60531, 1.60531, 1.60531, 1.60531, 1.60531, 1.60531, 1.60531, 1.60531, 1.60531, -35.801],
+    "grads": [-0, -0.11731, -0.0639469, 0.0179895, -0.0445842, 0.0321643, 0.00500256, -0.163947, -0.0320824, 7],
+    "history_size": 5,
+    "lbfgs_success": false,
+    "pathfinder_success": false,
+    "lbfgs_note": ""
+  }
+}
+```

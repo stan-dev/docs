@@ -1,15 +1,6 @@
 # Pathfinder Method for Approximate Bayesian Inference
 
-The CmdStan method `pathfinder` uses the Pathfinder algorithm of @zhang_pathfinder:2022.
-Pathfinder is a variational method for approximately
-sampling from differentiable log densities.
-Starting from a random
-initialization, Pathfinder locates normal approximations to the target
-density along a quasi-Newton optimization path, with local covariance
-estimated using the inverse Hessian estimates produced by the
-L-BFGS optimizer.  Pathfinder returns draws from the Gaussian approximation
-with the lowest estimated Kullback-Leibler (KL) divergence to the true
-posterior.
+The Pathfinder algorithm is described in section [Pathfinder overview](#pathfinder_intro).
 
 The full set of configuration options available for the `pathfinder` method is
 reported at the beginning of the pathfinder output file as CSV comments.
@@ -34,8 +25,8 @@ method = pathfinder
     num_elbo_draws = 25 (Default)
 ```
 
-The arguments `init_alpha` through `history_size` are used by the L-BFGS algorithm.
-The remaining arguments are used by the Pathfinder algorithm.
+The Pathfinder algorithm uses arguments `init_alpha` through `history_size` to run the L-BFGS optimizer.
+The remaining arguments are specific to the Pathfinder algorithm.
 
 ## Pathfinder Configuration
 
@@ -57,9 +48,9 @@ Must be a positive integer.  Default value is $25$.
 
 ## L-BFGS Configuration
 
-These areguments have the same defaults as for [optimization](#optimize_config).
+These arguments have the same defaults as for [optimization](#optimize_config).
 
-## Output CSV files
+## Output CSV files{#pathfinder_csv}
 
 For a single run of the Pathfinder algorithm, where argument `num_paths` is $1$,
 the default output is a single CSV file, `output.csv`.
@@ -67,8 +58,8 @@ the default output is a single CSV file, `output.csv`.
 If `num_paths` is not specified, the default is to run $4$ single-path pathfinders.
 In this case,  Pathfinder output is written into a set of StanCSV files; one file which contains the importance resampled draws
 from multi-path Pathfinder, and one file which contains the output of each single-path Pathfinder run.
-Given an output file name, CmdStan adds suffixes to the base filename to distinguish between the output files.
-For the default output file name `output.csv`, the resulting set of CSV files are
+Given an output file name, CmdStan adds suffixes to the base filename to distinguish among outputs from single- and multi-path runs.
+For the default output file name `output.csv`, the resulting CSV files are
 ```
 output_pathfinder.csv
 output_1.csv
@@ -77,24 +68,24 @@ output_3.csv
 output_4.csv
 ```
 
-The CSV files sample files have the following structure:
+These CSV files have the following structure:
 
 - The full set of configuration options available for the `pathfinder` method is
 reported at the beginning of the sampler output file as CSV comments.
 
-- The CSV header row consists of columns `lp_approx__`, `lp__`, and the Stan model parameters, transformed parameters, and generated quantities.
+- The CSV header row consists of columns `lp_approx__`, `lp__`, and
+the Stan model parameters, transformed parameters, and generated quantities
+in the order in which they are declared in the Stan program.
 
-- The data rows contain the corresponding values from either the PSIS sample (multi-path) or the single pathfinder sample.
+- The data rows contain the draws from the single- or multi-path run.
 
-- The last rows are comments with timing information.
-
+- Final comments containing timing information.
 
 
 ## Diagnostic JSON files
 
-
-
-The `output` configuration option `diagnostic_file` records the approximations to the target density
+If the `output` configuration option `diagnostic_file` is present,
+the resulting diagnostic file records the approximations to the target density
 at each point along the trajectory of the L-BFGS optimization algorithms for each of the single-path Pathfinders.
 To see how this works, we run Pathfinder on the centered-parameterization of the `eight-schools` model,
 where the posterior distribution has a funnel shape.

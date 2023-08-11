@@ -11,18 +11,20 @@ with the lowest estimated Kullback-Leibler (KL) divergence to the true
 posterior.
 
 Pathfinder differs from the ADVI method in that it uses quasi-Newton
-optimization on the log posterior instead of stochastic gradient descent (SGD).
-The L-BFGS algorithm is both faster and more stable than SGD.
+optimization on the log posterior instead of stochastic gradient descent (SGD)
+on the Monte Carlo computation of the evidence lower bound (ELBO).
+Pathfinder's approach is both faster and more stable than that of ADVI.
 Compared to ADVI and short dynamic HMC runs, Pathfinder
 requires one to two orders of magnitude fewer log density and gradient
 evaluations, with greater reductions for more challenging posteriors.
 
 A single run of the Pathfinder algorithm generates a set of approximate draws.
-Inference is improved by running multiple Pathfinder runs and using
+Inference is improved by running multiple Pathfinder instances and using
 Pareto-smoothed importance resampling (PSIS) of the resulting sets of draws.
 This better matches non-normal target densities and also eliminates minor modes.
 By default, the `pathfinder` method uses 4 independent Pathfinder runs,
-each of which produces 1000 approximate draws.
+each of which produces 1000 approximate draws, which are then
+importance resampled down to 1000 final draws.
 
 The following is a minimal call the Pathfinder algorithm using defaults
 for everything but the location of the data file.
@@ -86,10 +88,10 @@ Path [4] :Best Iter: [3] ELBO (-6.161276) evaluations: (126)
 Total log probability function evaluations:8404
 ```
 
-Pathfinder output is written into a set of StanCSV files; one file which contains the importance resampled draws
+Pathfinder output is written into a set of [StanCSV files](#pathfinder_csv); one file which contains the importance resampled draws
 from multi-path Pathfinder, and one file which contains the output of each single-path Pathfinder run.
 Given an output file name, CmdStan adds suffixes to the base filename to distinguish between the output files.
-For the default output file name `output.csv`, the resulting set of CSV files are
+For the default output file name `output.csv` and default number of runs (4), the resulting CSV files are
 ```
 output_pathfinder.csv
 output_1.csv
@@ -102,28 +104,23 @@ The file `output_pathfinder.csv` contains the importance-resampled draws; the ot
 The initial CSV comment rows contain the complete set of CmdStan configuration options.
 Next is the column header line, followed the set of approximate draws.
 
-The pathfinder algorithm first outputs `lp_approx__`, the log density in the approximating distribution, and `lp__`,  the log density in the target distribution, followed by estimates of the model parameters, transformed parameters, and generated quantities.
+The Pathfinder algorithm first outputs `lp_approx__`, the log density in the approximating distribution, and `lp__`,  the log density in the target distribution, followed by estimates of the model parameters, transformed parameters, and generated quantities.
 ```
 lp_approx__,lp__,theta
 -2.4973, -8.2951, 0.0811852
 -0.87445, -7.06526, 0.160207
 -0.812285, -7.07124, 0.35819
-
 ...
 ```
 
 The final lines are comment lines which give timing information.
 ```
-# 
 # Elapsed Time: 0.016000 seconds (Pathfinders)
 #               0.003000 seconds (PSIS)
 #               0.019000 seconds (Total)
-# 
 ```
 
 The contents of the individual pathfinders have the same structure, except that the timing information is just the timing information for the single pathfinder run.
 ```
-# 
 # Elapsed Time: 0.003000 seconds (Pathfinder)
-# 
 ```

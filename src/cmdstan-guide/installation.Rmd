@@ -35,7 +35,7 @@ We recommend installing CmdStan in a new conda environment:
  conda create -n stan -c conda-forge cmdstan
 ```
 
-This command creates a new conda environment named `stan` and 
+This command creates a new conda environment named `stan` and
 downloads and installs the `cmdstan` package
 as well as CmdStan and the required C++ toolchain.
 
@@ -152,7 +152,7 @@ percentiles, effective number of samples, and $\hat{R}$ values.
 that the HMC sampler was unable to sample from the full posterior.
 
 CmdStan releases include pre-built binaries of the Stan language
-compiler \url {https://github.com/stan-dev/stanc3}:
+compiler (https://github.com/stan-dev/stanc3):
 `bin/linux-stanc`, `bin/mac-stanc` and
 `bin/windows-stanc`. The CmdStan makefile `build` task
 copies the appropriate binary to `bin/stanc`. For CmdStan
@@ -283,14 +283,9 @@ then the call to `mingw32-make` will result in error message:
 ```
 'mingw32-make' is not recognised as an internal or external command
 ```
-To fix this, you should make sure that the RTools installation is
-in your `PATH` environment variable.
-In addition, if you have the RTools 4.0 toolchain, then call the utility `pacman`
-to register the right version of make:
-```
-pacman -Sy mingw-w64-x86_64-make
-```
-See: https://discourse.mc-stan.org/t/cmdstan-installation-on-windows/11287/6
+To fix this, ensure you have followed the steps for adding the toolchain to your
+`PATH` and installing the additional utilities covered in the
+[configuration instructions](#windows)
 
 
 **Windows: 'g++' or 'cut' is not recognized**
@@ -300,8 +295,30 @@ resulting in the error message:
 ```
 'cut' is not recognized as an internal or external command, operable program or batch file.
 ```
-The solution is to add `mingw_64/bin` directory to the user `PATH` environment variable.  See:
-https://discourse.mc-stan.org/t/errors-when-using-cmdstan-model/14984/21
+To fix this, ensure you have followed the steps for adding the toolchain to your
+`PATH` and installing the additional utilities covered in the
+[configuration instructions](#windows)
+
+**Spaces in paths to CmdStan or model**
+
+Both `make` and `mingw32-make` can fail when dealing with files in folders
+with a space somewhere in their file path. Particularly on Windows, this can
+be an issue when CmdStan, or the models you are trying to build, are placed in
+the `One Drive` folder.
+
+Unfortunately, the errors created by this situation are not alwas informative.
+Some errors you may see are:
+
+```
+mingw32-make: *** INTERNAL: readdir: Invalid argument
+```
+```
+make: *** [make/program:50: x.hpp] Error 2
+```
+
+If the (fully-expanded) folder path to CmdStan or the model you are trying to
+build contains a space, we recommend trying a different location if you encounter
+any issues during building.
 
 
 ## C++ Toolchain {#cpp-toolchain}
@@ -384,20 +401,89 @@ g++ --version
 mingw32-make --version
 ```
 
-We recommend using the [RTools 4.0](https://cran.r-project.org/bin/windows/Rtools/rtools40.html) toolchain
-which contains a `g++ 8` compiler and `mingw32-make`, the native Windows equivalent of the GNU Make utility.
-RTools provides an
-[installer](https://github.com/r-windows/rtools-installer/releases/download/2022-02-06/rtools40-x86_64.exe)
-utility.  After running the installer, you must add
-the location of the Rtools compiler and make utilities
-to the `PATH` environment variable.  If you have `Rtools40`, these should be:
+CmdStan is known compatible with the RTools40, RTools42, and RTools43 toolchains. These require slightly
+different steps to configure, so please follow the appropriate steps below. All toolchains will require
+updating your `PATH` variable, See [these instructions](https://helpdeskgeek.com/windows-10/add-windows-path-environment-variable/)
+for details on changing the `PATH` if you are unfamiliar. The following instructions will assume that the default installation
+directory was used, so be sure to update the paths accordingly if you have chosen a different
+directory.
+
+##### RTools40
+
+RTools40 provides both a standard `g++-8` toolchain and a `g++-10` Universal C Runtime (UCRT) toolchain.
+Note the that newer `g++-10` UCRT toolchain is only available for 64-bit systems, whereas the `g++-8`
+toolchain is available for both. Additionally the UCRT is only natively supported on Windows 10 and newer,
+older systems will require a [Microsoft update](https://support.microsoft.com/en-us/topic/update-for-universal-c-runtime-in-windows-c0514201-7fe6-95a3-b0a5-287930f3560c)
+
+###### Installation
+
+Download the [installer](https://github.com/r-windows/rtools-installer/releases/download/2022-02-06/rtools40-x86_64.exe)
+and complete the prompts to install.
+
+Next, you need to add the location of the toolchain to your `PATH` environment variable so that it
+can be called from the command line. Add the following lines to your `PATH`:
 ```
-C:\RTools\RTools40\usr\bin
-C:\RTools\RTools40\mingw64\bin
+C:\rtools40\usr\bin
+
+# Add only one of the below
+C:\rtools40\mingw32\bin   # 32-bit g++-8
+C:\rtools40\mingw64\bin   # 64-bit g++-8
+C:\rtools40\ucrt64\bin    # 64-bit g++-10 (UCRT)
 ```
 
-See [these instructions](https://helpdeskgeek.com/windows-10/add-windows-path-environment-variable/)
-for details on changing the `PATH`.
+CmdStan additionally needs the `mingw32-make` utility, which you can install using RTools.
+Navigate to the installation directory (e.g., `C:\rtools40`) and launch the `msys2.exe` file.
+Execute the appropriate command below to install `mingw32-make` for your selected toolchain:
+```
+pacman -Sy mingw-w64-i686-make            # 32-bit g++-8
+pacman -Sy mingw-w64-x86_64-make          # 64-bit g++-8
+pacman -Sy mingw-w64-ucrt-x86_64-make     # 64-bit g++-10 (UCRT)
+```
+
+If you have used the UCRT toolchain,some additional compilation flags will be needed for CmdStan.
+Navigate to the CmdStan/make directory and create a file called `local`. Add the following lines to the file:
+```
+CXXFLAGS += -Wno-nonnull -D_UCRT
+TBB_CXXFLAGS= -D_UCRT
+```
+
+##### RTools42 & RTools43
+
+Both RTools42 & RTools43 provide 64-bit UCRT toolchains, where RTools42 provides g++-10 and
+RTools43 provides g++-12. The installation/configuration is identical for both toolchains.
+
+###### Installation
+
+Download the installer for your preferred toolchain and complete the prompts for installation:
+
+ - [RTools42](https://cran.r-project.org/bin/windows/Rtools/rtools42/files/rtools42-5355-5357.exe)
+ - [RTools43](https://cran.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5550-5548.exe)
+
+Next, you need to add the toolchain directory to your `PATH` variable. Add the appropriate lines
+from below:
+```
+# RTools42
+C:\rtools42\usr\bin
+C:\rtools42\ucrt64\bin
+
+# RTools43
+C:\rtools43\usr\bin
+C:\rtools43\ucrt64\bin
+```
+
+Next, you need to install the `mingw32-make` utility and some additional compiler dependencies.
+Navigate to the installation directory of the toolchain and launch the `msys2.exe` file.
+Execute the below commands to install the needed dependencies:
+```
+pacman -Sy mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-gcc
+```
+
+Finally, some additional compilation flags will be needed for CmdStan. Navigate to
+the CmdStan/make directory and create a file called `local`. Add the following lines to the file:
+```
+CXXFLAGS += -Wno-nonnull -D_UCRT
+TBB_CXXFLAGS= -D_UCRT
+```
 
 __32-bit Builds__
 

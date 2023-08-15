@@ -1,15 +1,15 @@
-# Matrices, Vectors, and Arrays
+# Matrices, Vectors, Arrays, and Tuples
 
 This chapter provides pointers as to how to choose among the various
-matrix, vector, and array data structures provided by Stan.
+container types (matrix, vector, array, and tuple) provided by Stan.
 
 ## Basic motivation
 
-Stan provides two basic scalar types, `int` and `real`, and
-three basic linear algebra types, `vector`, `row_vector`,
-and `matrix`.  Then Stan allows arrays to be of any dimension and
-contain any type of element (though that type must be declared and
-must be the same for all elements).
+Stan provides three basic scalar types, `int`, `real`, and `complex`,
+as well as three basic linear algebra types, `vector`, `row_vector`,
+and `matrix`.  Stan allows arrays of any dimensionality, containing
+any type of element (though that type must be declared and must be the
+same for all elements). 
 
 This leaves us in the awkward situation of having three
 one-dimensional containers, as exemplified by the following
@@ -50,6 +50,113 @@ The inefficiencies due to any manual reshaping of containers is
 usually slight compared to what else is going on in a Stan program
 (typically a lot of gradient calculations).
 
+## Tuple types
+
+Arrays may contain entries of any type, but the types must be the same
+for all entries.  Matrices and vectors contain either real numbers or
+complex numbers, but all the contained types are the same (e.g., if a
+vector has a single `complex` typed entry, all the entries are
+`complex`).
+
+With arrays or vectors, we can represent pairs of real numbers or
+pairs of complex numbers.  For example, a `complex_vector[3]` holds
+exactly three complex numbers.  With arrays and vectors, there is no
+way to represent a pair consisting of an integer and a real number.
+
+Tuples provide a way to represent a sequence of values of
+heterogeneous types.  For example, `tuple(int, real)` is the type of a
+pair consisting of an integer and a real number and `tuple(array[5]
+int, vector[6])` is the type of pairs where the first element is a
+five-element array of integers, the second entry is an integer, and
+the third is a six-element vector.
+
+
+### Tuple syntax
+
+Tuples are declared using the keyword `tuple` followed by a sequence
+of type declarations in parentheses.  Tuples are constructed using
+only parentheses.  The following example illustrations both
+declaration and construction.
+
+```stan
+tuple(int, vector[3]) ny = (5, [3, 2.9, 1.8]');
+```
+
+The elements of a tuple are accessed by position, starting from 1.
+For example, we can extract the elements of the tuple above using
+
+```stan
+int n = ny.1;
+vector[3] y = ny.2;
+```
+
+We can also assign into the elements of a tuple.
+
+```stan
+tuple(int, vector[3], complex) abc;
+abc.1 = 5;
+abc.2[1] = 3;
+abc.2[2] = 2.9;
+abc.2[3] = 1.4798;
+abc.3 = 2 + 1.9j;
+```
+
+As the cascaded indexing example shows, the result of `abc.1` is an
+lvalue (i.e., something to which values may be assigned), and we can
+further index into it to create new lvalues (e.g., `abc.2[1]` pulls
+out the first element of the vector value of the second element of the
+tuple.)
+
+There are two efficiency considerations for tuples.  First, like the
+other container types, tuples are passed to functions by constant
+reference, which means only a pointer gets passed rather than copying
+the data.  Second, like the array types, creating a tuple requires
+copying the data for all of its elements.  For example, in the
+following code, the matrix is copied, entailing 1000 copies of scalar
+values.
+
+```stan
+int a = 5;
+matrix[10, 100] b = ...;
+tuple(int, matrix[10, 100]) ab = (a, b);  // COPIES b
+b[1,1] = 10.3;  // does NOT change ab
+```
+
+### Applications of tuples {-}
+
+Tuples are primarily useful for two things.  First, they provide a way
+to encapsulate a group of heterogeneous items so that they may be
+passed as a group.  This lets us define arrays of structures as
+well as structures of arrays.  For example, `array[N] tuple(int, real,
+vector[5])` is an array of tuples, each of which has an integer, real,
+and vector component.  Alternatively, we can represent the same
+information using a tuple of parallel arrays as `tuple(array[N] int,
+array[N] real, array[N] vector[5])`.
+
+The second use is for function return values.  Here, if a function
+computes two different things with different types, and the
+computation shares work, it's best to write one function that returns
+both things.  For example, an eigendecomposition returns a pair
+consisting of a vector of eigenvalues and a matrix of eigenvectors,
+whereas a singular value decomposition returns three matrices of
+different shapes.  Before introducing tuples in version 2.33, the QR
+decomposition of matrix $A = Q \cdot R$, where $Q$ is orthonormal and
+$R$ is upper triangular.  In the past, this required two function calls.
+
+
+```stan
+matrix[M, N] A = ...;
+matrix[M, M] Q = qr_Q(A);
+matrix[M, N] R = qr_R(A);
+```
+
+With tuples, this can be simplified to the following,
+
+```stan
+tuple(matrix[M, M], matrix[M, N]) QR = qr(A);
+```
+
+with `QR.1` being `Q` and `QR.2` giving `R`.
 
 ## Fixed sizes and indexing out of bounds
 

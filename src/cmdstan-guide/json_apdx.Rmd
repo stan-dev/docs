@@ -9,15 +9,15 @@ parameters are used to initialize the sampler and optimizer.
 
 You can create the JSON file yourself using the guidelines below, but a more
 convenient way to create a JSON file for use with CmdStan is to use the
-[`write_stan_json()`](https://mc-stan.org/cmdstanr/reference/write_stan_json) 
+[`write_stan_json()`](https://mc-stan.org/cmdstanr/reference/write_stan_json)
 function provided by the CmdStanR interface.
 
 
 ## JSON syntax summary
 
 JSON is a data interchange notation, defined by an
-\href{http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf}{ECMA
-standard}. JSON data files must in Unicode. JSON data is a series of
+[EMCA standard](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+JSON data files must in Unicode. JSON data is a series of
 structural tokens, literal tokens, and values:
 
 - Structural tokens are the left and right curly bracket `{}`, left and right
@@ -40,14 +40,14 @@ is the Unicode code point in hex.
 - Numbers are represented using either decimal notation or scientific
 notation.  The following are examples of numbers:
 ` 17`, `17.2`, `-17.2`, `-17.2e8`, `17.2e-8`.  <br>
-There is no distincition between integer and real numbers
+There is no distinction between integer and real numbers
 in the JSON format other than whether they have periods or scientific
 notation.
 
-- The special floating point values for positive infinity, negative infinity, 
+- The special floating point values for positive infinity, negative infinity,
 and not-a-number can be represented in multiple ways.  Positive infinity can be
 represented as the string `"Inf"`, the string `"Infinity"`, or the atom `Infinity`.
-Negative infinity can be represented as the string `"-Inf"`, the string `"-Infinity"`, 
+Negative infinity can be represented as the string `"-Inf"`, the string `"-Infinity"`,
 or the atom `-Infinity`. Not-a-number can be represented as the string `"NaN"`
 or the atom `NaN`.  These values may be mixed with other numerical types.
 
@@ -82,20 +82,24 @@ example, the $2 \times 3$ matrix
 is represented in JSON as
 `[[1, 2.7, -9.8],
   [4.2, 1.8, -7.3]]`.
-  
+
 - Complex matrices are also represented as arrays of their row
-vectors.  For example, the $2 \times 3$ complex matrix 
+vectors.  For example, the $2 \times 3$ complex matrix
 \[
 \begin{bmatrix}
 1 + 2i & 3 - 4.2i & 13.1 + 2.7i \\
 3.1 & -5i & 0
 \end{bmatrix}
-\]	
+\]
 would be represented in JSON as
 `
 [[[1, 2], [3, -4.2], [13.1, 2.7]],
  [[3.1,  0], [0, -5], [0, 0]]]
 `.
+
+- Tuples are written as nested JSON objects where the keys are strings for the
+  numbered slots in the tuple. For example, the tuple `(1.5, 3.4)` is
+  represented in JSON as `{"1": 1.5, "2": 3.4}`.
 
 - A name-value pair consists of a string followed by a colon followed by a
 value, either primitive or compound.
@@ -146,33 +150,35 @@ data variable declaration and the right column contains valid JSON
 data inputs.
 ```{r table1, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
 tabl <-  "
-|     Stan declaration      |   JSON encoding                               |
-| ------------------------: | :-------------------------------------------- |
-|           `int i`         |              `\"i\": 17`                      |
-|                           |                                               |
-|          `real a`         |             `\"a\" : 17`                      |
-|                           |            `\"a\" : 17.2`                     |
-|                           |           `\"a\" : \"NaN\"`                   |
-|                           |          `\"a\" : \"+inf\"`                   |
-|                           |          `\"a\" : \"-inf\"`                   |
-|                           |                                               |
-|       `complex z`         |           `\"z\": [1, -2.3]`                  |
-|                           |                                               |
-|    `array[5] int`         |       `\"a\" : [1, 2, 3, 4, 5]`               |
-| `array[5] real a`         |  `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]`          |
-|                           |                                               |
-| `array[2] complex b`      | `\"b\" : [[1, -2.3], [4.9, 0]]`               |
-|                           |                                               |
-|     `vector[5] a`         |  `\"a\" : [1, 2, 3.3, \"NaN\", 5]`            |
-| `row_vector[5] a`         |  `\"a\" : [1, 2, 3.3, \"NaN\", 5]`            |
-|                           |                                               |
-|  `matrix[2, 3] a`         | `\"a\" : [[ 1, 2, 3 ], [ 4, 5, 6]]`           |
-|                           |                                               |
-| `complex_vector[2] c`     | `\"c\" : [[-1.2, 3.3], [4.8, 1.9], [2.3, 0]]` |
-| `complex_row_vector[2] c` | `\"c\" : [[-1.2, 3.3], [4.8, 1.9], [2.3, 0]]` |
-|                           |                                               |
-|  `complex_matrix[2, 3] d` | `\"d\" : [[[1, 1], [2, 2], [3, 3]],`          |
-|                           |      `[4, 4], [5, 5], [6, 6]]]`               |
+|     Stan declaration         |   JSON encoding                               |
+| ---------------------------: | :-------------------------------------------- |
+|           `int i`            |              `\"i\": 17`                      |
+|                              |                                               |
+|          `real a`            |             `\"a\" : 17`                      |
+|                              |            `\"a\" : 17.2`                     |
+|                              |           `\"a\" : \"NaN\"`                   |
+|                              |          `\"a\" : \"+inf\"`                   |
+|                              |          `\"a\" : \"-inf\"`                   |
+|                              |                                               |
+|       `complex z`            |           `\"z\": [1, -2.3]`                  |
+|                              |                                               |
+|    `array[5] int`            |       `\"a\" : [1, 2, 3, 4, 5]`               |
+| `array[5] real a`            |  `\"a\" : [ 1, 2, 3.3, \"NaN\", 5 ]`          |
+|                              |                                               |
+| `array[2] complex b`         | `\"b\" : [[1, -2.3], [4.9, 0]]`               |
+|                              |                                               |
+|     `vector[5] a`            |  `\"a\" : [1, 2, 3.3, \"NaN\", 5]`            |
+| `row_vector[5] a`            |  `\"a\" : [1, 2, 3.3, \"NaN\", 5]`            |
+|                              |                                               |
+|  `matrix[2, 3] a`            | `\"a\" : [[ 1, 2, 3 ], [ 4, 5, 6]]`           |
+|                              |                                               |
+| `complex_vector[2] c`        | `\"c\" : [[-1.2, 3.3], [4.8, 1.9], [2.3, 0]]` |
+| `complex_row_vector[2] c`    | `\"c\" : [[-1.2, 3.3], [4.8, 1.9], [2.3, 0]]` |
+|                              |                                               |
+| `complex_matrix[2, 3] d`     | `\"d\" : [[[1, 1], [2, 2], [3, 3]],`          |
+|                              |      `[4, 4], [5, 5], [6, 6]]]`               |
+|                              |                                               |
+|`tuple(real, array[2] int) t` | `\"t\" : { \"1\": 1.4, \"2\": [1, 2]}`        |
 "
 cat(tabl)
 ```

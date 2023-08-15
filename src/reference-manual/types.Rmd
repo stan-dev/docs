@@ -81,6 +81,18 @@ and declares `z` to be a $12 \times 8 \times 15$ array of complex numbers.
 Prior to 2.26 Stan models used a different syntax which has since been removed.
 See the [Removed Features] chapter for more details.
 
+### Tuple types
+
+For any sequence of types, Stan provides a tuple data type.  For example,
+
+```stan
+tuple(real, array[5] int) xi;
+```
+
+declares `xi` to be a tuple holding two values, the first of which is
+of type type `real` and the second of which a 5-dimensional array of
+type `int`.
+
 
 ### Constrained data types {-}
 
@@ -1286,6 +1298,95 @@ undefined.  The array will behave at run time as if it's a $0 \times
 $0 \times 0$ matrix, not a $0 \times 3$ matrix.
 
 
+## Tuple data type
+
+Stan supports tuples of arbitrary size.  The values in a tuple can be
+of arbitrary type, but the component types must be declared along with
+the declaration of the tuple.  Tuples can be manipulated as a whole,
+or their elements may be accessed and set individually.
+
+### Declaring tuple variables
+
+Tuples are declared with the keyword `tuple` followed by a
+parenthesized sequence of types, which determine the types of the
+respective tuple entries.  For example, a tuple with three elements
+may be declared as
+
+```stan
+tuple(int, vector[3], complex) abc;
+```
+
+Tuples must have at least two entries, so the following declarations
+are illegal.
+
+```stan
+tuple() nil;  // ILLEGAL
+tuple(int) n;  // ILLEGAL
+```
+
+Tuples can be assigned as a whole if their elements can be assigned
+individually.  For example, `a` can be assigned to `b` in the
+following example because `int` can be promoted to `complex`.
+
+```stan
+tuple(int, real) a;
+...
+tuple(complex, real) b = a;
+```
+
+Tuple types may have elements which are declared as tuples, such as
+the following example.
+
+```stan
+tuple(int, tuple(real, complex)) x;
+```
+
+In this case, it would probably be simpler to use a 3-tuple type,
+`tuple(int, real, complex)`.
+
+
+Tuples can be declared with constraints anywhere that ordinary
+variables can (i.e., as top-level block variables).  That means any
+context in which it is legal to have a declaration
+
+```stan
+real<lower=0> sigma;
+real<lower=0, upper=1> theta;
+```
+
+it is legal to have a tuple with constraints such as
+
+```stan
+tuple(real<lower=0>, real<lower=0, upper=1>) sigma_theta;
+```
+
+
+
+### Accessing tuple elements
+
+Tuple elements may be accessed directly.  For example, with our
+declaration of `abc` from the last section, Stan uses `abc.1` for the
+first element, `abc.2` for the second, and `abc.3` for the third.
+These numbers must be integer literals (i.e., they cannot be
+variables), and must be within the size of the number of elements of
+tuples.  The types of elements are as declared, so that `abc.1` is of
+type `int`, `abc.2` of type `vector[3]` and `abc.3` of type `complex`.
+
+### Assigning tuple elements
+
+Tuple elements can be assigned individually, allowing, e.g.,
+
+```stan
+tuple(int, real) ab;
+ab.1 = 123;
+ab.2 = 12.9;
+```
+
+As with other assignments, promotions will happen if necessary (of
+`int` to `real` and of `real` to `complex`, along with the
+corresponding container type promotions).
+
+
 ## Variable types vs. constraints and sizes
 
 The type information associated with a variable only contains the
@@ -1554,7 +1655,7 @@ specified by using commas, e.g. `array[ , ]` is a 2-D array.
 
 For more on how function arguments and return types are declared,
 consult the [User's Guide chapter on
-functions](https://mc-stan.org/docs/stan-users-guide/basic-functions-section.html#type-declarations-for-functions).
+functions](https://mc-stan.org/docs/stan-users-guide/basic-functions.html#type-declarations-for-functions).
 
 ## Compound variable declaration and definition
 

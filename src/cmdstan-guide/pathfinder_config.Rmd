@@ -20,6 +20,7 @@ method = pathfinder
     history_size = 5 (Default)
     num_psis_draws = 1000 (Default)
     num_paths = 4 (Default)
+    save_single_paths = 0 (Default)
     max_lbfgs_iters = 1000 (Default)
     num_draws = 1000 (Default)
     num_elbo_draws = 25 (Default)
@@ -36,6 +37,9 @@ Must be a positive integer.  Default value is $1000$.
 - `num_paths` - Number of single pathfinders.
 Must be a positive integer.  Default value is $4$.
 
+- `save_single_paths` - When True ($1$), save outputs from single pathfinders.
+Valid values: $(0, 1)$. Default is $0$ (False).
+
 - `max_lbfgs_iters` - Maximum number of L-BFGS iterations.
 Must be a positive integer.  Default value is $1000$.
 
@@ -46,29 +50,19 @@ Must be a positive integer.  Default value is $1000$.
 Must be a positive integer.  Default value is $25$.
 
 
+
 ## L-BFGS Configuration
 
 These arguments have the same defaults as for [optimization](#optimize_config).
 
-## Output CSV files{#pathfinder_csv}
+## Multi-path Pathfinder CSV files{#pathfinder_csv}
 
-For a single run of the Pathfinder algorithm, where argument `num_paths` is $1$,
-the default output is a single CSV file, `output.csv`.
+By default, the `pathfinder` method uses 4 independent Pathfinder runs,
+each of which produces 1000 approximate draws, which are then
+importance resampled down to 1000 final draws.
+The importance resampled draws are output as a [StanCSV file](#pathfinder_csv) file.
 
-If `num_paths` is not specified, the default is to run $4$ single-path pathfinders.
-In this case,  Pathfinder output is written into a set of StanCSV files; one file which contains the importance resampled draws
-from multi-path Pathfinder, and one file which contains the output of each single-path Pathfinder run.
-Given an output file name, CmdStan adds suffixes to the base filename to distinguish among outputs from single- and multi-path runs.
-For the default output file name `output.csv`, the resulting CSV files are
-```
-output_pathfinder.csv
-output_1.csv
-output_2.csv
-output_3.csv
-output_4.csv
-```
-
-These CSV files have the following structure:
+The CSV files have the following structure:
 
 - The full set of configuration options available for the `pathfinder` method is
 reported at the beginning of the sampler output file as CSV comments.
@@ -81,26 +75,40 @@ in the order in which they are declared in the Stan program.
 
 - Final comments containing timing information.
 
+## Individual Pathfinder Outputs
 
-## Diagnostic JSON files
+The boolean option `save_single_paths` is used to save the outputs from the individual Pathfinder runs.
+By default, the single pathfinder outputs are not saved.
+When `save_single_paths` is $1$, the draws from each are saved to
+StanCSV files with the same format as the PSIS sample
+a record of the ELBO evaluations along the L-BFGS trajectory is saved as JSON.
+Given an output file name, CmdStan adds suffixes to the base filename to distinguish between the output files.
+For the default output file name `output.csv` and default number of runs (4), the resulting CSV files are
+```
+output.csv
+output_path_1.csv
+output_path_1.json
+output_path_2.csv
+output_path_2.json
+output_path_3.csv
+output_path_3.json
+output_path_4.csv
+output_path_4.json
+```
 
-If the `output` configuration option `diagnostic_file` is present,
-the resulting diagnostic file records the approximations to the target density
-at each point along the trajectory of the L-BFGS optimization algorithms for each of the single-path Pathfinders.
+The individual sample CSV files have the same structure as the PSIS sample CSV file.
+The JSON files contain information from each ELBO iteration.
+
+
 To see how this works, we run Pathfinder on the centered-parameterization of the `eight-schools` model,
-where the posterior distribution has a funnel shape.
+where the posterior distribution has a funnel shape:
+
 ```
-> .eight_schools data file=eight_schools.data.R output diagnostic_file=diags.json
-```
-This results in output csv files, as well as a set of diagnostic json files
-```
-path_1.json
-path_2.json
-path_3.json
-path_4.json
+> eight_schools pathfinder save_single_paths=1 data file=eight_schools.data.json
 ```
 
-Each JSON file contains a record of the ELBO evaluations along the L-BFGS trajectory:
+Each JSON file records the approximations to the target density
+at each point along the trajectory of the L-BFGS optimization algorithms.
 
 ```
 {
@@ -151,3 +159,9 @@ Each JSON file contains a record of the ELBO evaluations along the L-BFGS trajec
   }
 }
 ```
+
+Option `num_paths=1` runs just one single Pathfinder, in which case the
+output CSV file contains just the sample from that run.
+The combination of arguments `num_paths=1 save_single_paths=1` results int two output files,
+the CSV sample and the JSON file of ELBO iteration information.
+In this case, no distinguishing suffixes are needed.

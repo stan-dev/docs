@@ -299,6 +299,27 @@ To fix this, ensure you have followed the steps for adding the toolchain to your
 `PATH` and installing the additional utilities covered in the
 [configuration instructions](#windows)
 
+**Spaces in paths to CmdStan or model**
+
+Both `make` and `mingw32-make` can fail when dealing with files in folders
+with a space somewhere in their file path. Particularly on Windows, this can
+be an issue when CmdStan, or the models you are trying to build, are placed in
+the `One Drive` folder.
+
+Unfortunately, the errors created by this situation are not alwas informative.
+Some errors you may see are:
+
+```
+mingw32-make: *** INTERNAL: readdir: Invalid argument
+```
+```
+make: *** [make/program:50: x.hpp] Error 2
+```
+
+If the (fully-expanded) folder path to CmdStan or the model you are trying to
+build contains a space, we recommend trying a different location if you encounter
+any issues during building.
+
 
 ## C++ Toolchain {#cpp-toolchain}
 
@@ -419,6 +440,13 @@ pacman -Sy mingw-w64-x86_64-make          # 64-bit g++-8
 pacman -Sy mingw-w64-ucrt-x86_64-make     # 64-bit g++-10 (UCRT)
 ```
 
+If you have used the UCRT toolchain,some additional compilation flags will be needed for CmdStan.
+Navigate to the CmdStan/make directory and create a file called `local`. Add the following lines to the file:
+```
+CXXFLAGS += -Wno-nonnull -D_UCRT
+TBB_CXXFLAGS= -D_UCRT
+```
+
 ##### RTools42 & RTools43
 
 Both RTools42 & RTools43 provide 64-bit UCRT toolchains, where RTools42 provides g++-10 and
@@ -453,8 +481,8 @@ pacman -Sy mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-gcc
 Finally, some additional compilation flags will be needed for CmdStan. Navigate to
 the CmdStan/make directory and create a file called `local`. Add the following lines to the file:
 ```
-CXXFLAGS += -Wno-nonnull
-TBB_CXXFLAGS= -U__MSVCRT_VERSION__ -D__MSVCRT_VERSION__=0x0E00
+CXXFLAGS += -Wno-nonnull -D_UCRT
+TBB_CXXFLAGS= -D_UCRT
 ```
 
 __32-bit Builds__

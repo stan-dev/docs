@@ -7,135 +7,18 @@ Starting with Stan 2.29, minor (syntax-level) deprecations can be removed 3
 versions after release; e.g., syntax deprecated in Stan 2.20 will be removed in
 Stan 2.23 and placed in [Removed Features]. The Stan compiler can
 [automatically update](https://mc-stan.org/docs/stan-users-guide/stanc-pretty-printing.html)
-many of these on the behalf of the user.
+many of these on the behalf of the user for at least one version after they are
+removed.
 
 Any feature which changes semantic meaning (such as the upgraded ODE solver
 interface) will not be removed until a major version change (e.g., Stan 3.0).
 
 
-## Assignment with `<-`
-
-*Deprecated*: The deprecated syntax uses the operator `<-` for
-  assignment, e.g.,
-
-```stan
-a <- b;
-```
-
-*Replacement*: The new syntax uses the operator `=` for assignment,
-  e.g.,
-
-```stan
-a = b;
-```
-
-*Scheduled Removal*: Stan 2.33
-
-## `increment_log_prob` statement
-
-
-*Deprecated*: The deprecated syntax for incrementing the log density
-  accumulator by `u` is
-
-```stan
-increment_log_prob(u);
-```
-
-If `u` is an expression of real type, the underlying log density
-accumulator is incremented by `u`; if `u` is a container, the
-underlying log density is incremented with each element.
-
-*Replacement*: Replace the above statement with
-
-```stan
-target += u;
-```
-
-*Scheduled Removal*: Stan 2.33
-
-## `get_lp()` function
-
-
-*Deprecated*: The built-in no-argument function `get_lp()` is deprecated.
-
-*Replacement*: Use the no-argument function `target()` instead.
-
-
-*Scheduled Removal*: Stan 2.33
-
-## `_log` density and mass functions
-
-
-*Deprecated*: The probability function for the distribution `foo` will
-be applied to an outcome variable `y` and sequence of zero or more
-parameters `...` to produce the expression `foo_log(y, ...)`.
-
-*Replacement*: If `y` can be a real value (including vectors
-or matrices), replace
-
-```stan
-foo_log(y, ...)
-```
-
-with the log probability density function notation
-
-```stan
-foo_lpdf(y | ...).
-```
-
-If `y` must be an integer (including arrays), instead replace
-
-```stan
-foo_log(y, ...
-```
-
-with the log probability mass function
-
-```stan
-foo_lpmf(y | ...).
-```
-
-*Scheduled Removal*: Stan 2.33
-
-## `cdf_log` and `ccdf_log` cumulative distribution functions
-
-*Deprecated*: The log cumulative distribution and complementary
-cumulative distribution functions for a distribution `foo` are
-currently written as `foo_cdf_log` and `foo_ccdf_log`.
-
-*Replacement*: Replace `foo_cdf_log(y, ...)` with `foo_lcdf(y | ...)`.
-Replace `foo_ccdf_log(y, ...)` with `foo_lccdf(y | ...)`.
-
-
-## User-defined function with `_log` suffix
-
-*Deprecated*: A user-defined function ending in `_log` can
-  be used in sampling statements, with
-
-```stan
-y ~ foo(...);
-```
-
-having the same effect as
-
-```stan
-target += foo_log(y, ...);
-```
-
-*Replacement*: Replace the `_log` suffix with `_lpdf` for density
-functions or `_lpmf` for mass functions in the user-defined function.
-
-
-*Scheduled Removal*: Stan 2.33
-
-Note: Following Stan 2.33, users can still define a function ending in `_log`,
-it will just no longer have a special meaning or support the `~` syntax.
-
 ## `lkj_cov` distribution
 
 *Deprecated*:The distribution `lkj_cov` is deprecated.
 
-*Replacement*: Replace `lkj_cov_log(...)` with an `lkj_corr`
+*Replacement*: Replace `lkj_cov_lpdf(...)` with an `lkj_corr`
   distribution on the correlation matrix and independent lognormal
   distributions on the scales.  That is, replace
 
@@ -164,106 +47,6 @@ would use Cholesky factors rather than full correlation matrix types.
 
 
 *Scheduled Removal*: Stan 3.0 or later.
-
-## `if_else` function
-
-*Deprecated*:The function `if_else` is deprecated.  This function
-takes three arguments `a`, `b`, and `c`, where `a` is an `int` value
-and `b` and `c` are scalars. It returns `b` if `a` is non-zero and `c`
-otherwise.
-
-*Replacement*: Use the conditional operator which allows more
-flexibility in the types of `b` and `c` and is much more efficient in
-that it only evaluates whichever of `b` or `c` is returned.
-
-```stan
-x = if_else(a, b, c);
-```
-
-with
-
-```stan
-x = a ? b : c;
-```
-
-*Scheduled Removal*: Stan 2.33
-
-##  Character `#` as comment prefix
-
-*Deprecated*: The use of `#` for line-based comments is
-  deprecated.  From the first occurrence of `#` onward, the rest
-  of the line is ignored.  This happens after includes are resolved
-  starting with `#include`.
-
-*Replacement*: Use a pair of forward slashes, `//`, for line
-  comments.
-
-*Scheduled Removal*: Stan 2.33
-
-## Brackets array syntax
-
-Before Stan 2.26, arrays were declared by writing syntax after the
-variable.  As of version 2.26, the old syntax has been deprecated and
-replaced with a keyword-based syntax.
-
-*Deprecated*: The use of array declarations like
-```stan
-int n[5];
-real a[3, 4];
-real<lower=0> z[5, 4, 2];
-vector[7] mu[3];
-matrix[7, 2] mu[15, 12];
-cholesky_factor_cov[5, 6] mu[2, 3, 4];
-```
-
-*Replacement*: The use of the `array` keyword, which replaces the
- above examples with
-```stan
-array[5] int n;
-array[3, 4] real a;
-array[5, 4, 2] real<lower=0> z;
-array[3] vector[7] mu;
-array[15, 12] matrix[7, 2] mu;
-array[2, 3, 4] cholesky_factor_cov[5, 6] mu;
-```
-
-*Scheduled Removal*: Stan 2.33
-
-
-## New Keywords
-
-*Deprecated*: The following identifiers will become
-[reserved](#reserved-names)
-in the language in the specified version.
-
-*Replacement*: Rename any variables or functions with these names.
-
-| Identifier | Version |
-|------------|---------|
-| array      | 2.33    |
-| lower      | 2.33    |
-| upper      | 2.33    |
-| offset     | 2.33    |
-| multiplier | 2.33    |
-
-
-## Nested multiple indexing in assignments
-
-Stan interprets nested indexing in assignments as flat indexing so that a statement like
-```stan
-a[:][1] = b;
-```
-is the same as
-```stan
-a[:,1] = b;
-```
-However, this is inconsistent with
-[multiple indexing rules](https://mc-stan.org/docs/reference-manual/language-multi-indexing.html).
-To avoid confusion nested multiple indexing in assignment will be an error after Stan 2.33.
-Nesting single indexing is still allowed as it cannot lead to ambiguity.
-
-*Scheduled Removal*: Stan 2.33
-
 
 ## Real values in conditionals
 

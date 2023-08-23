@@ -40,7 +40,7 @@ parameters {
   real<lower=-1, upper=1> y;
 }
 model {
-  target += log1m(fabs(y));
+  target += log1m(abs(y));
 }
 ```
 
@@ -48,7 +48,7 @@ The single scalar parameter `y` is declared as lying in the
 interval `(-1,1)`.  The total log probability is
 incremented with the joint log probability of all parameters, i.e.,
 $\log \mathsf{Triangle}(y \mid -1,1)$.  This value is coded in Stan as
-`log1m(fabs(y))`.  The function `log1m` is defined so
+`log1m(abs(y))`.  The function `log1m` is defined so
 that `log1m(x)` has the same value as $\log(1-x)$, but the
 computation is faster, more accurate, and more stable.
 
@@ -64,7 +64,7 @@ $\mathbb{R}$ as follows by defining the probability to be `log(0.0)`,
 i.e., $-\infty$, for values outside of $(-1,1)$.
 
 ```stan
-target += log(fmax(0.0,1 - fabs(y)));
+target += log(fmax(0.0,1 - abs(y)));
 ```
 
 With the constraint on `y` in place, this is just a less
@@ -137,7 +137,7 @@ The following Stan program implements this function,
 ```stan
 real binormal_cdf(real z1, real z2, real rho) {
   if (z1 != 0 || z2 != 0) {
-    real denom = fabs(rho) < 1.0 ? sqrt((1 + rho) * (1 - rho)) 
+    real denom = abs(rho) < 1.0 ? sqrt((1 + rho) * (1 - rho))
                                  : not_a_number();
     real a1 = (z2 / z1 - rho) / denom;
     real a2 = (z1 / z2 - rho) / denom;

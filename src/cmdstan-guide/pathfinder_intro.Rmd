@@ -1,33 +1,35 @@
 # Variational Inference using Pathfinder {#pathfinder-intro}
 
-The CmdStan method `pathfinder` uses the Pathfinder algorithm of @zhang_pathfinder:2022.
-Pathfinder is a variational method for approximately
-sampling from differentiable log densities. Starting from a random
-initialization, Pathfinder locates normal approximations to the target
-density along a quasi-Newton optimization path, with local covariance
-estimated using the inverse Hessian estimates produced by the
-L-BFGS optimizer.  Pathfinder returns draws from the Gaussian approximation
-with the lowest estimated Kullback-Leibler (KL) divergence to the true
-posterior.
+The CmdStan method `pathfinder` uses the Pathfinder algorithm of
+@zhang_pathfinder:2022.  Pathfinder is a variational method for
+approximately sampling from differentiable log densities. Starting
+from a random initialization, Pathfinder locates normal approximations
+to the target density along a quasi-Newton optimization path, with
+local covariance estimated using the negative inverse Hessian estimates
+produced by the L-BFGS optimizer.  Pathfinder returns draws from the
+Gaussian approximation with the lowest estimated Kullback-Leibler (KL)
+divergence to the true posterior.
 
 Pathfinder differs from the ADVI method in that it uses quasi-Newton
-optimization on the log posterior instead of stochastic gradient descent (SGD)
-on the Monte Carlo computation of the evidence lower bound (ELBO).
-Pathfinder's approach is both faster and more stable than that of ADVI.
-Compared to ADVI and short dynamic HMC runs, Pathfinder
-requires one to two orders of magnitude fewer log density and gradient
-evaluations, with greater reductions for more challenging posteriors.
+optimization on the log posterior instead of stochastic gradient
+descent (SGD) on the Monte Carlo computation of the evidence lower
+bound (ELBO).  Pathfinder's approach is both faster and more stable
+than that of ADVI.  Compared to ADVI and short dynamic HMC runs,
+Pathfinder requires one to two orders of magnitude fewer log density
+and gradient evaluations, with greater reductions for more challenging
+posteriors.
 
-A single run of the Pathfinder algorithm generates a set of approximate draws.
-Inference is improved by running multiple Pathfinder instances and using
-Pareto-smoothed importance resampling (PSIS) of the resulting sets of draws.
-This better matches non-normal target densities and also eliminates minor modes.
-By default, the `pathfinder` method uses 4 independent Pathfinder runs,
-each of which produces 1000 approximate draws, which are then
-importance resampled down to 1000 final draws.
+A single run of the Pathfinder algorithm generates a set of
+approximate draws.  Inference is improved by running multiple
+Pathfinder instances and using Pareto-smoothed importance resampling
+(PSIS) of the resulting sets of draws.  This better matches non-normal
+target densities and also eliminates minor modes.  By default, the
+`pathfinder` method uses 4 independent Pathfinder runs, each of which
+produces 1000 approximate draws, which are then importance resampled
+down to 1000 final draws.
 
-The following is a minimal call the Pathfinder algorithm using defaults
-for everything but the location of the data file.
+The following is a minimal call the Pathfinder algorithm using
+defaults for everything but the location of the data file.
 
 ```
 > ./bernoulli pathfinder data file=bernoulli.data.R
@@ -68,7 +70,9 @@ num_threads = 1 (Default)
 ```
 The rest of the output describes the progression of the algorithm.
 
-By default, the Pathfinder algorithm runs 4 single-path Pathfinders in parallel, the uses importance resampling on the set of returned draws to produce the specified number of draws.
+By default, the Pathfinder algorithm runs 4 single-path Pathfinders in
+parallel, the uses importance resampling on the set of returned draws
+to produce the specified number of draws.
 ```
 Path [1] :Initial log joint density = -11.543343
 Path [1] : Iter      log prob        ||dx||      ||grad||     alpha      alpha0      # evals       ELBO    Best ELBO        Notes 
@@ -89,10 +93,15 @@ Path [4] :Best Iter: [3] ELBO (-6.161276) evaluations: (126)
 Total log probability function evaluations:8404
 ```
 
-Pathfinder outputs a [StanCSV file](#pathfinder_csv) file which contains the importance resampled draws from multi-path Pathfinder.
-The initial CSV comment rows contain the complete set of CmdStan configuration options.
-Next is the column header line, followed the set of approximate draws.
-The Pathfinder algorithm first outputs `lp_approx__`, the log density in the approximating distribution, and `lp__`,  the log density in the target distribution, followed by estimates of the model parameters, transformed parameters, and generated quantities.
+Pathfinder outputs a [StanCSV file](#pathfinder_csv) file which
+contains the importance resampled draws from multi-path Pathfinder.
+The initial CSV comment rows contain the complete set of CmdStan
+configuration options.  Next is the column header line, followed the
+set of approximate draws.  The Pathfinder algorithm first outputs
+`lp_approx__`, the log density in the approximating distribution, and
+`lp__`, the log density in the target distribution, followed by
+estimates of the model parameters, transformed parameters, and
+generated quantities.
 ```
 lp_approx__,lp__,theta
 -2.4973, -8.2951, 0.0811852
@@ -108,5 +117,6 @@ The final lines are comment lines which give timing information.
 #               0.019000 seconds (Total)
 ```
 
-Pathfinder provides option `save_single_paths` which will save output from the single-path Pathfinder runs.
+Pathfinder provides option `save_single_paths` which will save output
+from the single-path Pathfinder runs.
 See section [Pathfinder Method](#pathfinder-config) for details.

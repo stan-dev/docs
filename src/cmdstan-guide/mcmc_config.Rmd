@@ -38,6 +38,7 @@ of default configuration options:
 #         metric_file =  (Default)
 #         stepsize = 1 (Default)
 #         stepsize_jitter = 0 (Default)
+#     num_chains = 1 (Default)
 ```
 
 ## Iterations
@@ -298,12 +299,45 @@ specifies the location of the auxiliary output file which contains sampler infor
 and the gradients on the unconstrained scale and log probabilities for all parameters in the model.
 By default, no auxiliary output file is produced.
 
+## Multiple chains in one executable {#sampler-num-chains}
 
-## Examples
+As described in the [quickstart section](#multi-chain-sampling) on parallelism,
+the preferred way to run multiple chains is to use the `num_chains` argument.
+
+This will run multiple chains of MCMC from the same executable, which can save
+on memory usage due to only needing one copy of the model and data. As noted in
+the quickstart guide, this will be done in parallel if the model was compiled
+with `STAN_THREADS=true`.
+
+The `num_chains` argument changes the meanings of several other arguments when
+it is greater than `1` (the default). Many arguments are now interpreted as a
+"template" which is used for each chain.
+
+For example, when `num_chains=2`, the argument `output file=foo.csv` _no longer
+produces a file `foo.csv`_, but instead produces two files, `foo_1.csv` and
+`foo_2.csv`. If you also supply `id=5`, the files produced will be `foo_5.csv`
+and `foo_6.csv` -- `id=5` gives the id of the first chain, and the remaining
+chains are sequential from there.
+
+This also applies to input files, like those used for initialization.
+For example, if `num_chains=3` and `init=bar.json` will first look for
+`bar_1.json`. If it exists, it will use `bar_1.json` for the first chain,
+`bar_2.json` for the second, and so on. If `bar_1.json` does not exist, it falls
+back to looking for `bar.json`, and if it exists, uses the same initial values
+for each chain. The numbers in these filenames are also based on the `id`
+argument, which defaults to `1`.
+
+
+## Examples - older parallelism
+
+**Note**: Many of these examples can be simplified by using the [`num_chains`
+argument](#sampler-num-chains).
 
 The Quickstart Guide [MCMC Sampling chapter](#mcmc-intro) section on multiple chains
-showed how to run multiple chains given a model and data, using the minimal required
+also showed how to run multiple chains given a model and data, using the minimal required
 command line options: the method, the name of the data file, and a chain-specific name for the output file.
+
+This creates multiple copies of the model process which will all load the data.
 
 To run 4 chains in parallel on Mac OS and Linux, the syntax in both bash and zsh is the same:
 ```

@@ -285,27 +285,25 @@ Stan, the simplest approach is the following.
 ```stan
 functions {
   array[] int permutation_rng(int N) {
-     int N = rows(x);
-     array[N] int y;
-     for (n in 1:N) {
-       y[n] = n;
-     }
-     vector[N] theta = rep_vector(1.0 / N, N);
-     for (n in 1:rows(y)) {
-       int i = categorical_rng(theta);
-     }
-      array[n] int temp = y;
+    array[N] int y;
+    for (n in 1 : N) {
+      y[n] = n;
+    }
+    vector[N] theta = rep_vector(1.0 / N, N);
+    for (n in 1 : size(y)) {
+      int i = categorical_rng(theta);
+      int temp = y[n];
       y[n] = y[i];
       y[i] = temp;
-     }
-     return y;
+    }
+    return y;
   }
 }
 ```
 The name of the function must end in `_rng` because it uses other
 random functions internally.  This will restrict its usage to the
 transformed data and generated quantities block.  The code walks
-through the vector exchanging each item with another randomly chosen
+through an array of integers exchanging each item with another randomly chosen
 item, resulting in a uniformly drawn permutation of the integers
 `1:N`.^[The traditional approach is to walk through a vector and replace each item with a random element from the remaining elements, which is guaranteed to only move each item once. This was not done here as it'd require new categorical `theta` because Stan does not have a uniform discrete RNG built in.]
 

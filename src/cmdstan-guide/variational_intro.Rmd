@@ -1,15 +1,14 @@
-# Variational Inference
+# Variational Inference using ADVI
 
-CmdStan can approximate the posterior distribution using variational
-inference.  The approximation is a Gaussian in the unconstrained variable space.
-Stan implements two variational algorithms. The `algorithm=meanfield` option
-uses a fully factorized Gaussian for the approximation.
-The `algorithm=fullrank` option uses a Gaussian with a full-rank
-covariance matrix for the approximation.
+The CmdStan method `variational` uses the Automatic Differentiation Variational Inference (ADVI) algorithm of @kucukelbir:2017
+to provide an approximate posterior distribution of the model conditioned on the data.
+The approximating distribution it uses is a Gaussian in the unconstrained variable space,
+either a fully factorized Gaussian approximation,
+specified by argument `algorithm=meanfield` option, or a Gaussian approximation using a
+full-rank covariance matrix, specified by argument `algorithm=fullrank`.
+By default, ADVI uses option `algorithm=meanfield`.
 
-The executable does not need to be recompiled in order to
-switch to variational inference, and the data input format is the
-same. The following is a minimal call to Stan's variational inference
+The following is a minimal call to Stan's variational inference
 algorithm using defaults for everything but the location of the data
 file.
 
@@ -20,9 +19,8 @@ file.
 Executing this command prints both output to the console and
 to a csv file.
 
-The first part of the console output reports on the configuration used.
-Here it indicates the default mean-field setting of the variational
-inference algorithm. It also indicates the default parameter sizes and
+The first part of the console output reports on the configuration used:
+the default option `algorithm=meanfield` and the default
 tolerances for monitoring the algorithm's convergence.
 ```
 method = variational
@@ -150,7 +148,3 @@ lp__,log_p__,log_g__,theta
 The header indicates the unnormalized log probability with `lp__`.
 This is a legacy feature that we do not use for variational inference.
 The ELBO is not stored unless a diagnostic option is given.
-
-For further details, see Kucukelbir, Alp, Rajesh Ranganath, Andrew Gelman, and David M. Blei. 2015.
-_Automatic Variational Inference in Stan._
-arXiv 1506.03431. http://arxiv.org/abs/1506.03431.

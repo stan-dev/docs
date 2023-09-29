@@ -136,7 +136,8 @@ the tokens are reserved for future use.
 ```
 for, in, while, repeat, until, if, then, else,
 true, false, target, struct, typedef, export,
-auto, extern, var, static
+auto, extern, var, static, lower, upper, offset,
+multiplier
 ```
 
 Variables should not be named after types, either, and thus may not be
@@ -146,7 +147,7 @@ any of the following.
 int, real, complex, vector, simplex, unit_vector,
 ordered, positive_ordered, row_vector, matrix,
 cholesky_factor_corr, cholesky_factor_cov,
-corr_matrix, cov_matrix
+corr_matrix, cov_matrix, array
 ```
 
 The following built in functions are also reserved and
@@ -169,10 +170,9 @@ transformed, generated
 
 Variable names will also conflict with the names of distributions
 suffixed with `_lpdf`, `_lpmf`, `_lcdf`, and `_lccdf`, `_cdf`, and
-`_ccdf`, such as `normal_lcdf_log`; this also holds for the deprecated
-forms `_log`, `_cdf_log`, and `_ccdf_log`. No user-defined variable
-can take a name ending in `_lupdf` or `_lupmf` even if a corresponding
-`_lpdf` or `_lpmf` is not defined.
+`_ccdf`, such as `normal_lcdf_log`. No user-defined variable can take a name
+ending in `_lupdf` or `_lupmf` even if a corresponding `_lpdf` or `_lpmf` is not
+defined.
 
 Using any of these variable names causes the `stanc` translator
 to halt and report the name and location of the variable causing the
@@ -233,13 +233,10 @@ encoding, such as ASCII itself, UTF-8, or Latin1.  It is up to user
 shells and editors to display them properly.
 
 
-## Vector, matrix, and array expressions {#vector-matrix-array-expressions.section}
+## Container expressions {#vector-matrix-array-expressions.section}
 
-Expressions for the Stan container objects arrays, vectors, and
-matrices can be constructed via a sequence of expressions
-enclosed in either curly braces for arrays, or square brackets for
-vectors and matrices.
-
+Expressions for the Stan container objects, namely arrays, vectors,
+row vectors, matrices, and tuples, can all be constructed using expressions.  
 
 ### Vector expressions {-}
 
@@ -250,7 +247,7 @@ three elements with real values 1.0, 10.0, and 100.0.
 Applying the transpose operator to a row vector expression produces
 a vector expression.
 This syntax provides a way declare and define small vectors a single
-line, as follows. 
+line, as follows.
 
 ```stan
 row_vector[2] rv2 =  [ 1, 2 ];
@@ -300,7 +297,7 @@ complex_matrix[2, 3] = [[1 + 2i, 3 - 1.7i, 0],
 
 The empty expression `[ ]` is ambiguous and therefore is not
 allowed and similarly expressions such as `[ [ ] ]` or
-`[ [ ], [ ] ]` are not allowed. 
+`[ [ ], [ ] ]` are not allowed.
 
 
 ### Array expressions {-}
@@ -358,6 +355,22 @@ expressions, in which case the result is an array of real values.
 array[2] real b = { 1, 1.9 };
 ```
 
+### Tuple expressions and types {-}
+
+Stan uses parentheses around a comma-separated sequence of expressions to construct a tuple.  For example, we can construct a 2-tuple as follows.
+
+```stan
+tuple(int, vector[3]) xy = (42, [1, 2.9, -1.3]');
+```
+
+The expression `42` is of type `int` and the expression `[1, 2.9,
+-1.3]` is of type `row_vector` so that `[1, 2.9, -1.3]'` is of type
+`vector` and of size 3.  The whole tuple expression `(42, [1, 2.9,
+-1.3]')` thus has a sized type of `tuple(int, vector[3])` and an
+unsized type (e.g., for a function argument) of `tuple(int, vector)`.
+
+Stan does *not* support the Python notation with trailing commas, such
+as `(1, 2, 3, )` for a 3-tuple.
 
 ### Restrictions on values {-}
 
@@ -390,7 +403,6 @@ runtime.
 { { 1, 2, 3 }, m }  // runtime error if m not size 3
 ```
 
-
 #### No empty array expressions {-}
 
 Because there is no way to infer the type of the result, the empty
@@ -401,6 +413,13 @@ zero-element array.
 ```stan
 array[0] int a;   // a is fully defined as zero element array
 ```
+
+#### No zero-tuples or one-tuples {-}
+
+There is no way to declare or construct a zero-tuple or one-tuple in
+Stan.  Tuples must be at least two elements long.  The expression `()`
+does not pick out a zero-tuple---it is ill formed.  Similarly, the
+expression `(1)` is of type `int` rather than a tuple.  
 
 ## Parentheses for grouping
 
@@ -1121,7 +1140,7 @@ singly-indexed function.  Suppose `e` is an expression and `i` is an
 expression of primitive type `int`.  Then
 
 * if `e` is an expression of type `array[i1, i2, ..., iN] T` and `k,` `i1`,
-  ..., `iN` are expressions of type `int`, then 
+  ..., `iN` are expressions of type `int`, then
   `e[k]` is an expression of type `array[i2, ..., iN] T`,
 * if `e` is an expression of type `array[i] T` with `i` and `k`
   expressions of type `int`, then `e[k]` is of type `T`,
@@ -1134,7 +1153,7 @@ expression of primitive type `int`.  Then
   `e[i]` is an expression of type `complex`, and
 * if `e` has implementation type `complex_matrix`, and `i` is an
   expression of type `int`, then `e[i]` is an expression of type
-  `complex_row_vector`. 
+  `complex_row_vector`.
 
 
 #### Function application {-}
@@ -1263,7 +1282,7 @@ The function argument is `foo`, the name of the user-defined
 function. As shown in the
 [variadic higher-order functions table](#variadic-higher-order-functions),
 `ode_rk45` takes a real, a vector, a real, a real array, and a sequence of
-arguments whos types match those at the end of `foo` and returns an array of
+arguments whose types match those at the end of `foo` and returns an array of
 vectors.
 
 ### Functions passed by reference {-}

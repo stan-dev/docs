@@ -80,7 +80,12 @@ The raw output is available [here](grammar.txt).
 <arg_decl> ::= [DATABLOCK] <unsized_type> <decl_identifier>
 
 <unsized_type> ::= ARRAY <unsized_dims> <basic_type>
+                 | ARRAY <unsized_dims> <unsized_tuple_type>
                  | <basic_type> [<unsized_dims>]
+                 | <unsized_tuple_type>
+
+<unsized_tuple_type> ::= TUPLE LPAREN <unsized_type> COMMA <unsized_type>
+                         (COMMA <unsized_type>)* RPAREN
 
 <basic_type> ::= INT
                | REAL
@@ -123,9 +128,20 @@ The raw output is available [here](grammar.txt).
 
 <decl(type_rule, rhs)> ::= type_rule <decl_identifier> <dims>
                            <optional_assignment(rhs)> SEMICOLON
-                         | [<arr_dims>] type_rule
+                         | <higher_type(type_rule)>
                            <id_and_optional_assignment(rhs)> (COMMA
                            <id_and_optional_assignment(rhs)>)* SEMICOLON
+
+<higher_type(type_rule)> ::= <array_type(type_rule)>
+                           | <tuple_type(type_rule)>
+                           | type_rule
+
+<array_type(type_rule)> ::= <arr_dims> type_rule
+                          | <arr_dims> <tuple_type(type_rule)>
+
+<tuple_type(type_rule)> ::= TUPLE LPAREN <higher_type(type_rule)> COMMA
+                            <higher_type(type_rule)> (COMMA
+                            <higher_type(type_rule)>)* RPAREN
 
 <var_decl> ::= <decl(<sized_basic_type>, <expression>)>
 
@@ -146,7 +162,8 @@ The raw output is available [here](grammar.txt).
                        RBRACK
 
 <top_var_type> ::= INT [LABRACK <range> RABRACK]
-                 | REAL <type_constraint>
+                 | REAL <type_constraint>                  | TUPLE
+
                  | COMPLEX <type_constraint>
                  | VECTOR <type_constraint> LBRACK <expression> RBRACK
                  | ROWVECTOR <type_constraint> LBRACK <expression> RBRACK
@@ -200,27 +217,34 @@ The raw output is available [here](grammar.txt).
                | <non_lhs>
 
 <lhs> ::= <identifier>
-        | <lhs> LBRACK <indexes> RBRACK
+        | <indexed(<lhs>)>
+        | <lhs> DOTNUMERAL
+
+<indexed(expr_type)> ::= expr_type LBRACK <indexes> RBRACK
 
 <non_lhs> ::= <expression> QMARK <expression> COLON <expression>
             | <expression> <infixOp> <expression>
             | <prefixOp> <expression>
             | <expression> <postfixOp>
-            | <non_lhs> LBRACK <indexes> RBRACK
+            | <indexed(<non_lhs>)>
             | <common_expression>
 
 <constr_expression> ::= <constr_expression> <arithmeticBinOp>
                         <constr_expression>
                       | <prefixOp> <constr_expression>
                       | <constr_expression> <postfixOp>
-                      | <constr_expression> LBRACK <indexes> RBRACK
+                      | <indexed(<constr_expression>)>
+                      | <identifier> DOTNUMERAL
                       | <common_expression>
                       | <identifier>
 
 <common_expression> ::= INTNUMERAL
                       | REALNUMERAL
+                      | DOTNUMERAL
                       | IMAGNUMERAL
                       | LBRACE <expression> (COMMA <expression>)* RBRACE
+                      | LPAREN <expression> COMMA <expression> (COMMA
+                        <expression>)* RPAREN
                       | LBRACK [<expression> (COMMA <expression>)*] RBRACK
                       | <identifier> LPAREN [<expression> (COMMA
                         <expression>)*] RPAREN
@@ -228,6 +252,7 @@ The raw output is available [here](grammar.txt).
                       | GETLP LPAREN RPAREN
                       | <identifier> LPAREN <expression> BAR [<expression>
                         (COMMA <expression>)*] RPAREN
+                      | <common_expression> DOTNUMERAL
                       | LPAREN <expression> RPAREN
 
 <prefixOp> ::= BANG
@@ -312,17 +337,24 @@ The raw output is available [here](grammar.txt).
 
 <truncation> ::= TRUNCATE LBRACK [<expression>] COMMA [<expression>] RBRACK
 
-<nested_statement> ::= IF LPAREN <expression> RPAREN <statement> ELSE
-                       <statement>
-                     | IF LPAREN <expression> RPAREN <statement>
-                     | WHILE LPAREN <expression> RPAREN <statement>
+<nested_statement> ::= IF LPAREN <expression> RPAREN <vardecl_or_statement>
+                       ELSE <vardecl_or_statement>
+                     | IF LPAREN <expression> RPAREN <vardecl_or_statement>
+                     | WHILE LPAREN <expression> RPAREN
+                       <vardecl_or_statement>
                      | FOR LPAREN <identifier> IN <expression> COLON
-                       <expression> RPAREN <statement>
+                       <expression> RPAREN <vardecl_or_statement>
                      | FOR LPAREN <identifier> IN <expression> RPAREN
-                       <statement>
+                       <vardecl_or_statement>
                      | PROFILE LPAREN <string_literal> RPAREN LBRACE
                        <vardecl_or_statement>* RBRACE
                      | LBRACE <vardecl_or_statement>* RBRACE
+
+<vardecl_or_statement> ::= <statement>
+                         | <var_decl>
+
+<top_vardecl_or_statement> ::= <statement>
+                             | <top_var_decl>
 ```
 \normalsize
 
@@ -348,10 +380,12 @@ INTNUMERAL = [0-9]+ (_ [0-9]+)*
 EXPLITERAL = [eE] [+-]? INTNUMERAL
 
 REALNUMERAL = INTNUMERAL \. INTNUMERAL? EXPLITERAL?
-            | \. INTNUMERAL EXPLITERAL?
+            | \. INTNUMERAL EXPLITERAL
             | INTNUMERAL EXPLITERAL
 
 IMAGNUMERAL = (REALNUMERAL | INTNUMERAL) i
+
+DOTNUMERAL = \. INTNUMERAL
 ```
 
 ## Extra-grammatical constraints
@@ -432,7 +466,7 @@ within the body of a for-loop or while-loop.
 ### Block-specific restrictions
 
 Some constructs in the Stan language are only allowed in certain blocks or in
-certain kinds of user-defiend functions.
+certain kinds of user-defined functions.
 
 #### PRNG functions
 

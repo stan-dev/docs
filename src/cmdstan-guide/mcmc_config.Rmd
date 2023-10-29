@@ -11,9 +11,8 @@ reported at the beginning of the sampler output file as CSV comments.
 When the example model `bernoulli.stan` is run via the command line
 with all default arguments,
 the resulting Stan CSV file header comments show the complete set
-of default configuration options:
+of default sample method configuration options:
 ```
-# model = bernoulli_model
 # method = sample (Default)
 #   sample
 #     num_samples = 1000 (Default)
@@ -22,13 +21,14 @@ of default configuration options:
 #     thin = 1 (Default)
 #     adapt
 #       engaged = 1 (Default)
-#       gamma = 0.05 (Default)
-#       delta = 0.8 (Default)
-#       kappa = 0.75 (Default)
-#       t0 = 10 (Default)
+#       gamma = 0.050000 (Default)
+#       delta = 0.800000 (Default)
+#       kappa = 0.750000 (Default)
+#       t0 = 10.000000 (Default)
 #       init_buffer = 75 (Default)
 #       term_buffer = 50 (Default)
 #       window = 25 (Default)
+#       save_metric = 0 (Default)
 #     algorithm = hmc (Default)
 #       hmc
 #         engine = nuts (Default)
@@ -36,8 +36,8 @@ of default configuration options:
 #             max_depth = 10 (Default)
 #         metric = diag_e (Default)
 #         metric_file =  (Default)
-#         stepsize = 1 (Default)
-#         stepsize_jitter = 0 (Default)
+#         stepsize = 1.000000 (Default)
+#         stepsize_jitter = 0.000000 (Default)
 #     num_chains = 1 (Default)
 ```
 
@@ -113,8 +113,14 @@ There are two sets of adaptation sub-arguments: step size optimization parameter
 These are described in detail in the Reference Manual section
 [Automatic Parameter Tuning](https://mc-stan.org/docs/reference-manual/hmc-algorithm-parameters.html).
 
-### Step size optimization configuration
+The boolean sub-argument `save_metric` was added in Stan version 2.34.
+When `save_metric=1` (true), the adapted stepsize and metric are output as JSON
+at the end of adaptation.
+The saved metric file name is the output file basename with the suffix "_metric.json".
+This metric file can be reused in subsequent sampler runs as the initial metric
 
+### Step size optimization configuration
+ 
 The Stan User's Guide section on
 [model conditioning and curvature](https://mc-stan.org/docs/stan-users-guide/model-conditioning-and-curvature.html)
 provides a discussion of adaptation and stepsize issues.
@@ -440,9 +446,10 @@ lp__,accept_stat__,theta
 
 ### Specifying the metric and stepsize
 
-An initial guess for the metric can be specified with the `metric_file` argument
-whose value is the filepath to a JSON or Rdump file which contains a single variable `inv_metric`.
+An initial estimate for the metric can be specified with the `metric_file` argument
+whose value is the filepath to a JSON or Rdump file which contains a variable `inv_metric`.
 The `metric_file` option can be used with and without adaptation enabled.
+
 
 By default, the metric is estimated during warmup adaptation.
 If the initial guess is good, then adaptation should not change it much.
@@ -473,6 +480,11 @@ The resulting output CSV file will contain the following set of comment lines:
 # Diagonal elements of inverse mass matrix:
 # 0.296291
 ```
+
+As of Stan versione 2.34, the adapted metric can be saved in JSON format, via sub-argument `save_metric`, described above.
+This allows for no or minimal adaptation starting from this file.
+It is still necessary to specify the `stepsize` argument as well as the `metric_file` arguments;
+the former is the value of the `stepsize` element in the saved metric file, and the later is the metric file path.
 
 ### Changing the NUTS-HMC adaptation parameters
 

@@ -40,13 +40,13 @@ will no longer work, because Stan does not support undefined values.
 
 
 The following missing data example shows an example with $J=3$ and $K=4$,
-with missing responses shown as NA, as in R.  There is no support within
-Stan for R's NA values, so this data structure cannot be used
-directly.
-Instead, it must be converted to a "long form" as in a database,
-with columns indicating the indeces along with the value.
+with missing responses shown as NA, as in R.
 
-\begin{figure}[!h]
+```{r results='asis', echo=FALSE}
+cat(ifelse(knitr::is_html_output(),"", "\n\\begin{figure}[!h]"))
+```
+
+
 \begin{equation*}
 y
 =
@@ -60,7 +60,20 @@ y
 \end{array}
 \right]
 \end{equation*}
-\end{figure}
+
+```{r results='asis', echo=FALSE}
+cat(ifelse(knitr::is_html_output(),"", "\n\\end{figure}"))
+```
+
+There is no support within Stan for R's NA values, so this data structure cannot be used
+directly. Instead, it must be converted to a "long form" as in a database,
+with columns indicating the indices along with the value.
+With columns $jj$ and $kk$ used for the indexes
+(following @GelmanHill:2007), the 2-D array $y$ is recoded as a table.
+The number of rows in the table equals the number of defined
+array elements, here $y_{1,1} = 0$, $y_{1,2} = 1$, up to $y_{3,2} = 1$.
+As the array becomes larger and sparser, the long form becomes
+the more economical encoding.
 
 
 ```{r sparsedata, echo=FALSE}
@@ -74,17 +87,8 @@ jj   | kk   | y
 3    | 2    | 0
 ", sep="|", header=TRUE, check.names=FALSE)
 kable(df, booktabs=TRUE, escape=FALSE, linesep="") %>%
-  kable_styling(full_width=FALSE) %>% add_header_above()
+  kable_styling(full_width=FALSE)
 ```
-
-With columns $jj$ and $kk$ used for the indexes
-(following @GelmanHill:2007), the 2-D array $y$ (above)
-can be recoded as a table (below).
-The number of rows in the table equals the number of defined
-array elements, here $y_{1,1} = 0$, $y_{1,2} = 1$, up to $y_{3,2} = 1$.
-As the array becomes larger and sparser, the long form becomes
-the more economical encoding.
-
 
 Letting $N$ be the number of $y$ that are defined, here $N=6$,
 the data and model can be formulated as follows.

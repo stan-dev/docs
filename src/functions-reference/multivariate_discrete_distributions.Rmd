@@ -10,6 +10,7 @@ values, which are expressed in Stan as arrays.
 if (knitr::is_html_output()) {
     cat(' * <a href="multinomial-distribution.html">Multinomial Distribution</a>\n')
     cat(' * <a href="multinomial-distribution-logit-parameterization.html">Multinomial Distribution, Logit Parameterization</a>\n')
+    cat(' * <a href="dirichlet-multinomial-distribution.html">Dirichlet-Multinomial Distribution</a>\n')
 }
 ```
 
@@ -125,3 +126,59 @@ Generate a variate from a multinomial distribution with probabilities
 `softmax(gamma)` and total count `N`; may only be used in transformed data and
 generated quantities blocks.
 `r since("2.24")`
+
+## Dirichlet-multinomial distribution
+
+Stan also provides the Dirichlet-multinomial distribution, which generalizes
+the Beta-binomial distribution to more than two categories. As such,
+it is an overdispersed version of the multinomial distribution.
+
+### Probability mass function
+
+If $K \in \mathbb{N}$, $N \in \mathbb{N}$, and $\alpha \in
+\mathbb{R}_{+}^K$, then for $y \in \mathbb{N}^K$ such that
+$\sum_{k=1}^K y_k = N$, the PMF of the Dirichlet-multinomial 
+distribution is defined as 
+\[ 
+\text{DirMult}(y|\theta) =
+\frac{\Gamma(\alpha_0)\Gamma(N+1)}{\Gamma(N+\alpha_0)} \prod_{k=1}^K \frac{\Gamma(y_k + \alpha_k)}{\Gamma(\alpha_k)\Gamma(y_k+1)}, 
+\] 
+where $\alpha_0$ is defined as $\alpha_0 = \sum_{k=1}^K \alpha_k$. 
+
+### Sampling statement
+
+`y ~ ` **`dirichlet_multinomial`**`(alpha)`
+
+Increment target log probability density with `dirichlet_multinomial_lupmf(y | alpha)`.
+`r since("2.34")`
+<!-- real; dirichlet_multinomial ~; -->
+\index{{\tt \bfseries dirichlet\_multinomial }!sampling statement|hyperpage}
+
+### Stan functions
+
+<!-- real; dirichlet_multinomial_lpmf; (array[] int y | vector alpha); -->
+\index{{\tt \bfseries dirichlet\_multinomial\_lpmf }!{\tt (array[] int y \textbar\ vector alpha): real}|hyperpage}
+
+`real` **`dirichlet_multinomial_lpmf`**`(array[] int y | vector alpha)`<br>\newline
+The log multinomial probability mass function with outcome array `y`
+with $K$ elements given the positive $K$-vector distribution parameter `alpha` and
+(implicit) total count `N = sum(y)`.
+`r since("2.34")`
+
+<!-- real; dirichlet_multinomial_lupmf; (array[] int y | vector alpha); -->
+\index{{\tt \bfseries dirichlet\_multinomial\_lupmf }!{\tt (array[] int y \textbar\ vector alpha): real}|hyperpage}
+
+`real` **`dirichlet_multinomial_lupmf`**`(array[] int y | vector alpha)`<br>\newline
+The log multinomial probability mass function with outcome array `y`
+with $K$ elements, given the positive $K$-vector distribution parameter `alpha` and
+(implicit) total count `N = sum(y)` dropping constant additive terms.
+`r since("2.34")`
+
+<!-- array[] int; dirichlet_multinomial_rng; (vector alpha, int N); -->
+\index{{\tt \bfseries dirichlet\_multinomial\_rng }!{\tt (vector alpha, int N): array[] int}|hyperpage}
+
+`array[] int` **`dirichlet_multinomial_rng`**`(vector alpha, int N)`<br>\newline
+Generate a multinomial variate with positive vector distribution parameter
+`alpha` and total count `N`; may only be used in transformed data and
+generated quantities blocks. This is equivalent to `multinomial_rng(dirichlet_rng(alpha), N)`.
+`r since("2.34")`

@@ -5,7 +5,7 @@ a group of subjects that is
 
 * certain to occur after some amount of time, 
 * but only measured for a fixed period of time, during which the event
-* may not have occurred for all subjects.
+may not have occurred for all subjects. 
 
 For example, one might wish to estimate the the distribution of time
 to failure for solid state drives in a data center, but only measure
@@ -24,15 +24,113 @@ the amount of usage it gets.  A clinical trial might be adjusted for
 the sex and age of a cancer patient or the hospital at which treatment
 is received.
 
-## Parametric survival models
+Survival models come in two main flavors, parametric and
+semi-parametric.  In a parametric model, the survival time of a
+subject is modeled explicitly using a parametric probability
+distribution.  There is a great deal of flexibility in how the
+parametric probability distribution is constructed.  The sections
+below consider exponential and Weibull distributed survival times.
 
-The simplest kind of survival models to understand are parametric
-models in which the survival time is modeled explicitly.
+Rather than explicitly modeling a parametric survival probability,
+semi-parametric survival models instead model the relative effect on
+survival of covariates.  The final sections of this chapter consider
+the proportional hazards survival model.
 
-### Data format
 
-First, consider the data for a simple survival analysis without
-covariates.
+## Exponential survival model
+
+The exponential distribution is commonly used in survival models where
+there is a constant risk of failure that does not go up the longer a
+subject survives.  This is because the exponential distribution is
+memoryless in sense that if $T \sim \textrm{exponential}(\lambda)$ for
+some rate $\lambda > 0,$ then 
+\[
+\Pr[T > t] = \Pr[T > t + t' \mid T > t'].
+\]
+If component survival times are distributed exponentially, it means the
+distribution of time to failure is the same no matter how long the
+item has already survived.  This can be a reasonable assumption for
+electronic components, but is not a reasonable model for animal survival.
+
+The exponential survival model has a single parameter for the rate,
+which assumes all subjects have the same distribution of failure time
+(this assumption is relaxed in the next section by introducing
+per-subject covariates).  With the rate parameterization, the expected
+survival time for a component with survival time represented as the
+random variable $T$ is
+\[
+\mathbb{E}[T \mid \lambda] = \frac{1}{\lambda}.
+\]
+The exponential distribution is sometimes parameterized in terms of a
+scale (i.e., inverse rate) $\beta = 1 / \lambda$.
+
+The data for a survival model consists of two components.  First,
+there is a vector $t \in (0, \infty)^N$ of $N$ observed failure times.
+Second, there is a censoring time $t^{\textrm{cens}}$ such that
+failure times greater than $t^{\textrm{cens}}$ are not observed.  The
+censoring time assumption imposes a constraint which 
+requires $t_n < t^{\textrm{cens}}$ for all $n \in 1{:}N.$ For the
+censored subjects, the only thing required in the model is their total
+count, $N^\textrm{cens}$ (their covariates are also required for
+models with covariates).
+
+The model for the observed failure times is exponential, so that for
+$n \in 1{:}N,$
+\[
+t_n \sim \textrm{exponential}(\lambda).
+\]
+
+The model for the censored failure times is also exponential.  All
+that is known of a censored item is that its failure time is greater
+than the censoring time, so each censored item contributes a factor to
+the likelihood of 
+\[
+\Pr[T > t^{\textrm{cens}}] = 1 - F_T(t^{\textrm{cens}}),
+\]
+where $F_T$ is the cumulative distribution function (cdf) of survival
+time $T$.  The function $1 - F_T(t)$ is the complementary
+cumulative distribution function (ccdf), and it is used directly to
+define the likelihood
+\begin{eqnarray*}
+p(t, t^{\textrm{cens}}, N^{\textrm{cens}} \mid \lambda)
+& = & 
+\prod_{n=1}^N \textrm{exponential}(t_n \mid \lambda)
+\cdot
+\prod_{n=1}^{N^{\textrm{cens}}}
+\textrm{exponentialCCDF}(t^{\textrm{cens}} \mid \lambda)
+\\ 
+& = &
+\prod_{n=1}^N \textrm{exponential}(t_n \mid \lambda)
+\cdot
+\textrm{exponentialCCDF}(t^{\textrm{cens}} \mid \lambda)^{N^{\textrm{cens}}}
+\cdot 
+
+\end{eqnarray*}
+
+On the log scale, that's
+\[
+\log p(t, t^{\textrm{cens}}, N^{\textrm{cens}} \mid \lambda)
+=
+\sum_{n=1}^N \log \textrm{exponential}(t_n \mid \lambda)
++ N^{\textrm{cens}} \cdot \log \textrm{exponentialCCDF}(t^{\textrm{cens}} \mid \lambda).
+\]
+
+The model can be completed with a standard lognormal prior on
+$\lambda,$ 
+\[
+\lambda \sim \textrm{lognormal}(0, 1),
+\]
+which is reasonable if failure times are in the range of 0.1 to 10
+time units, because that's roughly the 95% central interval for
+a variable distributed $\textrm{lognormal}(0, 1)$.  In general, the
+range of the prior (and likelihood!) should be adjusted with prior knowledge of expected
+failure times.
+
+
+### Stan program
+
+The data for a simple survival analysis without covariates can be
+coded as follows.
 
 ```stan
 data {
@@ -50,20 +148,9 @@ Right censoring means that if the time to failure is greater than
 `t_cens`, it is only observed that the part survived until time 
 `t_cens`.
 
-### Memoryless survival models
 
-The exponential distribution is memoryless in the sense that if $T \sim
-\textrm{exponential}(\lambda)$ for some rate $\lambda > 0,$ then
-\[
-\Pr[T > t] = \Pr[T > t + t' \mid T > t'].
-\]
-If component survival times are distributed exponentially, it means the
-distribution of time to failure is the same no matter how long the
-item has already survived.  This can be a reasonable assumption for
-electronic components, but is not a reasonable model for animal survival.
-
-The exponential model has a single parameter for the rate, which
-assumes all subjects have the same distribution of failure time. 
+There is a single rate parameter, the inverse of which is the expected
+time to failure.
 
 ```stan
 parameters {
@@ -71,14 +158,8 @@ parameters {
 }
 ```
 
-With the rate parameterization, the expected survival time is
-\[
-\mathbb{E}[T \mid \lambda] = \frac{1}{\lambda}.
-\]
-The exponential distribution is sometimes parameterized in terms of a
-scale (i.e., inverse rate) $\beta = 1 / \lambda$.
-
-The Stan model for exponential survival is as follows.
+The exponential survival model and the prior are coded directly using
+vectorized sampling and ccdf statements.
 
 ```stan
 model {
@@ -116,25 +197,110 @@ to define the same log density, but it is much more efficient
 computationally to multiply by a constant than do a handful of
 sequential additions.
 
-Recall that `exponential\_lccdf(t_cens | lambda)` is
-the log probability that a failure distributed as
-$T \sim \textrm{exponential}(\lambda)$ occurs after `t_cens`, because the
-ccdf is defined as $1 - F_T(t)$, so the log ccdf is
-\[
-\log(1 - F_T(t)) = \log \Pr[T > t].
-\]
 
-The standard lognormal prior used in the Stan model is appropriate if
-mean failure times are expected to be in the range of 0.1 to 10 time
-units, because that is roughly the central 95% interval of
-$\textrm{lognormal}(0, 1)$.  In general, priors should be chosen based
-on knowledge of the problem, which is requires knowledge of mean failure
-time.
+## Weibull survival model
+
+The Weibull distribution is a popular alternative to the exponential
+distribution in cases where there is a decreasing probability of
+survival as a subject gets older.  The Weibull distribution models
+this by generalizing the exponential distribution to include a
+power-law trend.
+
+The Weibull distribution is parameterized by a scale $\lambda > 0$ and
+a shape $\kappa > 0.$  For an outcome $t \geq 0$, the Weibull distribution's
+probability density function is
+\[
+\textrm{Weibull}(t \mid \lambda, \kappa)
+= \frac{\kappa}{\lambda}
+  \cdot \left( \frac{t}{\lambda} \right)^{\kappa - 1}
+  \cdot \exp\left(-\left(\frac{t}{\lambda}\right)^{\kappa}\right).
+\]
+In contrast, recall that the exponential distribution can be expressed
+using a rate (inverse scale) parameter $\beta > 0$ with probability
+density function 
+\[
+\textrm{exponential}(t \mid \beta) =
+\beta
+\cdot
+\exp(-\beta \cdot t).
+\]
+When $\kappa = 1$ and  $\beta = \frac{1}{\lambda},$ the Weibull
+reduces to an exponential,
+\[
+\textrm{exponential}(t \mid \beta)
+=
+\textrm{Weibull}(t \mid \frac{1}{\beta}, 1).
+\]
+In other words, the Weibull is a continuous expansion of the
+exponential distribution.
+
+If $T \sim \textrm{Weibull}(\lambda, \kappa),$ then the expected value
+is
+\[
+\mathbb{E}[T] = \lambda \cdot \Gamma\left(1 + \frac{1}{\kappa}\right),
+\]
+where the $\Gamma$ function is the continuous completion of the
+factorial function.  As $\kappa \rightarrow 0$ for a fixed $\lambda$
+or as $\lambda \rightarrow \infty$ for a fixed $\kappa$, the expected
+survival time goes to infinity.
+
+There are three regimes of the Weibull distribution.
+
+* $\kappa = 1.$  The Weibull distribution reduces to the exponential
+  distribution, with a constant rate of failure over time.  
+
+* $\kappa < 1.$  A subject is more likely to fail early.  When $\kappa
+  < 1,$ the Weibull density approaches infinity as $t \rightarrow 0$
+  so the mode of the density is zero.
+
+* $\kappa > 1.$  Subjects are unlikely to fail early.  When $\kappa < 1,$
+  the Weibull density approaches zero as $t \rightarrow 0,$ so the
+  mode of the density is bounded away from zero.
+
+### Stan program
+
+With Stan, one can just swap the exponential density for the Weibull
+density with the appropriate parameters and the model remains
+essentially the same.  Recall the exponential model's parameters and
+model block.
+
+```stan
+parameters {
+  real<lower=0> lambda;
+}
+model {
+  t ~ exponential(lambda);
+  target += N_cens * exponential_lccdf(t_cens | lambda);
+
+  lambda ~ lognormal(0, 1);
+}
+```
+
+The Weibull model just uses the Weibull parameters.
+
+```stan
+parameters {
+  real<lower=0> alpha;
+  real<lower=0> kappa;
+}
+model {
+  t ~ weibull(lambda, kappa);
+  target += N_cens * weibull_lccdf(t_cens | alpha, kappa);
+
+  alpha ~ lognormal(0, 1);
+  kappa ~ lognormal(0, 1);
+}
+```
+
+As usual, if more is known about expected survival times, `alpha` and
+`kappa` should be given more informative priors.
+
+
 
 ## Survival with covariates
 
 Suppose that for each of $n \in 1{:}N$ items observed, both censored
-and uncensored, there is a covariate (row) vector $X_n \in
+and uncensored, there is a covariate (row) vector $x_n \in
 \mathbb{R}^K.$ For example, a clinical trial may include the age (or a
 one-hot encoding of an age group) and the sex of a participant; an
 electronic component might include a one-hot encoding of the factory
@@ -145,9 +311,9 @@ Survival with covariates replaces what is essentially a simple
 regression with only an intercept $\lambda$ with a generalized linear
 model with a log link, where the rate for item $n$ is
 \[
-\lambda_n = \exp(X_n \cdot \beta),
+\lambda_n = \exp(x_n \cdot \beta),
 \]
-where $\beta \in \mathtbb{R}^K$ is a $K$-vector of regression
+where $\beta \in \mathbb{R}^K$ is a $K$-vector of regression
 coefficients.  Thus
 \[
 t_n \sim \textrm{exponential}(\lambda_n).
@@ -159,9 +325,9 @@ The censored items have probability
 \cdot \beta).
 \]
 
-The the covariates form an $N \times K$ data matrix, $X \in
-\mathbb{R}^{N \times K}$. An intercept can be added as a column of
-$X$. 
+The the covariates form an $N \times K$ data matrix, $x \in
+\mathbb{R}^{N \times K}$. An intercept can be introduced by adding a
+column of 1 values to $x$.
 
 A Stan program for the exponential survival model with covariates is
 as follows. 
@@ -231,55 +397,81 @@ The hazard function and survival function are related through the
 differential equation
 \begin{eqnarray*}
 h(t) & = & -\frac{\textrm{d}}{\textrm{d}t} \log S(t).
-\\
-& = & -\frac{1}{S(t)} \textrm{d}{\textrm{d}t} S(t)
-\\
-& = & \frac{1}{S(t)} \textrm{d}{\textrm{d}t} -(1 - F_Y(t))
-\\
-& = & \frac{1}{S(t)} \textrm{d}{\textrm{d}t} (F_Y(t) - 1)
-\\
-& = & \frac{1}{S(t)} \textrm{d}{\textrm{d}t} F_Y(t)
-\\
+\\[4pt]
+& = & -\frac{1}{S(t)} \frac{\textrm{d}}{\textrm{d}t} S(t)
+\\[4pt]
+& = & \frac{1}{S(t)} \frac{\textrm{d}}{\textrm{d}t} -(1 - F_Y(t))
+\\[4pt]
+& = & \frac{1}{S(t)} \frac{\textrm{d}}{\textrm{d}t} (F_Y(t) - 1)
+\\[4pt]
+& = & \frac{1}{S(t)} \frac{\textrm{d}}{\textrm{d}t} F_Y(t)
+\\[4pt]
 & = & \frac{p_T(t)}{S(t)}.
 \end{eqnarray*}
 
 If $T \sim \textrm{exponential}(\lambda)$ has an exponential
 distribution, then its hazard function is constant,
 \begin{eqnarray*}
-h(t)
-& = & \frac{p_T(t)}{S(t)}
-\\
-& = & \frac{\lambda \cdot \exp(-\lambda \cdot t)}
-           {1 - F_T(t)}
-\\
+h(t \mid \lambda)
+& = & \frac{p_T(t \mid \lambda)}{S(t \mid \lambda)}
+\\[4pt]
+& = & \frac{\textrm{exponential}(t \mid \lambda)}{1 - \textrm{exponentialCCDF}(t \mid \lambda)}
+\\[4pt]
 & = & \frac{\lambda \cdot \exp(-\lambda \cdot t)}
            {1 - (1 - \exp(-\lambda \cdot t))}
-\\
+\\[4pt]
 & = & \frac{\lambda \cdot \exp(-\lambda \cdot t)}
            {\exp(-\lambda \cdot t)}
-\\
+\\[4pt]
 & = & \lambda.
-\]
+\end{eqnarray*}
 The exponential distribution is the only distribution of survival
 times with a constant hazard function.
 
+If $T \sim \textrm{Weibull}(\alpha, \kappa),$ then its hazard function
+is
+\begin{eqnarray*}
+h(t \mid \alpha, \kappa)
+& = & \frac{p_T(t \mid \alpha, \kappa)}{S(t \mid \alpha, \kappa)}
+\\[4pt]
+& = & \frac{\textrm{Weibull}(t \mid \alpha, \kappa)}{1 - \textrm{WeibullCCDF}(t \mid \alpha, \kappa)}
+\\[4pt]
+& = & 
+\frac{\frac{\kappa}{\alpha} \cdot \left( \frac{t}{\alpha} \right)^{\kappa - 1}
+      \cdot \exp\left(-\left(\frac{t}{\alpha} \right)^\kappa\right)}
+     {1 - \left(1 - 
+       \exp\left(-\left(\frac{t}{\alpha}\right)^\kappa
+     \right)\right)}      
+& = &
+\\[4pt]
+& = & \frac{\kappa}{\alpha}
+  \cdot
+  \left( \frac{t}{\alpha} \right)^{\kappa - 1}
+\\[4pt]
+& = & \kappa \cdot \alpha^{-\kappa} \cdot t^{\kappa - 1}.
+\end{eqnarray*}
 
-## Semi-parametric, proportional hazards model
+If $\kappa = 1$ the hazard is constant over time (which also follows
+from the fact that the Weibull distribution reduces to the exponential
+distribution when $\kappa = 1$). When $\kappa > 1,$ the hazard grows as
+time increases, and when $\kappa < 1,$ it decreases over time.
 
-The exponential model is parametric in the sense that it explicitly
-specifies a parametric form for the density for the distribution of
-survival times.  @cox:1972 introduced a semi-parametric survival model
-specified directly in terms of a hazard function $h(t)$ rather than in
-terms of a distribution over survival times.  Cox's model is
-semi-parametric in that it does not model the full hazard function,
-instead modeling only the proportional differences in hazards among
-subjects.
+
+## Proportional hazards model
+
+The exponential model is parametric in that is specifies an explicit
+parametric form for the distribution of survival times.  @cox:1972
+introduced a semi-parametric survival model specified directly in
+terms of a hazard function $h(t)$ rather than in terms of a
+distribution over survival times.  Cox's model is semi-parametric in
+that it does not model the full hazard function, instead modeling only
+the proportional differences in hazards among subjects.
 
 Let $x_n \in \mathbb{R}^K$ be a (row) vector of covariates for subject
-$n$ so that the full covariate data matrix $x \in \mathbb{R}^{N \times K}.  In Cox's
-model, the hazard function for subject $n$ is defined conditionally in
-terms of their covariates $x_n$ and the coefficients $\gamma
-\in \mathbb{R}^K$ as
+$n$ so that the full covariate data matrix is $x \in \mathbb{R}^{N \times
+K}$.  In Cox's model, the hazard function for subject $n$ is defined
+conditionally in terms of their covariates $x_n$ and the parameter vector
+$\gamma \in \mathbb{R}^K$ as
 \[
 h(t \mid x_n, \beta) = h_0(t) \cdot \exp(x_n \cdot \gamma),
 \]
@@ -316,15 +508,15 @@ Normalizing yields
 \Pr[n \textrm{ first to fail at time } t]
 & = &  \frac{h(t \mid x_n, \beta)}
             {\sum_{n' = 1}^N h(t \mid x_{n'}, \beta)}
-\\
+\\[4pt]
 & = &  \frac{h_0(t) \cdot \exp(x_n \cdot \beta)}
             {\sum_{n' = 1}^N h_0(t) \cdot \exp(x_{n'} \cdot \beta)}
-\\
+\\[4pt]
 & = &  \frac{\exp(x_n \cdot \beta)}
             {\sum_{n' = 1}^N \exp(x_{n'} \cdot \beta)}.
 \end{eqnarray*}
 
-Suppose there are $N$ subjects with *ordered* survival times $t_1 <
+Suppose there are $N$ subjects with strictly *ordered* survival times $t_1 <
 t_2 < \cdots < t_N$ and covariate (row) vectors $x_1, \ldots, x_N$.
 Let $t^{\textrm{cens}}$ be the (right) censoring time and let
 $N^{\textrm{obs}}$ be the largest value of $n$ such that $t_n \leq
@@ -334,19 +526,20 @@ convenient indexing and does not cause any loss of
 generality---survival times can simply be sorted into the necessary
 order.
 
-The partial likelihood for each observed subject $n \in
-1{:}N^{\textrm{obs}}$ is given by
+With failure times sorted in decreasing order, the partial likelihood
+for each observed subject $n \in 1{:}N^{\textrm{obs}}$ can be
+expressed as
 \[
 \Pr[n \textrm{ first to fail among } n, n + 1, \ldots N]
 = \frac{\exp(x_n \cdot \beta)}
-       {\sum_{n' = n}^N \exp(x_n \cdot \beta)}.
+       {\sum_{n' = n}^N \exp(x_{n'} \cdot \beta)}.
 \]
 The group of items for comparison and hence the summation is over all
 items, including those with observed and censored failure times.
 
-The partial likelihood is just the product of the partial likelihoods
-for the observed subjects (i.e., excluding subjects whose failure time
-is censored).
+The partial likelihood, defined in this form by @breslow:1975, is just
+the product of the partial likelihoods for the observed subjects
+(i.e., excluding subjects whose failure time is censored).
 \[
 \Pr[\textrm{observed failures ordered } 1, \ldots, N^{\textrm{obs}} |
 x, \beta]
@@ -367,8 +560,18 @@ x, \beta]
 \\[4pt]
 & = & x_n \cdot \beta - \log \sum_{n' = n}^N \exp(x_{n'} \cdot \beta)
 \\
-& = & x_n \cdot \beta - \textrm{logSumExp}_{n' = n}^N x_{n'} \cdot \beta.
+& = & x_n \cdot \beta - \textrm{logSumExp}_{n' = n}^N \ x_{n'} \cdot \beta,
 \end{eqnarray*}
+where
+\[
+\textrm{logSumExp}{n = a}^b x_n
+= \log \sum_{n = a}^b \exp(x_n)
+\]
+is implemented so as to preserve numerical precision.
+
+This likelihood follows the same approach to ranking as that developed
+by @plackett:1975 for estimating the probability of the order of the
+first few finishers in a horse race. 
 
 A simple normal prior on the components of $\beta$ completes the
 model,
@@ -409,7 +612,7 @@ parameters {
 ```
 
 The prior is a simple independent centered normal distribution on each
-coefficient (the sampling statement is vectorized).
+element of the parameter vector, which is vectorized in the Stan code.
 
 ```stan
 model {
@@ -474,13 +677,13 @@ survival times being identical will be zero.  Nevertheless, real data
 sets often round survival times, for instance to the nearest day or
 week in a multi-year clinical trial.  The technically "correct" thing
 to do in the face of unknown survival times in a range would be to
-treat their order as unknown and infer it.  But considering all
-$N!$ permutations for a set of $N$ subjects with tied survival times
-is not tractable.  As an alternative, @efron:1972 introduced an
-approximate partial likelihood that is better than a random
-permutation while not being as good as considering all permutations.
-The idea is to average the contributions as if they truly did occur
-simultaneously.
+treat their order as unknown and infer it.  But considering all $N!$
+permutations for a set of $N$ subjects with tied survival times is not
+tractable.  As an alternative, @efron:1977 introduced an approximate
+partial likelihood with better properties than a random permutation
+while not being quite as good as considering all permutations.
+Efron's model averages the contributions as if they truly did occur
+simultaneously.  
 
 In the interest of completeness, here is the Stan code for an
 implementation of Efron's estimator.  It uses two user-defined
@@ -502,7 +705,7 @@ functions {
 This is then used to compute the value `J` to send into the function
 that computes the position in the array of failure times where each
 new failure time starts, plus an end point that goes one past the
-target.  
+target.  This is a standard way in Stan to code ragged arrays.
 
 ```stan
   array[] int unique_starts(vector t, int J) {
@@ -523,8 +726,9 @@ target.
 ```
 
 The data format is exactly the same as for the model in the previous
-section, but in this case, a transformed data blocks is used to
-cache some precomputations required for the model.
+section, but in this case, the transformed data block is used to
+cache some precomputations required for the model, namely the ragged
+array grouping elements that share the same survival time.
 
 ```
 transformed data {
@@ -533,12 +737,17 @@ transformed data {
 }
 ```
 
+For each unique survival time `j` in `1:J`, the subjects
+indexed from `starts[j]` to `starts[j + 1] - 1` (inclusive) share the
+same survival time.  The number of elements with surival time `j` is thus
+`(starts[j + 1] - 1) - starts[j] + 1`, or just `starts[j + 1] - starts[j]`.
+
 The parameters and prior are also the same---just a vector `beta` of
 coefficients with a centered normal prior.  Although it starts with
 the same caching of results for later, and uses the same accumulator
 for the denominator, the overall partial likelihood is
 much more involved, and depends on the user-defined functions defining
-`J` and `starts`.
+the transformed data variables `J` and `starts`.
 
 ```stan
   vector[N] log_theta = x * beta;
@@ -562,7 +771,14 @@ much more involved, and depends on the user-defined functions defining
 ```
 
 The special function `log_diff_exp` is defined as
-$\textrm{log\_diff\_exp}(u, v) = \log(\exp(u) - \exp(v)).$
+
+\[
+\textrm{logDiffExp}(u, v) = \log(\exp(u) - \exp(v)).
+\]
+
+Because of how `J` and `starts` are constructed, the length `len` will
+always be strictly positive so that the log is well defined.
+
 
 
 

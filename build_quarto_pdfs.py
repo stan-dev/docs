@@ -40,16 +40,14 @@ def make_docs(docspath, version, document):
     path = os.getcwd()
     srcpath = os.path.join(path, "src", document)
     with pushd(srcpath):
-        print('render {} as pdf'.format(document))
-        shutil.move('index-pdf.qmd', 'index.qmd')
         pdfname = ''.join([document,'-',version,".pdf"])
+        print('render {} as {}'.format(document, pdfname))
         command = ' '.join(['quarto render',
                                 '--output-dir _pdf',
                                 '--output', pdfname]) 
         shexec(command)
         outpath = os.path.join(srcpath, '_pdf', pdfname)
         shutil.move(outpath, docspath)
-        shutil.move('index.qmd', 'index-pdf.qmd')
         safe_rm(".gitignore")  # quarto cleanup
         shutil.rmtree("_pdf", ignore_errors=True)  # quarto cleanup
         shutil.rmtree(".quarto", ignore_errors=True)  # quarto cleanup

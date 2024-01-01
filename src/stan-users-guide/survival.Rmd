@@ -183,7 +183,7 @@ for (n in 1:N) {
 ```
 
 The log likelihood for censored items is the number of censored items
-times the log complementary cumulative distribution function at the
+times the log complementary cumulative distribution function (lccdf) at the
 censoring time of the exponential distribution with rate
 `lambda`.  The log likelihoods for the censored events could have
 been added to the target log density one at a time,
@@ -206,14 +206,14 @@ survival as a subject gets older.  The Weibull distribution models
 this by generalizing the exponential distribution to include a
 power-law trend.
 
-The Weibull distribution is parameterized by a scale $\lambda > 0$ and
-a shape $\kappa > 0.$  For an outcome $t \geq 0$, the Weibull distribution's
-probability density function is
+The Weibull distribution is parameterized by a shape $\alpha > 0$ and
+scale $\sigma > 0.$ For an outcome $t \geq 0$, the Weibull
+distribution's probability density function is
 \[
-\textrm{Weibull}(t \mid \lambda, \kappa)
-= \frac{\kappa}{\lambda}
-  \cdot \left( \frac{t}{\lambda} \right)^{\kappa - 1}
-  \cdot \exp\left(-\left(\frac{t}{\lambda}\right)^{\kappa}\right).
+\textrm{Weibull}(t \mid \alpha, \sigma)
+= \frac{\alpha}{\sigma}
+  \cdot \left( \frac{t}{\sigma} \right)^{\alpha - 1}
+  \cdot \exp\left(-\left(\frac{t}{\sigma}\right)^{\alpha}\right).
 \]
 In contrast, recall that the exponential distribution can be expressed
 using a rate (inverse scale) parameter $\beta > 0$ with probability
@@ -224,38 +224,42 @@ density function
 \cdot
 \exp(-\beta \cdot t).
 \]
-When $\kappa = 1$ and  $\beta = \frac{1}{\lambda},$ the Weibull
-reduces to an exponential,
+When $\alpha = 1,$ the Weibull distribution reduces to an exponential
+distribution, 
 \[
-\textrm{exponential}(t \mid \beta)
+\textrm{Weibull}(t \mid 1, \sigma)
 =
-\textrm{Weibull}(t \mid \frac{1}{\beta}, 1).
+\textrm{exponential}\!\left(t \,\bigg|\, \frac{1}{\sigma}\right).
 \]
 In other words, the Weibull is a continuous expansion of the
 exponential distribution.
 
-If $T \sim \textrm{Weibull}(\lambda, \kappa),$ then the expected value
-is
+If $T \sim \textrm{Weibull}(\alpha, \sigma),$ then the expected
+survival time is
 \[
-\mathbb{E}[T] = \lambda \cdot \Gamma\left(1 + \frac{1}{\kappa}\right),
+\mathbb{E}[T] = \sigma \cdot \Gamma\!\left(1 + \frac{1}{\alpha}\right),
 \]
 where the $\Gamma$ function is the continuous completion of the
-factorial function.  As $\kappa \rightarrow 0$ for a fixed $\lambda$
-or as $\lambda \rightarrow \infty$ for a fixed $\kappa$, the expected
+factorial function (i.e., $\Gamma(1 + n) = n!$ for $n \in
+\mathbb{N}$).  As $\alpha \rightarrow 0$ for a fixed $\sigma$ 
+or as $\sigma \rightarrow \infty$ for a fixed $\alpha$, the expected
 survival time goes to infinity.
 
 There are three regimes of the Weibull distribution.
 
-* $\kappa = 1.$  The Weibull distribution reduces to the exponential
-  distribution, with a constant rate of failure over time.  
+* $\alpha < 1.$  A subject is more likely to fail early.  When $\alpha
+  < 1,$ the Weibull density approaches infinity as $t \rightarrow 0.$
 
-* $\kappa < 1.$  A subject is more likely to fail early.  When $\kappa
-  < 1,$ the Weibull density approaches infinity as $t \rightarrow 0$
-  so the mode of the density is zero.
+* $\alpha = 1.$  The Weibull distribution reduces to the exponential
+  distribution, with a constant rate of failure over time. When
+  $\alpha = 1,$ the Weibull distribution approaches $\sigma$ as $t
+  \rightarrow 0.$ 
 
-* $\kappa > 1.$  Subjects are unlikely to fail early.  When $\kappa < 1,$
-  the Weibull density approaches zero as $t \rightarrow 0,$ so the
-  mode of the density is bounded away from zero.
+* $\alpha > 1.$  Subjects are less likely to fail early.  When $\alpha < 1,$
+  the Weibull density approaches zero as $t \rightarrow 0.$ 
+
+With $\alpha \leq 1,$ the mode is zero ($t = 0$), whereas with $\alpha > 1,$
+the mode is nonzero ($t > 0$).
 
 ### Stan program
 
@@ -266,34 +270,35 @@ model block.
 
 ```stan
 parameters {
-  real<lower=0> lambda;
+  real<lower=0> beta;
 }
 model {
-  t ~ exponential(lambda);
-  target += N_cens * exponential_lccdf(t_cens | lambda);
+  t ~ exponential(beta);
+  target += N_cens * exponential_lccdf(t_cens | beta);
 
-  lambda ~ lognormal(0, 1);
+  beta ~ lognormal(0, 1);
 }
 ```
 
-The Weibull model just uses the Weibull parameters.
+The Stan program for the Weibull model just swaps in the Weibull
+distribution with its shape (`alpha`) and scale (`sigma`) parameters.
 
 ```stan
 parameters {
   real<lower=0> alpha;
-  real<lower=0> kappa;
+  real<lower=0> sigma;
 }
 model {
-  t ~ weibull(lambda, kappa);
-  target += N_cens * weibull_lccdf(t_cens | alpha, kappa);
+  t ~ weibull(alpha, sigma);
+  target += N_cens * weibull_lccdf(t_cens | alpha, sigma);
 
   alpha ~ lognormal(0, 1);
-  kappa ~ lognormal(0, 1);
+  sigma ~ lognormal(0, 1);
 }
 ```
 
 As usual, if more is known about expected survival times, `alpha` and
-`kappa` should be given more informative priors.
+`sigma` should be given more informative priors.
 
 
 
@@ -321,7 +326,7 @@ t_n \sim \textrm{exponential}(\lambda_n).
 The censored items have probability
 \[
 \Pr[n\textrm{-th censored}] =
-\textrm{exponential\_ccdf}(t^{\textrm{cens}} \mid x^{\textrm{cens}}_n
+\textrm{exponentialCCDF}(t^{\textrm{cens}} \mid x^{\textrm{cens}}_n
 \cdot \beta).
 \]
 
@@ -409,52 +414,50 @@ h(t) & = & -\frac{\textrm{d}}{\textrm{d}t} \log S(t).
 & = & \frac{p_T(t)}{S(t)}.
 \end{eqnarray*}
 
-If $T \sim \textrm{exponential}(\lambda)$ has an exponential
+If $T \sim \textrm{exponential}(\beta)$ has an exponential
 distribution, then its hazard function is constant,
 \begin{eqnarray*}
-h(t \mid \lambda)
-& = & \frac{p_T(t \mid \lambda)}{S(t \mid \lambda)}
+h(t \mid \beta)
+& = & \frac{p_T(t \mid \beta)}{S(t \mid \beta)}
 \\[4pt]
-& = & \frac{\textrm{exponential}(t \mid \lambda)}{1 - \textrm{exponentialCCDF}(t \mid \lambda)}
+& = & \frac{\textrm{exponential}(t \mid \beta)}{1 - \textrm{exponentialCCDF}(t \mid \beta)}
 \\[4pt]
-& = & \frac{\lambda \cdot \exp(-\lambda \cdot t)}
-           {1 - (1 - \exp(-\lambda \cdot t))}
+& = & \frac{\beta \cdot \exp(-\beta \cdot t)}
+           {1 - (1 - \exp(-\beta \cdot t))}
 \\[4pt]
-& = & \frac{\lambda \cdot \exp(-\lambda \cdot t)}
-           {\exp(-\lambda \cdot t)}
+& = & \frac{\beta \cdot \exp(-\beta \cdot t)}
+           {\exp(-\beta \cdot t)}
 \\[4pt]
-& = & \lambda.
+& = & \beta.
 \end{eqnarray*}
 The exponential distribution is the only distribution of survival
 times with a constant hazard function.
 
-If $T \sim \textrm{Weibull}(\alpha, \kappa),$ then its hazard function
+If $T \sim \textrm{Weibull}(\alpha, \sigma),$ then its hazard function
 is
 \begin{eqnarray*}
-h(t \mid \alpha, \kappa)
-& = & \frac{p_T(t \mid \alpha, \kappa)}{S(t \mid \alpha, \kappa)}
+h(t \mid \alpha, \sigma)
+& = & \frac{p_T(t \mid \alpha, \sigma)}{S(t \mid \alpha, \sigma)}
 \\[4pt]
-& = & \frac{\textrm{Weibull}(t \mid \alpha, \kappa)}{1 - \textrm{WeibullCCDF}(t \mid \alpha, \kappa)}
+& = & \frac{\textrm{Weibull}(t \mid \alpha, \sigma}{1 - \textrm{WeibullCCDF}(t \mid \alpha, \sigma)}
 \\[4pt]
 & = & 
-\frac{\frac{\kappa}{\alpha} \cdot \left( \frac{t}{\alpha} \right)^{\kappa - 1}
-      \cdot \exp\left(-\left(\frac{t}{\alpha} \right)^\kappa\right)}
+\frac{\frac{\alpha}{\sigma} \cdot \left( \frac{t}{\sigma} \right)^{\alpha - 1}
+      \cdot \exp\left(-\left(\frac{t}{\sigma} \right)^\alpha\right)}
      {1 - \left(1 - 
-       \exp\left(-\left(\frac{t}{\alpha}\right)^\kappa
+       \exp\left(-\left(\frac{t}{\sigma}\right)^\alpha
      \right)\right)}      
 & = &
 \\[4pt]
-& = & \frac{\kappa}{\alpha}
+& = & \frac{\alpha}{\sigma}
   \cdot
-  \left( \frac{t}{\alpha} \right)^{\kappa - 1}
-\\[4pt]
-& = & \kappa \cdot \alpha^{-\kappa} \cdot t^{\kappa - 1}.
+  \left( \frac{t}{\sigma} \right)^{\alpha - 1}.
 \end{eqnarray*}
 
-If $\kappa = 1$ the hazard is constant over time (which also follows
+If $\alpha = 1$ the hazard is constant over time (which also follows
 from the fact that the Weibull distribution reduces to the exponential
-distribution when $\kappa = 1$). When $\kappa > 1,$ the hazard grows as
-time increases, and when $\kappa < 1,$ it decreases over time.
+distribution when $\alpha = 1$). When $\alpha > 1,$ the hazard grows as
+time passes, whereas when $\alpha < 1,$ it decreases as time passes.
 
 
 ## Proportional hazards model

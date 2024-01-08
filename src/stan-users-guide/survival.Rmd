@@ -105,18 +105,17 @@ p(t, t^{\textrm{cens}}, N^{\textrm{cens}} \mid \lambda)
 & = &
 \prod_{n=1}^N \textrm{exponential}(t_n \mid \lambda)
 \cdot
-\textrm{exponentialCCDF}(t^{\textrm{cens}} \mid \lambda)^{N^{\textrm{cens}}}
-\cdot 
-
+\textrm{exponentialCCDF}(t^{\textrm{cens}} \mid \lambda)^{N^{\textrm{cens}}}.
 \end{eqnarray*}
 
 On the log scale, that's
-\begin{equation*}
+\begin{eqnarray*}
 \log p(t, t^{\textrm{cens}}, N^{\textrm{cens}} \mid \lambda)
-=
+& = &
 \sum_{n=1}^N \log \textrm{exponential}(t_n \mid \lambda)
-+ N^{\textrm{cens}} \cdot \log \textrm{exponentialCCDF}(t^{\textrm{cens}} \mid \lambda).
-\end{equation*}
+\\
+& & { } + N^{\textrm{cens}} \cdot \log \textrm{exponentialCCDF}(t^{\textrm{cens}} \mid \lambda).
+\end{eqnarray*}
 
 The model can be completed with a standard lognormal prior on
 $\lambda,$ 
@@ -454,7 +453,6 @@ h(t \mid \alpha, \sigma)
      {1 - \left(1 - 
        \exp\left(-\left(\frac{t}{\sigma}\right)^\alpha
      \right)\right)}      
-& = &
 \\[4pt]
 & = & \frac{\alpha}{\sigma}
   \cdot
@@ -496,11 +494,11 @@ determines how individual $n$ varies by a proportion from the baseline
 hazard, is modeled.  This is why it's called "proportional hazards."
 
 The proportional hazards model is not fully generative.  There is no
-way to generate the times of failure because they for the times of
-failure because the baseline hazard function $h_0(t)$ is unmodeled; if
-the baseline hazard were known, failure times could be generated.  The
-proportional hazards model is generative for the ordering of failures
-conditional on a number of censored items.
+way to generate the times of failure because the baseline hazard
+function $h_0(t)$ is unmodeled; if the baseline hazard were known,
+failure times could be generated.  The proportional hazards model is
+generative for the ordering of failures conditional on a number of
+censored items.
 
 
 ### Partial likelihood function {-}
@@ -566,7 +564,7 @@ x, \beta]
 \end{equation*}
 On the log scale,
 \begin{eqnarray*}
-\log \Pr[\textrm{observed failures ordered } 1, \ldots, N^{\textrm{obs}} |
+\log \Pr[\textrm{obs.\ fail ordered } 1, \ldots, N^{\textrm{obs}} |
 x, \beta]
 & = &
 \sum_{n = 1}^{N^{\textrm{obs}}}
@@ -581,7 +579,7 @@ x, \beta]
 \end{eqnarray*}
 where
 \begin{equation*}
-\textrm{logSumExp}{n = a}^b x_n
+\textrm{logSumExp}_{n = a}^b \ x_n
 = \log \sum_{n = a}^b \exp(x_n)
 \end{equation*}
 is implemented so as to preserve numerical precision.
@@ -776,12 +774,13 @@ the transformed data variables `J` and `starts`.
     int len = end - start + 1;
     real log_len = log(len);
     real numerator = sum(log_theta[start:end]);
-    log_denom_lhs = log_sum_exp(log_denom_lhs, log_sum_exp(log_theta[start:end]));
+    log_denom_lhs = log_sum_exp(log_denom_lhs,
+                                log_sum_exp(log_theta[start:end]));
     vector[len] diff;
     for (ell in 1:len) {
       diff[ell] = log_diff_exp(log_denom_lhs,
                                log(ell - 1) - log_len
-                                 + log_sum_exp(log_theta[start:end]));
+                               + log_sum_exp(log_theta[start:end]));
     }
     target += numerator - sum(diff);
   }

@@ -111,7 +111,7 @@ with the Leibniz integral rule).
 
 ## Integrator convergence
 
-The integral is performed with the iterative 1D quadrature methods implemented
+The integral is performed with the iterative 1D double exponential quadrature methods implemented
 in the Boost library [@BoostQuadrature:2017]. If the $n$th estimate of the
 integral is denoted $I_n$ and the $n$th estimate of the norm of the integral is
 denoted $|I|_n$, the iteration is terminated when
@@ -124,7 +124,14 @@ The `relative_tolerance` parameter can be optionally specified as the
 last argument to `integrate_1d`. By default, `integrate_1d` follows the
 Boost library recommendation of setting `relative_tolerance` to the square
 root of the machine epsilon of double precision floating point numbers
-(about `1e-8`).
+(about `1e-8`). If the Boost integrator is not able to reach the relative tolerance
+an exception is raised with a message somehing like "Exception: integrate: error
+estimate of integral 4.25366e-13 exceeds the given relative tolerance times norm of integral".
+If `integrate_1d` causes an exception in transformed parameters block or model block, the
+result has the same effect as assigning a $-\infty$ log probability, which causes rejection 
+of the current proposal in MCMC samplers and adjustment of search parameters in optimization.
+If `integrate_1d` causes an exception in generated quantities block, the returned output from
+`integrate_1d` is NaN. In these cases, a bigger `relative_tolerance` value can be specified.
 
 ### Zero-crossing integrals {#zero-crossing}
 

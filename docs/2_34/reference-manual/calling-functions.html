@@ -261,6 +261,7 @@ div.csl-indent {
 <li class="chapter" data-level="5.7.1" data-path="tuple-data-type.html"><a href="tuple-data-type.html#declaring-tuple-variables"><i class="fa fa-check"></i><b>5.7.1</b> Declaring tuple variables</a></li>
 <li class="chapter" data-level="5.7.2" data-path="tuple-data-type.html"><a href="tuple-data-type.html#accessing-tuple-elements"><i class="fa fa-check"></i><b>5.7.2</b> Accessing tuple elements</a></li>
 <li class="chapter" data-level="5.7.3" data-path="tuple-data-type.html"><a href="tuple-data-type.html#assigning-tuple-elements"><i class="fa fa-check"></i><b>5.7.3</b> Assigning tuple elements</a></li>
+<li class="chapter" data-level="" data-path="tuple-data-type.html"><a href="tuple-data-type.html#unpacking-assignment-of-tuples"><i class="fa fa-check"></i>Unpacking assignment of tuples</a></li>
 </ul></li>
 <li class="chapter" data-level="5.8" data-path="variable-types-vs.-constraints-and-sizes.html"><a href="variable-types-vs.-constraints-and-sizes.html"><i class="fa fa-check"></i><b>5.8</b> Variable types vs. constraints and sizes</a>
 <ul>
@@ -773,15 +774,15 @@ promotion</a> can result in situations where there are multiple valid
 interpretations of a function call. Stan requires that there be a unique
 signature which minimizes the number of promotions required.</p>
 <p>Consider the following two overloaded functions</p>
-<div class="sourceCode" id="cb226"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb226-1"><a href="calling-functions.html#cb226-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> foo(<span class="dt">int</span> a, <span class="dt">real</span> b);</span>
-<span id="cb226-2"><a href="calling-functions.html#cb226-2" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> foo(<span class="dt">real</span> a, <span class="dt">int</span> b);</span></code></pre></div>
+<div class="sourceCode" id="cb228"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb228-1"><a href="calling-functions.html#cb228-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> foo(<span class="dt">int</span> a, <span class="dt">real</span> b);</span>
+<span id="cb228-2"><a href="calling-functions.html#cb228-2" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> foo(<span class="dt">real</span> a, <span class="dt">int</span> b);</span></code></pre></div>
 <p>These functions do <strong>not</strong> have a unique minimum when called with two integer arguments
 <code>foo(1,2)</code>, and therefore cannot be called as such.</p>
 <p>Promotion of integers to complex numbers is considered as two separate
 promotions, one from <code>int</code> to <code>real</code> and a second from <code>real</code> to <code>complex</code>.
 Consider the following functions with <code>real</code> and <code>complex</code> signatures</p>
-<div class="sourceCode" id="cb227"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb227-1"><a href="calling-functions.html#cb227-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> bar(<span class="dt">real</span> x);</span>
-<span id="cb227-2"><a href="calling-functions.html#cb227-2" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> bar(<span class="dt">complex</span> z);</span></code></pre></div>
+<div class="sourceCode" id="cb229"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb229-1"><a href="calling-functions.html#cb229-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> bar(<span class="dt">real</span> x);</span>
+<span id="cb229-2"><a href="calling-functions.html#cb229-2" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> bar(<span class="dt">complex</span> z);</span></code></pre></div>
 <p>A call <code>bar(5)</code> with an integer argument will be resolved to <code>bar(real)</code> because
 it only requires a single promotion, whereas the promotion to a complex number
 requires two promotions.</p>
@@ -792,10 +793,10 @@ requires two promotions.</p>
 as promotion goes. This means that we can promote arguments to the
 type expected by function arguments. For example, the following will
 work.</p>
-<div class="sourceCode" id="cb228"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb228-1"><a href="calling-functions.html#cb228-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> foo(<span class="dt">real</span> x) { <span class="cf">return</span> ... };</span>
-<span id="cb228-2"><a href="calling-functions.html#cb228-2" aria-hidden="true" tabindex="-1"></a>...</span>
-<span id="cb228-3"><a href="calling-functions.html#cb228-3" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> a = <span class="dv">5</span>;</span>
-<span id="cb228-4"><a href="calling-functions.html#cb228-4" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> b = foo(a); <span class="co">// a promoted to type real</span></span></code></pre></div>
+<div class="sourceCode" id="cb230"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb230-1"><a href="calling-functions.html#cb230-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> foo(<span class="dt">real</span> x) { <span class="cf">return</span> ... };</span>
+<span id="cb230-2"><a href="calling-functions.html#cb230-2" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb230-3"><a href="calling-functions.html#cb230-3" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> a = <span class="dv">5</span>;</span>
+<span id="cb230-4"><a href="calling-functions.html#cb230-4" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> b = foo(a); <span class="co">// a promoted to type real</span></span></code></pre></div>
 <p>In addition to promoting <code>int</code> to <code>real</code>, Stan also promotes <code>real</code> to
 <code>complex</code>, and by transitivity, <code>int</code> to <code>complex</code>. This also works
 for containers, so an array of <code>int</code> may be assigned to an array of

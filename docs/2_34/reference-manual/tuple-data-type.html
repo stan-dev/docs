@@ -261,6 +261,7 @@ div.csl-indent {
 <li class="chapter" data-level="5.7.1" data-path="tuple-data-type.html"><a href="tuple-data-type.html#declaring-tuple-variables"><i class="fa fa-check"></i><b>5.7.1</b> Declaring tuple variables</a></li>
 <li class="chapter" data-level="5.7.2" data-path="tuple-data-type.html"><a href="tuple-data-type.html#accessing-tuple-elements"><i class="fa fa-check"></i><b>5.7.2</b> Accessing tuple elements</a></li>
 <li class="chapter" data-level="5.7.3" data-path="tuple-data-type.html"><a href="tuple-data-type.html#assigning-tuple-elements"><i class="fa fa-check"></i><b>5.7.3</b> Assigning tuple elements</a></li>
+<li class="chapter" data-level="" data-path="tuple-data-type.html"><a href="tuple-data-type.html#unpacking-assignment-of-tuples"><i class="fa fa-check"></i>Unpacking assignment of tuples</a></li>
 </ul></li>
 <li class="chapter" data-level="5.8" data-path="variable-types-vs.-constraints-and-sizes.html"><a href="variable-types-vs.-constraints-and-sizes.html"><i class="fa fa-check"></i><b>5.8</b> Variable types vs. constraints and sizes</a>
 <ul>
@@ -804,6 +805,33 @@ type <code>int</code>, <code>abc.2</code> of type <code>vector[3]</code> and <co
 <p>As with other assignments, promotions will happen if necessary (of
 <code>int</code> to <code>real</code> and of <code>real</code> to <code>complex</code>, along with the
 corresponding container type promotions).</p>
+</div>
+<div id="unpacking-assignment-of-tuples" class="section level3 unnumbered hasAnchor">
+<h3>Unpacking assignment of tuples<a href="tuple-data-type.html#unpacking-assignment-of-tuples" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>For convenience of using values stored in tuples, Stan supports
+“unpacking” (or “destructuring”) of tuples in an assignment statement.</p>
+<p>Given a tuple <code>t</code> of type <code>tuple(T1, ..., Tn)</code> and a sequence of
+<a href="compound-variable-declaration-and-definition.html#right-hand-side-expressions">assignable expressions</a> of types
+<code>v1</code>, …, <code>vn</code>, where each <code>vi</code> has a <a href="compound-variable-declaration-and-definition.html#assignment-typing">type which is assignable</a>
+from type <code>Ti</code>, individual elements of the tuple may be assigned to the
+corresponding variables in the sequence by the statement</p>
+<div class="sourceCode" id="cb86"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb86-1"><a href="tuple-data-type.html#cb86-1" aria-hidden="true" tabindex="-1"></a>(v1, <span class="co">/*...*/</span>, vn) = t;</span></code></pre></div>
+<p>Note that the above parenthesis are required, unlike in some other
+languages with similar features (e.g., Python).</p>
+<p>These unpacking assignments can be nested if the tuple on the right hand
+side contains nested tuples.</p>
+<p>For example, if <code>T</code> is a tuple of type <code>tuple(int, (real, real), complex)</code>,
+then the program</p>
+<div class="sourceCode" id="cb87"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb87-1"><a href="tuple-data-type.html#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> i;</span>
+<span id="cb87-2"><a href="tuple-data-type.html#cb87-2" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> x, y;</span>
+<span id="cb87-3"><a href="tuple-data-type.html#cb87-3" aria-hidden="true" tabindex="-1"></a><span class="dt">complex</span> z;</span>
+<span id="cb87-4"><a href="tuple-data-type.html#cb87-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-5"><a href="tuple-data-type.html#cb87-5" aria-hidden="true" tabindex="-1"></a>(i, (x, y), z) = T;</span></code></pre></div>
+<p>Assigns the result of <code>T.1</code> to <code>i</code>, the result of <code>T.2.1</code> to <code>x</code>,
+the result of <code>T.2.2</code> to <code>y</code>, and the result of <code>T.3</code> to <code>z</code>.</p>
+<p>The left hand side must match in size the tuple on the right.
+Additionally, the same variable may not appear more
+than once in the left hand side of an unpacking assignment.</p>
 </div>
 </div>
             </section>

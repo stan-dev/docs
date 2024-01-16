@@ -1388,39 +1388,41 @@ corresponding container type promotions).
 
 ### Unpacking assignment of tuples {-}
 
-For convience of using values stored in tuples, Stan supports
+For convenience of using values stored in tuples, Stan supports
 "unpacking" (or "destructuring") of tuples in an assignment statement.
 
-Given a tuple `T` of type `tuple(T1, ..., Tn)` and a sequence of
-variables of types `v1`, ..., `vn`, where each `vi` has a type which is
-[assignable](#assignment-typing) from type `Ti`, individual elements of
-the tuple may be assigned to the corresponding variables in the sequence
-by the statement
+Given a tuple `t` of type `tuple(T1, ..., Tn)` and a sequence of
+[assignable expressions](#right-hand-side-expressions) of types
+`v1`, ..., `vn`, where each `vi` has a [type which is assignable](#assignment-typing)
+from type `Ti`, individual elements of the tuple may be assigned to the
+corresponding variables in the sequence by the statement
 
 ```stan
-(v1, /*...*/, vn) = T;
+(v1, /*...*/, vn) = t;
 ```
 
-For example, if `T` is a tuple of type `tuple(int, real, complex)`,
-then the program
-
-```stan
-int i;
-real r;
-complex z;
-
-(i, r, z) = T;
-```
-
-Assigns the result of `T.1` to `i`, the result of `T.2` to `r`, and
-the result of `T.3` to `z`.
+Note that the above parenthesis are required, unlike in some other
+languages with similar features (e.g., Python).
 
 These unpacking assignments can be nested if the tuple on the right hand
 side contains nested tuples.
 
-The left hand side of an unpacking assignment must contain only
-[assignable expressions](#right-hand-side-expressions) and must match in size the
-tuple on the right. Additionally, the same variable may not appear more
+For example, if `T` is a tuple of type `tuple(int, (real, real), complex)`,
+then the program
+
+```stan
+int i;
+real x, y;
+complex z;
+
+(i, (x, y), z) = T;
+```
+
+Assigns the result of `T.1` to `i`, the result of `T.2.1` to `x`,
+the result of `T.2.2` to `y`, and the result of `T.3` to `z`.
+
+The left hand side must match in size the tuple on the right.
+Additionally, the same variable may not appear more
 than once in the left hand side of an unpacking assignment.
 
 

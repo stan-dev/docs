@@ -81,7 +81,7 @@ The raw output is available [here](grammar.txt).
 
 <unsized_type> ::= ARRAY <unsized_dims> <basic_type>
                  | ARRAY <unsized_dims> <unsized_tuple_type>
-                 | <basic_type> [<unsized_dims>]
+                 | <basic_type>
                  | <unsized_tuple_type>
 
 <unsized_tuple_type> ::= TUPLE LPAREN <unsized_type> COMMA <unsized_type>
@@ -109,13 +109,6 @@ The raw output is available [here](grammar.txt).
 ```
 <identifier> ::= IDENTIFIER
                | TRUNCATE
-               | <future_keyword>
-
-<future_keyword> ::= OFFSET
-                   | MULTIPLIER
-                   | LOWER
-                   | UPPER
-                   | ARRAY
 
 <decl_identifier> ::= <identifier>
 
@@ -203,7 +196,6 @@ The raw output is available [here](grammar.txt).
 
 <arr_dims> ::= ARRAY LBRACK <expression> (COMMA <expression>)* RBRACK
 
-<dims> ::= LBRACK <expression> (COMMA <expression>)* RBRACK
 ```
 \normalsize
 
@@ -213,46 +205,34 @@ The raw output is available [here](grammar.txt).
 \fontsize{9pt}{9.2}\selectfont
 
 ```
-<expression> ::= <lhs>
-               | <non_lhs>
-
-<lhs> ::= <identifier>
-        | <indexed(<lhs>)>
-        | <lhs> DOTNUMERAL
-
-<indexed(expr_type)> ::= expr_type LBRACK <indexes> RBRACK
-
-<non_lhs> ::= <expression> QMARK <expression> COLON <expression>
-            | <expression> <infixOp> <expression>
-            | <prefixOp> <expression>
-            | <expression> <postfixOp>
-            | <indexed(<non_lhs>)>
-            | <common_expression>
+<expression> ::= <expression> QMARK <expression> COLON <expression>
+               | <expression> <infixOp> <expression>
+               | <prefixOp> <expression>
+               | <expression> <postfixOp>
+               | <common_expression>
 
 <constr_expression> ::= <constr_expression> <arithmeticBinOp>
                         <constr_expression>
                       | <prefixOp> <constr_expression>
                       | <constr_expression> <postfixOp>
-                      | <indexed(<constr_expression>)>
-                      | <identifier> DOTNUMERAL
                       | <common_expression>
-                      | <identifier>
 
-<common_expression> ::= INTNUMERAL
+<common_expression> ::= <identifier>
+                      | INTNUMERAL
                       | REALNUMERAL
                       | DOTNUMERAL
                       | IMAGNUMERAL
                       | LBRACE <expression> (COMMA <expression>)* RBRACE
-                      | LPAREN <expression> COMMA <expression> (COMMA
-                        <expression>)* RPAREN
                       | LBRACK [<expression> (COMMA <expression>)*] RBRACK
                       | <identifier> LPAREN [<expression> (COMMA
                         <expression>)*] RPAREN
                       | TARGET LPAREN RPAREN
-                      | GETLP LPAREN RPAREN
                       | <identifier> LPAREN <expression> BAR [<expression>
                         (COMMA <expression>)*] RPAREN
+                      | LPAREN <expression> COMMA <expression> (COMMA
+                        <expression>)* RPAREN
                       | <common_expression> DOTNUMERAL
+                      | <common_expression> LBRACK <indexes> RBRACK
                       | LPAREN <expression> RPAREN
 
 <prefixOp> ::= BANG
@@ -309,10 +289,10 @@ The raw output is available [here](grammar.txt).
 <statement> ::= <atomic_statement>
               | <nested_statement>
 
-<atomic_statement> ::= <lhs> <assignment_op> <expression> SEMICOLON
+<atomic_statement> ::= <common_expression> <assignment_op> <expression>
+                       SEMICOLON
                      | <identifier> LPAREN [<expression> (COMMA
                        <expression>)*] RPAREN SEMICOLON
-                     | INCREMENTLOGPROB LPAREN <expression> RPAREN SEMICOLON
                      | <expression> TILDE <identifier> LPAREN [<expression>
                        (COMMA <expression>)*] RPAREN [<truncation>] SEMICOLON
                      | TARGET PLUSASSIGN <expression> SEMICOLON
@@ -325,7 +305,6 @@ The raw output is available [here](grammar.txt).
                      | SEMICOLON
 
 <assignment_op> ::= ASSIGN
-                  | ARROWASSIGN
                   | PLUSASSIGN
                   | MINUSASSIGN
                   | TIMESASSIGN

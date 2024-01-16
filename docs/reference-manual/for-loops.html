@@ -261,6 +261,7 @@ div.csl-indent {
 <li class="chapter" data-level="5.7.1" data-path="tuple-data-type.html"><a href="tuple-data-type.html#declaring-tuple-variables"><i class="fa fa-check"></i><b>5.7.1</b> Declaring tuple variables</a></li>
 <li class="chapter" data-level="5.7.2" data-path="tuple-data-type.html"><a href="tuple-data-type.html#accessing-tuple-elements"><i class="fa fa-check"></i><b>5.7.2</b> Accessing tuple elements</a></li>
 <li class="chapter" data-level="5.7.3" data-path="tuple-data-type.html"><a href="tuple-data-type.html#assigning-tuple-elements"><i class="fa fa-check"></i><b>5.7.3</b> Assigning tuple elements</a></li>
+<li class="chapter" data-level="" data-path="tuple-data-type.html"><a href="tuple-data-type.html#unpacking-assignment-of-tuples"><i class="fa fa-check"></i>Unpacking assignment of tuples</a></li>
 </ul></li>
 <li class="chapter" data-level="5.8" data-path="variable-types-vs.-constraints-and-sizes.html"><a href="variable-types-vs.-constraints-and-sizes.html"><i class="fa fa-check"></i><b>5.8</b> Variable types vs. constraints and sizes</a>
 <ul>
@@ -755,9 +756,9 @@ div.csl-indent {
 array of type <code>array[] real</code>, and <code>mu</code> and <code>sigma</code> are variables of type
 <code>real</code>. Furthermore, suppose that <code>n</code> has not been defined as a
 variable. Then the following is a well-formed for-loop statement.</p>
-<div class="sourceCode" id="cb183"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb183-1"><a href="for-loops.html#cb183-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
-<span id="cb183-2"><a href="for-loops.html#cb183-2" aria-hidden="true" tabindex="-1"></a>  y[n] ~ normal(mu, sigma);</span>
-<span id="cb183-3"><a href="for-loops.html#cb183-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb185"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb185-1"><a href="for-loops.html#cb185-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
+<span id="cb185-2"><a href="for-loops.html#cb185-2" aria-hidden="true" tabindex="-1"></a>  y[n] ~ normal(mu, sigma);</span>
+<span id="cb185-3"><a href="for-loops.html#cb185-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>The loop variable is <code>n</code>, the loop bounds are the values in the
 range <code>1:N</code>, and the body is the statement following the
 loop bounds.</p>
@@ -780,10 +781,10 @@ greater than or equal to 5 and less than or equal to 2.</p>
 <p>Unlike in BUGS, Stan allows variables to be reassigned. For
 example, the variable <code>theta</code> in the following program is
 reassigned in each iteration of the loop.</p>
-<div class="sourceCode" id="cb184"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb184-1"><a href="for-loops.html#cb184-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
-<span id="cb184-2"><a href="for-loops.html#cb184-2" aria-hidden="true" tabindex="-1"></a>  theta = inv_logit(alpha + x[n] * beta);</span>
-<span id="cb184-3"><a href="for-loops.html#cb184-3" aria-hidden="true" tabindex="-1"></a>  y[n] ~ bernoulli(theta);</span>
-<span id="cb184-4"><a href="for-loops.html#cb184-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb186"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb186-1"><a href="for-loops.html#cb186-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
+<span id="cb186-2"><a href="for-loops.html#cb186-2" aria-hidden="true" tabindex="-1"></a>  theta = inv_logit(alpha + x[n] * beta);</span>
+<span id="cb186-3"><a href="for-loops.html#cb186-3" aria-hidden="true" tabindex="-1"></a>  y[n] ~ bernoulli(theta);</span>
+<span id="cb186-4"><a href="for-loops.html#cb186-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>Such reassignment is not permitted in BUGS. In BUGS, for loops are
 declarative, defining plates in directed graphical model notation,
 which can be thought of as repeated substructures in the graphical
@@ -792,31 +793,31 @@ that repeatedly reassigns a value to a variable.<a href="#fn7" class="footnote-r
 <p>In Stan, assignments are executed in the order they are encountered.
 As a consequence, the following Stan program has a very different
 interpretation than the previous one.</p>
-<div class="sourceCode" id="cb185"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb185-1"><a href="for-loops.html#cb185-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
-<span id="cb185-2"><a href="for-loops.html#cb185-2" aria-hidden="true" tabindex="-1"></a>  y[n] ~ bernoulli(theta);</span>
-<span id="cb185-3"><a href="for-loops.html#cb185-3" aria-hidden="true" tabindex="-1"></a>  theta = inv_logit(alpha + x[n] * beta);</span>
-<span id="cb185-4"><a href="for-loops.html#cb185-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb187"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb187-1"><a href="for-loops.html#cb187-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
+<span id="cb187-2"><a href="for-loops.html#cb187-2" aria-hidden="true" tabindex="-1"></a>  y[n] ~ bernoulli(theta);</span>
+<span id="cb187-3"><a href="for-loops.html#cb187-3" aria-hidden="true" tabindex="-1"></a>  theta = inv_logit(alpha + x[n] * beta);</span>
+<span id="cb187-4"><a href="for-loops.html#cb187-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>In this program, <code>theta</code> is assigned after it is used in the
 probability statement. This presupposes it was defined before the
 first loop iteration (otherwise behavior is undefined), and then each
 loop uses the assignment from the previous iteration.</p>
 <p>Stan loops may be used to accumulate values. Thus it is possible to
 sum the values of an array directly using code such as the following.</p>
-<div class="sourceCode" id="cb186"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb186-1"><a href="for-loops.html#cb186-1" aria-hidden="true" tabindex="-1"></a>total = <span class="fl">0.0</span>;</span>
-<span id="cb186-2"><a href="for-loops.html#cb186-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
-<span id="cb186-3"><a href="for-loops.html#cb186-3" aria-hidden="true" tabindex="-1"></a>  total = total + x[n];</span>
-<span id="cb186-4"><a href="for-loops.html#cb186-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb188"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb188-1"><a href="for-loops.html#cb188-1" aria-hidden="true" tabindex="-1"></a>total = <span class="fl">0.0</span>;</span>
+<span id="cb188-2"><a href="for-loops.html#cb188-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
+<span id="cb188-3"><a href="for-loops.html#cb188-3" aria-hidden="true" tabindex="-1"></a>  total = total + x[n];</span>
+<span id="cb188-4"><a href="for-loops.html#cb188-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>After the for loop is executed, the variable <code>total</code> will hold
 the sum of the elements in the array <code>x</code>. This example was
 purely pedagogical; it is easier and more efficient to write</p>
-<div class="sourceCode" id="cb187"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb187-1"><a href="for-loops.html#cb187-1" aria-hidden="true" tabindex="-1"></a>total = sum(x);</span></code></pre></div>
+<div class="sourceCode" id="cb189"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb189-1"><a href="for-loops.html#cb189-1" aria-hidden="true" tabindex="-1"></a>total = sum(x);</span></code></pre></div>
 <p>A variable inside (or outside) a loop may even be reassigned multiple
 times, as in the following legal code.</p>
-<div class="sourceCode" id="cb188"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb188-1"><a href="for-loops.html#cb188-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:<span class="dv">100</span>) {</span>
-<span id="cb188-2"><a href="for-loops.html#cb188-2" aria-hidden="true" tabindex="-1"></a>  y += y * epsilon;</span>
-<span id="cb188-3"><a href="for-loops.html#cb188-3" aria-hidden="true" tabindex="-1"></a>  epsilon = <span class="fl">0.5</span> * epsilon;</span>
-<span id="cb188-4"><a href="for-loops.html#cb188-4" aria-hidden="true" tabindex="-1"></a>  y += y * epsilon;</span>
-<span id="cb188-5"><a href="for-loops.html#cb188-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb190"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb190-1"><a href="for-loops.html#cb190-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:<span class="dv">100</span>) {</span>
+<span id="cb190-2"><a href="for-loops.html#cb190-2" aria-hidden="true" tabindex="-1"></a>  y += y * epsilon;</span>
+<span id="cb190-3"><a href="for-loops.html#cb190-3" aria-hidden="true" tabindex="-1"></a>  epsilon = <span class="fl">0.5</span> * epsilon;</span>
+<span id="cb190-4"><a href="for-loops.html#cb190-4" aria-hidden="true" tabindex="-1"></a>  y += y * epsilon;</span>
+<span id="cb190-5"><a href="for-loops.html#cb190-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 </div>
 <div class="footnotes">

@@ -261,6 +261,7 @@ div.csl-indent {
 <li class="chapter" data-level="5.7.1" data-path="tuple-data-type.html"><a href="tuple-data-type.html#declaring-tuple-variables"><i class="fa fa-check"></i><b>5.7.1</b> Declaring tuple variables</a></li>
 <li class="chapter" data-level="5.7.2" data-path="tuple-data-type.html"><a href="tuple-data-type.html#accessing-tuple-elements"><i class="fa fa-check"></i><b>5.7.2</b> Accessing tuple elements</a></li>
 <li class="chapter" data-level="5.7.3" data-path="tuple-data-type.html"><a href="tuple-data-type.html#assigning-tuple-elements"><i class="fa fa-check"></i><b>5.7.3</b> Assigning tuple elements</a></li>
+<li class="chapter" data-level="" data-path="tuple-data-type.html"><a href="tuple-data-type.html#unpacking-assignment-of-tuples"><i class="fa fa-check"></i>Unpacking assignment of tuples</a></li>
 </ul></li>
 <li class="chapter" data-level="5.8" data-path="variable-types-vs.-constraints-and-sizes.html"><a href="variable-types-vs.-constraints-and-sizes.html"><i class="fa fa-check"></i><b>5.8</b> Variable types vs. constraints and sizes</a>
 <ul>
@@ -813,37 +814,37 @@ transformed data variables, they cannot be used to specify the sizes
 of elements in the <code>data</code> block.</p>
 <p>The following program illustrates various variables kinds, listing the
 kind of each variable next to its declaration.</p>
-<div class="sourceCode" id="cb219"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb219-1"><a href="statistical-variable-taxonomy.html#cb219-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
-<span id="cb219-2"><a href="statistical-variable-taxonomy.html#cb219-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; N;           <span class="co">// unmodeled data</span></span>
-<span id="cb219-3"><a href="statistical-variable-taxonomy.html#cb219-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">real</span> y;          <span class="co">// modeled data</span></span>
-<span id="cb219-4"><a href="statistical-variable-taxonomy.html#cb219-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> mu_mu;               <span class="co">// config. unmodeled param</span></span>
-<span id="cb219-5"><a href="statistical-variable-taxonomy.html#cb219-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma_mu;   <span class="co">// config. unmodeled param</span></span>
-<span id="cb219-6"><a href="statistical-variable-taxonomy.html#cb219-6" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb219-7"><a href="statistical-variable-taxonomy.html#cb219-7" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span> {</span>
-<span id="cb219-8"><a href="statistical-variable-taxonomy.html#cb219-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; alpha;      <span class="co">// const. unmodeled param</span></span>
-<span id="cb219-9"><a href="statistical-variable-taxonomy.html#cb219-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; beta;       <span class="co">// const. unmodeled param</span></span>
-<span id="cb219-10"><a href="statistical-variable-taxonomy.html#cb219-10" aria-hidden="true" tabindex="-1"></a>  alpha = <span class="fl">0.1</span>;</span>
-<span id="cb219-11"><a href="statistical-variable-taxonomy.html#cb219-11" aria-hidden="true" tabindex="-1"></a>  beta = <span class="fl">0.1</span>;</span>
-<span id="cb219-12"><a href="statistical-variable-taxonomy.html#cb219-12" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb219-13"><a href="statistical-variable-taxonomy.html#cb219-13" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
-<span id="cb219-14"><a href="statistical-variable-taxonomy.html#cb219-14" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> mu_y;                <span class="co">// modeled param</span></span>
-<span id="cb219-15"><a href="statistical-variable-taxonomy.html#cb219-15" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; tau_y;      <span class="co">// modeled param</span></span>
-<span id="cb219-16"><a href="statistical-variable-taxonomy.html#cb219-16" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb219-17"><a href="statistical-variable-taxonomy.html#cb219-17" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed parameters</span> {</span>
-<span id="cb219-18"><a href="statistical-variable-taxonomy.html#cb219-18" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma_y;    <span class="co">// derived quantity (param)</span></span>
-<span id="cb219-19"><a href="statistical-variable-taxonomy.html#cb219-19" aria-hidden="true" tabindex="-1"></a>  sigma_y = pow(tau_y, -<span class="fl">0.5</span>);</span>
-<span id="cb219-20"><a href="statistical-variable-taxonomy.html#cb219-20" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb219-21"><a href="statistical-variable-taxonomy.html#cb219-21" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
-<span id="cb219-22"><a href="statistical-variable-taxonomy.html#cb219-22" aria-hidden="true" tabindex="-1"></a>  tau_y ~ gamma(alpha, beta);</span>
-<span id="cb219-23"><a href="statistical-variable-taxonomy.html#cb219-23" aria-hidden="true" tabindex="-1"></a>  mu_y ~ normal(mu_mu, sigma_mu);</span>
-<span id="cb219-24"><a href="statistical-variable-taxonomy.html#cb219-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
-<span id="cb219-25"><a href="statistical-variable-taxonomy.html#cb219-25" aria-hidden="true" tabindex="-1"></a>    y[n] ~ normal(mu_y, sigma_y);</span>
-<span id="cb219-26"><a href="statistical-variable-taxonomy.html#cb219-26" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb219-27"><a href="statistical-variable-taxonomy.html#cb219-27" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb219-28"><a href="statistical-variable-taxonomy.html#cb219-28" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span> {</span>
-<span id="cb219-29"><a href="statistical-variable-taxonomy.html#cb219-29" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> variance_y;       <span class="co">// derived quantity (transform)</span></span>
-<span id="cb219-30"><a href="statistical-variable-taxonomy.html#cb219-30" aria-hidden="true" tabindex="-1"></a>  variance_y = sigma_y * sigma_y;</span>
-<span id="cb219-31"><a href="statistical-variable-taxonomy.html#cb219-31" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb221"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb221-1"><a href="statistical-variable-taxonomy.html#cb221-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<span id="cb221-2"><a href="statistical-variable-taxonomy.html#cb221-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; N;           <span class="co">// unmodeled data</span></span>
+<span id="cb221-3"><a href="statistical-variable-taxonomy.html#cb221-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">real</span> y;          <span class="co">// modeled data</span></span>
+<span id="cb221-4"><a href="statistical-variable-taxonomy.html#cb221-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> mu_mu;               <span class="co">// config. unmodeled param</span></span>
+<span id="cb221-5"><a href="statistical-variable-taxonomy.html#cb221-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma_mu;   <span class="co">// config. unmodeled param</span></span>
+<span id="cb221-6"><a href="statistical-variable-taxonomy.html#cb221-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb221-7"><a href="statistical-variable-taxonomy.html#cb221-7" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span> {</span>
+<span id="cb221-8"><a href="statistical-variable-taxonomy.html#cb221-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; alpha;      <span class="co">// const. unmodeled param</span></span>
+<span id="cb221-9"><a href="statistical-variable-taxonomy.html#cb221-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; beta;       <span class="co">// const. unmodeled param</span></span>
+<span id="cb221-10"><a href="statistical-variable-taxonomy.html#cb221-10" aria-hidden="true" tabindex="-1"></a>  alpha = <span class="fl">0.1</span>;</span>
+<span id="cb221-11"><a href="statistical-variable-taxonomy.html#cb221-11" aria-hidden="true" tabindex="-1"></a>  beta = <span class="fl">0.1</span>;</span>
+<span id="cb221-12"><a href="statistical-variable-taxonomy.html#cb221-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb221-13"><a href="statistical-variable-taxonomy.html#cb221-13" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
+<span id="cb221-14"><a href="statistical-variable-taxonomy.html#cb221-14" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> mu_y;                <span class="co">// modeled param</span></span>
+<span id="cb221-15"><a href="statistical-variable-taxonomy.html#cb221-15" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; tau_y;      <span class="co">// modeled param</span></span>
+<span id="cb221-16"><a href="statistical-variable-taxonomy.html#cb221-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb221-17"><a href="statistical-variable-taxonomy.html#cb221-17" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed parameters</span> {</span>
+<span id="cb221-18"><a href="statistical-variable-taxonomy.html#cb221-18" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma_y;    <span class="co">// derived quantity (param)</span></span>
+<span id="cb221-19"><a href="statistical-variable-taxonomy.html#cb221-19" aria-hidden="true" tabindex="-1"></a>  sigma_y = pow(tau_y, -<span class="fl">0.5</span>);</span>
+<span id="cb221-20"><a href="statistical-variable-taxonomy.html#cb221-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb221-21"><a href="statistical-variable-taxonomy.html#cb221-21" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb221-22"><a href="statistical-variable-taxonomy.html#cb221-22" aria-hidden="true" tabindex="-1"></a>  tau_y ~ gamma(alpha, beta);</span>
+<span id="cb221-23"><a href="statistical-variable-taxonomy.html#cb221-23" aria-hidden="true" tabindex="-1"></a>  mu_y ~ normal(mu_mu, sigma_mu);</span>
+<span id="cb221-24"><a href="statistical-variable-taxonomy.html#cb221-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
+<span id="cb221-25"><a href="statistical-variable-taxonomy.html#cb221-25" aria-hidden="true" tabindex="-1"></a>    y[n] ~ normal(mu_y, sigma_y);</span>
+<span id="cb221-26"><a href="statistical-variable-taxonomy.html#cb221-26" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb221-27"><a href="statistical-variable-taxonomy.html#cb221-27" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb221-28"><a href="statistical-variable-taxonomy.html#cb221-28" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span> {</span>
+<span id="cb221-29"><a href="statistical-variable-taxonomy.html#cb221-29" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> variance_y;       <span class="co">// derived quantity (transform)</span></span>
+<span id="cb221-30"><a href="statistical-variable-taxonomy.html#cb221-30" aria-hidden="true" tabindex="-1"></a>  variance_y = sigma_y * sigma_y;</span>
+<span id="cb221-31"><a href="statistical-variable-taxonomy.html#cb221-31" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>In this example, <code>y[N]</code> is a modeled data vector. Although it is
 specified in the <code>data</code> block, and thus must have a known value
 before the program may be run, it is modeled as if it were generated

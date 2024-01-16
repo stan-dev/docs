@@ -261,6 +261,7 @@ div.csl-indent {
 <li class="chapter" data-level="5.7.1" data-path="tuple-data-type.html"><a href="tuple-data-type.html#declaring-tuple-variables"><i class="fa fa-check"></i><b>5.7.1</b> Declaring tuple variables</a></li>
 <li class="chapter" data-level="5.7.2" data-path="tuple-data-type.html"><a href="tuple-data-type.html#accessing-tuple-elements"><i class="fa fa-check"></i><b>5.7.2</b> Accessing tuple elements</a></li>
 <li class="chapter" data-level="5.7.3" data-path="tuple-data-type.html"><a href="tuple-data-type.html#assigning-tuple-elements"><i class="fa fa-check"></i><b>5.7.3</b> Assigning tuple elements</a></li>
+<li class="chapter" data-level="" data-path="tuple-data-type.html"><a href="tuple-data-type.html#unpacking-assignment-of-tuples"><i class="fa fa-check"></i>Unpacking assignment of tuples</a></li>
 </ul></li>
 <li class="chapter" data-level="5.8" data-path="variable-types-vs.-constraints-and-sizes.html"><a href="variable-types-vs.-constraints-and-sizes.html"><i class="fa fa-check"></i><b>5.8</b> Variable types vs. constraints and sizes</a>
 <ul>
@@ -759,7 +760,7 @@ single statement. Assignable variables are</p>
 transformed parameters, or generated quantities blocks.</li>
 </ul>
 <p>For example, the statement</p>
-<div class="sourceCode" id="cb89"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb89-1"><a href="compound-variable-declaration-and-definition.html#cb89-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> N = <span class="dv">5</span>;</span></code></pre></div>
+<div class="sourceCode" id="cb91"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb91-1"><a href="compound-variable-declaration-and-definition.html#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> N = <span class="dv">5</span>;</span></code></pre></div>
 <p>declares the variable <code>N</code> to be an integer scalar type and at the
 same time defines it to be the value of the expression <code>5</code>.</p>
 <div id="assignment-typing" class="section level3 unnumbered hasAnchor">
@@ -767,14 +768,14 @@ same time defines it to be the value of the expression <code>5</code>.</p>
 <p>The type of the expression on the right-hand side of the assignment
 must be assignable to the type of the variable being declared. For
 example, it is legal to have</p>
-<div class="sourceCode" id="cb90"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb90-1"><a href="compound-variable-declaration-and-definition.html#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> sum = <span class="dv">0</span>;</span></code></pre></div>
+<div class="sourceCode" id="cb92"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb92-1"><a href="compound-variable-declaration-and-definition.html#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> sum = <span class="dv">0</span>;</span></code></pre></div>
 <p>even though <code>0</code> is of type <code>int</code> and <code>sum</code> is of type <code>real</code>, because
 integer-typed scalar expressions can be assigned to real-valued scalar
 variables. In all other cases, the type of the expression on the
 right-hand side of the assignment must be identical to the type of the
 variable being declared.</p>
 <p>Variables of any type may have values assigned to them. For example,</p>
-<div class="sourceCode" id="cb91"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb91-1"><a href="compound-variable-declaration-and-definition.html#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="dt">matrix</span>[<span class="dv">3</span>, <span class="dv">2</span>] a = b;</span></code></pre></div>
+<div class="sourceCode" id="cb93"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb93-1"><a href="compound-variable-declaration-and-definition.html#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="dt">matrix</span>[<span class="dv">3</span>, <span class="dv">2</span>] a = b;</span></code></pre></div>
 <p>declares a <span class="math inline">\(3 \times 2\)</span> matrix variable <code>a</code> and assigns a copy
 of the value of <code>b</code> to the variable <code>a</code>. The variable <code>b</code> must
 be of type <code>matrix</code> for the statement to be well formed. For
@@ -787,14 +788,14 @@ changes to <code>b</code> do not affect <code>a</code>.</p>
 <h3>Right-hand side expressions<a href="compound-variable-declaration-and-definition.html#right-hand-side-expressions" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>The right-hand side may be any expression which has a type which is
 assignable to the variable being declared. For example,</p>
-<div class="sourceCode" id="cb92"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb92-1"><a href="compound-variable-declaration-and-definition.html#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="dt">matrix</span>[<span class="dv">3</span>, <span class="dv">2</span>] a = <span class="fl">0.5</span> * (b + c);</span></code></pre></div>
+<div class="sourceCode" id="cb94"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb94-1"><a href="compound-variable-declaration-and-definition.html#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="dt">matrix</span>[<span class="dv">3</span>, <span class="dv">2</span>] a = <span class="fl">0.5</span> * (b + c);</span></code></pre></div>
 <p>assigns the matrix variable <code>a</code> to half of the sum of <code>b</code> and <code>c</code>.
 The only requirement on <code>b</code> and <code>c</code> is that the expression <code>b + c</code> be
 of type <code>matrix</code>. For example, <code>b</code> could be of type <code>matrix</code> and <code>c</code>
 of type <code>real</code>, because adding a matrix to a scalar produces a matrix,
 and the multiplying by a scalar produces another matrix.</p>
 <p>Similarly,</p>
-<div class="sourceCode" id="cb93"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb93-1"><a href="compound-variable-declaration-and-definition.html#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="dt">complex</span> z = <span class="dv">2</span> + <span class="fl">3i</span>;</span></code></pre></div>
+<div class="sourceCode" id="cb95"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb95-1"><a href="compound-variable-declaration-and-definition.html#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="dt">complex</span> z = <span class="dv">2</span> + <span class="fl">3i</span>;</span></code></pre></div>
 <p>assigns the the complex number <span class="math inline">\(2 + 3i\)</span> to the complex scalar <code>z</code>.
 The right-hand side expression can be a call to a user defined
 function, allowing general algorithms to be applied that might not be

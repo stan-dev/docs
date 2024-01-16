@@ -261,6 +261,7 @@ div.csl-indent {
 <li class="chapter" data-level="5.7.1" data-path="tuple-data-type.html"><a href="tuple-data-type.html#declaring-tuple-variables"><i class="fa fa-check"></i><b>5.7.1</b> Declaring tuple variables</a></li>
 <li class="chapter" data-level="5.7.2" data-path="tuple-data-type.html"><a href="tuple-data-type.html#accessing-tuple-elements"><i class="fa fa-check"></i><b>5.7.2</b> Accessing tuple elements</a></li>
 <li class="chapter" data-level="5.7.3" data-path="tuple-data-type.html"><a href="tuple-data-type.html#assigning-tuple-elements"><i class="fa fa-check"></i><b>5.7.3</b> Assigning tuple elements</a></li>
+<li class="chapter" data-level="" data-path="tuple-data-type.html"><a href="tuple-data-type.html#unpacking-assignment-of-tuples"><i class="fa fa-check"></i>Unpacking assignment of tuples</a></li>
 </ul></li>
 <li class="chapter" data-level="5.8" data-path="variable-types-vs.-constraints-and-sizes.html"><a href="variable-types-vs.-constraints-and-sizes.html"><i class="fa fa-check"></i><b>5.8</b> Variable types vs. constraints and sizes</a>
 <ul>
@@ -813,7 +814,7 @@ The raw output is available <a href="grammar.txt">here</a>.</p>
 
 &lt;unsized_type&gt; ::= ARRAY &lt;unsized_dims&gt; &lt;basic_type&gt;
                  | ARRAY &lt;unsized_dims&gt; &lt;unsized_tuple_type&gt;
-                 | &lt;basic_type&gt; [&lt;unsized_dims&gt;]
+                 | &lt;basic_type&gt;
                  | &lt;unsized_tuple_type&gt;
 
 &lt;unsized_tuple_type&gt; ::= TUPLE LPAREN &lt;unsized_type&gt; COMMA &lt;unsized_type&gt;
@@ -836,13 +837,6 @@ The raw output is available <a href="grammar.txt">here</a>.</p>
 <h3>Variable declarations and compound definitions<a href="bnf-grammars.html#variable-declarations-and-compound-definitions" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <pre><code>&lt;identifier&gt; ::= IDENTIFIER
                | TRUNCATE
-               | &lt;future_keyword&gt;
-
-&lt;future_keyword&gt; ::= OFFSET
-                   | MULTIPLIER
-                   | LOWER
-                   | UPPER
-                   | ARRAY
 
 &lt;decl_identifier&gt; ::= &lt;identifier&gt;
 
@@ -929,51 +923,38 @@ The raw output is available <a href="grammar.txt">here</a>.</p>
                 | MULTIPLIER ASSIGN &lt;constr_expression&gt;
 
 &lt;arr_dims&gt; ::= ARRAY LBRACK &lt;expression&gt; (COMMA &lt;expression&gt;)* RBRACK
-
-&lt;dims&gt; ::= LBRACK &lt;expression&gt; (COMMA &lt;expression&gt;)* RBRACK</code></pre>
+</code></pre>
 </div>
 <div id="expressions-1" class="section level3 unnumbered hasAnchor">
 <h3>Expressions<a href="bnf-grammars.html#expressions-1" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<pre><code>&lt;expression&gt; ::= &lt;lhs&gt;
-               | &lt;non_lhs&gt;
-
-&lt;lhs&gt; ::= &lt;identifier&gt;
-        | &lt;indexed(&lt;lhs&gt;)&gt;
-        | &lt;lhs&gt; DOTNUMERAL
-
-&lt;indexed(expr_type)&gt; ::= expr_type LBRACK &lt;indexes&gt; RBRACK
-
-&lt;non_lhs&gt; ::= &lt;expression&gt; QMARK &lt;expression&gt; COLON &lt;expression&gt;
-            | &lt;expression&gt; &lt;infixOp&gt; &lt;expression&gt;
-            | &lt;prefixOp&gt; &lt;expression&gt;
-            | &lt;expression&gt; &lt;postfixOp&gt;
-            | &lt;indexed(&lt;non_lhs&gt;)&gt;
-            | &lt;common_expression&gt;
+<pre><code>&lt;expression&gt; ::= &lt;expression&gt; QMARK &lt;expression&gt; COLON &lt;expression&gt;
+               | &lt;expression&gt; &lt;infixOp&gt; &lt;expression&gt;
+               | &lt;prefixOp&gt; &lt;expression&gt;
+               | &lt;expression&gt; &lt;postfixOp&gt;
+               | &lt;common_expression&gt;
 
 &lt;constr_expression&gt; ::= &lt;constr_expression&gt; &lt;arithmeticBinOp&gt;
                         &lt;constr_expression&gt;
                       | &lt;prefixOp&gt; &lt;constr_expression&gt;
                       | &lt;constr_expression&gt; &lt;postfixOp&gt;
-                      | &lt;indexed(&lt;constr_expression&gt;)&gt;
-                      | &lt;identifier&gt; DOTNUMERAL
                       | &lt;common_expression&gt;
-                      | &lt;identifier&gt;
 
-&lt;common_expression&gt; ::= INTNUMERAL
+&lt;common_expression&gt; ::= &lt;identifier&gt;
+                      | INTNUMERAL
                       | REALNUMERAL
                       | DOTNUMERAL
                       | IMAGNUMERAL
                       | LBRACE &lt;expression&gt; (COMMA &lt;expression&gt;)* RBRACE
-                      | LPAREN &lt;expression&gt; COMMA &lt;expression&gt; (COMMA
-                        &lt;expression&gt;)* RPAREN
                       | LBRACK [&lt;expression&gt; (COMMA &lt;expression&gt;)*] RBRACK
                       | &lt;identifier&gt; LPAREN [&lt;expression&gt; (COMMA
                         &lt;expression&gt;)*] RPAREN
                       | TARGET LPAREN RPAREN
-                      | GETLP LPAREN RPAREN
                       | &lt;identifier&gt; LPAREN &lt;expression&gt; BAR [&lt;expression&gt;
                         (COMMA &lt;expression&gt;)*] RPAREN
+                      | LPAREN &lt;expression&gt; COMMA &lt;expression&gt; (COMMA
+                        &lt;expression&gt;)* RPAREN
                       | &lt;common_expression&gt; DOTNUMERAL
+                      | &lt;common_expression&gt; LBRACK &lt;indexes&gt; RBRACK
                       | LPAREN &lt;expression&gt; RPAREN
 
 &lt;prefixOp&gt; ::= BANG
@@ -1023,10 +1004,10 @@ The raw output is available <a href="grammar.txt">here</a>.</p>
 <pre><code>&lt;statement&gt; ::= &lt;atomic_statement&gt;
               | &lt;nested_statement&gt;
 
-&lt;atomic_statement&gt; ::= &lt;lhs&gt; &lt;assignment_op&gt; &lt;expression&gt; SEMICOLON
+&lt;atomic_statement&gt; ::= &lt;common_expression&gt; &lt;assignment_op&gt; &lt;expression&gt;
+                       SEMICOLON
                      | &lt;identifier&gt; LPAREN [&lt;expression&gt; (COMMA
                        &lt;expression&gt;)*] RPAREN SEMICOLON
-                     | INCREMENTLOGPROB LPAREN &lt;expression&gt; RPAREN SEMICOLON
                      | &lt;expression&gt; TILDE &lt;identifier&gt; LPAREN [&lt;expression&gt;
                        (COMMA &lt;expression&gt;)*] RPAREN [&lt;truncation&gt;] SEMICOLON
                      | TARGET PLUSASSIGN &lt;expression&gt; SEMICOLON
@@ -1039,7 +1020,6 @@ The raw output is available <a href="grammar.txt">here</a>.</p>
                      | SEMICOLON
 
 &lt;assignment_op&gt; ::= ASSIGN
-                  | ARROWASSIGN
                   | PLUSASSIGN
                   | MINUSASSIGN
                   | TIMESASSIGN

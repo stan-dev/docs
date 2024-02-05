@@ -698,7 +698,7 @@ For example, the following code generates a $\textsf{Weibull}(\alpha, \sigma)$ v
 
 ```stan
 real weibull_lb_rng(real alpha, real sigma, real t) {
-  real p = weibull_cdf(lt, alpha, sigma);   // cdf for lb
+  real p = weibull_cdf(lt | alpha, sigma);   // cdf for lb
   real u = uniform_rng(p, 1);               // unif in bounds
   real y = sigma * (-log1m(u))^inv(alpha);  // inverse cdf
   return y;
@@ -714,8 +714,8 @@ following code suffices,
 
 ```stan
 real normal_lub_rng(real mu, real sigma, real lb, real ub) {
-  real p_lb = normal_cdf(lb, mu, sigma);
-  real p_ub = normal_cdf(ub, mu, sigma);
+  real p_lb = normal_cdf(lb | mu, sigma);
+  real p_ub = normal_cdf(ub | mu, sigma);
   real u = uniform_rng(p_lb, p_ub);
   real y = mu + sigma * inv_Phi(u);
   return y;
@@ -731,8 +731,8 @@ and naming for readability;  compare the multiple statement version
 above with the single statement
 
 ```stan
-  return mu + sigma * inv_Phi(uniform_rng(normal_cdf(lb, mu, sigma),
-                                          normal_cdf(ub, mu, sigma)));
+  return mu + sigma * inv_Phi(uniform_rng(normal_cdf(lb | mu, sigma),
+                                          normal_cdf(ub | mu, sigma)));
 ```
 
 for readability.  The names like `p` indicate probabilities, and

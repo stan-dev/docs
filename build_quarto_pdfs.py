@@ -50,7 +50,6 @@ def make_docs(docspath, version, document):
         command = ' '.join(['quarto render',
                                 '--output-dir _pdf',
                                 '--output', pdfname]) 
-        print(command)
         shexec(command)
         outpath = os.path.join(srcpath, '_pdf', pdfname)
         safe_rm(os.path.join(docspath, pdfname))

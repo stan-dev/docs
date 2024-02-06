@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 """
-build pdf version for specified MAJOR, MINOR version and specified document (optional)
-when document not specified, builds all documents
+Use quarto to render pdfs for specified MAJOR, MINOR version
+for all (default) or specified document (optional).
+
+Quarto builds in subdirectory of `src`, and then
+resulting pdf is moved to directory named `docs/MAJOR_MINOR`
+Document pdf has subtitle "Version MAJOR dot MINOR".
+Directory and filenames have version string "MAJOR underscore MINOR".
 
 arg 1: MAJOR version number
 arg 2: MINOR version number
@@ -45,12 +50,11 @@ def make_docs(docspath, version, document):
         command = ' '.join(['quarto render',
                                 '--output-dir _pdf',
                                 '--output', pdfname]) 
+        print(command)
         shexec(command)
         outpath = os.path.join(srcpath, '_pdf', pdfname)
+        safe_rm(os.path.join(docspath, pdfname))
         shutil.move(outpath, docspath)
-        safe_rm(".gitignore")  # quarto cleanup
-        shutil.rmtree("_pdf", ignore_errors=True)  # quarto cleanup
-        shutil.rmtree(".quarto", ignore_errors=True)  # quarto cleanup
 
 def main():
     if sys.version_info < (3, 7):
@@ -71,9 +75,9 @@ def main():
         try:
             os.makedirs(docspath)
         except OSError:
-            print("Creation of the directory %s failed" % docspath)
+            print("Failed to create directory %s" % docspath)
         else:
-            print("Successfully created the directory %s " % docspath)
+            print("Created directory %s " % docspath)
 
     docset = all_docs
     if (len(sys.argv) > 3):

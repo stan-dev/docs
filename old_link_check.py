@@ -6,7 +6,7 @@ import pathlib
 
 
 DOCS_DIR = pathlib.Path(__file__).parent / 'docs'
-LINK_FINDER = re.compile(r'version,\s+<a\s+href="(.*)">view\s+current')
+LINK_FINDER = re.compile(r'(?:version,\s+<a\s+href="(.*)">view\s+current)|(?:link\s+rel="canonical"\s+href="(.*)"\s+/>)')
 
 links = set()
 
@@ -19,7 +19,9 @@ def find_links():
     for html in walk_html():
         with open(html, 'r') as f:
             for match in LINK_FINDER.finditer(f.read()):
-                links.add(match.group(1))
+                for group in match.groups():
+                    if group:
+                        links.add(group)
 
 def check_links():
     broken = 0

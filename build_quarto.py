@@ -41,7 +41,7 @@ def safe_rm(fname):
     if os.path.exists(fname):
         os.remove(fname)
 
-def make_docs(docspath, version, document):
+def make_pdfs(docspath, version, document):
     path = os.getcwd()
     srcpath = os.path.join(path, "src", document)
     with pushd(srcpath):
@@ -92,8 +92,15 @@ def main():
     # set environmental variable used in the index.Rmd files
     os.environ['STAN_DOCS_VERSION'] = '.'.join([str(stan_major), str(stan_minor)])
 
+    if (len(sys.argv) == 3 or docset == "all"):
+        print('render website')
+        with pushd(os.path.join(path, "src")):
+            command = 'quarto render'
+            shexec(command)
+            shutil.copytree('_website', docspath, copy_function=shutil.move, dirs_exist_ok=True)
+
     for doc in docset:
-        make_docs(docspath, stan_version, doc)
+        make_pdfs(docspath, stan_version, doc)
 
 
 if __name__ == "__main__":

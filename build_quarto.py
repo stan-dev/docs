@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 """
-Use quarto to render pdfs for specified MAJOR, MINOR version
-for all (default) or specified document (optional).
+Build docs website and/or pdfs.
+
+Command line arguments:
+
+    arg 1: MAJOR version number
+    arg 2: MINOR version number
+    optional arg 3:  format, either "pdf" or "website"; defaults to both
+    optional arg 4: pdf doc, defaults to "all", ignored if arg3 is "website"
 
 Quarto builds in subdirectory of `src`, and then
-resulting pdf is moved to directory named `docs/MAJOR_MINOR`
+resulting files are moved to directory named `docs/MAJOR_MINOR`
 Document pdf has subtitle "Version MAJOR dot MINOR".
 Directory and filenames have version string "MAJOR underscore MINOR".
-
-arg 1: MAJOR version number
-arg 2: MINOR version number
-optional arg 3: specified document or "all"
 """
 
 import glob
@@ -56,15 +58,19 @@ def make_pdfs(docspath, version, document):
         shutil.move(outpath, docspath)
 
 def main():
-    if sys.version_info < (3, 7):
-        print('requires Python 3.7 or higher, found {}'.format(sys.version))
+    if sys.version_info < (3, 8):  # required by shutil.copytree
+        print('requires Python 3.8 or higher, found {}'.format(sys.version))
         sys.exit(1)
     global all_docs
+    build_web = True;
+    build_pdfs = True;
+    docset = all_docs;
+
     if (len(sys.argv) > 2):
         stan_major = int(sys.argv[1])
         stan_minor = int(sys.argv[2])
     else:
-        print("Expecting arguments MAJOR MINOR version numbers")
+        print("Expecting version number args MAJOR MINOR")
         sys.exit(1)
 
     stan_version = '_'.join([str(stan_major), str(stan_minor)])
@@ -75,32 +81,38 @@ def main():
             os.makedirs(docspath)
         except OSError:
             print("Failed to create directory %s" % docspath)
+            sys.exit(1)
         else:
             print("Created directory %s " % docspath)
 
-    docset = all_docs
     if (len(sys.argv) > 3):
-        if (sys.argv[3] != "all"):
-            if (sys.argv[3] not in docset):
-                print("Expecting one of %s" % ' '.join(docset))
+        if (sys.argv[3] == "pdf"):
+            build_web = False;
+        elif (sys.argv[3] == "website"):
+            build_pdf = False;
+        else:
+            print('Bad arg[3], should be \'pdf\' or \'website\''.format(sys.argv[3]))
+            sys.exit(1)
+                
+    if (len(sys.argv) > 4):
+            if (sys.argv[4] not in docset):
+                print("Bad arg[4], should be one of %s" % ' '.join(docset))
                 sys.exit(1)
-            docset = (sys.argv[3],)
+            docset = (sys.argv[4],)
 
     if (len(sys.argv) > 4):
         print("Unused arguments:  %s" % ' '.join(sys.argv[4: ]))
 
-    # set environmental variable used in the index.Rmd files
-    os.environ['STAN_DOCS_VERSION'] = '.'.join([str(stan_major), str(stan_minor)])
-
-    if (len(sys.argv) == 3 or docset == "all"):
+    if (build_web):
         print('render website')
         with pushd(os.path.join(path, "src")):
             command = 'quarto render'
             shexec(command)
             shutil.copytree('_website', docspath, copy_function=shutil.move, dirs_exist_ok=True)
 
-    for doc in docset:
-        make_pdfs(docspath, stan_version, doc)
+    if (build_pdfs):
+        for doc in docset:
+            make_pdfs(docspath, stan_version, doc)
 
 
 if __name__ == "__main__":

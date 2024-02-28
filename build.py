@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 """
-build docs for specified MAJOR, MINOR version
-and specified document (optional), format (optional)
-when document and format not specified, builds all documents in all formats.
+Build docs website and/or pdfs.
 
-arg 1: MAJOR version number
-arg 2: MINOR version number
-optional arg 3: specified document or "all"
-optional arg 4: specified format or "all"
+Command line arguments:
+
+    arg 1: MAJOR version number
+    arg 2: MINOR version number
+    optional arg 3:  format, either "pdf" or "website"; defaults to both
+    optional arg 4: pdf doc, defaults to "all", ignored if arg3 is "website"
+
+Quarto builds in subdirectory of `src`, and then
+resulting files are moved to directory named `docs/MAJOR_MINOR`
+Document pdf has subtitle "Version MAJOR dot MINOR".
+Directory and filenames have version string "MAJOR underscore MINOR".
 """
 
 import glob
@@ -18,8 +23,13 @@ import subprocess
 import sys
 import contextlib
 
-all_docs = ("functions-reference", "reference-manual", "stan-users-guide", "cmdstan-guide")
-all_formats = ("html", "pdf")
+all_docs = (
+    "functions-reference",
+    "reference-manual",
+    "stan-users-guide",
+    "cmdstan-guide",
+)
+
 
 @contextlib.contextmanager
 def pushd(new_dir):
@@ -28,101 +38,98 @@ def pushd(new_dir):
     yield
     os.chdir(previous_dir)
 
+
 def shexec(command):
-    ret = subprocess.run(command, shell=True, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    ret = subprocess.run(
+        command,
+        shell=True,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
     if ret.returncode != 0:
-        print('Command {} failed'.format(command))
+        print("Command {} failed".format(command))
         print(ret.stderr)
         raise Exception(ret.returncode)
 
-def check_bookdown_at_least_0_23():
-    command = ["Rscript", "-e", "utils::packageVersion(\"bookdown\") > 0.22"]
-    check = subprocess.run(command, capture_output=True, text=True)
-    if not 'TRUE' in check.stdout:
-        print("R Package bookdown version must be at least 0.23, see README for build tools requirements")
-        sys.exit(1)
 
 def safe_rm(fname):
     if os.path.exists(fname):
         os.remove(fname)
 
-def make_docs(docspath, version, document, formats):
+
+def make_pdfs(docspath, version, document):
     path = os.getcwd()
     srcpath = os.path.join(path, "src", document)
     with pushd(srcpath):
-        if ("pdf" in formats):
-            print('render {} as pdf'.format(document))
-            command = "Rscript -e \"bookdown::render_book(\'index.Rmd\', output_format=\'bookdown::pdf_book\')\""
-            shexec(command)
-            srcpdf = os.path.join(srcpath, "_book", "_main.pdf")
-            pdfname = ''.join([document,'-',version,".pdf"])
-            pdfpath = os.path.join(docspath, pdfname)
-            shutil.move(srcpdf, pdfpath)
-            print('output file: {}'.format(pdfpath))
-        if ("html" in formats):
-            print('render {} as html'.format(document))
-            command = "Rscript -e \"bookdown::render_book(\'index.Rmd\', output_format=\'bookdown::gitbook\')\""
-            shexec(command)
-            [safe_rm(f) for f in ("stan-manual.css", "_main.rds")]
-            [safe_rm(f) for f in glob.glob(os.path.join("_book","*.md"))]
-            htmlpath = os.path.join(docspath, document)
-            shutil.rmtree(htmlpath, ignore_errors=True)
-            command = ' '.join(["mv _book", htmlpath])
-            shexec(command)
-            print('output dir: {}'.format(htmlpath))
-        else:
-            [safe_rm(f) for f in ("stan-manual.css", "_main.rds")]
-            shutil.rmtree("_book", ignore_errors=True)
+        pdfname = "".join([document, "-", version, ".pdf"])
+        print("render {} as {}".format(document, pdfname))
+        command = " ".join(["quarto render", "--output-dir _pdf", "--output", pdfname])
+        shexec(command)
+        outpath = os.path.join(srcpath, "_pdf", pdfname)
+        safe_rm(os.path.join(docspath, pdfname))
+        shutil.move(outpath, docspath)
+
 
 def main():
-    if sys.version_info < (3, 7):
-        print('requires Python 3.7 or higher, found {}'.format(sys.version))
+    if sys.version_info < (3, 8):  # required by shutil.copytree
+        print("requires Python 3.8 or higher, found {}".format(sys.version))
         sys.exit(1)
-    check_bookdown_at_least_0_23()
     global all_docs
-    global all_formats
-    if (len(sys.argv) > 2):
+    build_web = True
+    build_pdfs = True
+    docset = all_docs
+
+    if len(sys.argv) > 2:
         stan_major = int(sys.argv[1])
         stan_minor = int(sys.argv[2])
     else:
-        print("Expecting arguments MAJOR MINOR version numbers")
+        print("Expecting version number args MAJOR MINOR")
         sys.exit(1)
 
-    stan_version = '_'.join([str(stan_major), str(stan_minor)])
+    stan_version = "_".join([str(stan_major), str(stan_minor)])
     path = os.getcwd()
     docspath = os.path.join(path, "docs", stan_version)
-    if (not(os.path.exists(docspath))):
+    if not (os.path.exists(docspath)):
         try:
             os.makedirs(docspath)
         except OSError:
-            print("Creation of the directory %s failed" % docspath)
+            print("Failed to create directory %s" % docspath)
+            sys.exit(1)
         else:
-            print("Successfully created the directory %s " % docspath)
+            print("Created directory %s " % docspath)
 
-    docset = all_docs
-    if (len(sys.argv) > 3):
-        if (sys.argv[3] != "all"):
-            if (sys.argv[3] not in docset):
-                print("Expecting one of %s" % ' '.join(docset))
-                sys.exit(1)
-            docset = (sys.argv[3],)
+    if len(sys.argv) > 3:
+        if sys.argv[3] == "pdf":
+            build_web = False
+        elif sys.argv[3] == "website":
+            build_pdf = False
+        else:
+            print("Bad arg[3], should be 'pdf' or 'website'".format(sys.argv[3]))
+            sys.exit(1)
 
-    formats = all_formats
-    if (len(sys.argv) > 4):
-        if (sys.argv[4] != "all"):
-            if (sys.argv[4] not in formats):
-                print("Expecting one of %s" % ' '.join(formats))
-                sys.exit(1)
-            formats = (sys.argv[4],)
+    if len(sys.argv) > 4:
+        if sys.argv[4] not in docset:
+            print("Bad arg[4], should be one of %s" % " ".join(docset))
+            sys.exit(1)
+        docset = (sys.argv[4],)
 
-    if (len(sys.argv) > 5):
-        print("Unused arguments:  %s" % ' '.join(sys.argv[5: ]))
+    if len(sys.argv) > 4:
+        print("Unused arguments:  %s" % " ".join(sys.argv[4:]))
 
-    # set environmental variable used in the index.Rmd files
-    os.environ['STAN_DOCS_VERSION'] = '.'.join([str(stan_major), str(stan_minor)])
+    if build_web:
+        print("render website")
+        with pushd(os.path.join(path, "src")):
+            command = "quarto render"
+            shexec(command)
+            shutil.copytree(
+                "_website", docspath, copy_function=shutil.move, dirs_exist_ok=True
+            )
 
-    for doc in docset:
-        make_docs(docspath, stan_version, doc, formats)
+    if build_pdfs:
+        for doc in docset:
+            make_pdfs(docspath, stan_version, doc)
 
 
 if __name__ == "__main__":

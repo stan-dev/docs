@@ -88,7 +88,8 @@ def main():
         print("Expecting version number args MAJOR MINOR")
         sys.exit(1)
 
-    stan_version = "_".join([str(stan_major), str(stan_minor)])
+    stan_version = f"{stan_major}_{stan_minor}"
+    os.environ["STAN_DOCS_VERSION"] = f"{stan_major}.{stan_minor}"
     path = os.getcwd()
     docspath = os.path.join(path, "docs", stan_version)
     if not (os.path.exists(docspath)):
@@ -104,7 +105,7 @@ def main():
         if sys.argv[3] == "pdf":
             build_web = False
         elif sys.argv[3] == "website":
-            build_pdf = False
+            build_pdfs = False
         else:
             print("Bad arg[3], should be 'pdf' or 'website'".format(sys.argv[3]))
             sys.exit(1)
@@ -115,8 +116,8 @@ def main():
             sys.exit(1)
         docset = (sys.argv[4],)
 
-    if len(sys.argv) > 4:
-        print("Unused arguments:  %s" % " ".join(sys.argv[4:]))
+    if len(sys.argv) > 5:
+        print("Unused arguments:  %s" % " ".join(sys.argv[5:]))
 
     if build_web:
         print("render website")

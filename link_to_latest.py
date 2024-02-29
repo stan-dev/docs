@@ -41,7 +41,7 @@ def main():
                         outfile.write(line)
                         if '<head>' in line.strip():
                             outfile.write(canonical)
-                        if '<section class="normal" id="section-">' in line.strip():
+                        if '<main class="content" id="quarto-document-content">' in line.strip():
                             outfile.write(redirect_msg)
                             outfile.write('')
             os.replace('tmpfile',file)

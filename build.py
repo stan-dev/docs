@@ -88,7 +88,8 @@ def main():
         print("Expecting version number args MAJOR MINOR")
         sys.exit(1)
 
-    stan_version = "_".join([str(stan_major), str(stan_minor)])
+    stan_version = f"{stan_major}_{stan_minor}"
+    os.environ['STAN_DOCS_VERSION'] = f"{stan_major}.{stan_minor}"
     path = os.getcwd()
     docspath = os.path.join(path, "docs", stan_version)
     if not (os.path.exists(docspath)):

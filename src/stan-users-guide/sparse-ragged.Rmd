@@ -3,8 +3,6 @@ pagetitle: Sparse and Ragged Data Structures
 ---
 
 # Sparse and Ragged Data Structures  {#sparse-ragged.chapter}
-```{r include, file="before-chapter.R", echo=FALSE, message=FALSE, warning=FALSE}
-```
 
 Stan does not directly support either sparse or ragged data
 structures, though both can be accommodated with some programming
@@ -46,11 +44,6 @@ will no longer work, because Stan does not support undefined values.
 The following missing data example shows an example with $J=3$ and $K=4$,
 with missing responses shown as NA, as in R.
 
-```{r results='asis', echo=FALSE}
-cat(ifelse(knitr::is_html_output(),"", "\n\\begin{figure}[!h]"))
-```
-
-
 \begin{equation*}
 y
 =
@@ -65,10 +58,6 @@ y
 \right]
 \end{equation*}
 
-```{r results='asis', echo=FALSE}
-cat(ifelse(knitr::is_html_output(),"", "\n\\end{figure}"))
-```
-
 There is no support within Stan for R's NA values, so this data structure cannot be used
 directly. Instead, it must be converted to a "long form" as in a database,
 with columns indicating the indices along with the value.
@@ -80,19 +69,14 @@ As the array becomes larger and sparser, the long form becomes
 the more economical encoding.
 
 
-```{r sparsedata, echo=FALSE}
-df <- read.table(text="
-jj   | kk   | y
-1    | 1    | 0
-1    | 2    | 1
-1    | 4    | 1
-2    | 1    | 0
-2    | 4    | 1
-3    | 2    | 0
-", sep="|", header=TRUE, check.names=FALSE)
-kable(df, booktabs=TRUE, escape=FALSE, linesep="") %>%
-  kable_styling(full_width=FALSE)
-```
+|*jj* | *kk* |*y* |
+|:----|:-----|:---|
+|1    | 1    | 0  |
+|1    | 2    | 1  |
+|1    | 4    | 1  |
+|2    | 1    | 0  |
+|2    | 4    | 1  |
+|3    | 2    | 0  |
 
 Letting $N$ be the number of $y$ that are defined, here $N=6$,
 the data and model can be formulated as follows.
@@ -133,33 +117,21 @@ a linear array.
 For example, consider a data structure for three groups, each of which
 has a different number of observations.
 
-```{r results='asis', echo=FALSE}
-cat(ifelse(knitr::is_html_output(),
-"<table><tr><td>",
-"\\begin{minipage}[c]{0.35\\textwidth}"))
-```
-$y_1 =  \left[1.3 \ \ 2.4 \ \ 0.9\right]$
 
-$y_2 = \left[-1.8 \ \ -0.1\right]$
+:::: {layout-ncol=2}
 
+::: {#first-column}
+$y_1 =  \left[1.3 \ \ 2.4 \ \ 0.9\right]\\$
+$y_2 = \left[-1.8 \ \ -0.1\right]\\$
 $y_3 = \left[12.9 \ \ 18.7 \ \ 42.9 \ \ 4.7\right]$
+:::
 
-```{r results='asis', echo=FALSE}
-cat(ifelse(knitr::is_html_output(),
-"</td><td>",
-"\\end{minipage} \\begin{minipage}[c]{0.60\\textwidth}"))
-```
-
-$z = [1.3 \ \ 2.4 \ \ 0.9 \ \ -1.8 \ \ -0.1 \ \ 12.9 \ \ 18.7 \ \ 42.9 \ \ 4.7]$
-
+::: {#second-column}
+$z = [1.3 \ \ 2.4 \ \ 0.9 \ \ -1.8 \ \ -0.1 \ \ 12.9 \ \ 18.7 \ \ 42.9 \ \ 4.7]\\$
 $s  =  \{ 3 \ \ 2 \ \ 4 \}$
+:::
 
-
-```{r results='asis', echo=FALSE}
-cat(ifelse(knitr::is_html_output(),
-"</td></tr></table>",
-"\\end{minipage}"))
-```
+::::
 
 On the left is the definition of a ragged data structure $y$ with three rows of
 different sizes ($y_1$ is size 3, $y_2$ size 2, and $y_3$ size 4).  On the right

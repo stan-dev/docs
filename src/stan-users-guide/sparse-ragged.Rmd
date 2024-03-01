@@ -1,10 +1,14 @@
+---
+pagetitle: Sparse and Ragged Data Structures
+---
+
 # Sparse and Ragged Data Structures  {#sparse-ragged.chapter}
 ```{r include, file="before-chapter.R", echo=FALSE, message=FALSE, warning=FALSE}
 ```
 
 Stan does not directly support either sparse or ragged data
 structures, though both can be accommodated with some programming
-effort.  The [sparse matrices chapter](#sparse-matrices.chapter)
+effort.  The [sparse matrices chapter](https://mc-stan.org/docs/functions-reference/sparse_matrix_operations.html)
 introduces a special-purpose sparse matrix times dense vector
 multiplication, which should be used where applicable; this chapter
 covers more general data structures.
@@ -14,8 +18,8 @@ covers more general data structures.
 Coding sparse data structures is as easy as moving from a matrix-like
 data structure to a database-like data structure.  For example,
 consider the coding of sparse data for the IRT models discussed in the
-[item-response model section](#item-response-models.section).  There
-are $J$ students and $K$ questions, and if every student answers every
+[item-response model section](regression.Rmd#item-response-models.section).
+There are $J$ students and $K$ questions, and if every student answers every
 question, then it is practical to declare the data as a $J \times K$
 array of answers.
 
@@ -35,13 +39,19 @@ model {
 }
 ```
 
-```{r results="asis"}
-cat(ifelse(knitr::is_html_output(), "<table><tr><td>",
-           "\\begin{figure}
-            \\begin{center}
-            \\begin{minipage}[c]{0.45\\textwidth}"))
+When not every student is given every question, the dense array coding
+will no longer work, because Stan does not support undefined values.
+
+
+The following missing data example shows an example with $J=3$ and $K=4$,
+with missing responses shown as NA, as in R.
+
+```{r results='asis', echo=FALSE}
+cat(ifelse(knitr::is_html_output(),"", "\n\\begin{figure}[!h]"))
 ```
-$$
+
+
+\begin{equation*}
 y
 =
 \left[
@@ -53,55 +63,36 @@ y
 \mbox{NA} & 0 & \mbox{NA} & \mbox{NA}
 \end{array}
 \right]
-$$
-```{r results="asis"}
-cat(ifelse(knitr::is_html_output(), "</td><td>",
-           "\\end{minipage}
-            \\ \\ \\
-            \\begin{minipage}[c]{0.45\\textwidth}"))
+\end{equation*}
+
+```{r results='asis', echo=FALSE}
+cat(ifelse(knitr::is_html_output(),"", "\n\\end{figure}"))
 ```
 
-```{r}
-df <- read.table(text=
-"$jj$ | $kk$ | $y$
- 1    | 1    | 0
- 1    | 2    | 1
- 1    | 4    | 1
- 2    | 1    | 0
- 2    | 4    | 1
- 3    | 2    | 0
+There is no support within Stan for R's NA values, so this data structure cannot be used
+directly. Instead, it must be converted to a "long form" as in a database,
+with columns indicating the indices along with the value.
+With columns $jj$ and $kk$ used for the indexes
+(following @GelmanHill:2007), the 2-D array $y$ is recoded as a table.
+The number of rows in the table equals the number of defined
+array elements, here $y_{1,1} = 0$, $y_{1,2} = 1$, up to $y_{3,2} = 1$.
+As the array becomes larger and sparser, the long form becomes
+the more economical encoding.
+
+
+```{r sparsedata, echo=FALSE}
+df <- read.table(text="
+jj   | kk   | y
+1    | 1    | 0
+1    | 2    | 1
+1    | 4    | 1
+2    | 1    | 0
+2    | 4    | 1
+3    | 2    | 0
 ", sep="|", header=TRUE, check.names=FALSE)
 kable(df, booktabs=TRUE, escape=FALSE, linesep="") %>%
-  kable_styling(full_width=TRUE)
+  kable_styling(full_width=FALSE)
 ```
-
-```{r results="asis"}
-cat(ifelse(knitr::is_html_output(), "</td></tr></table>",
-           "\\end{minipage}
-            \\end{center}
-            \\end{figure}"))
-```
-
-On the left is a definition of a sparse matrix $y$ using the NA notation from R
-(which is not supported by Stan).  On the right is a database-like encoding of
-the same sparse matrix $y$ that can be used directly in Stan.  The first two
-columns, $jj$ and $kk$, denote the indexes and the final column, $y$, the value.
-For example, the fifth row of the database-like data structure on the right
-indicates that $y_{2,4} = 1$.
-
-
-When not every student is given every question, the dense array coding
-will no longer work, because Stan does not support undefined values.
-The sparse data example shows an example with $J=3$ and $K=4$, with
-missing responses shown as NA, as in R.  There is no support within
-Stan for R's NA values, so this data structure cannot be used
-directly.  Instead, it must be converted to a "long form" as in a
-database, with columns indicating the $j$ and $k$ indexes along with
-the value.  For instance, with $jj$ and $kk$ used for the indexes
-(following @GelmanHill:2007), the data structure can be coded as in
-the right-hand example in the example. This says that
-$y_{1,1} = 0$, $y_{1,2} = 1$, and so on, up to $y_{3,2} = 1$, with all
-other entries undefined.
 
 Letting $N$ be the number of $y$ that are defined, here $N=6$,
 the data and model can be formulated as follows.
@@ -142,10 +133,10 @@ a linear array.
 For example, consider a data structure for three groups, each of which
 has a different number of observations.
 
-```{r results="asis"}
-cat(ifelse(knitr::is_html_output(), "<table><tr><td>",
-           "\\begin{center}
-            \\begin{minipage}[c]{0.35\\textwidth}"))
+```{r results='asis', echo=FALSE}
+cat(ifelse(knitr::is_html_output(),
+"<table><tr><td>",
+"\\begin{minipage}[c]{0.35\\textwidth}"))
 ```
 $y_1 =  \left[1.3 \ \ 2.4 \ \ 0.9\right]$
 
@@ -153,23 +144,21 @@ $y_2 = \left[-1.8 \ \ -0.1\right]$
 
 $y_3 = \left[12.9 \ \ 18.7 \ \ 42.9 \ \ 4.7\right]$
 
-```{r results="asis"}
-cat(ifelse(knitr::is_html_output(), "</td><td>",
-           "\\end{minipage}
-            \\ \\ \\
-            \\begin{minipage}[c]{0.60\\textwidth}"))
+```{r results='asis', echo=FALSE}
+cat(ifelse(knitr::is_html_output(),
+"</td><td>",
+"\\end{minipage} \\begin{minipage}[c]{0.60\\textwidth}"))
 ```
 
-$z = [1.3 \ \ 2.4 \ \ 0.9 \ \ -1.8 \ \ -0.1 \ \ 12.9 \ \ 18.7 \ \ 42.9
-\ \ 4.7]$
+$z = [1.3 \ \ 2.4 \ \ 0.9 \ \ -1.8 \ \ -0.1 \ \ 12.9 \ \ 18.7 \ \ 42.9 \ \ 4.7]$
 
 $s  =  \{ 3 \ \ 2 \ \ 4 \}$
 
 
-```{r results="asis"}
-cat(ifelse(knitr::is_html_output(), "</td></tr></table>",
-           "\\end{minipage}
-            \\end{center}"))
+```{r results='asis', echo=FALSE}
+cat(ifelse(knitr::is_html_output(),
+"</td></tr></table>",
+"\\end{minipage}"))
 ```
 
 On the left is the definition of a ragged data structure $y$ with three rows of
@@ -180,9 +169,9 @@ In this example, $y_1 = z_{1:3}$, $y_2 = z_{4:5}$, and $y_3 = z_{6:9}$.
 
 Suppose the model is a  simple varying intercept model, which,
 using vectorized notation, would yield a log-likelihood
-$$
+\begin{equation*}
 \sum_{n=1}^3 \log \textsf{normal}(y_n \mid \mu_n, \sigma).
-$$
+\end{equation*}
 There's no direct way to encode this in Stan.
 
 A full database type structure could be used, as in the sparse

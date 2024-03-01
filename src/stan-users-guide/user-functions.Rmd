@@ -1,3 +1,7 @@
+---
+pagetitle: User-Defined Functions
+---
+
 # User-Defined Functions  {#functions-programming.chapter}
 
 This chapter explains functions from a user perspective with examples;
@@ -66,7 +70,7 @@ any number of quoted string literals or Stan expressions as arguments.
 This statement is typically embedded in a conditional statement in
 order to detect bad or illegal outcomes of some processing step.
 
-#### Catching errors {-}
+### Catching errors {-}
 
 Rejection is used to flag errors that arise in inputs or in program
 state.  It is far better to fail early with a localized informative
@@ -121,7 +125,7 @@ Function argument type declarations may not be
 declared with constraints, either lower or upper bounds or structured
 constraints like forming a simplex or correlation matrix, (as is also
 the case for local variables);  see the table of types in the [reference
-manual](https://mc-stan.org/docs/reference-manual/variable-declaration.html)
+manual](https://mc-stan.org/docs/reference-manual/types.html#variable-declaration)
 for full details.
 
 For example, here's a function to compute the entropy of a categorical
@@ -189,7 +193,7 @@ This qualifier should be used when writing functions that call the
 built-in ordinary differential equation (ODE) solvers, algebraic
 solvers, or map functions.  These higher-order functions have strictly
 specified signatures where some arguments of are data only
-expressions. (See the [ODE solver chapter](#ode-solver.chapter) for
+expressions. (See the [ODE solver chapter](odes.Rmd) for
 more usage details and the functions reference manual for full
 definitions.)  When writing a function which calls the ODE or
 algebraic solver, arguments to that function which are passed into the
@@ -253,7 +257,7 @@ the transformed parameters and model blocks.
 Here is an example of a function to assign standard normal priors to a
 vector of coefficients, along with a center and scale, and return the
 translated and scaled coefficients; see the [reparameterization
-section](#reparameterization.section) for more information on
+section](efficiency-tuning.Rmd#reparameterization.section) for more information on
 efficient non-centered parameterizations
 
 ```stan
@@ -404,15 +408,15 @@ function (`_lpmf`) must be discrete (integer or integer array).
 
 ## Overloading functions
 
-As described in the [reference
-manual](https://mc-stan.org/docs/2_28/reference-manual/function-names.html)
+As described in the
+[reference manual](https://mc-stan.org/docs/reference-manual/user-functions.html#function-names)
 function overloading is permitted in Stan, beginning in version 2.29.
 
 This means multiple functions can be defined with the same name as long as
 they accept different numbers or types of arguments. User-defined functions can
 also overload Stan library functions.
 
-### Warning on usage
+### Warning on usage {-}
 
 Overloading is a powerful productivity tool in programming languages, but it can
 also lead to confusion.
@@ -443,7 +447,7 @@ triple({3.0, 4.0})[0] == triple({3.0, 4.0}[0])
 Note that none of these properties are enforced by Stan, they are mentioned
 merely to warn against uses of overloading which cause confusion.
 
-### Function resolution
+### Function resolution {-}
 
 Stan resolves overloaded functions by the number and type of arguments passed to
 the function. This can be subtle when multiple signatures with the same number
@@ -694,11 +698,13 @@ back.
 
 #### Truncating below {-}
 
-For example, the following code generates a $\textsf{Weibull}(\alpha, \sigma)$ variate truncated below at a time $t$,^[The original code and impetus for including this in the manual came from the [Stan forums post](http://discourse.mc-stan.org/t/rng-for-truncated-distributions/3122/7); by user `lcomm`, who also explained truncation above and below.]
+For example, the following code generates
+a $\textsf{Weibull}(\alpha, \sigma)$ variate truncated below
+at a time $t$,^[The original code and impetus for including this in the manual came from the [Stan forums post](http://discourse.mc-stan.org/t/rng-for-truncated-distributions/3122/7); by user `lcomm`, who also explained truncation above and below.]
 
 ```stan
 real weibull_lb_rng(real alpha, real sigma, real t) {
-  real p = weibull_cdf(lt, alpha, sigma);   // cdf for lb
+  real p = weibull_cdf(lt | alpha, sigma);   // cdf for lb
   real u = uniform_rng(p, 1);               // unif in bounds
   real y = sigma * (-log1m(u))^inv(alpha);  // inverse cdf
   return y;
@@ -714,8 +720,8 @@ following code suffices,
 
 ```stan
 real normal_lub_rng(real mu, real sigma, real lb, real ub) {
-  real p_lb = normal_cdf(lb, mu, sigma);
-  real p_ub = normal_cdf(ub, mu, sigma);
+  real p_lb = normal_cdf(lb | mu, sigma);
+  real p_ub = normal_cdf(ub | mu, sigma);
   real u = uniform_rng(p_lb, p_ub);
   real y = mu + sigma * inv_Phi(u);
   return y;
@@ -731,8 +737,8 @@ and naming for readability;  compare the multiple statement version
 above with the single statement
 
 ```stan
-  return mu + sigma * inv_Phi(uniform_rng(normal_cdf(lb, mu, sigma),
-                                          normal_cdf(ub, mu, sigma)));
+  return mu + sigma * inv_Phi(uniform_rng(normal_cdf(lb | mu, sigma),
+                                          normal_cdf(ub | mu, sigma)));
 ```
 
 for readability.  The names like `p` indicate probabilities, and

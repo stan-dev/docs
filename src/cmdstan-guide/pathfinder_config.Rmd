@@ -1,6 +1,10 @@
+---
+pagetitle: Pathfinder Configuration
+---
+
 # Pathfinder Method for Approximate Bayesian Inference {#pathfinder-config}
 
-The Pathfinder algorithm is described in section [Pathfinder overview](#pathfinder-intro).
+The Pathfinder algorithm is described in section [Pathfinder overview](pathfinder_intro.Rmd).
 
 The `pathfinder` method runs multi-path Pathfinder by default,
 which returns a PSIS sample over the draws from several individual ("single-path") Pathfinder runs.
@@ -25,6 +29,8 @@ method = pathfinder
     history_size = 5 (Default)
     num_psis_draws = 1000 (Default)
     num_paths = 4 (Default)
+    psis_resample = 1 (Default)
+    calculate_lp = 1 (Default)
     save_single_paths = 0 (Default)
     max_lbfgs_iters = 1000 (Default)
     num_draws = 1000 (Default)
@@ -53,12 +59,24 @@ Can differ from `num_psis_draws`.
 - `num_elbo_draws` - Number of Monte Carlo draws to evaluate ELBO.
 Must be a positive integer.  Default value is $25$.
 
+- `psis_resample` - If True ($1$), perform psis resampling on samples returned
+from individual pathfinders. If False ($0$), returns all `num_paths * num_draws samples` draws
+from the individual pathfinders.
+Valid values: $\{0, 1\}$. Default is $1$ (True).
+
+- `calculate_lp` - If True ($1$), log probabilities of the approximate draws
+are calculated and returned with the output. If False ($0$), each pathfinder
+will only  calculate the lp values needed for the ELBO calculation.
+If False, psis resampling cannot be performed and the algorithm returns
+`num_paths * num_draws samples`. The output will still contain any lp values
+used when calculating ELBO scores within L-BFGS iterations.
+Valid values: $\{0, 1\}$. Default is $1$ (True).
 
 
 ## L-BFGS Configuration
 
 Arguments `init_alpha` through `history_size` are the full set of arguments to the L-BFGS optimizer
-and have the same defaults for [optimization](#optimize_config).
+and have the same defaults for [optimization](optimize_config.Rmd).
 
 
 ## Multi-path Pathfinder CSV files{#pathfinder_csv}
@@ -66,7 +84,7 @@ and have the same defaults for [optimization](#optimize_config).
 By default, the `pathfinder` method uses 4 independent Pathfinder runs,
 each of which produces 1000 approximate draws, which are then
 importance resampled down to 1000 final draws.
-The importance resampled draws are output as a [StanCSV file](#pathfinder_csv) file.
+The importance resampled draws are output as a [StanCSV file](stan_csv_apdx.Rmd).
 
 The CSV files have the following structure:
 

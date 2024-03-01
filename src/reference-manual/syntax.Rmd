@@ -1,3 +1,7 @@
+---
+pagetitle: Language Syntax
+---
+
 # Language Syntax
 
 This chapter defines the basic syntax of the Stan modeling language
@@ -27,7 +31,7 @@ The following representation is constructed directly from the OCaml
 [reference
 parser](https://github.com/stan-dev/stanc3/blob/release/v2.27.0/src/frontend/parser.mly)
 using a tool called [Obelisk](https://github.com/Lelio-Brun/Obelisk).
-The raw output is available [here](grammar.txt).
+The raw output is available [here](https://raw.githubusercontent.com/stan-dev/docs/master/src/reference-manual/grammar.txt).
 
 <!-- This is the direct output of `obelisk -i parser.mly`
      copied and pasted into reasonable section distinctions.
@@ -81,7 +85,7 @@ The raw output is available [here](grammar.txt).
 
 <unsized_type> ::= ARRAY <unsized_dims> <basic_type>
                  | ARRAY <unsized_dims> <unsized_tuple_type>
-                 | <basic_type> [<unsized_dims>]
+                 | <basic_type>
                  | <unsized_tuple_type>
 
 <unsized_tuple_type> ::= TUPLE LPAREN <unsized_type> COMMA <unsized_type>
@@ -109,13 +113,6 @@ The raw output is available [here](grammar.txt).
 ```
 <identifier> ::= IDENTIFIER
                | TRUNCATE
-               | <future_keyword>
-
-<future_keyword> ::= OFFSET
-                   | MULTIPLIER
-                   | LOWER
-                   | UPPER
-                   | ARRAY
 
 <decl_identifier> ::= <identifier>
 
@@ -203,7 +200,6 @@ The raw output is available [here](grammar.txt).
 
 <arr_dims> ::= ARRAY LBRACK <expression> (COMMA <expression>)* RBRACK
 
-<dims> ::= LBRACK <expression> (COMMA <expression>)* RBRACK
 ```
 \normalsize
 
@@ -213,46 +209,34 @@ The raw output is available [here](grammar.txt).
 \fontsize{9pt}{9.2}\selectfont
 
 ```
-<expression> ::= <lhs>
-               | <non_lhs>
-
-<lhs> ::= <identifier>
-        | <indexed(<lhs>)>
-        | <lhs> DOTNUMERAL
-
-<indexed(expr_type)> ::= expr_type LBRACK <indexes> RBRACK
-
-<non_lhs> ::= <expression> QMARK <expression> COLON <expression>
-            | <expression> <infixOp> <expression>
-            | <prefixOp> <expression>
-            | <expression> <postfixOp>
-            | <indexed(<non_lhs>)>
-            | <common_expression>
+<expression> ::= <expression> QMARK <expression> COLON <expression>
+               | <expression> <infixOp> <expression>
+               | <prefixOp> <expression>
+               | <expression> <postfixOp>
+               | <common_expression>
 
 <constr_expression> ::= <constr_expression> <arithmeticBinOp>
                         <constr_expression>
                       | <prefixOp> <constr_expression>
                       | <constr_expression> <postfixOp>
-                      | <indexed(<constr_expression>)>
-                      | <identifier> DOTNUMERAL
                       | <common_expression>
-                      | <identifier>
 
-<common_expression> ::= INTNUMERAL
+<common_expression> ::= <identifier>
+                      | INTNUMERAL
                       | REALNUMERAL
                       | DOTNUMERAL
                       | IMAGNUMERAL
                       | LBRACE <expression> (COMMA <expression>)* RBRACE
-                      | LPAREN <expression> COMMA <expression> (COMMA
-                        <expression>)* RPAREN
                       | LBRACK [<expression> (COMMA <expression>)*] RBRACK
                       | <identifier> LPAREN [<expression> (COMMA
                         <expression>)*] RPAREN
                       | TARGET LPAREN RPAREN
-                      | GETLP LPAREN RPAREN
                       | <identifier> LPAREN <expression> BAR [<expression>
                         (COMMA <expression>)*] RPAREN
+                      | LPAREN <expression> COMMA <expression> (COMMA
+                        <expression>)* RPAREN
                       | <common_expression> DOTNUMERAL
+                      | <common_expression> LBRACK <indexes> RBRACK
                       | LPAREN <expression> RPAREN
 
 <prefixOp> ::= BANG
@@ -309,10 +293,10 @@ The raw output is available [here](grammar.txt).
 <statement> ::= <atomic_statement>
               | <nested_statement>
 
-<atomic_statement> ::= <lhs> <assignment_op> <expression> SEMICOLON
+<atomic_statement> ::= <common_expression> <assignment_op> <expression>
+                       SEMICOLON
                      | <identifier> LPAREN [<expression> (COMMA
                        <expression>)*] RPAREN SEMICOLON
-                     | INCREMENTLOGPROB LPAREN <expression> RPAREN SEMICOLON
                      | <expression> TILDE <identifier> LPAREN [<expression>
                        (COMMA <expression>)*] RPAREN [<truncation>] SEMICOLON
                      | TARGET PLUSASSIGN <expression> SEMICOLON
@@ -325,7 +309,6 @@ The raw output is available [here](grammar.txt).
                      | SEMICOLON
 
 <assignment_op> ::= ASSIGN
-                  | ARROWASSIGN
                   | PLUSASSIGN
                   | MINUSASSIGN
                   | TIMESASSIGN
@@ -365,7 +348,7 @@ Many of the tokens used in the BNF grammars follow obviously
 from their names: `DATABLOCK` is the literal string 'data',
 `COMMA` is a single ',' character, etc. The literal representation
 of each operator is additionally provided in the [operator
-precedence table](#operator-precedence-table).
+precedence table](expressions.Rmd#operator-precedence-table).
 
 A few tokens are not so obvious, and are defined here in
 regular expressions:
@@ -405,7 +388,7 @@ compilation with an error message indicating the location of the problem.
 
 In the Stan grammar provided in this chapter, the expression `1 + 2 *
 3` has two parses.  As described in the [operator precedence
-table](#operator-precedence-table), Stan disambiguates between the meaning $1
+table](expressions.Rmd#operator-precedence-table), Stan disambiguates between the meaning $1
 + (2 \times 3)$ and the meaning $(1 + 2) \times 3$ based on operator
 precedences and associativities.
 

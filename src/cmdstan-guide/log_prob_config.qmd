@@ -1,0 +1,102 @@
+---
+pagetitle: Extracting log probabilities and gradients for diagnostics
+---
+
+# Extracting log probabilities and gradients for diagnostics
+
+CmdStan can return the computed log probability and the gradient with respect to
+a set of parameters.
+
+This is similar to the `diagnose` subcommand, but the output format differs and
+the results here are not compared with those from finite differences.
+
+**Note**: Startup and data initialization costs mean that this method is not an
+efficient way to calculate these quantities. It is provided only for
+convenience and should not be used for serious computation.
+
+
+## Configuration
+
+This method takes 3 arguments:
+
+- `jacobian` - Whether or not the [Jacobian adjustment for constrained](https://mc-stan.org/docs/stan-users-guide/reparameterization.html)
+  parameters should be included in the gradient. Default value is 1 (include adjustment).
+
+- `constrained_params` - Input file of parameters values on the constrained scale.
+A single set of constrained parameters can be specified using
+[JSON](json_apdx.qmd) format.
+Alternatively, the input file can be set of draws in [StanCSV](stan_csv_apdx.qmd) format.
+
+
+- `unconstrained_params` - Input file (JSON or R dump) of parameter values
+  on unconstrained scale. These files should contain a single variable, called
+  `params_r`, which is a flattened vector of all unconstrained parameters. If
+  this object is two dimensional, each entry should be a vector of the same form and the output
+  will feature multiple rows.
+
+Only one of `constrained_params` and `unconstrained_params` can be specified.
+
+For more on the differences between constrained and unconstrained parameters, see
+the Stan reference manual [section on variable transforms](https://mc-stan.org/docs/reference-manual/transforms.html).
+
+
+## CSV output
+
+The output file consists of the following pieces of information:
+
+- The full set of configuration options available for the `log_prob` method is
+  reported at the beginning of the output file as CSV comments.
+
+- Column headers, the first column is labelled `lp__`, and the rest are named
+  after parameters. These will be the unconstrained parameters, regardless of
+  whether constrained or unconstrained parameters were supplied as input.
+
+- Values which correspond to the value of the log density (column 1) and the
+  gradient with respect to each parameter (remaining columns).
+
+For example, if we have a file called params.json:
+
+```json
+{
+    "theta" : 0.1
+}
+```
+
+We can run the example model:
+
+```
+/bernoulli log_prob constrained_params=params.json data file=bernoulli.data.json
+```
+
+This yields
+
+
+```
+# stan_version_major = 2
+# stan_version_minor = 31
+# stan_version_patch = 0
+# model = bernoulli_model
+# start_datetime = 2022-11-17 20:46:06 UTC
+# method = log_prob
+#   log_prob
+#     unconstrained_params =  (Default)
+#     constrained_params = params.json
+#     jacobian = 1 (Default)
+# id = 1 (Default)
+# data
+#   file = bernoulli.data.json
+# init = 2 (Default)
+# random
+#   seed = 2390820139 (Default)
+# output
+#   file = output.csv (Default)
+#   diagnostic_file =  (Default)
+#   refresh = 100 (Default)
+#   sig_figs = -1 (Default)
+#   profile_file = profile.csv (Default)
+# num_threads = 1 (Default)
+# stanc_version = stanc3 2.31.0 (Linux)
+# stancflags =
+lp_,theta
+-7.856,1.8
+```

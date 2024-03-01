@@ -26,9 +26,7 @@ previously, we used [bookdown](https://github.com/rstudio/bookdown).
 [Download quarto](https://quarto.org/docs/download/)
 To build the pdf version of the docs, you will need to [install LaTeX](https://www.latex-project.org/get/) as well.
 
-
-Quarto accepts both [Rmarkdown (`.Rmd`)](https://rmarkdown.rstudio.com)
-and [`.qmd`](https://quarto.org/docs/authoring/markdown-basics.html) source files
+Quarto accepts [`.qmd`](https://quarto.org/docs/authoring/markdown-basics.html) source files
 and uses the [Pandoc](https://pandoc.org) conversion engine.
 
 ## Scripts to build and maintain the docset
@@ -47,7 +45,7 @@ Requires Python 3.7 or higher, due to call to `subprocess.run`, kwarg `capture_o
 * `python build.py 2 35 website` - builds the docs website in `docs/2_42`.
 * `python build.py 2 35 pdf functions-reference` - builds only the pdf version of the Stan functions reference,  resulting document is `docs/2_35/functions-reference-2_35.pdf`
 * `python build.py 2 35 pdf all` - builds all pdfs from the Stan documentation set, resulting pdfs are in `docs/2_35`.
- 
+
 
 **Additional scripts**
 

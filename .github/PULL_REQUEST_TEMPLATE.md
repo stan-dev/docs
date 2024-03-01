@@ -1,7 +1,7 @@
 #### Submission Checklist
 
-- [ ] Builds locally 
-- [ ] New functions marked with `` `r since("VERSION")` ``
+- [ ] Builds locally
+- [ ] New functions marked with `` <<{ since VERSION }>>``
 - [ ] Declare copyright holder and open-source license: see below
 
 #### Summary

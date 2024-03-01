@@ -35,7 +35,7 @@ def main():
     sigs = set()
     ref_dir = os.path.join('src', 'functions-reference')
     with pushd(ref_dir):
-        for file in glob.glob('*.Rmd'):
+        for file in glob.glob('*.qmd'):
             print(file)
             with open(file) as rmd_file:
                 lines = rmd_file.readlines()
@@ -50,7 +50,7 @@ def main():
                             sigs.add('{}; {}; {}'.format(parts[1], parts[2], parts[0]))
                         else:
                             print('not a function sig: {}'.format(line))
-    
+
     with open(outfile_name, 'w') as outfile:
         outfile.write('# This file is semicolon delimited\n')
         outfile.write('StanFunction; Arguments; ReturnType\n')

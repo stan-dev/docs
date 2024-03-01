@@ -17,7 +17,6 @@ pipeline {
     }
     environment {
         GITHUB_TOKEN = credentials('6e7c1e8f-ca2c-4b11-a70e-d934d3f6b681')
-        DOCKERHUB_CREDENTIALS=credentials('acdd7926-9ee7-4f51-863f-14ee5bca1f4c')
     }
     stages {
         stage("Build docker image") {

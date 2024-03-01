@@ -1,3 +1,7 @@
+---
+pagetitle: Using the Stan Compiler
+---
+
 # Using the Stan Compiler
 
 Stan is used in most of our
@@ -91,7 +95,7 @@ During model compilation, stanc can produce a variety of errors (issues that
 prevent the model from being compiled) and warnings (non-fatal issues that
 should still be considered).
 
-### Warnings
+### Warnings {-}
 
 Even without the optional `--warn-pedantic` and `--warn-uninitialized` [command
 line flags](#stanc-args), both of which enable additional warnings, stanc can still
@@ -104,7 +108,7 @@ in two situations
        this is a valid stan model but likely unintended!
    ```
 2. The use of any [deprecated
-   features](https://mc-stan.org/docs/reference-manual/deprecated-features.html)
+   features](https://mc-stan.org/docs/reference-manual/deprecations.html)
    will lead to warnings which will look as follows
    ```
    Warning in 'deprecated.stan', line 2, column 0: Comments beginning with # are
@@ -115,7 +119,7 @@ in two situations
 A single Stan program can produce many warnings during compilation.
 
 
-### Errors
+### Errors {-}
 
 Errors differ from warnings in their severity and format. In particular, errors
 are _fatal_ and stop compilation, so at most one error is displayed per run of
@@ -129,8 +133,8 @@ There are five kinds of errors emitted by stanc3
    Error: file 'notfound.stan' not found or cannot be opened
    ```
 2. Syntactic errors occur whenever a program violates the Stan language's
-   [syntax](https://mc-stan.org/docs/reference-manual/language-syntax.html)
-   requirements. There are three kinds of errors within syntax errors; "lexing"
+   [syntax](https://mc-stan.org/docs/reference-manual/syntax.html) requirements.
+   There are three kinds of errors within syntax errors; "lexing"
    errors mean that the input was unable to be read properly on the character
    level, "include" errors which occur when the `#include` directive fails, and
    "parsing" errors which result when the structure of the program is incorrect.
@@ -183,7 +187,7 @@ There are five kinds of errors emitted by stanc3
 
 3. Semantic errors (also known as type errors) occur when a program is structured
    correctly but features an error in the [type
-   rules](https://mc-stan.org/docs/reference-manual/extra-grammatical-constraints.html)
+   rules](https://mc-stan.org/docs/reference-manual/syntax.html#extra-grammatical-constraints)
    imposed by the language. An example of this is assigning a real value to a
    variable defined as an integer.
    ```
@@ -198,7 +202,7 @@ There are five kinds of errors emitted by stanc3
    type int and rhs has type real
    ```
 4. The compiler will raise an error for use of any [removed
-   features](https://mc-stan.org/docs/reference-manual/removed-features.html)
+   features](https://mc-stan.org/docs/reference-manual/removals.html)
    for at least one version following their removal. The deprecation warnings
    mentioned above eventually turn into this kind of error to prompt the user to
    update their model. After the version of removal, these errors will be
@@ -270,11 +274,11 @@ in more detail in following sections):
 Some important limitations of pedantic mode are listed at the end of this chapter.
 
 
-### Distribution argument and variate constraint issues
+### Distribution argument and variate constraint issues {-}
 
 When an argument to a built-in distribution certainly does not match that
 distribution's specification in the [Stan Functions
-Reference](https://mc-stan.org/docs/functions-reference/index.html), a warning
+Reference](https://mc-stan.org/docs/functions-reference/overview.html), a warning
 is thrown. This primarily checks if any distribution argument's bounds at
 declaration, compile-time value, or subtype at declaration (e.g. `simplex`) is
 incompatible with the domain of the distribution. x
@@ -303,13 +307,13 @@ Warning at 'ex-dist-args.stan', line 6, column 14 to column 19:
 ```
 
 
-### Special-case distribution issues
+### Special-case distribution issues {-}
 
 Pedantic mode checks for some specific uses of distributions that may indicate a
 statistical mistake:
 
 
-#### Uniform distributions
+#### Uniform distributions {-}
 
 Any use of uniform distribution generates a warning, except when the variate
 parameter's declared `upper` and `lower` bounds exactly match the uniform
@@ -346,21 +350,22 @@ Warning at 'uniform-warn.stan', line 6, column 2 to column 20:
 ```
 
 
-#### (Inverse-) Gamma distributions
+#### (Inverse-) Gamma distributions {-}
 
 Gamma distributions are sometimes used as an attempt to assign an improper prior
 to a parameter. Pedantic mode gives a warning when the Gamma arguments indicate
 that this may be the case.
 
 
-#### lkj\_corr distribution
+#### lkj\_corr distribution {-}
 
 Any use of the `lkj_corr` distribution generates a warning that suggests using
 the Cholesky variant instead. See
-<https://mc-stan.org/docs/functions-reference/lkj-correlation.html> for details.
+[the LKJ correlation distribution section](https://mc-stan.org/docs/functions-reference/correlation_matrix_distributions.html#lkj-correlation)
+of the Stan Functions Reference for details.
 
 
-### Unused parameters
+### Unused parameters {-}
 
 A warning is generated when a parameter is declared but does not have any effect
 on the program. This is determined by checking whether the value of the `target`
@@ -388,13 +393,13 @@ Warning:
 ```
 
 
-### Large or small constants in a distribution
+### Large or small constants in a distribution {-}
 
 When numbers with magnitude less than 0.1 or greater than 10 are used as
 arguments to a distribution, it indicates that some parameter is not scaled to
 unit value, so a warning is thrown. See
-<https://mc-stan.org/docs/stan-users-guide/standardizing-predictors-and-outputs.html>
-for a discussion of scaling parameters.
+[the efficiency tuning section](https://mc-stan.org/docs/stan-users-guide/efficiency-tuning.html#standardizing-predictors-and-outputs)
+of the Stan User's guide for a discussion of scaling parameters.
 
 For example, consider the following program.
 
@@ -423,7 +428,7 @@ Warning at 'constants-warn.stan', line 6, column 19 to column 22:
 ```
 
 
-### Control flow depends on a parameter
+### Control flow depends on a parameter {-}
 
 Control flow statements, such as `if`, `for` and `while` should not depend on
 parameters or functions of parameters to determine their branching conditions.
@@ -470,7 +475,7 @@ Warning at 'param-dep-cf-warn.stan', line 19, column 2 to line 21, column 3:
 ```
 
 
-### Parameters with multiple tildes
+### Parameters with multiple tildes {-}
 
 A warning is generated when a parameter is found on the left-hand side of more than one ~ statements (or an equivalent `target +=` conditional density statement). This pattern is not inherently an issue, but it is unusual and may indicate a mistake.
 
@@ -503,7 +508,7 @@ Warning at 'multi-tildes.stan', line 9, column 2 to column 19:
 ```
 
 
-### Parameters with zero or multiple priors
+### Parameters with zero or multiple priors {-}
 
 A warning is generated when a parameter appears to have greater than or less than one prior distribution factor.
 
@@ -552,7 +557,7 @@ Warning:
 ```
 
 
-### Variables used before assignment
+### Variables used before assignment {-}
 
 A warning is generated when any variable is used before it has been assigned a value.
 
@@ -580,7 +585,7 @@ Warning at 'uninit-warn.stan', line 7, column 8 to column 9:
 ```
 
 
-### Strict or nonsensical parameter bounds
+### Strict or nonsensical parameter bounds {-}
 
 Except when there are logical or physical constraints, it is very unusual for you to be sure that a parameter will fall inside a specified range. A warning is generated for all parameters declared with the bounds `<lower=.., upper=..>` except for `<lower=0, upper=1>` or `<lower=-1, upper=1>`.
 
@@ -614,7 +619,7 @@ Warning:
   unconstrained and give it a normal(0.5, 0.5) prior distribution.
 ```
 
-### Nonlinear transformations
+### Nonlinear transformations {-}
 
 When a parameter is transformed in a non-linear fashion, an adjustment must be
 applied to account for distortion caused by the transform. This is discussed in
@@ -645,7 +650,7 @@ Warning:
     of the Jacobian of the transform.
 ```
 
-### Pedantic mode limitations
+### Pedantic mode limitations {-}
 
 
 * Constant values are sometimes uncomputable
@@ -680,15 +685,14 @@ Warning:
 In addition to compiling Stan programs, stanc3 features several [flags](#stanc-args)
 which can be used to format Stan programs and update them to the most recent
 Stan syntax by removing any
-[deprecation
-features](https://mc-stan.org/docs/reference-manual/deprecated-features.html)
+[deprecation features](https://mc-stan.org/docs/reference-manual/deprecations.html)
 which can be automatically replaced.
 
 These flags work for both `.stan` model files and `.stanfunctions` function
 files. They can be combined with `--o` to redirect the formatted output to a new
 file.
 
-### Automatic formatting
+### Automatic formatting {-}
 
 Invoking `stanc --auto-format <model_file>` will print a version of your model
 which has been re-formatted. The goal is to have this automatic formatting stay
@@ -700,7 +704,7 @@ preserve the program while formatting it.
 By default, this will try to split lines at or before column 78. This number can
 be changed using `--max-line-length`.
 
-### Canonicalizing
+### Canonicalizing {-}
 
 In addition to automatic formatting, stanc can also "canonicalize" programs by
 updating deprecated syntax, removing unnecessary parenthesis, and adding braces
@@ -746,7 +750,7 @@ is a comma-separated list of options. Currently these options are:
 Invoking `stanc --print-canonical <model_file>` is synonymous with running
 `stanc --auto-format --canonicalize=deprecations,braces,parentheses,includes`
 
-### Known issues
+### Known issues {-}
 
 The formatting and canonicalizing features of stanc3 are still under
 development. The following are some known issues one should be aware of before
@@ -785,7 +789,7 @@ command-line flag `--debug-optimized-mir-pretty`. To print an analogous
 representation of the Stan program prior to optimization, use the flag
 `--debug-transformed-mir-pretty`.
 
-### Optimization levels
+### Optimization levels {-}
 
 To turn optimizations on, the user specifies the desired optimization *level*.
 The level specifies the set of optimizations to use. The chosen optimizations
@@ -821,9 +825,9 @@ The levels include these optimizations:
 In addition, **Oexperimental** will apply more repetitions of the optimizations,
 which may increase compile times.
 
-### **O1** Optimizations
+### **O1** Optimizations {-}
 
-#### Dead code elimination
+#### Dead code elimination {-}
 
 Dead code is code that does not affect the behavior of the program. Code is not
 dead if it affects `target`, the value of any outside-observable variable like
@@ -873,7 +877,7 @@ log_prob {
 }
 ```
 
-#### Constant propagation
+#### Constant propagation {-}
 
 Constant propagation replaces uses of a variable which is known to have a
 constant value `C` with that constant `C`. This removes the overhead of looking
@@ -918,7 +922,7 @@ prepare_data {
 }
 ```
 
-#### Copy propagation
+#### Copy propagation {-}
 
 Copy propagation is similar to [expression propagation], but only
 propagates variables rather than arbitrary expressions. This can reduce the
@@ -956,7 +960,7 @@ log_prob {
 }
 ```
 
-#### Partial evaluation
+#### Partial evaluation {-}
 
 Partial evaluation searches for expressions that we can replace with a faster,
 simpler, more memory efficient, or more numerically stable expression with the
@@ -994,9 +998,9 @@ log_prob {
 }
 ```
 
-### **Oexperimental** Optimizations
+### **0experimental** Optimizations {-}
 
-#### Automatic-differentiation level optimization
+#### Automatic-differentiation level optimization {-}
 
 Stan variables can have two auto-differentiation (AD) *levels*: AD or non-AD. AD
 variables carry gradient information with them, which allows Stan to calculate
@@ -1042,7 +1046,7 @@ log_prob {
 }
 ```
 
-#### One step loop unrolling
+#### One step loop unrolling {-}
 
 One step loop unrolling is similar to [static loop unrolling].
 However, this optimization only 'unrolls' the first loop iteration, and can
@@ -1093,7 +1097,7 @@ prepare_data {
 }
 ```
 
-#### Expression propagation
+#### Expression propagation {-}
 
 Constant propagation replaces the uses of a variable which
 is known to have a constant value `E` with that constant `E`. This often results
@@ -1145,7 +1149,7 @@ prepare_data {
 }
 ```
 
-#### Lazy code motion
+#### Lazy code motion {-}
 
 Lazy code motion rearranges the statements and expressions in a program with the
 goals of:
@@ -1215,7 +1219,7 @@ log_prob {
 }
 ```
 
-#### Function inlining
+#### Function inlining {-}
 
 Function inlining replaces each function call to each user-defined function `f`
 with the body of `f`. It does this by copying the function body to the call site
@@ -1284,7 +1288,7 @@ necessary to handle `return` statements nested inside loops within the function
 body.
 
 
-#### Static loop unrolling
+#### Static loop unrolling {-}
 
 Static loop unrolling takes a loop with a predictable number of iterations
 `X` and replaces it by writing out the loop body `X` times. The loop index in

@@ -42,11 +42,14 @@ pipeline {
                 sh "ls -lhart"
 
                 /* Build docs */
-                sh "python3 build.py $major_version $minor_version"
+                sh """
+                    rm -rf ./docs/$major_version"_"$minor_version
+                    python3 build.py $major_version $minor_version
+                """
 
                 /* copy to the top-level (unversioned) directories */
                 sh """
-                    rm -rf ./docs/functions-reference ./docs/reference-manual ./docs/stan-users-guide/ ./docs/cmdstan-guide
+                    rm -rf ./docs/functions-reference ./docs/reference-manual ./docs/stan-users-guide/ ./docs/cmdstan-guide ./docs/img ./docs/site_libs
                     cp -r ./docs/$major_version"_"$minor_version/* ./docs/
                     rm ./docs/*.pdf
                 """

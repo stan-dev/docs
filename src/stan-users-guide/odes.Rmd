@@ -1,3 +1,7 @@
+---
+pagetitle: Ordinary Differential Equations
+---
+
 # Ordinary Differential Equations  {#ode-solver.chapter}
 
 Stan provides a number of different methods for solving systems of
@@ -17,7 +21,7 @@ states $N$ and the number of parameters $M$ being used:
   with additional ODE equations for the gradients of the solution.
   For each parameter, an additional full set of $N$
   sensitivity states are added meaning that the full ODE solved has
-  $$N \, + N \cdot M$$ states.
+  $N \, + N \cdot M$ states.
   
 * An *adjoint sensitivity* solver starts by solving the base ODE system
   forward in time to get the ODE solution and then solves
@@ -123,11 +127,10 @@ documentation for the Boost Numeric Odeint library
 [@AhnertMulansky:2011], which Stan uses to implement the `rk45` and
 `ckrk` solver.]
 
-$$
-\frac{d}{dt} y_1 = y_2 \\
-\frac{d}{dt} y_2 = -y_1 - \theta y_2
-$$
-<a name="id:ode-sho.equation"></a>
+\begin{align*}
+&\frac{d}{dt} y_1 = y_2  \\
+&\frac{d}{dt} y_2 = -y_1 - \theta y_2
+\end{align*}
 
 The state equations implicitly defines the state at future times
 as a function of an initial state and the system parameters.
@@ -149,7 +152,7 @@ coefficient), data, or any quantities that are needed to define the
 differential equation.
 
 The simple harmonic oscillator can be coded using the following function
-in Stan (see the [user-defined functions chapter](#functions-programming.chapter) for
+in Stan (see the [user-defined functions chapter](user-functions.Rmd) for
 more information on coding user-defined functions).
 
 ```stan
@@ -243,7 +246,6 @@ generated quantities {
   }
 }
 ```
-<a name="id:sho-sim.figure"></a>
 
 The system parameters `theta` and initial state `y0` are read in as data
 along with the initial time `t0` and observation times `ts`. The ODE is solved
@@ -289,7 +291,6 @@ is added to each of the `T` outputs with `normal_rng`.
 ```{r  include = TRUE, echo = FALSE, fig.align = "center", fig.cap = "Typical realization of harmonic oscillator trajectory."}
 knitr::include_graphics("./img/sho-ode-trajectory.png", auto_pdf = TRUE)
 ```
-<a name="id:sho-trajectory.figure"></a>
 
 ### Estimating system parameters and initial state {-}
 
@@ -330,7 +331,6 @@ model {
   }
 }
 ```
-<a name="id:sho-both.figure"></a>
 
 Because the solves are now a function of model parameters, the `ode_rk45`
 call is now made in the model block. There are half-normal priors on the
@@ -451,9 +451,9 @@ $y=(y_1,\dots,y_n)^T$, at every step the
 solver controls estimated local error $e=(e_1,\dots,e_n)^T$ through its weighted root-mean-square norm
 (@SerbanHindmarsh:2005, @hairer:1993)
 
-$$
+\begin{equation*}
 \sqrt{\sum_{i=1}^n{\frac{1}{n}\frac{e_i^2}{(\text{RTOL}\times y_i + \text{ATOL})^2}}} < 1
-$$
+\end{equation*}
 by reducing the stepsize when the inequality is not satisfied.
 
 To understand the roles of the two tolerances it helps to assume $y$ at
@@ -596,7 +596,6 @@ generated quantities {
   }
 }
 ```
-<a name="id:sho-sim-me.figure"></a>
 
 This Stan program simulates noisy measurements from a simple harmonic
 oscillator.  The system of linear differential equations is coded as a

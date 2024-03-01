@@ -44,7 +44,7 @@ pipeline {
             agent {
                 docker {
                     image 'stanorg/ci:standocs-quarto'
-                    agent { label 'linux && triqs' }
+                    label 'linux && triqs'
                 }
             }
             when {
@@ -110,7 +110,7 @@ pipeline {
             agent {
                 docker {
                     image 'stanorg/ci:standocs-quarto'
-                    agent { label 'linux && triqs' }
+                    label 'linux && triqs'
                 }
             }
             when {

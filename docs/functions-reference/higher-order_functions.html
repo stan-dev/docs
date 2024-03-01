@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.550">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Higher-Order Functions</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../functions-reference/deprecated_functions.html" rel="next">
+<link href="../functions-reference/compound_arithmetic_and_assignment.html" rel="prev">
+<link href="../img/logo_tm.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../quarto_styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../stan-users-guide/overview.html"> 
+<span class="menu-text">Stan Users Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../reference-manual/overview.html"> 
+<span class="menu-text">Reference Manual</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../functions-reference/overview.html" aria-current="page"> 
+<span class="menu-text">Functions Reference</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-interfaces" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Interfaces</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-interfaces">    
+        <li>
+    <a class="dropdown-item" href="../cmdstan-guide/overview.html">
+ <span class="dropdown-text">CmdStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy">
+ <span class="dropdown-text">CmdStanPy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr">
+ <span class="dropdown-text">CmdStanR</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/pystan">
+ <span class="dropdown-text">PyStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstan">
+ <span class="dropdown-text">RStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/">
+ <span class="dropdown-text">Stan.jl</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-other-packages" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Other Packages</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/">
+ <span class="dropdown-text">Bayesplot</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/">
+ <span class="dropdown-text">BridgeStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/">
+ <span class="dropdown-text">BRMS</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/loo/">
+ <span class="dropdown-text">loo</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm">
+ <span class="dropdown-text">RStanArm</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools tools-wide">
+    <a href="https://github.com/stan-dev" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-github"></i></a>
+    <a href="https://discourse.mc-stan.org" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-chat-text-fill"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../functions-reference/void_functions.html">Built-in Functions</a></li><li class="breadcrumb-item"><a href="../functions-reference/higher-order_functions.html">Higher-Order Functions</a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Stan Functions Reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <span class="sidebar-item-text sidebar-link text-start">
+ <span class="menu-text">Version 2.34</span></span>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Built-in Functions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/void_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Void Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/integer-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Integer-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/real-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Real-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/complex-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Complex-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/array_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Array Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/complex_matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Complex Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/sparse_matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sparse Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/mixed_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mixed Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/compound_arithmetic_and_assignment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Compound Arithmetic and Assignment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/higher-order_functions.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Higher-Order Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/deprecated_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Deprecated Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/removed_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Removed Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/conventions_for_probability_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Conventions for Probability Functions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Discrete Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/binary_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Binary Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/bounded_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Bounded Discrete Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/unbounded_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Unbounded Discrete Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/multivariate_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Multivariate Discrete Distributions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">Continuous Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/unbounded_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Unbounded Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/positive_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Positive Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/positive_lower-bounded_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Positive Lower-Bounded Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/continuous_distributions_on_0_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Continuous Distributions on [0, 1]</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/circular_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Circular Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/bounded_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Bounded Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/distributions_over_unbounded_vectors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Distributions over Unbounded Vectors</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/simplex_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Simplex Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/correlation_matrix_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Correlation Matrix Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/covariance_matrix_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Covariance Matrix Distributions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">Additional Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/hidden_markov_models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Hidden Markov Models</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">Appendix</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/mathematical_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mathematical Functions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#higher-order-functions" id="toc-higher-order-functions" class="nav-link active" data-scroll-target="#higher-order-functions">Higher-Order Functions</a>
+  <ul class="collapse">
+  <li><a href="#functions-algebraic-solver" id="toc-functions-algebraic-solver" class="nav-link" data-scroll-target="#functions-algebraic-solver">Algebraic equation solvers</a>
+  <ul class="collapse">
+  <li><a href="#specifying-an-algebraic-equation-as-a-function" id="toc-specifying-an-algebraic-equation-as-a-function" class="nav-link" data-scroll-target="#specifying-an-algebraic-equation-as-a-function">Specifying an algebraic equation as a function</a></li>
+  <li><a href="#call-to-the-algebraic-solver" id="toc-call-to-the-algebraic-solver" class="nav-link" data-scroll-target="#call-to-the-algebraic-solver">Call to the algebraic solver</a></li>
+  </ul></li>
+  <li><a href="#functions-ode-solver" id="toc-functions-ode-solver" class="nav-link" data-scroll-target="#functions-ode-solver">Ordinary differential equation (ODE) solvers</a>
+  <ul class="collapse">
+  <li><a href="#non-stiff-solver" id="toc-non-stiff-solver" class="nav-link" data-scroll-target="#non-stiff-solver">Non-stiff solver</a></li>
+  <li><a href="#stiff-solver" id="toc-stiff-solver" class="nav-link" data-scroll-target="#stiff-solver">Stiff solver</a></li>
+  <li><a href="#adjoint-solver" id="toc-adjoint-solver" class="nav-link" data-scroll-target="#adjoint-solver">Adjoint solver</a></li>
+  <li><a href="#ode-system-function" id="toc-ode-system-function" class="nav-link" data-scroll-target="#ode-system-function">ODE system function</a></li>
+  <li><a href="#forward-sensitivity-solver" id="toc-forward-sensitivity-solver" class="nav-link" data-scroll-target="#forward-sensitivity-solver">Arguments to the ODE solvers</a></li>
+  <li><a href="#adjoint-sensitivity-solver" id="toc-adjoint-sensitivity-solver" class="nav-link" data-scroll-target="#adjoint-sensitivity-solver">Arguments to the adjoint ODE solver</a></li>
+  </ul></li>
+  <li><a href="#functions-dae-solver" id="toc-functions-dae-solver" class="nav-link" data-scroll-target="#functions-dae-solver">Differential-Algebraic equation (DAE) solver</a>
+  <ul class="collapse">
+  <li><a href="#the-dae-solver" id="toc-the-dae-solver" class="nav-link" data-scroll-target="#the-dae-solver">The DAE solver</a></li>
+  <li><a href="#dae-system-function" id="toc-dae-system-function" class="nav-link" data-scroll-target="#dae-system-function">DAE system function</a></li>
+  <li><a href="#dae-solver" id="toc-dae-solver" class="nav-link" data-scroll-target="#dae-solver">Arguments to the DAE solver</a></li>
+  </ul></li>
+  <li><a href="#functions-1d-integrator" id="toc-functions-1d-integrator" class="nav-link" data-scroll-target="#functions-1d-integrator">1D integrator</a>
+  <ul class="collapse">
+  <li><a href="#specifying-an-integrand-as-a-function" id="toc-specifying-an-integrand-as-a-function" class="nav-link" data-scroll-target="#specifying-an-integrand-as-a-function">Specifying an integrand as a function</a></li>
+  <li><a href="#call-to-the-1d-integrator" id="toc-call-to-the-1d-integrator" class="nav-link" data-scroll-target="#call-to-the-1d-integrator">Call to the 1D integrator</a></li>
+  </ul></li>
+  <li><a href="#functions-reduce" id="toc-functions-reduce" class="nav-link" data-scroll-target="#functions-reduce">Reduce-sum function</a>
+  <ul class="collapse">
+  <li><a href="#specifying-the-reduce-sum-function" id="toc-specifying-the-reduce-sum-function" class="nav-link" data-scroll-target="#specifying-the-reduce-sum-function">Specifying the reduce-sum function</a></li>
+  <li><a href="#functions-partial-sum" id="toc-functions-partial-sum" class="nav-link" data-scroll-target="#functions-partial-sum">The partial sum function</a></li>
+  </ul></li>
+  <li><a href="#functions-map" id="toc-functions-map" class="nav-link" data-scroll-target="#functions-map">Map-rect function</a>
+  <ul class="collapse">
+  <li><a href="#specifying-the-mapped-function" id="toc-specifying-the-mapped-function" class="nav-link" data-scroll-target="#specifying-the-mapped-function">Specifying the mapped function</a></li>
+  <li><a href="#rectangular-map" id="toc-rectangular-map" class="nav-link" data-scroll-target="#rectangular-map">Rectangular map</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/functions-reference/higher-order_functions.Rmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="higher-order-functions" class="level1">
+<h1>Higher-Order Functions</h1>
+<p>Stan provides a few higher-order functions that act on other functions. In all cases, the function arguments to the higher-order functions are defined as functions within the Stan language and passed by name to the higher-order functions.</p>
+<section id="functions-algebraic-solver" class="level2">
+<h2 class="anchored" data-anchor-id="functions-algebraic-solver">Algebraic equation solvers</h2>
+<p>Stan provides two built-in algebraic equation solvers, respectively based on the Newton method and the Powell “dog leg” hybrid method. Empirically the Newton method is found to be faster and its use is recommended for most problems.</p>
+<p>An algebraic solver is a higher-order function, i.e.&nbsp;it takes another function as one of its arguments. Other functions in Stan which share this feature are the differential equation solvers (see section <a href="#functions-ode-solver">Ordinary Differential Equation (ODE) Solvers</a> and <a href="#functions-dae-solver">Differential Algebraic Equation (DAE) solver</a>). Ordinary Stan functions do not allow functions as arguments.</p>
+<section id="specifying-an-algebraic-equation-as-a-function" class="level3">
+<h3 class="anchored" data-anchor-id="specifying-an-algebraic-equation-as-a-function">Specifying an algebraic equation as a function</h3>
+<p>An algebraic system is specified as an ordinary function in Stan within the function block. The function must return a <code>vector</code> and takes in, as its first argument, the unknowns <span class="math inline">\(y\)</span> we wish to solve for, also passed as a <code>vector</code>. This argument is followed by additional arguments as specified by the user; we call such arguments <em>variadic arguments</em> and denote them <code>...</code>. The signature of the algebraic system is then:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a> <span class="dt">vector</span> algebra_system (<span class="dt">vector</span> y, ...)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>There is no type restriction for the variadic arguments and each argument can be passed as data or parameter. However users should use parameter arguments only when necessary and mark data arguments with the keyword <code>data</code>. In the below example, the last variadic argument, <span class="math inline">\(x\)</span>, is restricted to being data:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span> algebra_system (<span class="dt">vector</span> y, <span class="dt">vector</span> theta, <span class="kw">data</span> <span class="dt">vector</span> x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Distinguishing data and parameter is important for computational reasons. Augmenting the total number of parameters increases the cost of propagating derivatives through the solution to the algebraic equation, and ultimately the computational cost of evaluating the gradients.</p>
+</section>
+<section id="call-to-the-algebraic-solver" class="level3">
+<h3 class="anchored" data-anchor-id="call-to-the-algebraic-solver">Call to the algebraic solver</h3>
+<p><code>vector</code> <strong><code>solve_newton</code></strong><code>(function algebra_system, vector y_guess, ...)</code><br> Solves the algebraic system, given an initial guess, using Newton’s method.</p>
+<small><i>Available since 2.31</i></small>
+<p><code>vector</code> <strong><code>solve_newton_tol</code></strong><code>(function algebra_system, vector y_guess, data real scaling_step, data real f_tol, int max_steps, ...)</code><br> Solves the algebraic system, given an initial guess, using Newton’s method with additional control parameters for the solver.</p>
+<small><i>Available since 2.31</i></small>
+<p><code>vector</code> <strong><code>solve_powell</code></strong><code>(function algebra_system, vector y_guess, ...)</code><br> Solves the algebraic system, given an initial guess, using Powell’s hybrid method.</p>
+<small><i>Available since 2.31</i></small>
+<p><code>vector</code> <strong><code>solve_powell_tol</code></strong><code>(function algebra_system, vector y_guess, data real rel_tol, data real f_tol, int max_steps, ...)</code><br> Solves the algebraic system, given an initial guess, using Powell’s hybrid method with additional control parameters for the solver.</p>
+<small><i>Available since 2.31</i></small>
+<section id="arguments-to-the-algebraic-solver" class="level4">
+<h4 class="anchored" data-anchor-id="arguments-to-the-algebraic-solver">Arguments to the algebraic solver</h4>
+<p>The arguments to the algebraic solvers are as follows:</p>
+<ul>
+<li><p><em><code>algebra_system</code></em>: function literal referring to a function specifying the system of algebraic equations with signature <code>(vector, ...):vector</code>. The arguments represent (1) unknowns, (2) additional parameter and/or data arguments, and the return value contains the value of the algebraic function, which goes to 0 when we plug in the solution to the algebraic system,</p></li>
+<li><p><em><code>y_guess</code></em>: initial guess for the solution, type <code>vector</code>,</p></li>
+<li><p><em><code>...</code></em>: variadic arguments.</p></li>
+</ul>
+<p>The algebraic solvers admit control parameters. While Stan provides default values, the user should be prepared to adjust the control parameters. The following controls are available:</p>
+<ul>
+<li><p><em><code>scaling_step</code></em>: <em>for the Newton solver only</em>, the scaled-step stopping tolerance, type <code>real</code>, data only. If a Newton step is smaller than the scaling step tolerance, the code breaks, assuming the solver is no longer making significant progress. If set to 0, this constraint is ignored. Default value is <span class="math inline">\(10^{-3}\)</span>.</p></li>
+<li><p><em><code>rel_tol</code></em>: <em>for the Powell solver only</em>, the relative tolerance, type <code>real</code>, data only. The relative tolerance is the estimated relative error of the solver and serves to test if a satisfactory solution has been found. Default value is <span class="math inline">\(10^{-10}\)</span>.</p></li>
+<li><p><em><code>function_tol</code></em>: function tolerance for the algebraic solver, type <code>real</code>, data only. After convergence of the solver, the proposed solution is plugged into the algebraic system and its norm is compared to the function tolerance. If the norm is below the function tolerance, the solution is deemed acceptable. Default value is <span class="math inline">\(10^{-6}\)</span>.</p></li>
+<li><p><em><code>max_num_steps</code></em>: maximum number of steps to take in the algebraic solver, type <code>int</code>, data only. If the solver reaches this number of steps, it breaks and returns an error message. Default value is <span class="math inline">\(200\)</span>.</p></li>
+</ul>
+<p>The difference in which control parameters are available has to do with the underlying implementations for the solvers and the control parameters these implementations support. The Newton solver is based on KINSOL from the SUNDIAL suites, while the Powell solver uses a module from the Eigen library.</p>
+</section>
+<section id="return-value" class="level4">
+<h4 class="anchored" data-anchor-id="return-value">Return value</h4>
+<p>The return value for the algebraic solver is an object of type <code>vector</code>, with values which, when plugged in as <code>y</code> make the algebraic function go to 0 (approximately, within the specified function tolerance).</p>
+</section>
+<section id="sizes-and-parallel-arrays" class="level4">
+<h4 class="anchored" data-anchor-id="sizes-and-parallel-arrays">Sizes and parallel arrays</h4>
+<p>Certain sizes have to be consistent. The initial guess, return value of the solver, and return value of the algebraic function must all be the same size.</p>
+</section>
+<section id="algorithmic-details" class="level4">
+<h4 class="anchored" data-anchor-id="algorithmic-details">Algorithmic details</h4>
+<p>Stan offers two methods to solve algebraic equations. <code>solve_newton</code> and <code>solve_newton_tol</code> use the Newton method, a first-order derivative based numerical solver. The Stan code builds on the implementation in KINSOL from the SUNDIALS suite <span class="citation" data-cites="Hindmarsh:2005">(<a href="#ref-Hindmarsh:2005" role="doc-biblioref">Hindmarsh et al. 2005</a>)</span>. For many problems, we find that the Newton method is faster than the Powell method. If however Newton’s method performs poorly, either failing to or requiring an excessively long time to converge, the user should be prepared to switch to the Powell method.</p>
+<p><code>solve_powell</code> and <code>solve_powell_tol</code> are based on the Powell hybrid method <span class="citation" data-cites="Powell:1970">(<a href="#ref-Powell:1970" role="doc-biblioref">Powell 1970</a>)</span>, which also uses first-order derivatives. The Stan code builds on the implementation of the hybrid solver in the unsupported module for nonlinear optimization problems of the Eigen library <span class="citation" data-cites="Eigen:2013">(<a href="#ref-Eigen:2013" role="doc-biblioref">Guennebaud, Jacob, et al. 2010</a>)</span>. This solver is in turn based on the algorithm developed for the package MINPACK-1 <span class="citation" data-cites="minpack:1980">(<a href="#ref-minpack:1980" role="doc-biblioref">Jorge J. More 1980</a>)</span>.</p>
+<p>For both solvers, derivatives are propagated through the solution to the algebraic solution using the implicit function theorem and an adjoint method of automatic differentiation; for a discussion on this topic, see <span class="citation" data-cites="Gaebler:2021">(<a href="#ref-Gaebler:2021" role="doc-biblioref">Gaebler 2021</a>)</span> and <span class="citation" data-cites="Margossian:2022">(<a href="#ref-Margossian:2022" role="doc-biblioref">Margossian and Betancourt 2022</a>)</span>.</p>
+</section>
+</section>
+</section>
+<section id="functions-ode-solver" class="level2">
+<h2 class="anchored" data-anchor-id="functions-ode-solver">Ordinary differential equation (ODE) solvers</h2>
+<p>Stan provides several higher order functions for solving initial value problems specified as Ordinary Differential Equations (ODEs).</p>
+<p>Solving an initial value ODE means given a set of differential equations <span class="math inline">\(y'(t, \theta) = f(t, y, \theta)\)</span> and initial conditions <span class="math inline">\(y(t_0, \theta)\)</span>, solving for <span class="math inline">\(y\)</span> at a sequence of times <span class="math inline">\(t_0 &lt; t_1 &lt; t_2, \cdots &lt; t_n\)</span>. <span class="math inline">\(f(t, y, \theta)\)</span> is referred to here as the ODE system function.</p>
+<p><span class="math inline">\(f(t, y, \theta)\)</span> will be defined as a function with a certain signature and provided along with the initial conditions and output times to one of the ODE solver functions.</p>
+<p>To make it easier to write ODEs, the solve functions take extra arguments that are passed along unmodified to the user-supplied system function. Because there can be any number of these arguments and they can be of different types, they are denoted below as <code>...</code>. The types of the arguments represented by <code>...</code> in the ODE solve function call must match the types of the arguments represented by <code>...</code> in the user-supplied system function.</p>
+<section id="non-stiff-solver" class="level3">
+<h3 class="anchored" data-anchor-id="non-stiff-solver">Non-stiff solver</h3>
+<!-- array[] vector; ode_rk45; (function ode, vector initial_state, real initial_time, array[] real times, ...); -->
+<p></p>
+<p><code>array[] vector</code> <strong><code>ode_rk45</code></strong><code>(function ode, vector initial_state, real initial_time, array[] real times, ...)</code><br> Solves the ODE system for the times provided using the Dormand-Prince algorithm, a 4th/5th order Runge-Kutta method.</p>
+<small><i>Available since 2.24</i></small>
+<!-- array[] vector; ode_rk45_tol; (function ode, vector initial_state, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...); -->
+<p></p>
+<p><code>array[] vector</code> <strong><code>ode_rk45_tol</code></strong><code>(function ode, vector initial_state, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...)</code><br> Solves the ODE system for the times provided using the Dormand-Prince algorithm, a 4th/5th order Runge-Kutta method with additional control parameters for the solver.</p>
+<small><i>Available since 2.24</i></small>
+<!-- array[] vector; ode_ckrk; (function ode, vector initial_state, real initial_time, array[] real times, ...); -->
+<p></p>
+<p><code>array[] vector</code> <strong><code>ode_ckrk</code></strong><code>(function ode, vector initial_state, real initial_time, array[] real times, ...)</code><br> Solves the ODE system for the times provided using the Cash-Karp algorithm, a 4th/5th order explicit Runge-Kutta method.</p>
+<small><i>Available since 2.27</i></small>
+<!-- array[] vector; ode_ckrk_tol; (function ode, vector initial_state, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...); -->
+<p></p>
+<p><code>array[] vector</code> <strong><code>ode_ckrk_tol</code></strong><code>(function ode, vector initial_state, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...)</code><br> Solves the ODE system for the times provided using the Cash-Karp algorithm, a 4th/5th order explicit Runge-Kutta method with additional control parameters for the solver.</p>
+<small><i>Available since 2.27</i></small>
+<!-- array[] vector; ode_adams; (function ode, vector initial_state, real initial_time, array[] real times, ...); -->
+<p></p>
+<p><code>array[] vector</code> <strong><code>ode_adams</code></strong><code>(function ode, vector initial_state, real initial_time, array[] real times, ...)</code><br> Solves the ODE system for the times provided using the Adams-Moulton method.</p>
+<small><i>Available since 2.24</i></small>
+<!-- array[] vector; ode_adams_tol; (function ode, vector initial_state, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...); -->
+<p></p>
+<p><code>array[] vector</code> <strong><code>ode_adams_tol</code></strong><code>(function ode, vector initial_state, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...)</code><br> Solves the ODE system for the times provided using the Adams-Moulton method with additional control parameters for the solver.</p>
+<small><i>Available since 2.24</i></small>
+</section>
+<section id="stiff-solver" class="level3">
+<h3 class="anchored" data-anchor-id="stiff-solver">Stiff solver</h3>
+<!-- array[] vector; ode_bdf; (function ode, vector initial_state, real initial_time, array[] real times, ...); -->
+<p></p>
+<p><code>array[] vector</code> <strong><code>ode_bdf</code></strong><code>(function ode, vector initial_state, real initial_time, array[] real times, ...)</code><br> Solves the ODE system for the times provided using the backward differentiation formula (BDF) method.</p>
+<small><i>Available since 2.24</i></small>
+<!-- array[] vector; ode_bdf_tol; (function ode, vector initial_state, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...); -->
+<p></p>
+<p><code>array[] vector</code> <strong><code>ode_bdf_tol</code></strong><code>(function ode, vector initial_state, real initial_time, array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...)</code><br> Solves the ODE system for the times provided using the backward differentiation formula (BDF) method with additional control parameters for the solver.</p>
+<small><i>Available since 2.24</i></small>
+</section>
+<section id="adjoint-solver" class="level3">
+<h3 class="anchored" data-anchor-id="adjoint-solver">Adjoint solver</h3>
+<!-- array[] vector; ode_adjoint_tol_ctl; (function ode, vector initial_state, real initial_time, array[] real times, data real rel_tol_forward, data vector abs_tol_forward, data real rel_tol_backward, data vector abs_tol_backward, data real rel_tol_quadrature, data real abs_tol_qudrature, int max_num_steps, int num_steps_between_checkpoints, int interpolation_polynomial, int solver_forward, int solver_backward,...); -->
+<p></p>
+<p><code>array[] vector</code> <strong><code>ode_adjoint_tol_ctl</code></strong><code>(function ode, vector initial_state, real initial_time, array[] real times, data real rel_tol_forward, data vector abs_tol_forward, data real rel_tol_backward, data vector abs_tol_backward, int max_num_steps, int num_steps_between_checkpoints, int interpolation_polynomial, int solver_forward, int solver_backward, ...)</code><br></p>
+<p>Solves the ODE system for the times provided using the adjoint ODE solver method from CVODES. The adjoint ODE solver requires a checkpointed forward in time ODE integration, a backwards in time integration that makes uses of an interpolated version of the forward solution, and the solution of a quadrature problem (the number of which depends on the number of parameters passed to the solve). The tolerances and numeric methods used for the forward solve, backward solve, quadratures, and interpolation can all be configured.</p>
+<small><i>Available since 2.27</i></small>
+</section>
+<section id="ode-system-function" class="level3">
+<h3 class="anchored" data-anchor-id="ode-system-function">ODE system function</h3>
+<p>The first argument to one of the ODE solvers is always the ODE system function. The ODE system function must have a <code>vector</code> return type, and the first two arguments must be a <code>real</code> and <code>vector</code> in that order. These two arguments are followed by the variadic arguments that are passed through from the ODE solve function call:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a> <span class="dt">vector</span> ode(<span class="dt">real</span> time, <span class="dt">vector</span> state, ...)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The ODE system function should return the derivative of the state with respect to time at the time and state provided. The length of the returned vector must match the length of the state input into the function.</p>
+<p>The arguments to this function are:</p>
+<ul>
+<li><p><em><code>time</code></em>, the time to evaluate the ODE system</p></li>
+<li><p><em><code>state</code></em>, the state of the ODE system at the time specified</p></li>
+<li><p><em><code>...</code></em>, sequence of arguments passed unmodified from the ODE solve function call. The types here must match the types in the <code>...</code> arguments of the ODE solve function call.</p></li>
+</ul>
+</section>
+<section id="forward-sensitivity-solver" class="level3">
+<h3 class="anchored" data-anchor-id="forward-sensitivity-solver">Arguments to the ODE solvers</h3>
+<p>The arguments to the ODE solvers in both the stiff and non-stiff solvers are the same. The arguments to the adjoint ODE solver are different; see <a href="#adjoint-sensitivity-solver">Arguments to the adjoint ODE solvers</a>.</p>
+<ul>
+<li><p><em><code>ode</code></em>: ODE system function,</p></li>
+<li><p><em><code>initial_state</code></em>: initial state, type <code>vector</code>,</p></li>
+<li><p><em><code>initial_time</code></em>: initial time, type <code>real</code>,</p></li>
+<li><p><em><code>times</code></em>: solution times, type <code>array[] real</code>,</p></li>
+<li><p><em><code>...</code></em>: sequence of arguments that will be passed through unmodified to the ODE system function. The types here must match the types in the <code>...</code> arguments of the ODE system function.</p></li>
+</ul>
+<p>For the versions of the ode solver functions ending in <code>_tol</code>, these three parameters must be provided after <code>times</code> and before the <code>...</code> arguments:</p>
+<ul>
+<li><p><code>data</code> <em><code>rel_tol</code></em>: relative tolerance for the ODE solver, type <code>real</code>, data only,</p></li>
+<li><p><code>data</code> <em><code>abs_tol</code></em>: absolute tolerance for the ODE solver, type <code>real</code>, data only, and</p></li>
+<li><p><em><code>max_num_steps</code></em>: maximum number of steps to take between output times in the ODE solver, type <code>int</code>, data only.</p></li>
+</ul>
+<p>Because the tolerances are <code>data</code> arguments, they must be defined in either the data or transformed data blocks. They cannot be parameters, transformed parameters or functions of parameters or transformed parameters.</p>
+</section>
+<section id="adjoint-sensitivity-solver" class="level3">
+<h3 class="anchored" data-anchor-id="adjoint-sensitivity-solver">Arguments to the adjoint ODE solver</h3>
+<p>The arguments to the adjoint ODE solver are different from those for the other functions (for those see <a href="#forward-sensitivity-solver">Arguments to the adjoint ODE solvers</a>).</p>
+<ul>
+<li><p><em><code>ode</code></em>: ODE system function,</p></li>
+<li><p><em><code>initial_state</code></em>: initial state, type <code>vector</code>,</p></li>
+<li><p><em><code>initial_time</code></em>: initial time, type <code>real</code>,</p></li>
+<li><p><em><code>times</code></em>: solution times, type <code>array[] real</code>,</p></li>
+<li><p><code>data</code> <em><code>rel_tol_forward</code></em>: Relative tolerance for forward solve, type <code>real</code>, data only,</p></li>
+<li><p><code>data</code> <em><code>abs_tol_forward</code></em>: Absolute tolerance vector for each state for forward solve, type <code>vector</code>, data only,</p></li>
+<li><p><code>data</code> <em><code>rel_tol_backward</code></em>: Relative tolerance for backward solve, type <code>real</code>, data only,</p></li>
+<li><p><code>data</code> <em><code>abs_tol_backward</code></em>: Absolute tolerance vector for each state for backward solve, type <code>vector</code>, data only,</p></li>
+<li><p><code>data</code> <em><code>rel_tol_quadrature</code></em>: Relative tolerance for backward quadrature, type <code>real</code>, data only,</p></li>
+<li><p><code>data</code> <em><code>abs_tol_quadrature</code></em>: Absolute tolerance for backward quadrature, type <code>real</code>, data only,</p></li>
+<li><p><code>data</code> <em><code>max_num_steps</code></em>: Maximum number of time-steps to take in integrating the ODE solution between output time points for forward and backward solve, type <code>int</code>, data only,</p></li>
+<li><p><em><code>num_steps_between_checkpoints</code></em>: number of steps between checkpointing forward solution, type <code>int</code>, data only,</p></li>
+<li><p><em><code>interpolation_polynomial</code></em>: can be 1 for hermite or 2 for polynomial interpolation method of CVODES, type <code>int</code>, data only,</p></li>
+<li><p><em><code>solver_forward</code></em>: solver used for forward ODE problem: 1=Adams (non-stiff), 2=BDF (stiff), type <code>int</code>, data only,</p></li>
+<li><p><em><code>solver_backward</code></em>: solver used for backward ODE problem: 1=Adams (non-stiff), 2=BDF (stiff), type <code>int</code>, data only.</p></li>
+<li><p><em><code>...</code></em>: sequence of arguments that will be passed through unmodified to the ODE system function. The types here must match the types in the <code>...</code> arguments of the ODE system function.</p></li>
+</ul>
+<p>Because the tolerances are <code>data</code> arguments, they must be defined in either the data or transformed data blocks. They cannot be parameters, transformed parameters or functions of parameters or transformed parameters.</p>
+<section id="return-values" class="level4">
+<h4 class="anchored" data-anchor-id="return-values">Return values</h4>
+<p>The return value for the ODE solvers is an array of vectors (type <code>array[] vector</code>), one vector representing the state of the system at every time in specified in the <code>times</code> argument.</p>
+</section>
+<section id="array-and-vector-sizes" class="level4">
+<h4 class="anchored" data-anchor-id="array-and-vector-sizes">Array and vector sizes</h4>
+<p>The sizes must match, and in particular, the following groups are of the same size:</p>
+<ul>
+<li><p>state variables passed into the system function, derivatives returned by the system function, initial state passed into the solver, and length of each vector in the output,</p></li>
+<li><p>number of solution times and number of vectors in the output.</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="functions-dae-solver" class="level2">
+<h2 class="anchored" data-anchor-id="functions-dae-solver">Differential-Algebraic equation (DAE) solver</h2>
+<p>Stan provides two higher order functions for solving initial value problems specified as Differential-Algebraic Equations (DAEs) with index-1 <span class="citation" data-cites="serban_user:2021">(<a href="#ref-serban_user:2021" role="doc-biblioref">Serban et al. 2021</a>)</span>.</p>
+<p>Solving an initial value DAE means given a set of residual functions <span class="math inline">\(r(y'(t, \theta), y(t, \theta), t)\)</span> and initial conditions <span class="math inline">\((y(t_0, \theta), y'(t_0, \theta))\)</span>, solving for <span class="math inline">\(y\)</span> at a sequence of times <span class="math inline">\(t_0 &lt; t_1 \leq t_2, \cdots \leq t_n\)</span>. The residual function <span class="math inline">\(r(y', y, t, \theta)\)</span> will be defined as a function with a certain signature and provided along with the initial conditions and output times to one of the DAE solver functions.</p>
+<p>Similar to ODE solvers, the DAE solver function takes extra arguments that are passed along unmodified to the user-supplied system function. Because there can be any number of these arguments and they can be of different types, they are denoted below as <code>...</code>, and the types of these arguments, also represented by <code>...</code> in the DAE solver call, must match the types of the arguments represented by <code>...</code> in the user-supplied system function.</p>
+<section id="the-dae-solver" class="level3">
+<h3 class="anchored" data-anchor-id="the-dae-solver">The DAE solver</h3>
+<!-- array[] vector; dae; (function residual, vector initial_state, vector initial_state_derivative, data real initial_time, data array[] real times, ...); -->
+<p></p>
+<p><code>array[] vector</code> <strong><code>dae</code></strong><code>(function residual, vector initial_state, vector initial_state_derivative, data real initial_time, data array[] real times, ...)</code><br> Solves the DAE system using the backward differentiation formula (BDF) method <span class="citation" data-cites="serban_user:2021">(<a href="#ref-serban_user:2021" role="doc-biblioref">Serban et al. 2021</a>)</span>.</p>
+<small><i>Available since 2.29</i></small>
+<!-- array[] vector; dae_tol; (function residual, vector initial_state, vector initial_state_derivative, data real initial_time, data array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...); -->
+<p></p>
+<p><code>array[] vector</code> <strong><code>dae_tol</code></strong><code>(function residual, vector initial_state, vector initial_state_derivative, data real initial_time, data array[] real times, data real rel_tol, data real abs_tol, int max_num_steps, ...)</code><br> Solves the DAE system for the times provided using the backward differentiation formula (BDF) method with additional control parameters for the solver.</p>
+<small><i>Available since 2.29</i></small>
+</section>
+<section id="dae-system-function" class="level3">
+<h3 class="anchored" data-anchor-id="dae-system-function">DAE system function</h3>
+<p>The first argument to the DAE solver is the DAE residual function. The DAE residual function must have a <code>vector</code> return type, and the first three arguments must be a <code>real</code>, <code>vector</code>, and <code>vector</code>, in that order. These three arguments are followed by the variadic arguments that are passed through from the DAE solver function call:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span> residual(<span class="dt">real</span> time, <span class="dt">vector</span> state, <span class="dt">vector</span> state_derivative, ...)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The DAE residual function should return the residuals at the time and state provided. The length of the returned vector must match the length of the state input into the function.</p>
+<p>The arguments to this function are:</p>
+<ul>
+<li><p><em><code>time</code></em>, the time to evaluate the DAE system</p></li>
+<li><p><em><code>state</code></em>, the state of the DAE system at the time specified</p></li>
+<li><p><em><code>state_derivative</code></em>, the time derivatives of the state of the DAE system at the time specified</p></li>
+<li><p><em><code>...</code></em>, sequence of arguments passed unmodified from the DAE solve function call. The types here must match the types in the <code>...</code> arguments of the DAE solve function call.</p></li>
+</ul>
+</section>
+<section id="dae-solver" class="level3">
+<h3 class="anchored" data-anchor-id="dae-solver">Arguments to the DAE solver</h3>
+<p>The arguments to the DAE solver are</p>
+<ul>
+<li><p><em><code>residual</code></em>: DAE residual function,</p></li>
+<li><p><em><code>initial_state</code></em>: initial state, type <code>vector</code>,</p></li>
+<li><p><em><code>initial_state_derivative</code></em>: time derivative of the initial state, type <code>vector</code>,</p></li>
+<li><p><em><code>initial_time</code></em>: initial time, type <code>data real</code>,</p></li>
+<li><p><em><code>times</code></em>: solution times, type <code>data array[] real</code>,</p></li>
+<li><p><em><code>...</code></em>: sequence of arguments that will be passed through unmodified to the DAE residual function. The types here must match the types in the <code>...</code> arguments of the DAE residual function.</p></li>
+</ul>
+<p>For <code>dae_tol</code>, the following three parameters must be provided after <code>times</code> and before the <code>...</code> arguments:</p>
+<ul>
+<li><p><code>data</code> <em><code>rel_tol</code></em>: relative tolerance for the DAE solver, type <code>real</code>, data only,</p></li>
+<li><p><code>data</code> <em><code>abs_tol</code></em>: absolute tolerance for the DAE solver, type <code>real</code>, data only, and</p></li>
+<li><p><em><code>max_num_steps</code></em>: maximum number of steps to take between output times in the DAE solver, type <code>int</code>, data only.</p></li>
+</ul>
+<p>Because the tolerances are <code>data</code> arguments, they must be supplied as primitive numerics or defined in either the data or transformed data blocks. They cannot be parameters, transformed parameters or functions of parameters or transformed parameters.</p>
+<section id="consistency-of-the-initial-conditions" class="level4">
+<h4 class="anchored" data-anchor-id="consistency-of-the-initial-conditions">Consistency of the initial conditions</h4>
+<p>The user is responsible to ensure the residual function becomes zero at the initial time, <code>t0</code>, when the arguments <code>initial_state</code> and <code>initial_state_derivative</code> are introduced as <code>state</code> and <code>state_derivative</code>, respectively.</p>
+</section>
+<section id="return-values-1" class="level4">
+<h4 class="anchored" data-anchor-id="return-values-1">Return values</h4>
+<p>The return value for the DAE solvers is an array of vectors (type <code>array[] vector</code>), one vector representing the state of the system at every time specified in the <code>times</code> argument.</p>
+</section>
+<section id="array-and-vector-sizes-1" class="level4">
+<h4 class="anchored" data-anchor-id="array-and-vector-sizes-1">Array and vector sizes</h4>
+<p>The sizes must match, and in particular, the following groups are of the same size:</p>
+<ul>
+<li><p>state variables and state derivatives passed into the residual function, the residual returned by the residual function, initial state and initial state derivatives passed into the solver, and length of each vector in the output,</p></li>
+<li><p>number of solution times and number of vectors in the output.</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="functions-1d-integrator" class="level2">
+<h2 class="anchored" data-anchor-id="functions-1d-integrator">1D integrator</h2>
+<p>Stan provides a built-in mechanism to perform 1D integration of a function via quadrature methods.</p>
+<p>It operates similarly to the <a href="#functions-algebraic-solver">algebraic solver</a> and the <a href="#functions-ode-solver">ordinary differential equations solver</a> in that it allows as an argument a function.</p>
+<p>Like both of those utilities, some of the arguments are limited to data only expressions. These expressions must not contain variables other than those declared in the data or transformed data blocks.</p>
+<section id="specifying-an-integrand-as-a-function" class="level3">
+<h3 class="anchored" data-anchor-id="specifying-an-integrand-as-a-function">Specifying an integrand as a function</h3>
+<p>Performing a 1D integration requires the integrand to be specified somehow. This is done by defining a function in the Stan functions block with the special signature:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> integrand(<span class="dt">real</span> x, <span class="dt">real</span> xc, <span class="dt">array</span>[] <span class="dt">real</span> theta,</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>               <span class="dt">array</span>[] <span class="dt">real</span> x_r, <span class="dt">array</span>[] <span class="dt">int</span> x_i)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The function should return the value of the integrand evaluated at the point x.</p>
+<p>The argument of this function are:</p>
+<ul>
+<li><p><em><code>x</code></em>, the independent variable being integrated over</p></li>
+<li><p><em><code>xc</code></em>, a high precision version of the distance from x to the nearest endpoint in a definite integral (for more into see section <a href="#precision-loss">Precision Loss</a>).</p></li>
+<li><p><em><code>theta</code></em>, parameter values used to evaluate the integral</p></li>
+<li><p><em><code>x_r</code></em>, data values used to evaluate the integral</p></li>
+<li><p><em><code>x_i</code></em>, integer data used to evaluate the integral</p></li>
+</ul>
+<p>Like algebraic solver and the differential equations solver, the 1D integrator separates parameter values, <code>theta</code>, from data values, <code>x_r</code>.</p>
+</section>
+<section id="call-to-the-1d-integrator" class="level3">
+<h3 class="anchored" data-anchor-id="call-to-the-1d-integrator">Call to the 1D integrator</h3>
+<!-- real; integrate_1d; (function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i); -->
+<p></p>
+<p><code>real</code> <strong><code>integrate_1d</code></strong> <code>(function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i)</code><br> Integrates the integrand from a to b.</p>
+<small><i>Available since 2.23</i></small>
+<!-- real; integrate_1d; (function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i), real relative_tolerance); -->
+<p></p>
+<p><code>real</code> <strong><code>integrate_1d</code></strong> <code>(function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i, real relative_tolerance)</code><br> Integrates the integrand from a to b with the given relative tolerance.</p>
+<small><i>Available since 2.23</i></small>
+<section id="arguments-to-the-1d-integrator" class="level4">
+<h4 class="anchored" data-anchor-id="arguments-to-the-1d-integrator">Arguments to the 1D integrator</h4>
+<p>The arguments to the 1D integrator are as follows:</p>
+<ul>
+<li><em><code>integrand</code></em>: function literal referring to a function specifying the integrand with signature <code>(real, real, array[] real, array[] real, array[] int):real</code> The arguments represent
+<ul>
+<li><ol type="1">
+<li>where integrand is evaluated,</li>
+</ol></li>
+<li><ol start="2" type="1">
+<li>distance from evaluation point to integration limit for definite integrals,</li>
+</ol></li>
+<li><ol start="3" type="1">
+<li>parameters,</li>
+</ol></li>
+<li><ol start="4" type="1">
+<li>real data</li>
+</ol></li>
+<li><ol start="5" type="1">
+<li>integer data, and the return value is the integrand evaluated at the given point,</li>
+</ol></li>
+</ul></li>
+<li><em><code>a</code></em>: left limit of integration, may be negative infinity, type <code>real</code>,</li>
+<li><em><code>b</code></em>: right limit of integration, may be positive infinity, type <code>real</code>,</li>
+<li><em><code>theta</code></em>: parameters only, type <code>array[] real</code>,</li>
+<li><em><code>x_r</code></em>: real data only, type <code>array[] real</code>,</li>
+<li><em><code>x_i</code></em>: integer data only, type <code>array[] int</code>.</li>
+</ul>
+<p>A <code>relative_tolerance</code> argument can optionally be provided for more control over the algorithm:</p>
+<ul>
+<li><em><code>relative_tolerance</code></em>: relative tolerance for the 1d integrator, type <code>real</code>, data only.</li>
+</ul>
+</section>
+<section id="return-value-1" class="level4">
+<h4 class="anchored" data-anchor-id="return-value-1">Return value</h4>
+<p>The return value for the 1D integrator is a <code>real</code>, the value of the integral.</p>
+</section>
+<section id="zero-crossing" class="level4">
+<h4 class="anchored" data-anchor-id="zero-crossing">Zero-crossing integrals</h4>
+<p>For numeric stability, integrals on the (possibly infinite) interval <span class="math inline">\((a, b)\)</span> that cross zero are split into two integrals, one from <span class="math inline">\((a, 0)\)</span> and one from <span class="math inline">\((0, b)\)</span>. Each integral is separately integrated to the given <code>relative_tolerance</code>.</p>
+</section>
+<section id="precision-loss" class="level4">
+<h4 class="anchored" data-anchor-id="precision-loss">Precision loss near limits of integration in definite integrals</h4>
+<p>When integrating certain definite integrals, there can be significant precision loss in evaluating the integrand near the endpoints. This has to do with the breakdown in precision of double precision floating point values when adding or subtracting a small number from a number much larger than it in magnitude (for instance, <code>1.0 - x</code>). <code>xc</code> (as passed to the integrand) is a high-precision version of the distance between <code>x</code> and the definite integral endpoints and can be used to address this issue. More information (and an example where this is useful) is given in the User’s Guide. For zero crossing integrals, <code>xc</code> will be a high precision version of the distance to the endpoints of the two smaller integrals. For any integral with an endpoint at negative infinity or positive infinity, <code>xc</code> is set to <code>NaN</code>.</p>
+</section>
+<section id="algorithmic-details-1" class="level4">
+<h4 class="anchored" data-anchor-id="algorithmic-details-1">Algorithmic details</h4>
+<p>Internally the 1D integrator uses the double-exponential methods in the Boost 1D quadrature library. Boost in turn makes use of quadrature methods developed in <span class="citation" data-cites="Takahasi:1974">(<a href="#ref-Takahasi:1974" role="doc-biblioref">Takahasi and Mori 1974</a>)</span>, <span class="citation" data-cites="Mori:1978">(<a href="#ref-Mori:1978" role="doc-biblioref">Mori 1978</a>)</span>, <span class="citation" data-cites="Bailey:2005">(<a href="#ref-Bailey:2005" role="doc-biblioref">Bailey, Jeyabalan, and Li 2005</a>)</span>, and <span class="citation" data-cites="Tanaka:2009">(<a href="#ref-Tanaka:2009" role="doc-biblioref">Tanaka et al. 2009</a>)</span>.</p>
+<p>The gradients of the integral are computed in accordance with the Leibniz integral rule. Gradients of the integrand are computed internally with Stan’s automatic differentiation.</p>
+</section>
+</section>
+</section>
+<section id="functions-reduce" class="level2">
+<h2 class="anchored" data-anchor-id="functions-reduce">Reduce-sum function</h2>
+<p>Stan provides a higher-order reduce function for summation. A function which returns a scalar <code>g: U -&gt; real</code> is mapped to every element of a list of type <code>array[] U</code>, <code>{ x1, x2, ... }</code> and all the results are accumulated,</p>
+<p><code>g(x1) + g(x2) + ...</code></p>
+<p>For efficiency reasons the reduce function doesn’t work with the element-wise evaluated function <code>g</code> itself, but instead works through evaluating partial sums, <code>f: array[] U -&gt; real</code>, where:</p>
+<pre><code>f({ x1 }) = g(x1)
+f({ x1, x2 }) = g(x1) + g(x2)
+f({ x1, x2, ... }) = g(x1) + g(x2) + ...</code></pre>
+<p>Mathematically the summation reduction is associative and forming arbitrary partial sums in an arbitrary order will not change the result. However, floating point numerics on computers only have a limited precision such that associativity does not hold exactly. This implies that the order of summation determines the exact numerical result. For this reason, the higher-order reduce function is available in two variants:</p>
+<ul>
+<li><code>reduce_sum</code>: Automatically choose partial sums partitioning based on a dynamic scheduling algorithm.</li>
+<li><code>reduce_sum_static</code>: Compute the same sum as <code>reduce_sum</code>, but partition the input in the same way for given data set (in <code>reduce_sum</code> this partitioning might change depending on computer load). This should result in stable numerical evaluations.</li>
+</ul>
+<section id="specifying-the-reduce-sum-function" class="level3">
+<h3 class="anchored" data-anchor-id="specifying-the-reduce-sum-function">Specifying the reduce-sum function</h3>
+<p>The higher-order reduce function takes a partial sum function <code>f</code>, an array argument <code>x</code> (with one array element for each term in the sum), a recommended <code>grainsize</code>, and a set of shared arguments. This representation allows parallelization of the resultant sum.</p>
+<!-- real; reduce_sum; (F f, array[] T x, int grainsize, T1 s1, T2 s2, ...); -->
+<p></p>
+<p><code>real</code> <strong><code>reduce_sum</code></strong><code>(F f, array[] T x, int grainsize, T1 s1, T2 s2, ...)</code><br> <code>real</code> <strong><code>reduce_sum_static</code></strong><code>(F f, array[] T x, int grainsize, T1 s1, T2 s2, ...)</code><br></p>
+<p>Returns the equivalent of <code>f(x, 1, size(x), s1, s2, ...)</code>, but computes the result in parallel by breaking the array <code>x</code> into independent partial sums. <code>s1, s2, ...</code> are shared between all terms in the sum.</p>
+<small><i>Available since 2.23</i></small>
+<ul>
+<li><em><code>f</code></em>: function literal referring to a function specifying the partial sum operation. Refer to the <a href="#functions-partial-sum">partial sum function</a>.</li>
+<li><em><code>x</code></em>: array of <code>T</code>, one for each term of the reduction, <code>T</code> can be any type,</li>
+<li><em><code>grainsize</code></em>: For <code>reduce_sum</code>, <code>grainsize</code> is the recommended size of the partial sum (<code>grainsize = 1</code> means pick totally automatically). For <code>reduce_sum_static</code>, <code>grainsize</code> determines the maximum size of the partial sums, type <code>int</code>,</li>
+<li><em><code>s1</code></em>: first (optional) shared argument, type <code>T1</code>, where <code>T1</code> can be any type</li>
+<li><em><code>s2</code></em>: second (optional) shared argument, type <code>T2</code>, where <code>T2</code> can be any type,</li>
+<li><em><code>...</code></em>: remainder of shared arguments, each of which can be any type.</li>
+</ul>
+</section>
+<section id="functions-partial-sum" class="level3">
+<h3 class="anchored" data-anchor-id="functions-partial-sum">The partial sum function</h3>
+<p>The partial sum function must have the following signature where the type <code>T</code>, and the types of all the shared arguments (<code>T1</code>, <code>T2</code>, …) match those of the original <code>reduce_sum</code> (<code>reduce_sum_static</code>) call.</p>
+<pre><code>(array[] T x_subset, int start, int end, T1 s1, T2 s2, ...):real</code></pre>
+<p>The partial sum function returns the sum of the <code>start</code> to <code>end</code> terms (inclusive) of the overall calculations. The arguments to the partial sum function are:</p>
+<ul>
+<li><p><em><code>x_subset</code></em>, the subset of <code>x</code> a given partial sum is responsible for computing, type <code>array[] T</code>, where <code>T</code> matches the type of <code>x</code> in <code>reduce_sum</code> (<code>reduce_sum_static</code>)</p></li>
+<li><p><em><code>start</code></em>, the index of the first term of the partial sum, type <code>int</code></p></li>
+<li><p><em><code>end</code></em>, the index of the last term of the partial sum (inclusive), type <code>int</code></p></li>
+<li><p><em><code>s1</code></em>, first shared argument, type <code>T1</code>, matching type of <code>s1</code> in <code>reduce_sum</code> (<code>reduce_sum_static</code>)</p></li>
+<li><p><em><code>s2</code></em>, second shared argument, type <code>T2</code>, matching type of <code>s2</code> in <code>reduce_sum</code> (<code>reduce_sum_static</code>)</p></li>
+<li><p><em><code>...</code></em>, remainder of shared arguments, with types matching those in <code>reduce_sum</code> (<code>reduce_sum_static</code>)</p></li>
+</ul>
+</section>
+</section>
+<section id="functions-map" class="level2">
+<h2 class="anchored" data-anchor-id="functions-map">Map-rect function</h2>
+<p>Stan provides a higher-order map function. This allows map-reduce functionality to be coded in Stan as described in the user’s guide.</p>
+<section id="specifying-the-mapped-function" class="level3">
+<h3 class="anchored" data-anchor-id="specifying-the-mapped-function">Specifying the mapped function</h3>
+<p>The function being mapped must have a signature identical to that of the function <code>f</code> in the following declaration.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a> <span class="dt">vector</span> f(<span class="dt">vector</span> phi, <span class="dt">vector</span> theta,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>          <span class="kw">data</span> <span class="dt">array</span>[] <span class="dt">real</span> x_r, <span class="kw">data</span> <span class="dt">array</span>[] <span class="dt">int</span> x_i);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The map function returns the sequence of results for the particular shard being evaluated. The arguments to the mapped function are:</p>
+<ul>
+<li><p><em><code>phi</code></em>, the sequence of parameters shared across shards</p></li>
+<li><p><em><code>theta</code></em>, the sequence of parameters specific to this shard</p></li>
+<li><p><em><code>x_r</code></em>, sequence of real-valued data</p></li>
+<li><p><em><code>x_i</code></em>, sequence of integer data</p></li>
+</ul>
+<p>All input for the mapped function must be packed into these sequences and all output from the mapped function must be packed into a single vector. The vector of output from each mapped function is concatenated into the final result.</p>
+</section>
+<section id="rectangular-map" class="level3">
+<h3 class="anchored" data-anchor-id="rectangular-map">Rectangular map</h3>
+<p>The rectangular map function operates on rectangular (not ragged) data structures, with parallel data structures for job-specific parameters, job-specific real data, and job-specific integer data.</p>
+<!-- vector; map_rect; (F f, vector phi, array[] vector theta, data array[,] real x_r, data array[,] int x_i); -->
+<p></p>
+<p><code>vector</code> <strong><code>map_rect</code></strong><code>(F f, vector phi, array[] vector theta, data array[,] real x_r, data array[,] int x_i)</code><br> Return the concatenation of the results of applying the function f, of type <code>(vector, vector, array[] real, array[] int):vector</code> elementwise, i.e., <code>f(phi, theta[n], x_r[n], x_i[n])</code> for each <code>n</code> in <code>1:N</code>, where <code>N</code> is the size of the parallel arrays of job-specific/local parameters <code>theta</code>, real data <code>x_r</code>, and integer data <code>x_r</code>. The shared/global parameters <code>phi</code> are passed to each invocation of <code>f</code>.</p>
+<small><i>Available since 2.18</i></small>
+
+
+
+</section>
+</section>
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-Bailey:2005" class="csl-entry" role="listitem">
+Bailey, David H., Karthik Jeyabalan, and Xiaoye S. Li. 2005. <span>“A Comparison of Three High-Precision Quadrature Schemes.”</span> <em>Experiment. Math.</em> 14 (3): 317–29. <a href="https://projecteuclid.org:443/euclid.em/1128371757">https://projecteuclid.org:443/euclid.em/1128371757</a>.
+</div>
+<div id="ref-Gaebler:2021" class="csl-entry" role="listitem">
+Gaebler, Johann D. 2021. <span>“Autodiff for Implicit Functions in Stan.”</span> <a href="https://www.jgaeb.com/2021/09/13/implicit-autodiff.html#fn:7">https://www.jgaeb.com/2021/09/13/implicit-autodiff.html#fn:7</a>.
+</div>
+<div id="ref-Eigen:2013" class="csl-entry" role="listitem">
+Guennebaud, Gaël, Benoît Jacob, et al. 2010. <span>“Eigen V3.”</span> http://eigen.tuxfamily.org.
+</div>
+<div id="ref-Hindmarsh:2005" class="csl-entry" role="listitem">
+Hindmarsh, Alan C, Peter N Brown, Keith E Grant, Steven L Lee, Radu Serban, Dan E Shumaker, and Carol S Woodward. 2005. <span>“<span>SUNDIALS</span>: Suite of Nonlinear and Differential/Algebraic Equation Solvers.”</span> <em>ACM Transactions on Mathematical Software (TOMS)</em> 31 (3): 363–96.
+</div>
+<div id="ref-minpack:1980" class="csl-entry" role="listitem">
+Jorge J. More, Kenneth E. Hillstrom, Burton S. Garbow. 1980. <em>User Guide for MINPACK-1</em>. 9700 South Cass Avenue, Argonne, Illinois 60439: Argonne National Laboratory.
+</div>
+<div id="ref-Margossian:2022" class="csl-entry" role="listitem">
+Margossian, Charles C, and Michael Betancourt. 2022. <span>“Efficient Automatic Differentiation of Implicit Functions.”</span> <em>Preprint. arXiv:2112.14217.</em>
+</div>
+<div id="ref-Mori:1978" class="csl-entry" role="listitem">
+Mori, Masatake. 1978. <span>“An IMT-Type Double Exponential Formula for Numerical Integration.”</span> <em>Publications of the Research Institute for Mathematical Sciences</em> 14 (3): 713–29. <a href="https://doi.org/10.2977/prims/1195188835">https://doi.org/10.2977/prims/1195188835</a>.
+</div>
+<div id="ref-Powell:1970" class="csl-entry" role="listitem">
+Powell, Michael J. D. 1970. <span>“A Hybrid Method for Nonlinear Equations.”</span> In <em>Numerical Methods for Nonlinear Algebraic Equations</em>, edited by P. Rabinowitz. Gordon; Breach.
+</div>
+<div id="ref-serban_user:2021" class="csl-entry" role="listitem">
+Serban, Radu, Cosmin Petra, Alan C. Hindmarsh, Cody J. Balos, David J. Gardner, Daniel R. Reynolds, and Carol S. Woodward. 2021. <span>“User <span>Documentation</span> for <span>IDAS</span> V5.0.0.”</span> Lawrence Livermore National Laboratory.
+</div>
+<div id="ref-Takahasi:1974" class="csl-entry" role="listitem">
+Takahasi, Hidetosi, and Masatake Mori. 1974. <span>“Double Exponential Formulas for Numerical Integration.”</span> <em>Publications of the Research Institute for Mathematical Sciences</em> 9 (3): 721–41. <a href="https://doi.org/10.2977/prims/1195192451">https://doi.org/10.2977/prims/1195192451</a>.
+</div>
+<div id="ref-Tanaka:2009" class="csl-entry" role="listitem">
+Tanaka, Ken’ichiro, Masaaki Sugihara, Kazuo Murota, and Masatake Mori. 2009. <span>“Function Classes for Double Exponential Integration Formulas.”</span> <em>Numerische Mathematik</em> 111 (4): 631–55. <a href="https://doi.org/10.1007/s00211-008-0195-1">https://doi.org/10.1007/s00211-008-0195-1</a>.
+</div>
+</div></section></div></main> <!-- /main -->
+<script type="text/javascript">
+
+// replace cmd keyboard shortcut w/ control on non-Mac platforms
+const kPlatformMac = typeof navigator !== 'undefined' ? /Mac/.test(navigator.platform) : false;
+if (!kPlatformMac) {
+   var kbds = document.querySelectorAll("kbd")
+   kbds.forEach(function(kbd) {
+      kbd.innerHTML = kbd.innerHTML.replace(/⌘/g, '⌃');
+   });
+}
+
+// tweak headings in pymd
+document.querySelectorAll(".pymd span.co").forEach(el => {
+   if (!el.innerText.startsWith("#|")) {
+      el.style.fontWeight = 1000;
+   }
+});
+
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../functions-reference/compound_arithmetic_and_assignment.html" class="pagination-link" aria-label="Compound Arithmetic and Assignment">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Compound Arithmetic and Assignment</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../functions-reference/deprecated_functions.html" class="pagination-link" aria-label="Deprecated Functions">
+        <span class="nav-page-text">Deprecated Functions</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/functions-reference/higher-order_functions.Rmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

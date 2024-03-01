@@ -1,0 +1,2427 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.550">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Matrix Operations</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../functions-reference/complex_matrix_operations.html" rel="next">
+<link href="../functions-reference/array_operations.html" rel="prev">
+<link href="../img/logo_tm.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../quarto_styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../stan-users-guide/overview.html"> 
+<span class="menu-text">Stan Users Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../reference-manual/overview.html"> 
+<span class="menu-text">Reference Manual</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../functions-reference/overview.html" aria-current="page"> 
+<span class="menu-text">Functions Reference</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-interfaces" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Interfaces</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-interfaces">    
+        <li>
+    <a class="dropdown-item" href="../cmdstan-guide/overview.html">
+ <span class="dropdown-text">CmdStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy">
+ <span class="dropdown-text">CmdStanPy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr">
+ <span class="dropdown-text">CmdStanR</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/pystan">
+ <span class="dropdown-text">PyStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstan">
+ <span class="dropdown-text">RStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/">
+ <span class="dropdown-text">Stan.jl</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-other-packages" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Other Packages</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/">
+ <span class="dropdown-text">Bayesplot</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/">
+ <span class="dropdown-text">BridgeStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/">
+ <span class="dropdown-text">BRMS</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/loo/">
+ <span class="dropdown-text">loo</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm">
+ <span class="dropdown-text">RStanArm</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools tools-wide">
+    <a href="https://github.com/stan-dev" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-github"></i></a>
+    <a href="https://discourse.mc-stan.org" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-chat-text-fill"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../functions-reference/void_functions.html">Built-in Functions</a></li><li class="breadcrumb-item"><a href="../functions-reference/matrix_operations.html">Matrix Operations</a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Stan Functions Reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <span class="sidebar-item-text sidebar-link text-start">
+ <span class="menu-text">Version 2.34</span></span>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Built-in Functions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/void_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Void Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/integer-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Integer-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/real-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Real-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/complex-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Complex-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/array_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Array Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/matrix_operations.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/complex_matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Complex Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/sparse_matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sparse Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/mixed_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mixed Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/compound_arithmetic_and_assignment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Compound Arithmetic and Assignment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/higher-order_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Higher-Order Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/deprecated_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Deprecated Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/removed_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Removed Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/conventions_for_probability_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Conventions for Probability Functions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Discrete Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/binary_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Binary Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/bounded_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Bounded Discrete Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/unbounded_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Unbounded Discrete Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/multivariate_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Multivariate Discrete Distributions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">Continuous Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/unbounded_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Unbounded Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/positive_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Positive Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/positive_lower-bounded_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Positive Lower-Bounded Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/continuous_distributions_on_0_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Continuous Distributions on [0, 1]</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/circular_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Circular Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/bounded_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Bounded Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/distributions_over_unbounded_vectors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Distributions over Unbounded Vectors</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/simplex_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Simplex Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/correlation_matrix_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Correlation Matrix Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/covariance_matrix_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Covariance Matrix Distributions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">Additional Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/hidden_markov_models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Hidden Markov Models</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">Appendix</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/mathematical_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mathematical Functions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#matrix-operations" id="toc-matrix-operations" class="nav-link active" data-scroll-target="#matrix-operations">Matrix Operations</a>
+  <ul class="collapse">
+  <li><a href="#integer-valued-matrix-size-functions" id="toc-integer-valued-matrix-size-functions" class="nav-link" data-scroll-target="#integer-valued-matrix-size-functions">Integer-valued matrix size functions</a></li>
+  <li><a href="#matrix-arithmetic-operators" id="toc-matrix-arithmetic-operators" class="nav-link" data-scroll-target="#matrix-arithmetic-operators">Matrix arithmetic operators</a>
+  <ul class="collapse">
+  <li><a href="#negation-prefix-operators" id="toc-negation-prefix-operators" class="nav-link" data-scroll-target="#negation-prefix-operators">Negation prefix operators</a></li>
+  <li><a href="#infix-matrix-operators" id="toc-infix-matrix-operators" class="nav-link" data-scroll-target="#infix-matrix-operators">Infix matrix operators</a></li>
+  <li><a href="#broadcast-infix-operators" id="toc-broadcast-infix-operators" class="nav-link" data-scroll-target="#broadcast-infix-operators">Broadcast infix operators</a></li>
+  </ul></li>
+  <li><a href="#transposition-operator" id="toc-transposition-operator" class="nav-link" data-scroll-target="#transposition-operator">Transposition operator</a></li>
+  <li><a href="#elementwise-functions" id="toc-elementwise-functions" class="nav-link" data-scroll-target="#elementwise-functions">Elementwise functions</a></li>
+  <li><a href="#dot-products-and-specialized-products" id="toc-dot-products-and-specialized-products" class="nav-link" data-scroll-target="#dot-products-and-specialized-products">Dot products and specialized products</a>
+  <ul class="collapse">
+  <li><a href="#specialized-products" id="toc-specialized-products" class="nav-link" data-scroll-target="#specialized-products">Specialized products</a></li>
+  </ul></li>
+  <li><a href="#reductions" id="toc-reductions" class="nav-link" data-scroll-target="#reductions">Reductions</a>
+  <ul class="collapse">
+  <li><a href="#log-sum-of-exponents" id="toc-log-sum-of-exponents" class="nav-link" data-scroll-target="#log-sum-of-exponents">Log sum of exponents</a></li>
+  <li><a href="#minimum-and-maximum" id="toc-minimum-and-maximum" class="nav-link" data-scroll-target="#minimum-and-maximum">Minimum and maximum</a></li>
+  <li><a href="#sums-and-products" id="toc-sums-and-products" class="nav-link" data-scroll-target="#sums-and-products">Sums and products</a></li>
+  <li><a href="#sample-moments" id="toc-sample-moments" class="nav-link" data-scroll-target="#sample-moments">Sample moments</a></li>
+  <li><a href="#quantile" id="toc-quantile" class="nav-link" data-scroll-target="#quantile">Quantile</a></li>
+  </ul></li>
+  <li><a href="#matrix-broadcast" id="toc-matrix-broadcast" class="nav-link" data-scroll-target="#matrix-broadcast">Broadcast functions</a>
+  <ul class="collapse">
+  <li><a href="#symmetrization" id="toc-symmetrization" class="nav-link" data-scroll-target="#symmetrization">Symmetrization</a></li>
+  </ul></li>
+  <li><a href="#diagonal-matrix-functions" id="toc-diagonal-matrix-functions" class="nav-link" data-scroll-target="#diagonal-matrix-functions">Diagonal matrix functions</a></li>
+  <li><a href="#container-construction" id="toc-container-construction" class="nav-link" data-scroll-target="#container-construction">Container construction functions</a></li>
+  <li><a href="#slicing-and-blocking-functions" id="toc-slicing-and-blocking-functions" class="nav-link" data-scroll-target="#slicing-and-blocking-functions">Slicing and blocking functions</a>
+  <ul class="collapse">
+  <li><a href="#columns-and-rows" id="toc-columns-and-rows" class="nav-link" data-scroll-target="#columns-and-rows">Columns and rows</a></li>
+  <li><a href="#block-operations" id="toc-block-operations" class="nav-link" data-scroll-target="#block-operations">Block operations</a></li>
+  </ul></li>
+  <li><a href="#matrix-concatenation" id="toc-matrix-concatenation" class="nav-link" data-scroll-target="#matrix-concatenation">Matrix concatenation</a></li>
+  <li><a href="#softmax" id="toc-softmax" class="nav-link" data-scroll-target="#softmax">Special matrix functions</a>
+  <ul class="collapse">
+  <li><a href="#softmax-1" id="toc-softmax-1" class="nav-link" data-scroll-target="#softmax-1">Softmax</a></li>
+  <li><a href="#cumulative-sums" id="toc-cumulative-sums" class="nav-link" data-scroll-target="#cumulative-sums">Cumulative sums</a></li>
+  </ul></li>
+  <li><a href="#gaussian-process-covariance-functions" id="toc-gaussian-process-covariance-functions" class="nav-link" data-scroll-target="#gaussian-process-covariance-functions">Gaussian Process Covariance Functions</a>
+  <ul class="collapse">
+  <li><a href="#exponentiated-quadratic-kernel" id="toc-exponentiated-quadratic-kernel" class="nav-link" data-scroll-target="#exponentiated-quadratic-kernel">Exponentiated quadratic kernel</a></li>
+  <li><a href="#dot-product-kernel" id="toc-dot-product-kernel" class="nav-link" data-scroll-target="#dot-product-kernel">Dot product kernel</a></li>
+  <li><a href="#exponential-kernel" id="toc-exponential-kernel" class="nav-link" data-scroll-target="#exponential-kernel">Exponential kernel</a></li>
+  <li><a href="#matern-32-kernel" id="toc-matern-32-kernel" class="nav-link" data-scroll-target="#matern-32-kernel">Matern 3/2 kernel</a></li>
+  <li><a href="#matern-52-kernel" id="toc-matern-52-kernel" class="nav-link" data-scroll-target="#matern-52-kernel">Matern 5/2 kernel</a></li>
+  <li><a href="#periodic-kernel" id="toc-periodic-kernel" class="nav-link" data-scroll-target="#periodic-kernel">Periodic kernel</a></li>
+  </ul></li>
+  <li><a href="#linear-algebra-functions-and-solvers" id="toc-linear-algebra-functions-and-solvers" class="nav-link" data-scroll-target="#linear-algebra-functions-and-solvers">Linear algebra functions and solvers</a>
+  <ul class="collapse">
+  <li><a href="#matrix-division-operators-and-functions" id="toc-matrix-division-operators-and-functions" class="nav-link" data-scroll-target="#matrix-division-operators-and-functions">Matrix division operators and functions</a></li>
+  <li><a href="#symmetric-positive-definite-matrix-division-functions" id="toc-symmetric-positive-definite-matrix-division-functions" class="nav-link" data-scroll-target="#symmetric-positive-definite-matrix-division-functions">Symmetric positive-definite matrix division functions</a></li>
+  <li><a href="#matrix-exponential" id="toc-matrix-exponential" class="nav-link" data-scroll-target="#matrix-exponential">Matrix exponential</a></li>
+  <li><a href="#matrix-power" id="toc-matrix-power" class="nav-link" data-scroll-target="#matrix-power">Matrix power</a></li>
+  <li><a href="#linear-algebra-functions" id="toc-linear-algebra-functions" class="nav-link" data-scroll-target="#linear-algebra-functions">Linear algebra functions</a></li>
+  </ul></li>
+  <li><a href="#sort-functions" id="toc-sort-functions" class="nav-link" data-scroll-target="#sort-functions">Sort functions</a></li>
+  <li><a href="#reverse-functions" id="toc-reverse-functions" class="nav-link" data-scroll-target="#reverse-functions">Reverse functions</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/functions-reference/matrix_operations.Rmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="matrix-operations" class="level1">
+<h1>Matrix Operations</h1>
+<section id="integer-valued-matrix-size-functions" class="level2">
+<h2 class="anchored" data-anchor-id="integer-valued-matrix-size-functions">Integer-valued matrix size functions</h2>
+<!-- int; num_elements; (vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>num_elements</code></strong><code>(vector x)</code><br> The total number of elements in the vector x (same as function <code>rows</code>)</p>
+<small><i>Available since 2.5</i></small>
+<!-- int; num_elements; (row_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>num_elements</code></strong><code>(row_vector x)</code><br> The total number of elements in the vector x (same as function <code>cols</code>)</p>
+<small><i>Available since 2.5</i></small>
+<!-- int; num_elements; (matrix x); -->
+<p></p>
+<p><code>int</code> <strong><code>num_elements</code></strong><code>(matrix x)</code><br> The total number of elements in the matrix x. For example, if <code>x</code> is a <span class="math inline">\(5 \times 3\)</span> matrix, then <code>num_elements(x)</code> is 15</p>
+<small><i>Available since 2.5</i></small>
+<!-- int; rows; (vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>rows</code></strong><code>(vector x)</code><br> The number of rows in the vector x</p>
+<small><i>Available since 2.0</i></small>
+<!-- int; rows; (row_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>rows</code></strong><code>(row_vector x)</code><br> The number of rows in the row vector x, namely 1</p>
+<small><i>Available since 2.0</i></small>
+<!-- int; rows; (matrix x); -->
+<p></p>
+<p><code>int</code> <strong><code>rows</code></strong><code>(matrix x)</code><br> The number of rows in the matrix x</p>
+<small><i>Available since 2.0</i></small>
+<!-- int; cols; (vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>cols</code></strong><code>(vector x)</code><br> The number of columns in the vector x, namely 1</p>
+<small><i>Available since 2.0</i></small>
+<!-- int; cols; (row_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>cols</code></strong><code>(row_vector x)</code><br> The number of columns in the row vector x</p>
+<small><i>Available since 2.0</i></small>
+<!-- int; cols; (matrix x); -->
+<p></p>
+<p><code>int</code> <strong><code>cols</code></strong><code>(matrix x)</code><br> The number of columns in the matrix x</p>
+<small><i>Available since 2.0</i></small>
+<!-- int; size; (vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>size</code></strong><code>(vector x)</code><br> The size of <code>x</code>, i.e., the number of elements</p>
+<small><i>Available since 2.26</i></small>
+<!-- int; size; (row_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>size</code></strong><code>(row_vector x)</code><br> The size of <code>x</code>, i.e., the number of elements</p>
+<small><i>Available since 2.26</i></small>
+<!-- int; size; (matrix x); -->
+<p></p>
+<p><code>int</code> <strong><code>size</code></strong><code>(matrix x)</code><br> The size of the matrix <code>x</code>. For example, if <code>x</code> is a <span class="math inline">\(5 \times 3\)</span> matrix, then <code>size(x)</code> is 15</p>
+<small><i>Available since 2.26</i></small>
+</section>
+<section id="matrix-arithmetic-operators" class="level2">
+<h2 class="anchored" data-anchor-id="matrix-arithmetic-operators">Matrix arithmetic operators</h2>
+<p>Stan supports the basic matrix operations using infix, prefix and postfix operations. This section lists the operations supported by Stan along with their argument and result types.</p>
+<section id="negation-prefix-operators" class="level3">
+<h3 class="anchored" data-anchor-id="negation-prefix-operators">Negation prefix operators</h3>
+<!-- vector; operator-; (vector x); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator-</code></strong><code>(vector x)</code><br> The negation of the vector x.</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator-; (row_vector x); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator-</code></strong><code>(row_vector x)</code><br> The negation of the row vector x.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator-; (matrix x); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator-</code></strong><code>(matrix x)</code><br> The negation of the matrix x.</p>
+<small><i>Available since 2.0</i></small>
+<!-- T; operator-; (T x); -->
+<p></p>
+<p><code>T</code> <strong><code>operator-</code></strong><code>(T x)</code><br> Vectorized version of <code>operator-</code>. If <code>T x</code> is a (possibly nested) array of matrix types, <code>-x</code> is the same shape array where each individual value is negated.</p>
+<small><i>Available since 2.31</i></small>
+</section>
+<section id="infix-matrix-operators" class="level3">
+<h3 class="anchored" data-anchor-id="infix-matrix-operators">Infix matrix operators</h3>
+<!-- vector; operator+; (vector x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator+</code></strong><code>(vector x, vector y)</code><br> The sum of the vectors x and y.</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator+; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator+</code></strong><code>(row_vector x, row_vector y)</code><br> The sum of the row vectors x and y.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator+; (matrix x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator+</code></strong><code>(matrix x, matrix y)</code><br> The sum of the matrices x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; operator-; (vector x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator-</code></strong><code>(vector x, vector y)</code><br> The difference between the vectors x and y.</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator-; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator-</code></strong><code>(row_vector x, row_vector y)</code><br> The difference between the row vectors x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator-; (matrix x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator-</code></strong><code>(matrix x, matrix y)</code><br> The difference between the matrices x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; operator*; (real x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator*</code></strong><code>(real x, vector y)</code><br> The product of the scalar x and vector y</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator*; (real x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator*</code></strong><code>(real x, row_vector y)</code><br> The product of the scalar x and the row vector y</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator*; (real x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator*</code></strong><code>(real x, matrix y)</code><br> The product of the scalar x and the matrix y</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; operator*; (vector x, real y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator*</code></strong><code>(vector x, real y)</code><br> The product of the scalar y and vector x</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator*; (vector x, row_vector y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator*</code></strong><code>(vector x, row_vector y)</code><br> The product of the vector x and row vector y</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator*; (row_vector x, real y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator*</code></strong><code>(row_vector x, real y)</code><br> The product of the scalar y and row vector x</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; operator*; (row_vector x, vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>operator*</code></strong><code>(row_vector x, vector y)</code><br> The product of the row vector x and vector y</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator*; (row_vector x, matrix y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator*</code></strong><code>(row_vector x, matrix y)</code><br> The product of the row vector x and matrix y</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator*; (matrix x, real y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator*</code></strong><code>(matrix x, real y)</code><br> The product of the scalar y and matrix x</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; operator*; (matrix x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator*</code></strong><code>(matrix x, vector y)</code><br> The product of the matrix x and vector y</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator*; (matrix x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator*</code></strong><code>(matrix x, matrix y)</code><br> The product of the matrices x and y</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="broadcast-infix-operators" class="level3">
+<h3 class="anchored" data-anchor-id="broadcast-infix-operators">Broadcast infix operators</h3>
+<!-- vector; operator+; (vector x, real y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator+</code></strong><code>(vector x, real y)</code><br> The result of adding y to every entry in the vector x</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; operator+; (real x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator+</code></strong><code>(real x, vector y)</code><br> The result of adding x to every entry in the vector y</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator+; (row_vector x, real y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator+</code></strong><code>(row_vector x, real y)</code><br> The result of adding y to every entry in the row vector x</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator+; (real x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator+</code></strong><code>(real x, row_vector y)</code><br> The result of adding x to every entry in the row vector y</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator+; (matrix x, real y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator+</code></strong><code>(matrix x, real y)</code><br> The result of adding y to every entry in the matrix x</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator+; (real x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator+</code></strong><code>(real x, matrix y)</code><br> The result of adding x to every entry in the matrix y</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; operator-; (vector x, real y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator-</code></strong><code>(vector x, real y)</code><br> The result of subtracting y from every entry in the vector x</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; operator-; (real x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator-</code></strong><code>(real x, vector y)</code><br> The result of adding x to every entry in the negation of the vector y</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator-; (row_vector x, real y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator-</code></strong><code>(row_vector x, real y)</code><br> The result of subtracting y from every entry in the row vector x</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator-; (real x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator-</code></strong><code>(real x, row_vector y)</code><br> The result of adding x to every entry in the negation of the row vector y</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator-; (matrix x, real y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator-</code></strong><code>(matrix x, real y)</code><br> The result of subtracting y from every entry in the matrix x</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator-; (real x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator-</code></strong><code>(real x, matrix y)</code><br> The result of adding x to every entry in negation of the matrix y</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; operator/; (vector x, real y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator/</code></strong><code>(vector x, real y)</code><br> The result of dividing each entry in the vector x by y</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator/; (row_vector x, real y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator/</code></strong><code>(row_vector x, real y)</code><br> The result of dividing each entry in the row vector x by y</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator/; (matrix x, real y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator/</code></strong><code>(matrix x, real y)</code><br> The result of dividing each entry in the matrix x by y</p>
+<small><i>Available since 2.0</i></small>
+</section>
+</section>
+<section id="transposition-operator" class="level2">
+<h2 class="anchored" data-anchor-id="transposition-operator">Transposition operator</h2>
+<p>Matrix transposition is represented using a postfix operator.</p>
+<!-- matrix; operator'; (matrix x); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator'</code></strong><code>(matrix x)</code><br> The transpose of the matrix x, written as <code>x'</code></p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator'; (vector x); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator'</code></strong><code>(vector x)</code><br> The transpose of the vector x, written as <code>x'</code></p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; operator'; (row_vector x); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator'</code></strong><code>(row_vector x)</code><br> The transpose of the row vector x, written as <code>x'</code></p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="elementwise-functions" class="level2">
+<h2 class="anchored" data-anchor-id="elementwise-functions">Elementwise functions</h2>
+<p>Elementwise functions apply a function to each element of a vector or matrix, returning a result of the same shape as the argument. There are many functions that are vectorized in addition to the ad hoc cases listed in this section; see section <a href="../functions-reference/real-valued_basic_functions.html#fun-vectorization">function vectorization</a> for the general cases.</p>
+<!-- vector; operator.*; (vector x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator.*</code></strong><code>(vector x, vector y)</code><br> The elementwise product of y and x</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator.*; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator.*</code></strong><code>(row_vector x, row_vector y)</code><br> The elementwise product of y and x</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator.*; (matrix x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator.*</code></strong><code>(matrix x, matrix y)</code><br> The elementwise product of y and x</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; operator./; (vector x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator./</code></strong><code>(vector x, vector y)</code><br> The elementwise quotient of y and x</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; operator./; (vector x, real y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator./</code></strong><code>(vector x, real y)</code><br> The elementwise quotient of y and x</p>
+<small><i>Available since 2.4</i></small>
+<!-- vector; operator./; (real x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator./</code></strong><code>(real x, vector y)</code><br> The elementwise quotient of y and x</p>
+<small><i>Available since 2.4</i></small>
+<!-- row_vector; operator./; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator./</code></strong><code>(row_vector x, row_vector y)</code><br> The elementwise quotient of y and x</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; operator./; (row_vector x, real y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator./</code></strong><code>(row_vector x, real y)</code><br> The elementwise quotient of y and x</p>
+<small><i>Available since 2.4</i></small>
+<!-- row_vector; operator./; (real x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator./</code></strong><code>(real x, row_vector y)</code><br> The elementwise quotient of y and x</p>
+<small><i>Available since 2.4</i></small>
+<!-- matrix; operator./; (matrix x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator./</code></strong><code>(matrix x, matrix y)</code><br> The elementwise quotient of y and x</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator./; (matrix x, real y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator./</code></strong><code>(matrix x, real y)</code><br> The elementwise quotient of y and x</p>
+<small><i>Available since 2.4</i></small>
+<!-- matrix; operator./; (real x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator./</code></strong><code>(real x, matrix y)</code><br> The elementwise quotient of y and x</p>
+<small><i>Available since 2.4</i></small>
+<!-- vector; operator.^; (vector x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator.^</code></strong><code>(vector x, vector y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.24</i></small>
+<!-- vector; operator.^; (vector x, real y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator.^</code></strong><code>(vector x, real y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.24</i></small>
+<!-- vector; operator.^; (real x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator.^</code></strong><code>(real x, vector y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.24</i></small>
+<!-- row_vector; operator.^; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator.^</code></strong><code>(row_vector x, row_vector y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.24</i></small>
+<!-- row_vector; operator.^; (row_vector x, real y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator.^</code></strong><code>(row_vector x, real y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.24</i></small>
+<!-- row_vector; operator.^; (real x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator.^</code></strong><code>(real x, row_vector y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.24</i></small>
+<!-- matrix; operator.^; (matrix x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator.^</code></strong><code>(matrix x, matrix y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.24</i></small>
+<!-- matrix; operator.^; (matrix x, real y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator.^</code></strong><code>(matrix x, real y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.24</i></small>
+<!-- matrix; operator.^; (real x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator.^</code></strong><code>(real x, matrix y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.24</i></small>
+</section>
+<section id="dot-products-and-specialized-products" class="level2">
+<h2 class="anchored" data-anchor-id="dot-products-and-specialized-products">Dot products and specialized products</h2>
+<!-- real; dot_product; (vector x, vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>dot_product</code></strong><code>(vector x, vector y)</code><br> The dot product of x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; dot_product; (vector x, row_vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>dot_product</code></strong><code>(vector x, row_vector y)</code><br> The dot product of x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; dot_product; (row_vector x, vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>dot_product</code></strong><code>(row_vector x, vector y)</code><br> The dot product of x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; dot_product; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>dot_product</code></strong><code>(row_vector x, row_vector y)</code><br> The dot product of x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; columns_dot_product; (vector x, vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>columns_dot_product</code></strong><code>(vector x, vector y)</code><br> The dot product of the columns of x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; columns_dot_product; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>columns_dot_product</code></strong><code>(row_vector x, row_vector y)</code><br> The dot product of the columns of x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; columns_dot_product; (matrix x, matrix y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>columns_dot_product</code></strong><code>(matrix x, matrix y)</code><br> The dot product of the columns of x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; rows_dot_product; (vector x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>rows_dot_product</code></strong><code>(vector x, vector y)</code><br> The dot product of the rows of x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; rows_dot_product; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>rows_dot_product</code></strong><code>(row_vector x, row_vector y)</code><br> The dot product of the rows of x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; rows_dot_product; (matrix x, matrix y); -->
+<p></p>
+<p><code>vector</code> <strong><code>rows_dot_product</code></strong><code>(matrix x, matrix y)</code><br> The dot product of the rows of x and y</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; dot_self; (vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>dot_self</code></strong><code>(vector x)</code><br> The dot product of the vector x with itself</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; dot_self; (row_vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>dot_self</code></strong><code>(row_vector x)</code><br> The dot product of the row vector x with itself</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; columns_dot_self; (vector x); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>columns_dot_self</code></strong><code>(vector x)</code><br> The dot product of the columns of x with themselves</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; columns_dot_self; (row_vector x); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>columns_dot_self</code></strong><code>(row_vector x)</code><br> The dot product of the columns of x with themselves</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; columns_dot_self; (matrix x); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>columns_dot_self</code></strong><code>(matrix x)</code><br> The dot product of the columns of x with themselves</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; rows_dot_self; (vector x); -->
+<p></p>
+<p><code>vector</code> <strong><code>rows_dot_self</code></strong><code>(vector x)</code><br> The dot product of the rows of x with themselves</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; rows_dot_self; (row_vector x); -->
+<p></p>
+<p><code>vector</code> <strong><code>rows_dot_self</code></strong><code>(row_vector x)</code><br> The dot product of the rows of x with themselves</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; rows_dot_self; (matrix x); -->
+<p></p>
+<p><code>vector</code> <strong><code>rows_dot_self</code></strong><code>(matrix x)</code><br> The dot product of the rows of x with themselves</p>
+<small><i>Available since 2.0</i></small>
+<section id="specialized-products" class="level3">
+<h3 class="anchored" data-anchor-id="specialized-products">Specialized products</h3>
+<!-- matrix; tcrossprod; (matrix x); -->
+<p></p>
+<p><code>matrix</code> <strong><code>tcrossprod</code></strong><code>(matrix x)</code><br> The product of x postmultiplied by its own transpose, similar to the tcrossprod(x) function in R. The result is a symmetric matrix <span class="math inline">\(\text{x}\,\text{x}^{\top}\)</span>.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; crossprod; (matrix x); -->
+<p></p>
+<p><code>matrix</code> <strong><code>crossprod</code></strong><code>(matrix x)</code><br> The product of x premultiplied by its own transpose, similar to the crossprod(x) function in R. The result is a symmetric matrix <span class="math inline">\(\text{x}^{\top}\,\text{x}\)</span>.</p>
+<small><i>Available since 2.0</i></small>
+<p>The following functions all provide shorthand forms for common expressions, which are also much more efficient.</p>
+<!-- matrix; quad_form; (matrix A, matrix B); -->
+<p></p>
+<p><code>matrix</code> <strong><code>quad_form</code></strong><code>(matrix A, matrix B)</code><br> The quadratic form, i.e., <code>B' * A * B</code>.</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; quad_form; (matrix A, vector B); -->
+<p></p>
+<p><code>real</code> <strong><code>quad_form</code></strong><code>(matrix A, vector B)</code><br> The quadratic form, i.e., <code>B' * A * B</code>.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; quad_form_diag; (matrix m, vector v); -->
+<p></p>
+<p><code>matrix</code> <strong><code>quad_form_diag</code></strong><code>(matrix m, vector v)</code><br> The quadratic form using the column vector v as a diagonal matrix, i.e., <code>diag_matrix(v) * m * diag_matrix(v)</code>.</p>
+<small><i>Available since 2.3</i></small>
+<!-- matrix; quad_form_diag; (matrix m, row_vector rv); -->
+<p></p>
+<p><code>matrix</code> <strong><code>quad_form_diag</code></strong><code>(matrix m, row_vector rv)</code><br> The quadratic form using the row vector rv as a diagonal matrix, i.e., <code>diag_matrix(rv) * m * diag_matrix(rv)</code>.</p>
+<small><i>Available since 2.3</i></small>
+<!-- matrix; quad_form_sym; (matrix A, matrix B); -->
+<p></p>
+<p><code>matrix</code> <strong><code>quad_form_sym</code></strong><code>(matrix A, matrix B)</code><br> Similarly to quad_form, gives <code>B' * A * B</code>, but additionally checks if A is symmetric and ensures that the result is also symmetric.</p>
+<small><i>Available since 2.3</i></small>
+<!-- real; quad_form_sym; (matrix A, vector B); -->
+<p></p>
+<p><code>real</code> <strong><code>quad_form_sym</code></strong><code>(matrix A, vector B)</code><br> Similarly to quad_form, gives <code>B' * A * B</code>, but additionally checks if A is symmetric and ensures that the result is also symmetric.</p>
+<small><i>Available since 2.3</i></small>
+<!-- real; trace_quad_form; (matrix A, matrix B); -->
+<p></p>
+<p><code>real</code> <strong><code>trace_quad_form</code></strong><code>(matrix A, matrix B)</code><br> The trace of the quadratic form, i.e., <code>trace(B' * A * B)</code>.</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; trace_gen_quad_form; (matrix D,matrix A, matrix B); -->
+<p></p>
+<p><code>real</code> <strong><code>trace_gen_quad_form</code></strong><code>(matrix D,matrix A, matrix B)</code><br> The trace of a generalized quadratic form, i.e., <code>trace(D * B' * A * B).</code></p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; multiply_lower_tri_self_transpose; (matrix x); -->
+<p></p>
+<p><code>matrix</code> <strong><code>multiply_lower_tri_self_transpose</code></strong><code>(matrix x)</code><br> The product of the lower triangular portion of x (including the diagonal) times its own transpose; that is, if <code>L</code> is a matrix of the same dimensions as x with <code>L(m,n)</code> equal to <code>x(m,n)</code> for <span class="math inline">\(\text{n}
+\leq \text{m}\)</span> and <code>L(m,n)</code> equal to 0 if <span class="math inline">\(\text{n} &gt; \text{m}\)</span>, the result is the symmetric matrix <span class="math inline">\(\text{L}\,\text{L}^{\top}\)</span>. This is a specialization of tcrossprod(x) for lower-triangular matrices. The input matrix does not need to be square.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; diag_pre_multiply; (vector v, matrix m); -->
+<p></p>
+<p><code>matrix</code> <strong><code>diag_pre_multiply</code></strong><code>(vector v, matrix m)</code><br> Return the product of the diagonal matrix formed from the vector v and the matrix m, i.e., <code>diag_matrix(v) * m</code>.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; diag_pre_multiply; (row_vector rv, matrix m); -->
+<p></p>
+<p><code>matrix</code> <strong><code>diag_pre_multiply</code></strong><code>(row_vector rv, matrix m)</code><br> Return the product of the diagonal matrix formed from the vector rv and the matrix m, i.e., <code>diag_matrix(rv) * m</code>.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; diag_post_multiply; (matrix m, vector v); -->
+<p></p>
+<p><code>matrix</code> <strong><code>diag_post_multiply</code></strong><code>(matrix m, vector v)</code><br> Return the product of the matrix m and the diagonal matrix formed from the vector v, i.e., <code>m * diag_matrix(v)</code>.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; diag_post_multiply; (matrix m, row_vector rv); -->
+<p></p>
+<p><code>matrix</code> <strong><code>diag_post_multiply</code></strong><code>(matrix m, row_vector rv)</code><br> Return the product of the matrix <code>m</code> and the diagonal matrix formed from the the row vector <code>rv</code>, i.e., <code>m * diag_matrix(rv)</code>.</p>
+<small><i>Available since 2.0</i></small>
+</section>
+</section>
+<section id="reductions" class="level2">
+<h2 class="anchored" data-anchor-id="reductions">Reductions</h2>
+<section id="log-sum-of-exponents" class="level3">
+<h3 class="anchored" data-anchor-id="log-sum-of-exponents">Log sum of exponents</h3>
+<!-- real; log_sum_exp; (vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>log_sum_exp</code></strong><code>(vector x)</code><br> The natural logarithm of the sum of the exponentials of the elements in x</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; log_sum_exp; (row_vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>log_sum_exp</code></strong><code>(row_vector x)</code><br> The natural logarithm of the sum of the exponentials of the elements in x</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; log_sum_exp; (matrix x); -->
+<p></p>
+<p><code>real</code> <strong><code>log_sum_exp</code></strong><code>(matrix x)</code><br> The natural logarithm of the sum of the exponentials of the elements in x</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="minimum-and-maximum" class="level3">
+<h3 class="anchored" data-anchor-id="minimum-and-maximum">Minimum and maximum</h3>
+<!-- real; min; (vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>min</code></strong><code>(vector x)</code><br> The minimum value in x, or <span class="math inline">\(+\infty\)</span> if x is empty</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; min; (row_vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>min</code></strong><code>(row_vector x)</code><br> The minimum value in x, or <span class="math inline">\(+\infty\)</span> if x is empty</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; min; (matrix x); -->
+<p></p>
+<p><code>real</code> <strong><code>min</code></strong><code>(matrix x)</code><br> The minimum value in x, or <span class="math inline">\(+\infty\)</span> if x is empty</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; max; (vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>max</code></strong><code>(vector x)</code><br> The maximum value in x, or <span class="math inline">\(-\infty\)</span> if x is empty</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; max; (row_vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>max</code></strong><code>(row_vector x)</code><br> The maximum value in x, or <span class="math inline">\(-\infty\)</span> if x is empty</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; max; (matrix x); -->
+<p></p>
+<p><code>real</code> <strong><code>max</code></strong><code>(matrix x)</code><br> The maximum value in x, or <span class="math inline">\(-\infty\)</span> if x is empty</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="sums-and-products" class="level3">
+<h3 class="anchored" data-anchor-id="sums-and-products">Sums and products</h3>
+<!-- real; sum; (vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>sum</code></strong><code>(vector x)</code><br> The sum of the values in x, or 0 if x is empty</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; sum; (row_vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>sum</code></strong><code>(row_vector x)</code><br> The sum of the values in x, or 0 if x is empty</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; sum; (matrix x); -->
+<p></p>
+<p><code>real</code> <strong><code>sum</code></strong><code>(matrix x)</code><br> The sum of the values in x, or 0 if x is empty</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; prod; (vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>prod</code></strong><code>(vector x)</code><br> The product of the values in x, or 1 if x is empty</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; prod; (row_vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>prod</code></strong><code>(row_vector x)</code><br> The product of the values in x, or 1 if x is empty</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; prod; (matrix x); -->
+<p></p>
+<p><code>real</code> <strong><code>prod</code></strong><code>(matrix x)</code><br> The product of the values in x, or 1 if x is empty</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="sample-moments" class="level3">
+<h3 class="anchored" data-anchor-id="sample-moments">Sample moments</h3>
+<p>Full definitions are provided for sample moments in section <a href="../functions-reference/array_operations.html#array-reductions">array reductions</a>.</p>
+<!-- real; mean; (vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>mean</code></strong><code>(vector x)</code><br> The sample mean of the values in x; see section <a href="../functions-reference/array_operations.html#array-reductions">array reductions</a> for details.</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; mean; (row_vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>mean</code></strong><code>(row_vector x)</code><br> The sample mean of the values in x; see section <a href="../functions-reference/array_operations.html#array-reductions">array reductions</a> for details.</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; mean; (matrix x); -->
+<p></p>
+<p><code>real</code> <strong><code>mean</code></strong><code>(matrix x)</code><br> The sample mean of the values in x; see section <a href="../functions-reference/array_operations.html#array-reductions">array reductions</a> for details.</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; variance; (vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>variance</code></strong><code>(vector x)</code><br> The sample variance of the values in x; see section <a href="../functions-reference/array_operations.html#array-reductions">array reductions</a> for details.</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; variance; (row_vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>variance</code></strong><code>(row_vector x)</code><br> The sample variance of the values in x; see section <a href="../functions-reference/array_operations.html#array-reductions">array reductions</a> for details.</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; variance; (matrix x); -->
+<p></p>
+<p><code>real</code> <strong><code>variance</code></strong><code>(matrix x)</code><br> The sample variance of the values in x; see section <a href="../functions-reference/array_operations.html#array-reductions">array reductions</a> for details.</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; sd; (vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>sd</code></strong><code>(vector x)</code><br> The sample standard deviation of the values in x; see section <a href="../functions-reference/array_operations.html#array-reductions">array reductions</a> for details.</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; sd; (row_vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>sd</code></strong><code>(row_vector x)</code><br> The sample standard deviation of the values in x; see section <a href="../functions-reference/array_operations.html#array-reductions">array reductions</a> for details.</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; sd; (matrix x); -->
+<p></p>
+<p><code>real</code> <strong><code>sd</code></strong><code>(matrix x)</code><br> The sample standard deviation of the values in x; see section <a href="../functions-reference/array_operations.html#array-reductions">array reductions</a> for details.</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="quantile" class="level3">
+<h3 class="anchored" data-anchor-id="quantile">Quantile</h3>
+<p>Produces sample quantiles corresponding to the given probabilities. The smallest observation corresponds to a probability of 0 and the largest to a probability of 1.</p>
+<p>Implements algorithm 7 from Hyndman, R. J. and Fan, Y., Sample quantiles in Statistical Packages (R’s default quantile function).</p>
+<!-- real; quantile; (data vector x, data real p); -->
+<p></p>
+<p><code>real</code> <strong><code>quantile</code></strong><code>(data vector x, data real p)</code><br> The p-th quantile of x</p>
+<small><i>Available since 2.27</i></small>
+<!-- array[] real; quantile; (data vector x, data array[] real p); -->
+<p></p>
+<p><code>array[] real</code> <strong><code>quantile</code></strong><code>(data vector x, data array[] real p)</code><br> An array containing the quantiles of x given by the array of probabilities p</p>
+<small><i>Available since 2.27</i></small>
+<!-- real; quantile; (data row_vector x, data real p); -->
+<p></p>
+<p><code>real</code> <strong><code>quantile</code></strong><code>(data row_vector x, data real p)</code><br> The p-th quantile of x</p>
+<small><i>Available since 2.27</i></small>
+<!-- array[] real; quantile; (data row_vector x, data array[] real p); -->
+<p></p>
+<p><code>array[] real</code> <strong><code>quantile</code></strong><code>(data row_vector x, data array[] real p)</code><br> An array containing the quantiles of x given by the array of probabilities p</p>
+<small><i>Available since 2.27</i></small>
+</section>
+</section>
+<section id="matrix-broadcast" class="level2">
+<h2 class="anchored" data-anchor-id="matrix-broadcast">Broadcast functions</h2>
+<p>The following broadcast functions allow vectors, row vectors and matrices to be created by copying a single element into all of their cells. Matrices may also be created by stacking copies of row vectors vertically or stacking copies of column vectors horizontally.</p>
+<!-- vector; rep_vector; (real x, int m); -->
+<p></p>
+<p><code>vector</code> <strong><code>rep_vector</code></strong><code>(real x, int m)</code><br> Return the size m (column) vector consisting of copies of x.</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; rep_row_vector; (real x, int n); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>rep_row_vector</code></strong><code>(real x, int n)</code><br> Return the size n row vector consisting of copies of x.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; rep_matrix; (real x, int m, int n); -->
+<p></p>
+<p><code>matrix</code> <strong><code>rep_matrix</code></strong><code>(real x, int m, int n)</code><br> Return the m by n matrix consisting of copies of x.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; rep_matrix; (vector v, int n); -->
+<p></p>
+<p><code>matrix</code> <strong><code>rep_matrix</code></strong><code>(vector v, int n)</code><br> Return the m by n matrix consisting of n copies of the (column) vector v of size m.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; rep_matrix; (row_vector rv, int m); -->
+<p></p>
+<p><code>matrix</code> <strong><code>rep_matrix</code></strong><code>(row_vector rv, int m)</code><br> Return the m by n matrix consisting of m copies of the row vector rv of size n.</p>
+<small><i>Available since 2.0</i></small>
+<p>Unlike the situation with array broadcasting (see section <a href="../functions-reference/array_operations.html#array-broadcasting">array broadcasting</a>), where there is a distinction between integer and real arguments, the following two statements produce the same result for vector broadcasting; row vector and matrix broadcasting behave similarly.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a> <span class="dt">vector</span>[<span class="dv">3</span>] x;</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a> x = rep_vector(<span class="dv">1</span>, <span class="dv">3</span>);</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a> x = rep_vector(<span class="fl">1.0</span>, <span class="dv">3</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>There are no integer vector or matrix types, so integer values are automatically promoted.</p>
+<section id="symmetrization" class="level3">
+<h3 class="anchored" data-anchor-id="symmetrization">Symmetrization</h3>
+<!-- matrix; symmetrize_from_lower_tri; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>symmetrize_from_lower_tri</code></strong><code>(matrix A)</code><br></p>
+<p>Construct a symmetric matrix from the lower triangle of A.</p>
+<small><i>Available since 2.26</i></small>
+</section>
+</section>
+<section id="diagonal-matrix-functions" class="level2">
+<h2 class="anchored" data-anchor-id="diagonal-matrix-functions">Diagonal matrix functions</h2>
+<!-- matrix; add_diag; (matrix m, row_vector d); -->
+<p></p>
+<p><code>matrix</code> <strong><code>add_diag</code></strong><code>(matrix m, row_vector d)</code><br> Add row_vector <code>d</code> to the diagonal of matrix <code>m</code>.</p>
+<small><i>Available since 2.21</i></small>
+<!-- matrix; add_diag; (matrix m, vector d); -->
+<p></p>
+<p><code>matrix</code> <strong><code>add_diag</code></strong><code>(matrix m, vector d)</code><br> Add vector <code>d</code> to the diagonal of matrix <code>m</code>.</p>
+<small><i>Available since 2.21</i></small>
+<!-- matrix; add_diag; (matrix m, real d); -->
+<p></p>
+<p><code>matrix</code> <strong><code>add_diag</code></strong><code>(matrix m, real d)</code><br> Add scalar <code>d</code> to every diagonal element of matrix <code>m</code>.</p>
+<small><i>Available since 2.21</i></small>
+<!-- vector; diagonal; (matrix x); -->
+<p></p>
+<p><code>vector</code> <strong><code>diagonal</code></strong><code>(matrix x)</code><br> The diagonal of the matrix x</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; diag_matrix; (vector x); -->
+<p></p>
+<p><code>matrix</code> <strong><code>diag_matrix</code></strong><code>(vector x)</code><br> The diagonal matrix with diagonal x</p>
+<small><i>Available since 2.0</i></small>
+<p>Although the <code>diag_matrix</code> function is available, it is unlikely to ever show up in an efficient Stan program. For example, rather than converting a diagonal to a full matrix for use as a covariance matrix,</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a> y ~ multi_normal(mu, diag_matrix(square(sigma)));</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>it is much more efficient to just use a univariate normal, which produces the same density,</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a> y ~ normal(mu, sigma);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Rather than writing <code>m * diag_matrix(v)</code> where <code>m</code> is a matrix and <code>v</code> is a vector, it is much more efficient to write <code>diag_post_multiply(m, v)</code> (and similarly for pre-multiplication). By the same token, it is better to use <code>quad_form_diag(m, v)</code> rather than <code>quad_form(m, diag_matrix(v))</code>.</p>
+<!-- matrix; identity_matrix; (int k); -->
+<p></p>
+<p><code>matrix</code> <strong><code>identity_matrix</code></strong><code>(int k)</code><br> Create an identity matrix of size <span class="math inline">\(k \times k\)</span></p>
+<small><i>Available since 2.26</i></small>
+</section>
+<section id="container-construction" class="level2">
+<h2 class="anchored" data-anchor-id="container-construction">Container construction functions</h2>
+<!-- array[] real; linspaced_array; (int n, data real lower, data real upper); -->
+<p></p>
+<p><code>array[] real</code> <strong><code>linspaced_array</code></strong><code>(int n, data real lower, data real upper)</code><br> Create a real array of length <code>n</code> of equidistantly-spaced elements between <code>lower</code> and <code>upper</code></p>
+<small><i>Available since 2.24</i></small>
+<!-- array[] real; linspaced_int_array; (int n, int lower, int upper); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>linspaced_int_array</code></strong><code>(int n, int lower, int upper)</code><br> Create a regularly spaced, increasing integer array of length <code>n</code> between <code>lower</code> and <code>upper</code>, inclusively. If <code>(upper - lower) / (n - 1)</code> is less than one, repeat each output <code>(n - 1) / (upper - lower)</code> times. If neither <code>(upper - lower) / (n - 1)</code> or <code>(n - 1) / (upper - lower)</code> are integers, <code>upper</code> is reduced until one of these is true.</p>
+<small><i>Available since 2.26</i></small>
+<!-- vector; linspaced_vector; (int n, data real lower, data real upper); -->
+<p></p>
+<p><code>vector</code> <strong><code>linspaced_vector</code></strong><code>(int n, data real lower, data real upper)</code><br> Create an <code>n</code>-dimensional vector of equidistantly-spaced elements between <code>lower</code> and <code>upper</code></p>
+<small><i>Available since 2.24</i></small>
+<!-- row_vector; linspaced_row_vector; (int n, data real lower, data real upper); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>linspaced_row_vector</code></strong><code>(int n, data real lower, data real upper)</code><br> Create an <code>n</code>-dimensional row-vector of equidistantly-spaced elements between <code>lower</code> and <code>upper</code></p>
+<small><i>Available since 2.24</i></small>
+<!-- array[] int; one_hot_int_array; (int n, int k); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>one_hot_int_array</code></strong><code>(int n, int k)</code><br> Create a one-hot encoded int array of length <code>n</code> with <code>array[k] = 1</code></p>
+<small><i>Available since 2.26</i></small>
+<!-- array[] real; one_hot_array; (int n, int k); -->
+<p></p>
+<p><code>array[] real</code> <strong><code>one_hot_array</code></strong><code>(int n, int k)</code><br> Create a one-hot encoded real array of length <code>n</code> with <code>array[k] = 1</code></p>
+<small><i>Available since 2.24</i></small>
+<!-- vector; one_hot_vector; (int K, int k); -->
+<p></p>
+<p><code>vector</code> <strong><code>one_hot_vector</code></strong><code>(int n, int k)</code><br> Create an <code>n</code>-dimensional one-hot encoded vector with <code>vector[k] = 1</code></p>
+<small><i>Available since 2.24</i></small>
+<!-- row_vector; one_hot_row_vector; (int n, int k); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>one_hot_row_vector</code></strong><code>(int n, int k)</code><br> Create an <code>n</code>-dimensional one-hot encoded row-vector with <code>row_vector[k] = 1</code></p>
+<small><i>Available since 2.24</i></small>
+<!-- array[] int; ones_int_array; (int n); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>ones_int_array</code></strong><code>(int n)</code><br> Create an int array of length <code>n</code> of all ones</p>
+<small><i>Available since 2.26</i></small>
+<!-- array[] real; ones_array; (int n); -->
+<p></p>
+<p><code>array[] real</code> <strong><code>ones_array</code></strong><code>(int n)</code><br> Create a real array of length <code>n</code> of all ones</p>
+<small><i>Available since 2.26</i></small>
+<!-- vector; ones_vector; (int n); -->
+<p></p>
+<p><code>vector</code> <strong><code>ones_vector</code></strong><code>(int n)</code><br> Create an <code>n</code>-dimensional vector of all ones</p>
+<small><i>Available since 2.26</i></small>
+<!-- row_vector; ones_row_vector; (int n); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>ones_row_vector</code></strong><code>(int n)</code><br> Create an <code>n</code>-dimensional row-vector of all ones</p>
+<small><i>Available since 2.26</i></small>
+<!-- array[] int; zeros_int_array; (int n); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>zeros_int_array</code></strong><code>(int n)</code><br> Create an int array of length <code>n</code> of all zeros</p>
+<small><i>Available since 2.26</i></small>
+<!-- array[] real; zeros_array; (int n); -->
+<p></p>
+<p><code>array[] real</code> <strong><code>zeros_array</code></strong><code>(int n)</code><br> Create a real array of length <code>n</code> of all zeros</p>
+<small><i>Available since 2.24</i></small>
+<!-- vector; zeros_row_vector; (int n); -->
+<p></p>
+<p><code>vector</code> <strong><code>zeros_vector</code></strong><code>(int n)</code><br> Create an <code>n</code>-dimensional vector of all zeros</p>
+<small><i>Available since 2.24</i></small>
+<!-- row_vector; zeros_row_vector; (int n); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>zeros_row_vector</code></strong><code>(int n)</code><br> Create an <code>n</code>-dimensional row-vector of all zeros</p>
+<small><i>Available since 2.24</i></small>
+<!-- vector; uniform_simplex; (int n); -->
+<p></p>
+<p><code>vector</code> <strong><code>uniform_simplex</code></strong><code>(int n)</code><br> Create an <code>n</code>-dimensional simplex with elements <code>vector[i] = 1 / n</code> for all <span class="math inline">\(i \in 1, \dots, n\)</span></p>
+<small><i>Available since 2.24</i></small>
+</section>
+<section id="slicing-and-blocking-functions" class="level2">
+<h2 class="anchored" data-anchor-id="slicing-and-blocking-functions">Slicing and blocking functions</h2>
+<p>Stan provides several functions for generating slices or blocks or diagonal entries for matrices.</p>
+<section id="columns-and-rows" class="level3">
+<h3 class="anchored" data-anchor-id="columns-and-rows">Columns and rows</h3>
+<!-- vector; col; (matrix x, int n); -->
+<p></p>
+<p><code>vector</code> <strong><code>col</code></strong><code>(matrix x, int n)</code><br> The n-th column of matrix x</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; row; (matrix x, int m); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>row</code></strong><code>(matrix x, int m)</code><br> The m-th row of matrix x</p>
+<small><i>Available since 2.0</i></small>
+<p>The <code>row</code> function is special in that it may be used as an lvalue in an assignment statement (i.e., something to which a value may be assigned). The row function is also special in that the indexing notation <code>x[m]</code> is just an alternative way of writing <code>row(x,m)</code>. The <code>col</code> function may <strong>not</strong>, be used as an lvalue, nor is there an indexing based shorthand for it.</p>
+</section>
+<section id="block-operations" class="level3">
+<h3 class="anchored" data-anchor-id="block-operations">Block operations</h3>
+<section id="matrix-slicing-operations" class="level4">
+<h4 class="anchored" data-anchor-id="matrix-slicing-operations">Matrix slicing operations</h4>
+<p>Block operations may be used to extract a sub-block of a matrix.</p>
+<!-- matrix; block; (matrix x, int i, int j, int n_rows, int n_cols); -->
+<p></p>
+<p><code>matrix</code> <strong><code>block</code></strong><code>(matrix x, int i, int j, int n_rows, int n_cols)</code><br> Return the submatrix of x that starts at row i and column j and extends n_rows rows and n_cols columns.</p>
+<small><i>Available since 2.0</i></small>
+<p>The sub-row and sub-column operations may be used to extract a slice of row or column from a matrix</p>
+<!-- vector; sub_col; (matrix x, int i, int j, int n_rows); -->
+<p></p>
+<p><code>vector</code> <strong><code>sub_col</code></strong><code>(matrix x, int i, int j, int n_rows)</code><br> Return the sub-column of x that starts at row i and column j and extends n_rows rows and 1 column.</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; sub_row; (matrix x, int i, int j, int n_cols); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>sub_row</code></strong><code>(matrix x, int i, int j, int n_cols)</code><br> Return the sub-row of x that starts at row i and column j and extends 1 row and n_cols columns.</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="vector-and-array-slicing-operations" class="level4">
+<h4 class="anchored" data-anchor-id="vector-and-array-slicing-operations">Vector and array slicing operations</h4>
+<p>The head operation extracts the first <span class="math inline">\(n\)</span> elements of a vector and the tail operation the last. The segment operation extracts an arbitrary subvector.</p>
+<!-- vector; head; (vector v, int n); -->
+<p></p>
+<p><code>vector</code> <strong><code>head</code></strong><code>(vector v, int n)</code><br> Return the vector consisting of the first n elements of v.</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; head; (row_vector rv, int n); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>head</code></strong><code>(row_vector rv, int n)</code><br> Return the row vector consisting of the first n elements of rv.</p>
+<small><i>Available since 2.0</i></small>
+<!-- array[] T; head; (array[] T sv, int n); -->
+<p></p>
+<p><code>array[] T</code> <strong><code>head</code></strong><code>(array[] T sv, int n)</code><br> Return the array consisting of the first n elements of sv; applies to up to three-dimensional arrays containing any type of elements <code>T</code>.</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; tail; (vector v, int n); -->
+<p></p>
+<p><code>vector</code> <strong><code>tail</code></strong><code>(vector v, int n)</code><br> Return the vector consisting of the last n elements of v.</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; tail; (row_vector rv, int n); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>tail</code></strong><code>(row_vector rv, int n)</code><br> Return the row vector consisting of the last n elements of rv.</p>
+<small><i>Available since 2.0</i></small>
+<!-- array[] T; tail; (array[] T sv, int n); -->
+<p></p>
+<p><code>array[] T</code> <strong><code>tail</code></strong><code>(array[] T sv, int n)</code><br> Return the array consisting of the last n elements of sv; applies to up to three-dimensional arrays containing any type of elements <code>T</code>.</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; segment; (vector v, int i, int n); -->
+<p></p>
+<p><code>vector</code> <strong><code>segment</code></strong><code>(vector v, int i, int n)</code><br> Return the vector consisting of the n elements of v starting at i; i.e., elements i through through i + n - 1.</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; segment; (row_vector rv, int i, int n); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>segment</code></strong><code>(row_vector rv, int i, int n)</code><br> Return the row vector consisting of the n elements of rv starting at i; i.e., elements i through through i + n - 1.</p>
+<small><i>Available since 2.10</i></small>
+<!-- array[] T; segment; (array[] T sv, int i, int n); -->
+<p></p>
+<p><code>array[] T</code> <strong><code>segment</code></strong><code>(array[] T sv, int i, int n)</code><br> Return the array consisting of the n elements of sv starting at i; i.e., elements i through through i + n - 1. Applies to up to three-dimensional arrays containing any type of elements <code>T</code>.</p>
+<small><i>Available since 2.0</i></small>
+</section>
+</section>
+</section>
+<section id="matrix-concatenation" class="level2">
+<h2 class="anchored" data-anchor-id="matrix-concatenation">Matrix concatenation</h2>
+<p>Stan’s matrix concatenation operations <code>append_col</code> and <code>append_row</code> are like the operations <code>cbind</code> and <code>rbind</code> in R.</p>
+<section id="horizontal-concatenation" class="level4">
+<h4 class="anchored" data-anchor-id="horizontal-concatenation">Horizontal concatenation</h4>
+<!-- matrix; append_col; (matrix x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>append_col</code></strong><code>(matrix x, matrix y)</code><br> Combine matrices x and y by column. The matrices must have the same number of rows.</p>
+<small><i>Available since 2.5</i></small>
+<!-- matrix; append_col; (matrix x, vector y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>append_col</code></strong><code>(matrix x, vector y)</code><br> Combine matrix x and vector y by column. The matrix and the vector must have the same number of rows.</p>
+<small><i>Available since 2.5</i></small>
+<!-- matrix; append_col; (vector x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>append_col</code></strong><code>(vector x, matrix y)</code><br> Combine vector x and matrix y by column. The vector and the matrix must have the same number of rows.</p>
+<small><i>Available since 2.5</i></small>
+<!-- matrix; append_col; (vector x, vector y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>append_col</code></strong><code>(vector x, vector y)</code><br> Combine vectors x and y by column. The vectors must have the same number of rows.</p>
+<small><i>Available since 2.5</i></small>
+<!-- row_vector; append_col; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>append_col</code></strong><code>(row_vector x, row_vector y)</code><br> Combine row vectors x and y of any size into another row vector by appending y to the end of x.</p>
+<small><i>Available since 2.5</i></small>
+<!-- row_vector; append_col; (real x, row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>append_col</code></strong><code>(real x, row_vector y)</code><br> Append x to the front of y, returning another row vector.</p>
+<small><i>Available since 2.12</i></small>
+<!-- row_vector; append_col; (row_vector x, real y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>append_col</code></strong><code>(row_vector x, real y)</code><br> Append y to the end of x, returning another row vector.</p>
+<small><i>Available since 2.12</i></small>
+</section>
+<section id="vertical-concatenation" class="level4">
+<h4 class="anchored" data-anchor-id="vertical-concatenation">Vertical concatenation</h4>
+<!-- matrix; append_row; (matrix x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>append_row</code></strong><code>(matrix x, matrix y)</code><br> Combine matrices x and y by row. The matrices must have the same number of columns.</p>
+<small><i>Available since 2.5</i></small>
+<!-- matrix; append_row; (matrix x, row_vector y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>append_row</code></strong><code>(matrix x, row_vector y)</code><br> Combine matrix x and row vector y by row. The matrix and the row vector must have the same number of columns.</p>
+<small><i>Available since 2.5</i></small>
+<!-- matrix; append_row; (row_vector x, matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>append_row</code></strong><code>(row_vector x, matrix y)</code><br> Combine row vector x and matrix y by row. The row vector and the matrix must have the same number of columns.</p>
+<small><i>Available since 2.5</i></small>
+<!-- matrix; append_row; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>append_row</code></strong><code>(row_vector x, row_vector y)</code><br> Combine row vectors x and y by row. The row vectors must have the same number of columns.</p>
+<small><i>Available since 2.5</i></small>
+<!-- vector; append_row; (vector x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>append_row</code></strong><code>(vector x, vector y)</code><br> Concatenate vectors x and y of any size into another vector.</p>
+<small><i>Available since 2.5</i></small>
+<!-- vector; append_row; (real x, vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>append_row</code></strong><code>(real x, vector y)</code><br> Append x to the top of y, returning another vector.</p>
+<small><i>Available since 2.12</i></small>
+<!-- vector; append_row; (vector x, real y); -->
+<p></p>
+<p><code>vector</code> <strong><code>append_row</code></strong><code>(vector x, real y)</code><br> Append y to the bottom of x, returning another vector.</p>
+<small><i>Available since 2.12</i></small>
+</section>
+</section>
+<section id="softmax" class="level2">
+<h2 class="anchored" data-anchor-id="softmax">Special matrix functions</h2>
+<section id="softmax-1" class="level3">
+<h3 class="anchored" data-anchor-id="softmax-1">Softmax</h3>
+<p>The softmax function maps<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> <span class="math inline">\(y \in \mathbb{R}^K\)</span> to the <span class="math inline">\(K\)</span>-simplex by <span class="math display">\[\begin{equation*} \text{softmax}(y)  = \frac{\exp(y)}
+{\sum_{k=1}^K \exp(y_k)}, \end{equation*}\]</span> where <span class="math inline">\(\exp(y)\)</span> is the componentwise exponentiation of <span class="math inline">\(y\)</span>. Softmax is usually calculated on the log scale, <span class="math display">\[\begin{eqnarray*} \log \text{softmax}(y) &amp; = &amp; \ y - \log \sum_{k=1}^K
+\exp(y_k) \\[4pt] &amp; = &amp; y - \mathrm{log\_sum\_exp}(y). \end{eqnarray*}\]</span> where the vector <span class="math inline">\(y\)</span> minus the scalar <span class="math inline">\(\mathrm{log\_sum\_exp}(y)\)</span> subtracts the scalar from each component of <span class="math inline">\(y\)</span>.</p>
+<p>Stan provides the following functions for softmax and its log.</p>
+<!-- vector; softmax; (vector x); -->
+<p></p>
+<p><code>vector</code> <strong><code>softmax</code></strong><code>(vector x)</code><br> The softmax of x</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; log_softmax; (vector x); -->
+<p></p>
+<p><code>vector</code> <strong><code>log_softmax</code></strong><code>(vector x)</code><br> The natural logarithm of the softmax of x</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="cumulative-sums" class="level3">
+<h3 class="anchored" data-anchor-id="cumulative-sums">Cumulative sums</h3>
+<p>The cumulative sum of a sequence <span class="math inline">\(x_1,\ldots,x_N\)</span> is the sequence <span class="math inline">\(y_1,\ldots,y_N\)</span>, where <span class="math display">\[\begin{equation*} y_n = \sum_{m = 1}^{n} x_m. \end{equation*}\]</span></p>
+<!-- array[] int; cumulative_sum; (array[] int x); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>cumulative_sum</code></strong><code>(array[] int x)</code><br> The cumulative sum of x</p>
+<small><i>Available since 2.30</i></small>
+<!-- array[] real; cumulative_sum; (array[] real x); -->
+<p></p>
+<p><code>array[] real</code> <strong><code>cumulative_sum</code></strong><code>(array[] real x)</code><br> The cumulative sum of x</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; cumulative_sum; (vector v); -->
+<p></p>
+<p><code>vector</code> <strong><code>cumulative_sum</code></strong><code>(vector v)</code><br> The cumulative sum of v</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; cumulative_sum; (row_vector rv); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>cumulative_sum</code></strong><code>(row_vector rv)</code><br> The cumulative sum of rv</p>
+<small><i>Available since 2.0</i></small>
+</section>
+</section>
+<section id="gaussian-process-covariance-functions" class="level2">
+<h2 class="anchored" data-anchor-id="gaussian-process-covariance-functions">Gaussian Process Covariance Functions</h2>
+<p>The Gaussian process covariance functions compute the covariance between observations in an input data set or the cross-covariance between two input data sets.</p>
+<p>For one dimensional GPs, the input data sets are arrays of scalars. The covariance matrix is given by <span class="math inline">\(K_{ij} = k(x_i, x_j)\)</span> (where <span class="math inline">\(x_i\)</span> is the <span class="math inline">\(i^{th}\)</span> element of the array <span class="math inline">\(x\)</span>) and the cross-covariance is given by <span class="math inline">\(K_{ij} = k(x_i, y_j)\)</span>.</p>
+<p>For multi-dimensional GPs, the input data sets are arrays of vectors. The covariance matrix is given by <span class="math inline">\(K_{ij} = k(\mathbf{x}_i, \mathbf{x}_j)\)</span> (where <span class="math inline">\(\mathbf{x}_i\)</span> is the <span class="math inline">\(i^{th}\)</span> vector in the array <span class="math inline">\(x\)</span>) and the cross-covariance is given by <span class="math inline">\(K_{ij} = k(\mathbf{x}_i, \mathbf{y}_j)\)</span>.</p>
+<section id="exponentiated-quadratic-kernel" class="level3">
+<h3 class="anchored" data-anchor-id="exponentiated-quadratic-kernel">Exponentiated quadratic kernel</h3>
+<p>With magnitude <span class="math inline">\(\sigma\)</span> and length scale <span class="math inline">\(l\)</span>, the exponentiated quadratic kernel is:</p>
+<p><span class="math display">\[
+k(\mathbf{x}_i, \mathbf{x}_j) = \sigma^2 \exp \left( -\frac{|\mathbf{x}_i - \mathbf{x}_j|^2}{2l^2} \right)
+\]</span></p>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exp_quad_cov</code></strong><code>(array[] real x, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process covariance with exponentiated quadratic kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exp_quad_cov</code></strong><code>(array[] real x1, array[] real x2, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with exponentiated quadratic kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exp_quad_cov</code></strong><code>(vectors x, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process covariance with exponentiated quadratic kernel in multiple dimensions.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exp_quad_cov</code></strong><code>(vectors x, real sigma, array[] real length_scale)</code><br></p>
+<p>Gaussian process covariance with exponentiated quadratic kernel in multiple dimensions with a length scale for each dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exp_quad_cov</code></strong><code>(vectors x1, vectors x2, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with exponentiated quadratic kernel in multiple dimensions.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exp_quad_cov</code></strong><code>(vectors x1, vectors x2, real sigma, array[] real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with exponentiated quadratic kernel in multiple dimensions with a length scale for each dimension.</p>
+<small><i>Available since 2.20</i></small>
+</section>
+<section id="dot-product-kernel" class="level3">
+<h3 class="anchored" data-anchor-id="dot-product-kernel">Dot product kernel</h3>
+<p>With bias <span class="math inline">\(\sigma_0\)</span> the dot product kernel is:</p>
+<p><span class="math display">\[
+k(\mathbf{x}_i, \mathbf{x}_j) = \sigma_0^2 + \mathbf{x}_i^T \mathbf{x}_j
+\]</span></p>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_dot_prod_cov</code></strong><code>(array[] real x, real sigma)</code><br></p>
+<p>Gaussian process covariance with dot product kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_dot_prod_cov</code></strong><code>(array[] real x1, array[] real x2, real sigma)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with dot product kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_dot_prod_cov</code></strong><code>(vectors x, real sigma)</code><br></p>
+<p>Gaussian process covariance with dot product kernel in multiple dimensions.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_dot_prod_cov</code></strong><code>(vectors x1, vectors x2, real sigma)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with dot product kernel in multiple dimensions.</p>
+<small><i>Available since 2.20</i></small>
+</section>
+<section id="exponential-kernel" class="level3">
+<h3 class="anchored" data-anchor-id="exponential-kernel">Exponential kernel</h3>
+<p>With magnitude <span class="math inline">\(\sigma\)</span> and length scale <span class="math inline">\(l\)</span>, the exponential kernel is:</p>
+<p><span class="math display">\[
+k(\mathbf{x}_i, \mathbf{x}_j) = \sigma^2 \exp \left( -\frac{|\mathbf{x}_i - \mathbf{x}_j|}{l} \right)
+\]</span></p>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exponential_cov</code></strong><code>(array[] real x, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process covariance with exponential kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exponential_cov</code></strong><code>(array[] real x1, array[] real x2, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with exponential kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exponential_cov</code></strong><code>(vectors x, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process covariance with exponential kernel in multiple dimensions.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exponential_cov</code></strong><code>(vectors x, real sigma, array[] real length_scale)</code><br></p>
+<p>Gaussian process covariance with exponential kernel in multiple dimensions with a length scale for each dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exponential_cov</code></strong><code>(vectors x1, vectors x2, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with exponential kernel in multiple dimensions.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_exponential_cov</code></strong><code>(vectors x1, vectors x2, real sigma, array[] real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with exponential kernel in multiple dimensions with a length scale for each dimension.</p>
+<small><i>Available since 2.20</i></small>
+</section>
+<section id="matern-32-kernel" class="level3">
+<h3 class="anchored" data-anchor-id="matern-32-kernel">Matern 3/2 kernel</h3>
+<p>With magnitude <span class="math inline">\(\sigma\)</span> and length scale <span class="math inline">\(l\)</span>, the Matern 3/2 kernel is:</p>
+<p><span class="math display">\[
+k(\mathbf{x}_i, \mathbf{x}_j) = \sigma^2 \left( 1 + \frac{\sqrt{3}|\mathbf{x}_i - \mathbf{x}_j|}{l} \right) \exp \left( -\frac{\sqrt{3}|\mathbf{x}_i - \mathbf{x}_j|}{l} \right)
+\]</span></p>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern32_cov</code></strong><code>(array[] real x, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process covariance with Matern 3/2 kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern32_cov</code></strong><code>(array[] real x1, array[] real x2, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with Matern 3/2 kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern32_cov</code></strong><code>(vectors x, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process covariance with Matern 3/2 kernel in multiple dimensions.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern32_cov</code></strong><code>(vectors x, real sigma, array[] real length_scale)</code><br></p>
+<p>Gaussian process covariance with Matern 3/2 kernel in multiple dimensions with a length scale for each dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern32_cov</code></strong><code>(vectors x1, vectors x2, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with Matern 3/2 kernel in multiple dimensions.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern32_cov</code></strong><code>(vectors x1, vectors x2, real sigma, array[] real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with Matern 3/2 kernel in multiple dimensions with a length scale for each dimension.</p>
+<small><i>Available since 2.20</i></small>
+</section>
+<section id="matern-52-kernel" class="level3">
+<h3 class="anchored" data-anchor-id="matern-52-kernel">Matern 5/2 kernel</h3>
+<p>With magnitude <span class="math inline">\(\sigma\)</span> and length scale <span class="math inline">\(l\)</span>, the Matern 5/2 kernel is:</p>
+<p><span class="math display">\[
+k(\mathbf{x}_i, \mathbf{x}_j) = \sigma^2 \left( 1 + \frac{\sqrt{5}|\mathbf{x}_i - \mathbf{x}_j|}{l} + \frac{5 |\mathbf{x}_i - \mathbf{x}_j|^2}{3l^2} \right)
+\exp \left( -\frac{\sqrt{5} |\mathbf{x}_i - \mathbf{x}_j|}{l} \right)
+\]</span></p>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern52_cov</code></strong><code>(array[] real x, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process covariance with Matern 5/2 kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern52_cov</code></strong><code>(array[] real x1, array[] real x2, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with Matern 5/2 kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern52_cov</code></strong><code>(vectors x, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process covariance with Matern 5/2 kernel in multiple dimensions.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern52_cov</code></strong><code>(vectors x, real sigma, array[] real length_scale)</code><br></p>
+<p>Gaussian process covariance with Matern 5/2 kernel in multiple dimensions with a length scale for each dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern52_cov</code></strong><code>(vectors x1, vectors x2, real sigma, real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with Matern 5/2 kernel in multiple dimensions.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_matern52_cov</code></strong><code>(vectors x1, vectors x2, real sigma, array[] real length_scale)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with Matern 5/2 kernel in multiple dimensions with a length scale for each dimension.</p>
+<small><i>Available since 2.20</i></small>
+</section>
+<section id="periodic-kernel" class="level3">
+<h3 class="anchored" data-anchor-id="periodic-kernel">Periodic kernel</h3>
+<p>With magnitude <span class="math inline">\(\sigma\)</span>, length scale <span class="math inline">\(l\)</span>, and period <span class="math inline">\(p\)</span>, the periodic kernel is:</p>
+<p><span class="math display">\[
+k(\mathbf{x}_i, \mathbf{x}_j) = \sigma^2 \exp \left(-\frac{2 \sin^2 \left( \pi \frac{|\mathbf{x}_i - \mathbf{x}_j|}{p} \right) }{l^2} \right)
+\]</span></p>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_periodic_cov</code></strong><code>(array[] real x, real sigma, real length_scale, real period)</code><br></p>
+<p>Gaussian process covariance with periodic kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_periodic_cov</code></strong><code>(array[] real x1, array[] real x2, real sigma, real length_scale, real period)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with periodic kernel in one dimension.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_periodic_cov</code></strong><code>(vectors x, real sigma, real length_scale, real period)</code><br></p>
+<p>Gaussian process covariance with periodic kernel in multiple dimensions.</p>
+<small><i>Available since 2.20</i></small>
+<p></p>
+<p><code>matrix</code> <strong><code>gp_periodic_cov</code></strong><code>(vectors x1, vectors x2, real sigma, real length_scale, real period)</code><br></p>
+<p>Gaussian process cross-covariance of <code>x1</code> and <code>x2</code> with periodic kernel in multiple dimensions with a length scale for each dimension.</p>
+<small><i>Available since 2.20</i></small>
+</section>
+</section>
+<section id="linear-algebra-functions-and-solvers" class="level2">
+<h2 class="anchored" data-anchor-id="linear-algebra-functions-and-solvers">Linear algebra functions and solvers</h2>
+<section id="matrix-division-operators-and-functions" class="level3">
+<h3 class="anchored" data-anchor-id="matrix-division-operators-and-functions">Matrix division operators and functions</h3>
+<p>In general, it is much more efficient and also more arithmetically stable to use matrix division than to multiply by an inverse. There are specialized forms for lower triangular matrices and for symmetric, positive-definite matrices.</p>
+<section id="matrix-division-operators" class="level4">
+<h4 class="anchored" data-anchor-id="matrix-division-operators">Matrix division operators</h4>
+<!-- row_vector; operator/; (row_vector b, matrix A); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator/</code></strong><code>(row_vector b, matrix A)</code><br> The right division of b by A; equivalently <code>b * inverse(A)</code></p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; operator/; (matrix B, matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator/</code></strong><code>(matrix B, matrix A)</code><br> The right division of B by A; equivalently <code>B * inverse(A)</code></p>
+<small><i>Available since 2.5</i></small>
+<!-- vector; operator\; (matrix A, vector b); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator\</code></strong><code>(matrix A, vector b)</code><br> The left division of A by b; equivalently <code>inverse(A) * b</code></p>
+<small><i>Available since 2.18</i></small>
+<!-- matrix; operator\; (matrix A, matrix B); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator\</code></strong><code>(matrix A, matrix B)</code><br> The left division of A by B; equivalently <code>inverse(A) * B</code></p>
+<small><i>Available since 2.18</i></small>
+</section>
+<section id="lower-triangular-matrix-division-functions" class="level4">
+<h4 class="anchored" data-anchor-id="lower-triangular-matrix-division-functions">Lower-triangular matrix division functions</h4>
+<p>There are four division functions which use lower triangular views of a matrix. The lower triangular view of a matrix <span class="math inline">\(\text{tri}(A)\)</span> is used in the definitions and defined by <span class="math display">\[\begin{equation*} \text{tri}(A)[m,n] = \left\{
+\begin{array}{ll} A[m,n] &amp; \text{if } m \geq n, \text{ and} \\[4pt] 0
+&amp; \text{otherwise}. \end{array} \right. \end{equation*}\]</span> When a lower triangular view of a matrix is used, the elements above the diagonal are ignored.</p>
+<!-- vector; mdivide_left_tri_low; (matrix A, vector b); -->
+<p></p>
+<p><code>vector</code> <strong><code>mdivide_left_tri_low</code></strong><code>(matrix A, vector b)</code><br> The left division of b by a lower-triangular view of A; algebraically equivalent to the less efficient and stable form <code>inverse(tri(A)) * b</code>, where <code>tri(A)</code> is the lower-triangular portion of A with the above-diagonal entries set to zero.</p>
+<small><i>Available since 2.12</i></small>
+<!-- matrix; mdivide_left_tri_low; (matrix A, matrix B); -->
+<p></p>
+<p><code>matrix</code> <strong><code>mdivide_left_tri_low</code></strong><code>(matrix A, matrix B)</code><br> The left division of B by a triangular view of A; algebraically equivalent to the less efficient and stable form <code>inverse(tri(A)) * B</code>, where <code>tri(A)</code> is the lower-triangular portion of A with the above-diagonal entries set to zero.</p>
+<small><i>Available since 2.5</i></small>
+<!-- row_vector; mdivide_right_tri_low; (row_vector b, matrix A); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>mdivide_right_tri_low</code></strong><code>(row_vector b, matrix A)</code><br> The right division of b by a triangular view of A; algebraically equivalent to the less efficient and stable form <code>b * inverse(tri(A))</code>, where <code>tri(A)</code> is the lower-triangular portion of A with the above-diagonal entries set to zero.</p>
+<small><i>Available since 2.12</i></small>
+<!-- matrix; mdivide_right_tri_low; (matrix B, matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>mdivide_right_tri_low</code></strong><code>(matrix B, matrix A)</code><br> The right division of B by a triangular view of A; algebraically equivalent to the less efficient and stable form <code>B * inverse(tri(A))</code>, where <code>tri(A)</code> is the lower-triangular portion of A with the above-diagonal entries set to zero.</p>
+<small><i>Available since 2.5</i></small>
+</section>
+</section>
+<section id="symmetric-positive-definite-matrix-division-functions" class="level3">
+<h3 class="anchored" data-anchor-id="symmetric-positive-definite-matrix-division-functions">Symmetric positive-definite matrix division functions</h3>
+<p>There are four division functions which are specialized for efficiency and stability for symmetric positive-definite matrix dividends. If the matrix dividend argument is not symmetric and positive definite, these will reject and print warnings.</p>
+<!-- matrix; mdivide_left_spd; (matrix A, vector b); -->
+<p></p>
+<p><code>matrix</code> <strong><code>mdivide_left_spd</code></strong><code>(matrix A, vector b)</code><br> The left division of b by the symmetric, positive-definite matrix A; algebraically equivalent to the less efficient and stable form <code>inverse(A) * b</code>.</p>
+<small><i>Available since 2.12</i></small>
+<!-- vector; mdivide_left_spd; (matrix A, matrix B); -->
+<p></p>
+<p><code>vector</code> <strong><code>mdivide_left_spd</code></strong><code>(matrix A, matrix B)</code><br> The left division of B by the symmetric, positive-definite matrix A; algebraically equivalent to the less efficient and stable form <code>inverse(A) * B</code>.</p>
+<small><i>Available since 2.12</i></small>
+<!-- row_vector; mdivide_right_spd; (row_vector b, matrix A); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>mdivide_right_spd</code></strong><code>(row_vector b, matrix A)</code><br> The right division of b by the symmetric, positive-definite matrix A; algebraically equivalent to the less efficient and stable form <code>b *inverse(A)</code>.</p>
+<small><i>Available since 2.12</i></small>
+<!-- matrix; mdivide_right_spd; (matrix B, matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>mdivide_right_spd</code></strong><code>(matrix B, matrix A)</code><br> The right division of B by the symmetric, positive-definite matrix A; algebraically equivalent to the less efficient and stable form <code>B * inverse(A)</code>.</p>
+<small><i>Available since 2.12</i></small>
+</section>
+<section id="matrix-exponential" class="level3">
+<h3 class="anchored" data-anchor-id="matrix-exponential">Matrix exponential</h3>
+<p>The exponential of the matrix <span class="math inline">\(A\)</span> is formally defined by the convergent power series: <span class="math display">\[\begin{equation*} e^A = \sum_{n=0}^{\infty} \dfrac{A^n}{n!}
+\end{equation*}\]</span></p>
+<!-- matrix; matrix_exp; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>matrix_exp</code></strong><code>(matrix A)</code><br> The matrix exponential of A</p>
+<small><i>Available since 2.13</i></small>
+<!-- matrix; matrix_exp_multiply; (matrix A, matrix B); -->
+<p></p>
+<p><code>matrix</code> <strong><code>matrix_exp_multiply</code></strong><code>(matrix A, matrix B)</code><br> The multiplication of matrix exponential of A and matrix B; algebraically equivalent to the less efficient form <code>matrix_exp(A) * B</code>.</p>
+<small><i>Available since 2.18</i></small>
+<!-- matrix; scale_matrix_exp_multiply; (real t, matrix A, matrix B); -->
+<p></p>
+<p><code>matrix</code> <strong><code>scale_matrix_exp_multiply</code></strong><code>(real t, matrix A, matrix B)</code><br> The multiplication of matrix exponential of tA and matrix B; algebraically equivalent to the less efficient form <code>matrix_exp(t * A) * B</code>.</p>
+<small><i>Available since 2.18</i></small>
+</section>
+<section id="matrix-power" class="level3">
+<h3 class="anchored" data-anchor-id="matrix-power">Matrix power</h3>
+<p>Returns the nth power of the specific matrix: <span class="math display">\[\begin{equation*} M^n = M_1 * ... * M_n \end{equation*}\]</span></p>
+<!-- matrix; matrix_power; (matrix A, int B); -->
+<p></p>
+<p><code>matrix</code> <strong><code>matrix_power</code></strong><code>(matrix A, int B)</code><br> Matrix A raised to the power B.</p>
+<small><i>Available since 2.24</i></small>
+</section>
+<section id="linear-algebra-functions" class="level3">
+<h3 class="anchored" data-anchor-id="linear-algebra-functions">Linear algebra functions</h3>
+<section id="trace" class="level4">
+<h4 class="anchored" data-anchor-id="trace">Trace</h4>
+<!-- real; trace; (matrix A); -->
+<p></p>
+<p><code>real</code> <strong><code>trace</code></strong><code>(matrix A)</code><br> The trace of A, or 0 if A is empty; A is not required to be diagonal</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="determinants" class="level4">
+<h4 class="anchored" data-anchor-id="determinants">Determinants</h4>
+<!-- real; determinant; (matrix A); -->
+<p></p>
+<p><code>real</code> <strong><code>determinant</code></strong><code>(matrix A)</code><br> The determinant of A</p>
+<small><i>Available since 2.0</i></small>
+<!-- real; log_determinant; (matrix A); -->
+<p></p>
+<p><code>real</code> <strong><code>log_determinant</code></strong><code>(matrix A)</code><br> The log of the absolute value of the determinant of A</p>
+<small><i>Available since 2.0</i></small>
+<p><code>real</code> <strong><code>log_determinant_spd</code></strong><code>(matrix A)</code><br> The log of the absolute value of the determinant of the symmetric, positive-definite matrix A.</p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="inverses" class="level4">
+<h4 class="anchored" data-anchor-id="inverses">Inverses</h4>
+<p>It is almost never a good idea to use matrix inverses directly because they are both inefficient and arithmetically unstable compared to the alternatives. Rather than inverting a matrix <code>m</code> and post-multiplying by a vector or matrix <code>a</code>, as in <code>inverse(m) * a</code>, it is better to code this using matrix division, as in <code>m \ a</code>. The pre-multiplication case is similar, with <code>b * inverse(m)</code> being more efficiently coded as as <code>b / m</code>. There are also useful special cases for triangular and symmetric, positive-definite matrices that use more efficient solvers.</p>
+<p><em><strong>Warning:</strong></em> The function <code>inv(m)</code> is the elementwise inverse function, which returns <code>1 / m[i, j]</code> for each element.</p>
+<!-- matrix; inverse; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>inverse</code></strong><code>(matrix A)</code><br> Compute the inverse of A</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; inverse_spd; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>inverse_spd</code></strong><code>(matrix A)</code><br> Compute the inverse of A where A is symmetric, positive definite. This version is faster and more arithmetically stable when the input is symmetric and positive definite.</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; chol2inv; (matrix L); -->
+<p></p>
+<p><code>matrix</code> <strong><code>chol2inv</code></strong><code>(matrix L)</code><br> Compute the inverse of the matrix whose cholesky factorization is L. That is, for <span class="math inline">\(A = L L^T\)</span>, return <span class="math inline">\(A^{-1}\)</span>.</p>
+<small><i>Available since 2.26</i></small>
+</section>
+<section id="generalized-inverse" class="level4">
+<h4 class="anchored" data-anchor-id="generalized-inverse">Generalized Inverse</h4>
+<p>The generalized inverse <span class="math inline">\(M^+\)</span> of a matrix <span class="math inline">\(M\)</span> is a matrix that satisfies <span class="math inline">\(M M^+ M = M\)</span>. For an invertible, square matrix <span class="math inline">\(M\)</span>, <span class="math inline">\(M^+\)</span> is equivalent to <span class="math inline">\(M^{-1}\)</span>. The dimensions of <span class="math inline">\(M^+\)</span> are equivalent to the dimensions of <span class="math inline">\(M^T\)</span>. The generalized inverse exists for any matrix, so the <span class="math inline">\(M\)</span> may be singular or less than full rank.</p>
+<p>Even though the generalized inverse exists for any arbitrary matrix, the derivatives of this function only exist on matrices of locally constant rank <span class="citation" data-cites="GolubPereyra:1973">(<a href="#ref-GolubPereyra:1973" role="doc-biblioref">Golub and Pereyra 1973</a>)</span>, meaning, the derivatives do not exist if small perturbations make the matrix change rank. For example, considered the rank of the matrix <span class="math inline">\(A\)</span> as a function of <span class="math inline">\(\epsilon\)</span>:</p>
+<p><span class="math display">\[
+A = \left(
+    \begin{array}{cccc}
+    1 + \epsilon &amp; 2 &amp; 1 \\
+    2 &amp; 4 &amp; 2
+    \end{array}
+    \right)
+\]</span></p>
+<p>When <span class="math inline">\(\epsilon = 0\)</span>, <span class="math inline">\(A\)</span> is rank 1 because the second row is twice the first (and so there is only one linearly independent row). If <span class="math inline">\(\epsilon \neq 0\)</span>, the rows are no longer linearly dependent, and the matrix is rank 2. This matrix does not have locally constant rank at <span class="math inline">\(\epsilon = 0\)</span>, and so the derivatives do not exist at zero. Because HMC depends on the derivatives existing, this lack of differentiability creates undefined behavior.</p>
+<!-- matrix; generalized_inverse; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>generalized_inverse</code></strong><code>(matrix A)</code><br> The generalized inverse of A</p>
+<small><i>Available since 2.26</i></small>
+</section>
+<section id="eigendecomposition" class="level4">
+<h4 class="anchored" data-anchor-id="eigendecomposition">Eigendecomposition</h4>
+<!-- complex_vector; eigenvalues; (matrix A); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>eigenvalues</code></strong><code>(matrix A)</code><br> The complex-valued vector of eigenvalues of the matrix <code>A</code>. The eigenvalues are repeated according to their algebraic multiplicity, so there are as many eigenvalues as rows in the matrix. The eigenvalues are not sorted in any particular order.</p>
+<small><i>Available since 2.30</i></small>
+<!-- complex_matrix; eigenvectors; (matrix A); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>eigenvectors</code></strong><code>(matrix A)</code><br> The matrix with the complex-valued (column) eigenvectors of the matrix <code>A</code> in the same order as returned by the function <code>eigenvalues</code></p>
+<small><i>Available since 2.30</i></small>
+<!-- tuple(complex_matrix, complex_vector); eigendecompose; (matrix A); -->
+<p></p>
+<p><code>tuple(complex_matrix, complex_vector)</code> <strong><code>eigendecompose</code></strong><code>(matrix A)</code><br> Return the matrix of (column) eigenvectors and vector of eigenvalues of the matrix <code>A</code>. This function is equivalent to <code>(eigenvectors(A), eigenvalues(A))</code> but with a lower computational cost due to the shared work between the two results.</p>
+<small><i>Available since 2.33</i></small>
+<!-- vector; eigenvalues_sym; (matrix A); -->
+<p></p>
+<p><code>vector</code> <strong><code>eigenvalues_sym</code></strong><code>(matrix A)</code><br> The vector of eigenvalues of a symmetric matrix <code>A</code> in ascending order</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; eigenvectors_sym; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>eigenvectors_sym</code></strong><code>(matrix A)</code><br> The matrix with the (column) eigenvectors of symmetric matrix <code>A</code> in the same order as returned by the function <code>eigenvalues_sym</code></p>
+<small><i>Available since 2.0</i></small>
+<!-- tuple(matrix, vector); eigendecompose_sym; (matrix A); -->
+<p></p>
+<p><code>tuple(matrix, vector)</code> <strong><code>eigendecompose_sym</code></strong><code>(matrix A)</code><br> Return the matrix of (column) eigenvectors and vector of eigenvalues of the symmetric matrix <code>A</code>. This function is equivalent to <code>(eigenvectors_sym(A), eigenvalues_sym(A))</code> but with a lower computational cost due to the shared work between the two results.</p>
+<small><i>Available since 2.33</i></small>
+<p>Because multiplying an eigenvector by <span class="math inline">\(-1\)</span> results in an eigenvector, eigenvectors returned by a decomposition are only identified up to a sign change. In order to compare the eigenvectors produced by Stan’s eigendecomposition to others, signs may need to be normalized in some way, such as by fixing the sign of a component, or doing comparisons allowing a multiplication by <span class="math inline">\(-1\)</span>.</p>
+<p>The condition number of a symmetric matrix is defined to be the ratio of the largest eigenvalue to the smallest eigenvalue. Large condition numbers lead to difficulty in numerical algorithms such as computing inverses, and thus known as “ill conditioned.” The ratio can even be infinite in the case of singular matrices (i.e., those with eigenvalues of 0).</p>
+</section>
+<section id="QR-decomposition" class="level4">
+<h4 class="anchored" data-anchor-id="QR-decomposition">QR decomposition</h4>
+<!-- matrix; qr_thin_Q; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>qr_thin_Q</code></strong><code>(matrix A)</code><br> The orthogonal matrix in the thin QR decomposition of A, which implies that the resulting matrix has the same dimensions as A</p>
+<small><i>Available since 2.18</i></small>
+<!-- matrix; qr_thin_R; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>qr_thin_R</code></strong><code>(matrix A)</code><br> The upper triangular matrix in the thin QR decomposition of A, which implies that the resulting matrix is square with the same number of columns as A</p>
+<small><i>Available since 2.18</i></small>
+<!-- tuple(matrix, matrix); qr_thin; (matrix A); -->
+<p></p>
+<p><code>tuple(matrix, matrix)</code> <strong><code>qr_thin</code></strong><code>(matrix A)</code><br> Returns both portions of the QR decomposition of A. The first element (“Q”) is the orthonormal matrix in the thin QR decomposition and the second element (“R”) is upper triangular. This function is equivalent to <code>(qr_thin_Q(A), qr_thin_R(A))</code> but with a lower computational cost due to the shared work between the two results.</p>
+<small><i>Available since 2.33</i></small>
+<!-- matrix; qr_Q; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>qr_Q</code></strong><code>(matrix A)</code><br> The orthogonal matrix in the fat QR decomposition of A, which implies that the resulting matrix is square with the same number of rows as A</p>
+<small><i>Available since 2.3</i></small>
+<!-- matrix; qr_R; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>qr_R</code></strong><code>(matrix A)</code><br> The upper trapezoidal matrix in the fat QR decomposition of A, which implies that the resulting matrix will be rectangular with the same dimensions as A</p>
+<small><i>Available since 2.3</i></small>
+<!-- tuple(matrix, matrix); qr; (matrix A); -->
+<p> <code>tuple(matrix, matrix)</code> <strong><code>qr</code></strong><code>(matrix A)</code><br> Returns both portions of the QR decomposition of A. The first element (“Q”) is the orthonormal matrix in the thin QR decomposition and the second element (“R”) is upper triangular. This function is equivalent to <code>(qr_Q(A), qr_R(A))</code> but with a lower computational cost due to the shared work between the two results.</p>
+<small><i>Available since 2.33</i></small>
+<p>The thin QR decomposition is always preferable because it will consume much less memory when the input matrix is large than will the fat QR decomposition. Both versions of the decomposition represent the input matrix as <span class="math display">\[\begin{equation*} A = Q \, R. \end{equation*}\]</span> Multiplying a column of an orthogonal matrix by <span class="math inline">\(-1\)</span> still results in an orthogonal matrix, and you can multiply the corresponding row of the upper trapezoidal matrix by <span class="math inline">\(-1\)</span> without changing the product. Thus, Stan adopts the normalization that the diagonal elements of the upper trapezoidal matrix are strictly positive and the columns of the orthogonal matrix are reflected if necessary. Also, these QR decomposition algorithms do not utilize pivoting and thus may be numerically unstable on input matrices that have less than full rank.</p>
+</section>
+<section id="cholesky-decomposition" class="level4">
+<h4 class="anchored" data-anchor-id="cholesky-decomposition">Cholesky decomposition</h4>
+<p>Every symmetric, positive-definite matrix (such as a correlation or covariance matrix) has a Cholesky decomposition. If <span class="math inline">\(\Sigma\)</span> is a symmetric, positive-definite matrix, its Cholesky decomposition is the lower-triangular vector <span class="math inline">\(L\)</span> such that <span class="math display">\[\begin{equation*} \Sigma = L \, L^{\top}. \end{equation*}\]</span></p>
+<!-- matrix; cholesky_decompose; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>cholesky_decompose</code></strong><code>(matrix A)</code><br> The lower-triangular Cholesky factor of the symmetric positive-definite matrix A</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="singular-value-decomposition" class="level4">
+<h4 class="anchored" data-anchor-id="singular-value-decomposition">Singular value decomposition</h4>
+<p>The matrix A can be decomposed into a diagonal matrix of singular values, D, and matrices of its left and right singular vectors, U and V, <span class="math display">\[\begin{equation*} A = U D V^T. \end{equation*}\]</span> The matrices of singular vectors here are thin. That is for an <span class="math inline">\(N\)</span> by <span class="math inline">\(P\)</span> input A, <span class="math inline">\(M = min(N, P)\)</span>, U is size <span class="math inline">\(N\)</span> by <span class="math inline">\(M\)</span> and V is size <span class="math inline">\(P\)</span> by <span class="math inline">\(M\)</span>.</p>
+<!-- vector; singular_values; (matrix A); -->
+<p></p>
+<p><code>vector</code> <strong><code>singular_values</code></strong><code>(matrix A)</code><br> The singular values of <code>A</code> in descending order</p>
+<small><i>Available since 2.0</i></small>
+<!-- matrix; svd_U; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>svd_U</code></strong><code>(matrix A)</code><br> The left-singular vectors of <code>A</code></p>
+<small><i>Available since 2.26</i></small>
+<!-- matrix; svd_V; (matrix A); -->
+<p></p>
+<p><code>matrix</code> <strong><code>svd_V</code></strong><code>(matrix A)</code><br> The right-singular vectors of <code>A</code></p>
+<small><i>Available since 2.26</i></small>
+<!-- tuple(matrix, vector, matrix); svd; (matrix A); -->
+<p></p>
+<p><code>tuple(matrix, vector, matrix)</code> <strong><code>svd</code></strong><code>(matrix A)</code><br> Returns a tuple containing the left-singular vectors of <code>A</code>, the singular values of <code>A</code> in descending order, and the right-singular values of <code>A</code>. This function is equivalent to <code>(svd_U(A), singular_values(A), svd_V(A))</code> but with a lower computational cost due to the shared work between the different components.</p>
+<small><i>Available since 2.33</i></small>
+</section>
+</section>
+</section>
+<section id="sort-functions" class="level2">
+<h2 class="anchored" data-anchor-id="sort-functions">Sort functions</h2>
+<p>See the <a href="../functions-reference/array_operations.html#sorting-functions">sorting functions section</a> for examples of how the functions work.</p>
+<!-- vector; sort_asc; (vector v); -->
+<p></p>
+<p><code>vector</code> <strong><code>sort_asc</code></strong><code>(vector v)</code><br> Sort the elements of v in ascending order</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; sort_asc; (row_vector v); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>sort_asc</code></strong><code>(row_vector v)</code><br> Sort the elements of v in ascending order</p>
+<small><i>Available since 2.0</i></small>
+<!-- vector; sort_desc; (vector v); -->
+<p></p>
+<p><code>vector</code> <strong><code>sort_desc</code></strong><code>(vector v)</code><br> Sort the elements of v in descending order</p>
+<small><i>Available since 2.0</i></small>
+<!-- row_vector; sort_desc; (row_vector v); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>sort_desc</code></strong><code>(row_vector v)</code><br> Sort the elements of v in descending order</p>
+<small><i>Available since 2.0</i></small>
+<!-- array[] int; sort_indices_asc; (vector v); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>sort_indices_asc</code></strong><code>(vector v)</code><br> Return an array of indices between 1 and the size of v, sorted to index v in ascending order.</p>
+<small><i>Available since 2.3</i></small>
+<!-- array[] int; sort_indices_asc; (row_vector v); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>sort_indices_asc</code></strong><code>(row_vector v)</code><br> Return an array of indices between 1 and the size of v, sorted to index v in ascending order.</p>
+<small><i>Available since 2.3</i></small>
+<!-- array[] int; sort_indices_desc; (vector v); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>sort_indices_desc</code></strong><code>(vector v)</code><br> Return an array of indices between 1 and the size of v, sorted to index v in descending order.</p>
+<small><i>Available since 2.3</i></small>
+<!-- array[] int; sort_indices_desc; (row_vector v); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>sort_indices_desc</code></strong><code>(row_vector v)</code><br> Return an array of indices between 1 and the size of v, sorted to index v in descending order.</p>
+<small><i>Available since 2.3</i></small>
+<!-- int; rank; (vector v, int s); -->
+<p></p>
+<p><code>int</code> <strong><code>rank</code></strong><code>(vector v, int s)</code><br> Number of components of v less than v[s]</p>
+<small><i>Available since 2.0</i></small>
+<!-- int; rank; (row_vector v, int s); -->
+<p></p>
+<p><code>int</code> <strong><code>rank</code></strong><code>(row_vector v, int s)</code><br> Number of components of v less than v[s]</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="reverse-functions" class="level2">
+<h2 class="anchored" data-anchor-id="reverse-functions">Reverse functions</h2>
+<!-- vector; reverse; (vector v); -->
+<p></p>
+<p><code>vector</code> <strong><code>reverse</code></strong><code>(vector v)</code><br> Return a new vector containing the elements of the argument in reverse order.</p>
+<small><i>Available since 2.23</i></small>
+<!-- row_vector; reverse; (row_vector v); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>reverse</code></strong><code>(row_vector v)</code><br> Return a new row vector containing the elements of the argument in reverse order.</p>
+<small><i>Available since 2.23</i></small>
+
+
+
+</section>
+</section>
+
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-GolubPereyra:1973" class="csl-entry" role="listitem">
+Golub, G. H., and V. Pereyra. 1973. <span>“The Differentiation of Pseudo-Inverses and Nonlinear Least Squares Problems Whose Variables Separate.”</span> <em>SIAM Journal on Numerical Analysis</em> 10 (2): 413–32. <a href="https://doi.org/10.1137/0710036">https://doi.org/10.1137/0710036</a>.
+</div>
+</div></section><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>The softmax function is so called because in the limit as <span class="math inline">\(y_n \rightarrow \infty\)</span> with <span class="math inline">\(y_m\)</span> for <span class="math inline">\(m \neq n\)</span> held constant, the result tends toward the “one-hot” vector <span class="math inline">\(\theta\)</span> with <span class="math inline">\(\theta_n
+= 1\)</span> and <span class="math inline">\(\theta_m = 0\)</span> for <span class="math inline">\(m \neq n\)</span>, thus providing a “soft” version of the maximum function.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main> <!-- /main -->
+<script type="text/javascript">
+
+// replace cmd keyboard shortcut w/ control on non-Mac platforms
+const kPlatformMac = typeof navigator !== 'undefined' ? /Mac/.test(navigator.platform) : false;
+if (!kPlatformMac) {
+   var kbds = document.querySelectorAll("kbd")
+   kbds.forEach(function(kbd) {
+      kbd.innerHTML = kbd.innerHTML.replace(/⌘/g, '⌃');
+   });
+}
+
+// tweak headings in pymd
+document.querySelectorAll(".pymd span.co").forEach(el => {
+   if (!el.innerText.startsWith("#|")) {
+      el.style.fontWeight = 1000;
+   }
+});
+
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../functions-reference/array_operations.html" class="pagination-link" aria-label="Array Operations">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Array Operations</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../functions-reference/complex_matrix_operations.html" class="pagination-link" aria-label="Complex Matrix Operations">
+        <span class="nav-page-text">Complex Matrix Operations</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/functions-reference/matrix_operations.Rmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

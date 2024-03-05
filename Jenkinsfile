@@ -73,6 +73,7 @@ pipeline {
                     rm -rf ./docs/functions-reference ./docs/reference-manual ./docs/stan-users-guide/ ./docs/cmdstan-guide ./docs/img ./docs/site_libs
                     cp -r ./docs/$major_version"_"$minor_version/* ./docs/
                     rm ./docs/*.pdf
+                    python3 generate_redirects.py
                 """
 
                 script {

@@ -15,7 +15,7 @@ TEMPLATE = """<!DOCTYPE html>
 </html>
 """
 
-redirects = (HERE/'replacements.txt').read_text().strip()
+redirects = (HERE/'redirects.txt').read_text().strip()
 
 for line in redirects.split('\n'):
     if line.startswith('#'):

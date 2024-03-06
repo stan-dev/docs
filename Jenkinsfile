@@ -10,7 +10,6 @@ pipeline {
         string(defaultValue: '', name: 'major_version', description: "Major version of the docs to be built")
         string(defaultValue: '', name: 'minor_version', description: "Minor version of the docs to be built")
         string(defaultValue: '', name: 'last_docs_version_dir', description: "Last docs version found in /docs. Example: 2_21")
-        string(defaultValue: "", name: 'docs_docker_image_tag', description: "Tag to use for the docs docker image.")
         booleanParam(defaultValue: true, description: 'Build docs and create a PR ?', name: 'buildDocs')
         booleanParam(defaultValue: true, description: 'Change docs version for stan-dev.github.io ?', name: 'docsStanDev')
         booleanParam(defaultValue: true, description: 'Link docs to latest?', name: 'linkDocs')
@@ -19,31 +18,13 @@ pipeline {
         GITHUB_TOKEN = credentials('6e7c1e8f-ca2c-4b11-a70e-d934d3f6b681')
     }
     stages {
-        stage("Build docker image") {
-            agent { label 'linux && triqs' }
-            environment { DOCKER_TOKEN = credentials('aada4f7b-baa9-49cf-ac97-5490620fce8a') }
-            when {
-                beforeAgent true
-                expression {
-                    params.docs_docker_image_tag != ""
-                }
-            }
-            steps{
-                script {
-                    cleanCheckout()
-                }
-                sh """
-                    docker login --username stanorg --password "${DOCKER_TOKEN}"
-                    docker build -t stanorg/ci:$docs_docker_image_tag -f docker/docs/Dockerfile --build-arg PUID=\$(id -u) --build-arg PGID=\$(id -g) .
-                    docker push stanorg/ci:$docs_docker_image_tag
-                """
-            }
-        }
         stage("Checkout docs, build and create PR") {
             agent {
-                docker {
-                    image 'stanorg/ci:standocs-quarto'
+                dockerfile {
+                    filename 'docker/docs/Dockerfile'
+                    dir '.'
                     label 'linux && triqs'
+                    additionalBuildArgs  '--build-arg PUID=\$(id -u) --build-arg PGID=\$(id -g)'
                 }
             }
             when {
@@ -108,9 +89,11 @@ pipeline {
         }
         stage('Checkout stan-dev.github.io and update docs version') {
             agent {
-                docker {
-                    image 'stanorg/ci:standocs-quarto'
+                dockerfile {
+                    filename 'docker/docs/Dockerfile'
+                    dir '.'
                     label 'linux && triqs'
+                    additionalBuildArgs  '--build-arg PUID=\$(id -u) --build-arg PGID=\$(id -g)'
                 }
             }
             when {

@@ -3,7 +3,6 @@
 pipeline {
     agent none
     options {
-        skipDefaultCheckout()
         preserveStashes(buildCount: 5)
     }
     parameters {

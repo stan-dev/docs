@@ -7,7 +7,7 @@ ARG PGID
 
 # Install OS Dependencies
 RUN apt-get update -y && \
-    apt-get install curl libssl-dev libcurl4-openssl-dev libxml2-dev libfontconfig1-dev git texlive-full python3 pandoc -y
+    apt-get install curl wget libssl-dev libcurl4-openssl-dev libxml2-dev libfontconfig1-dev git texlive-full python3 pandoc -y
 
 RUN update-ca-certificates -f
 

@@ -1,7 +1,6 @@
-# Base image for R 4.2.0
-FROM r-base:4.2.0
+FROM debian:bookworm
 
-ENV QUATRO_VERSION 1.4.550
+ENV QUARTO_VERSION 1.4.550
 
 ARG PUID
 ARG PGID
@@ -12,9 +11,9 @@ RUN apt-get update -y && \
 
 RUN update-ca-certificates -f
 
-RUN mkdir -p /tmp/quatro && wget -O "/tmp/quatro/quatro.deb" https://github.com/quarto-dev/quarto-cli/releases/download/v${QUATRO_VERSION}/quarto-${QUATRO_VERSION}-linux-amd64.deb && \
-    dpkg -i /tmp/quatro/quatro.deb && \
-    rm -rf /tmp/quatro
+RUN mkdir -p /tmp/quarto && wget -O "/tmp/quarto/quarto.deb" https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb && \
+    dpkg -i /tmp/quarto/quarto.deb && \
+    rm -rf /tmp/quarto
 
 # Setup jenkins uid/gid
 RUN addgroup -gid ${PGID} jenkins
@@ -25,6 +24,3 @@ RUN chown -R jenkins:sudo /usr/local
 
 USER jenkins
 WORKDIR /home/jenkins
-
-# Install R depdendencies
-RUN Rscript -e 'install.packages(c("dplyr", "ggplot2", "kableExtra", "bookdown", "pandoc-citeproc"), repos="https://cloud.r-project.org")'

@@ -52,7 +52,8 @@ def write_index_page(index):
                 letter = start
                 f.write(f"\n## {start.upper()}\n")
 
-            f.write(f"**{name}**:\n\n")
+            escaped_name = name.replace("\\", "\\\\").replace("*", "\\*")
+            f.write(f"**{escaped_name}**:\n\n")
             for link, entry in sorted(links):
                 f.write(f" - [{entry}]({link})\n")
             f.write("\n\n")

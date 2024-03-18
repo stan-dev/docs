@@ -5,7 +5,7 @@
 -- to create a clickable index of all the functions in the documentation
 
 function extractIndexEntry(elementText)
-  if elementText:find(";-->$") ~= nil then
+  if elementText:find("%; %-%-%>$") ~= nil then
     return "index-entry-" .. tostring(pandoc.sha1(elementText))
   end
   return nil

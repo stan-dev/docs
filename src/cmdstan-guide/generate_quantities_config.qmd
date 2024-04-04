@@ -1,20 +1,74 @@
 ---
-pagetitle: Standalone Generate Quantities
+pagetitle: Generating Quantities of Interest from a Fitted Model
 ---
 
-# Standalone Generate Quantities
+# Generating Quantities of Interest from a Fitted Model  {#gc-intro}
 
 The `generate_quantities` method allows you to generate additional
 quantities of interest from a fitted model without re-running the sampler.
-For an overview of the uses of this feature, see the
-[QuickStart Guide section](generate_quantities_intro.qmd)
-and the Stan User's Guide section on
-[Stand-alone generated quantities and ongoing prediction](https://mc-stan.org/docs/stan-users-guide/posterior-prediction.html#stand-alone-generated-quantities-and-ongoing-prediction).
+Instead, you write a modified version of the original Stan program
+and add a generated quantities block or modify the existing one
+which specifies how to compute the new quantities of interest.
+Running the `generate_quantities` method on the new program
+together with sampler outputs (i.e., a set of draws)
+from the fitted model runs the generated quantities block
+of the new program using the the existing sample by plugging
+in the per-draw parameter estimates for the computations in
+the generated quantities block.
 
 This method requires sub-argument `fitted_params` which takes as its value
-an existing Stan CSV file that contains a sample from an equivalent model,
-i.e., a model with the same parameters, transformed parameters, and model blocks,
+an existing [Stan CSV](stan_csv_apdx.qmd) file that contains a parameter values
+from an equivalent model, i.e., a model with the same parameters and transformed parameters blocks,
 conditioned on the same data.
+
+The [generated quantities block](https://mc-stan.org/docs/reference-manual/blocks.html#generated-quantities)
+computes *quantities of interest* (QOIs) based on the data,
+transformed data, parameters, and transformed parameters.
+It can be used to:
+
+-  generate simulated data for model testing by forward sampling
+-  generate predictions for new data
+-  calculate posterior event probabilities, including multiple
+   comparisons, sign tests, etc.
+-  calculating posterior expectations
+-  transform parameters for reporting
+-  apply full Bayesian decision theory
+-  calculate log likelihoods, deviances, etc. for model comparison
+
+
+For an overview of the uses of this feature, see the Stan User's Guide section on
+[Stand-alone generated quantities and ongoing prediction](https://mc-stan.org/docs/stan-users-guide/posterior-prediction.html#stand-alone-generated-quantities-and-ongoing-prediction).
+
+
+## Example
+
+To illustrate how this works we use the `generate_quantities` method
+to do posterior predictive checks using the estimate of `theta` given
+the example bernoulli model and data, following the
+[posterior predictive simulation](https://mc-stan.org/docs/stan-users-guide/posterior-prediction.html#posterior-predictive-simulation-in-stan)
+procedure in the Stan User's Guide.
+
+We write a program `bernoulli_ppc.stan` which contains
+the following generated quantities block, with comments
+to explain the procedure:
+```stan
+generated quantities {
+  real<lower=0, upper=1> theta_rep;
+  array[N] int y_sim;
+  // use current estimate of theta to generate new sample
+  for (n in 1:N) {
+    y_sim[n] = bernoulli_rng(theta);
+  }
+  // estimate theta_rep from new sample
+  theta_rep = sum(y_sim) * 1.0 / N;
+}
+```
+The rest of the program is the same as in `bernoulli.stan`.
+
+The `generate_method` requires the sub-argument `fitted_params`
+which takes as its value the name of a Stan CSV file.
+The per-draw parameter estimates from the `fitted_params` file will
+be used to run the generated quantities block.
 
 If we run the `bernoulli.stan` program for a single chain to
 generate a sample in file `bernoulli_fit.csv`:
@@ -32,7 +86,70 @@ checks:
                   output file=bernoulli_ppc.csv
 ```
 
-The `fitted_params` file must be a Stan CSV file; attempts to use a regular CSV file
+The output file `bernoulli_ppc.csv` consists of just the values for the variables declared in the generated quantities block, i.e., `theta_rep` and the elements of `y_sim`:
+
+```
+# model = bernoulli_ppc_model
+# method = generate_quantities
+#   generate_quantities
+#     fitted_params = bernoulli_fit.csv
+# id = 0 (Default)
+# data
+#   file = bernoulli.data.json
+# init = 2 (Default)
+# random
+#   seed = 2135140492 (Default)
+# output
+#   file = bernoulli_ppc.csv
+#   diagnostic_file =  (Default)
+#   refresh = 100 (Default)
+theta_rep,y_sim.1,y_sim.2,y_sim.3,y_sim.4,y_sim.5,y_sim.6,y_sim.7,y_sim.8,y_sim.9,y_sim.10
+0.2,0,0,1,0,0,0,0,0,1,0
+0.3,1,0,0,1,0,1,0,0,0,0
+0.8,1,0,1,1,1,1,1,1,1,0
+0.1,0,0,0,0,0,1,0,0,0,0
+0.3,0,0,0,0,0,0,1,1,1,0
+```
+
+_Note_: the only relevant analysis of the resulting CSV output is computing per-column statistics; this can easily be done in Python, R, Excel or similar,
+or you can use the CmdStanPy and CmdStanR interfaces which provide a
+better user experience for this workflow.
+
+Given the current implementation, to see the fitted parameter values for each draw,
+create a copy variable in the generated quantities block, e.g.:
+
+```stan
+generated quantities {
+  real<lower=0, upper=1> theta_cp = theta;
+  real<lower=0, upper=1> theta_rep;
+  array[N] int y_sim;
+  // use current estimate of theta to generate new sample
+  for (n in 1:N) {
+    y_sim[n] = bernoulli_rng(theta);
+  }
+  // estimate theta_rep from new sample
+  theta_rep = sum(y_sim) * 1.0 / N;
+}
+```
+
+Now the output is slightly more interpretable: `theta_cp` is the same as the `theta`
+used to generate the values `y_sim[1]` through `y_sim[1]`.
+Comparing columns `theta_cp` and `theta_rep` allows us to see how the
+uncertainty in our estimate of `theta` is carried forward
+into our predictions:
+
+```
+theta_cp,theta_rep,y_sim.1,y_sim.2,y_sim.3,y_sim.4,y_sim.5,y_sim.6,y_sim.7,y_sim.8,y_sim.9,y_sim.10
+0.102391,0,0,0,0,0,0,0,0,0,0,0
+0.519567,0.2,0,1,0,0,1,0,0,0,0,0
+0.544634,0.6,1,0,0,0,0,1,1,1,1,1
+0.167651,0,0,0,0,0,0,0,0,0,0,0
+0.167651,0.1,1,0,0,0,0,0,0,0,0,0
+```
+
+## Errors
+
+The `fitted_params` file must be a [Stan CSV](stan_csv_apdx.qmd) file; attempts to use a regular CSV file
 will result an error message of the form:
 
 ```
@@ -50,15 +167,12 @@ Error reading fitted param names from sample csv file <filename.csv>
 
 The parameter values of the `fitted_params` are on the
 constrained scale and must obey all constraints.
-For example, if we modify the contencts of the first
+For example, if we modify the contents of the first
 reported draw in `bernoulli_fit.csv` so that the value
 of `theta` is outside the declared bounds `real<lower=0, upper=1>`,
 the program will return the following error message:
 
 ```
-Exception: lub_free: Bounded variable is 1.21397, but must be in the interval [0, 1] (in 'bernoulli_ppc.stan', line 5, column 2 to column 30)
+Exception: lub_free: Bounded variable is 1.21397, but must be in the interval [0, 1] \
+(in 'bernoulli_ppc.stan', line 5, column 2 to column 30)
 ```
-
-
-
-

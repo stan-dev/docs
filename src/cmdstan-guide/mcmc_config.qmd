@@ -1,22 +1,134 @@
 ---
-pagetitle: MCMC Sampling Configuration
+pagetitle: MCMC Sampling
 ---
 
 # MCMC Sampling using Hamiltonian Monte Carlo {#mcmc-config}
 
-The `sample` method provides Bayesian inference over the model conditioned on data
-using Hamiltonian Monte Carlo (HMC) sampling.  By default, the inference engine used is
-the No-U-Turn sampler (NUTS), an adaptive form of Hamiltonian Monte Carlo sampling.
+
+The `sample` method provides Bayesian inference over the model
+conditioned on data using Hamiltonian Monte Carlo (HMC) sampling.
+By default, the inference engine used is the No-U-Turn sampler (NUTS),
+an adaptive form of Hamiltonian Monte Carlo sampling.
 For details on HMC and NUTS, see the Stan Reference Manual chapter on
 [MCMC Sampling](https://mc-stan.org/docs/reference-manual/mcmc.html).
 
-The full set of configuration options available for the `sample` method is
-reported at the beginning of the sampler output file as CSV comments.
-When the example model `bernoulli.stan` is run via the command line
-with all default arguments,
-the resulting Stan CSV file header comments show the complete set
-of default sample method configuration options:
+
+## Running the sampler
+
+To generate a sample from the posterior distribution of the model conditioned
+on the data, we run the executable program with the argument `sample` or
+`method=sample` together with the input data.
+The executable can be run from any directory.
+
+The full set of configuration options available for the `sample` method
+is available by using the `sample help-all` subcommand. The arguments
+with their requested values or defaults are also reported at the beginning
+of the sampler console output and in the output CSV file's comments.
+
+Here, we run it in the directory which contains the Stan program and input data,
+`<cmdstan-home>/examples/bernoulli`:
 ```
+> cd examples/bernoulli
+> ls
+  bernoulli  bernoulli.data.json  bernoulli.data.R  bernoulli.stan
+```
+
+To execute sampling of the model under Linux or Mac, use:
+```
+> ./bernoulli sample data file=bernoulli.data.json
+```
+
+In Windows, the `./` prefix is not needed:
+
+```
+> bernoulli.exe sample data file=bernoulli.data.json
+```
+
+The output is the same across all supported platforms. First, the
+configuration of the program is echoed to the standard output:
+
+```
+method = sample (Default)
+  sample
+    num_samples = 1000 (Default)
+    num_warmup = 1000 (Default)
+    save_warmup = 0 (Default)
+    thin = 1 (Default)
+    adapt
+      engaged = 1 (Default)
+      gamma = 0.050000000000000003 (Default)
+      delta = 0.80000000000000004 (Default)
+      kappa = 0.75 (Default)
+      t0 = 10 (Default)
+      init_buffer = 75 (Default)
+      term_buffer = 50 (Default)
+      window = 25 (Default)
+      save_metric = 0 (Default)
+    algorithm = hmc (Default)
+      hmc
+        engine = nuts (Default)
+          nuts
+            max_depth = 10 (Default)
+        metric = diag_e (Default)
+        metric_file =  (Default)
+        stepsize = 1 (Default)
+        stepsize_jitter = 0 (Default)
+    num_chains = 1 (Default)
+id = 0 (Default)
+data
+  file = bernoulli.data.json
+init = 2 (Default)
+random
+  seed = 3252652196 (Default)
+output
+  file = output.csv (Default)
+  diagnostic_file =  (Default)
+  refresh = 100 (Default)
+```
+
+After the configuration has been displayed, a short timing message is
+given.
+
+```
+Gradient evaluation took 1.2e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
+Adjust your expectations accordingly!
+```
+
+Next, the sampler reports the iteration number, reporting the
+percentage complete.
+
+```
+Iteration:    1 / 2000 [  0%]  (Warmup)
+...
+Iteration: 2000 / 2000 [100%]  (Sampling)
+```
+
+Finally, the sampler reports timing information:
+```
+ Elapsed Time: 0.007 seconds (Warm-up)
+               0.017 seconds (Sampling)
+               0.024 seconds (Total)
+```
+
+## Stan CSV output file {#mcmc_output_csv}
+
+Each execution of the model results in draws from a single Markov
+chain being written to a file in [comma-separated value (CSV) format](stan_csv_apdx.qmd).
+The default name of the output file is `output.csv`.
+
+The first part of the output file records the version of the
+underlying Stan library and the configuration as comments (i.e., lines
+beginning with the pound sign (`#`)).
+
+When the example model `bernoulli.stan` is run via the command line
+with all default arguments, the following configuration is displayed:
+
+```
+# stan_version_major = 2
+# stan_version_minor = 23
+# stan_version_patch = 0
+# model = bernoulli_model
 # method = sample (Default)
 #   sample
 #     num_samples = 1000 (Default)
@@ -43,6 +155,69 @@ of default sample method configuration options:
 #         stepsize = 1.000000 (Default)
 #         stepsize_jitter = 0.000000 (Default)
 #     num_chains = 1 (Default)
+# output
+#   file = output.csv (Default)
+#   diagnostic_file =  (Default)
+#   refresh = 100 (Default)
+```
+
+This is followed by a CSV header indicating the names of the values
+sampled.
+```
+lp__,accept_stat__,stepsize__,treedepth__,n_leapfrog__,divergent__,energy__,theta
+```
+The first output columns report the HMC sampler information:
+
+- `lp__` - the total log probability density (up to an additive constant) at each sample
+- `accept_stat__ ` - the average Metropolis acceptance  probability over each simulated Hamiltonian trajectory
+- `stepsize__ ` - integrator step size
+- `treedepth__ ` - depth of tree used by NUTS (NUTS sampler)
+- `n_leapfrog__ ` - number of leapfrog calculations (NUTS sampler)
+- `divergent__ ` - has value `1` if trajectory diverged, otherwise `0`. (NUTS sampler)
+- `energy__ ` - value of the Hamiltonian
+- `int_time__ ` - total integration time (static HMC sampler)
+
+Because the above header is from the NUTS sampler, it has columns `treedepth__`, `n_leapfrog__`, and `divergent__`
+and doesn't have column `int_time__`.
+The remaining columns correspond to model parameters. For the
+Bernoulli model, it is just the final column, `theta`.
+
+The header line is written to the output file before warmup begins.
+If option `save_warmup` is set to `1`, the warmup draws are output directly after the header.
+The total number of warmup draws saved is `num_warmup` divided by `thin`, rounded up (i.e., `ceiling`).
+
+Following the warmup draws (if any), are comments which record the results of adaptation:
+the stepsize, and inverse mass metric used during sampling:
+
+```
+# Adaptation terminated
+# Step size = 0.884484
+# Diagonal elements of inverse mass matrix:
+# 0.535006
+```
+
+The default sampler is NUTS with an adapted step size and a diagonal
+inverse mass matrix. For this example, the step size is 0.884484, and
+the inverse mass contains the single entry 0.535006 corresponding to
+the parameter `theta`.
+
+Draws from the posterior distribution are printed out next, each line
+containing a single draw with the columns corresponding to the header.
+
+```
+-6.84097,0.974135,0.884484,1,3,0,6.89299,0.198853
+-6.91767,0.985167,0.884484,1,1,0,6.92236,0.182295
+-7.04879,0.976609,0.884484,1,1,0,7.05641,0.162299
+-6.88712,1,0.884484,1,1,0,7.02101,0.188229
+-7.22917,0.899446,0.884484,1,3,0,7.73663,0.383596
+...
+```
+
+The output ends with timing details:
+```
+#  Elapsed Time: 0.007 seconds (Warm-up)
+#                0.017 seconds (Sampling)
+#                0.024 seconds (Total)
 ```
 
 ## Iterations
@@ -311,16 +486,24 @@ specifies the location of the auxiliary output file which contains sampler infor
 and the gradients on the unconstrained scale and log probabilities for all parameters in the model.
 By default, no auxiliary output file is produced.
 
-## Multiple chains in one executable {#sampler-num-chains}
+## Running multiple chains {#multi-chain-sampling}
 
-As described in the
-[quickstart section on parallelism](mcmc_sampling_intro.qmd#multi-chain-sampling),
-the preferred way to run multiple chains is to use the `num_chains` argument.
+A Markov chain generates samples from the target distribution only after it has converged to equilibrium.
+In theory, convergence is only guaranteed asymptotically as the number of draws grows without bound.
+In practice, diagnostics must be applied to monitor convergence for the finite number of draws actually available.
+One way to monitor whether a chain has approximately converged to the equilibrium distribution is to
+compare its behavior to other randomly initialized chains.
+For robust diagnostics, we recommend running 4 chains.
 
+The preferred way of using multiple chains is to run them all from the same executable using
+the `num_chains` argument. There is also the option to use the [Unix or DOS shell to run multiple executables](#old-multichain).
+
+### Using the num_chains argument to run multiple chains {#sampler-num-chains}
+
+The `num_chains` argument can be used for all of Stan's samplers with the exception of the `static` HMC engine.
 This will run multiple chains of MCMC from the same executable, which can save
-on memory usage due to only needing one copy of the model and data. As noted in
-the quickstart guide, this will be done in parallel if the model was compiled
-with `STAN_THREADS=true`.
+on memory usage due to only needing one copy of the model and data. Depending on whether the
+model was compiled with `STAN_THREADS=true`, these will either run in parallel or one after the other.
 
 The `num_chains` argument changes the meanings of several other arguments when
 it is greater than `1` (the default). Many arguments are now interpreted as a
@@ -341,40 +524,143 @@ for each chain. The numbers in these filenames are also based on the `id`
 argument, which defaults to `1`.
 
 
-## Examples - older parallelism
+For example, this will run 4 chains:
+```
+./bernoulli sample num_chains=4 data file=bernoulli.data.json output file=output.csv
+```
+This will produce samples in `output_1.csv`, `output_2.csv`, `output_3.csv`, `output_4.csv`.
+A suffix with the chain id
+is appended to the provided output filename (`output.csv` in the above command).
+
+
+If the model was not compiled with `STAN_THREADS=true`, the above command will run 4 chains sequentially.
+
+If the model was compiled with `STAN_THREADS=true`, the chains can run in parallel, with the `num_threads` argument
+defining the maximum number of threads used to run the chains. If the model uses no within-chain parallelization
+(`map_rect` or `reduce_sum` calls), the below command will run 4 chains in parallel, provided there are cores
+available:
+```
+./bernoulli sample num_chains=4 data file=bernoulli.data.json output file=output.csv num_threads=4
+```
+
+If the model uses within-chain parallelization (`map_rect` or `reduce_sum` calls), the threads are automatically
+scheduled to run the parallel parts of a single chain or run the sequential parts of another chains. The below
+call starts 4 chains that can use 16 threads. At a given moment a single chain may use all 16 threads,
+1 thread, anything in between, or can wait for a thread to be available. The scheduling is left to the [Threading
+Building Blocks scheduler](https://www.intel.com/content/www/us/en/docs/onetbb/developer-guide-api-reference/2021-11/how-task-scheduler-works.html).
+
+```
+./bernoulli_par sample num_chains=4 data file=bernoulli.data.json output file=output.csv num_threads=16
+```
+
+
+## Summarizing sampler output(s) with `stansummary`
+
+The [`stansummary` utility](stansummary.qmd) processes one or more output files from a run
+or set of runs of Stan's HMC sampler given a model and data.
+For all columns in the Stan CSV output file `stansummary` reports a set of statistics
+including mean, standard deviation, percentiles, effective number of samples, and $\hat{R}$ values.
+
+To run `stansummary` on the output files generated by the for loop above,
+by the above run of the `bernoulli` model on Mac or Linux:
+```
+<cmdstan-home>/bin/stansummary output_*.csv
+```
+
+On Windows, use backslashes to call the `stansummary.exe`.
+```
+<cmdstan-home>\bin\stansummary.exe output_*.csv
+```
+The stansummary output consists of one row of statistics per column
+in the Stan CSV output file.  Therefore, the first rows in the
+stansummary report statistics over the sampler state.
+The final row of output summarizes the estimates of the model variable `theta`:
+```
+Inference for Stan model: bernoulli_model
+4 chains: each with iter=(1000,1000,1000,1000); warmup=(0,0,0,0); thin=(1,1,1,1); 4000 iterations saved.
+
+Warmup took (0.0070, 0.0070, 0.0070, 0.0070) seconds, 0.028 seconds total
+Sampling took (0.020, 0.017, 0.021, 0.019) seconds, 0.077 seconds total
+
+                Mean     MCSE  StdDev     5%   50%   95%    N_Eff  N_Eff/s    R_hat
+lp__            -7.3  1.8e-02    0.75   -8.8  -7.0  -6.8  1.8e+03  2.4e+04  1.0e+00
+accept_stat__   0.89  2.7e-03    0.17   0.52  0.96   1.0  3.9e+03  5.1e+04  1.0e+00
+stepsize__       1.1  7.5e-02    0.11   0.93   1.2   1.2  2.0e+00  2.6e+01  2.5e+13
+treedepth__      1.4  8.1e-03    0.49    1.0   1.0   2.0  3.6e+03  4.7e+04  1.0e+00
+n_leapfrog__     2.3  1.7e-02    0.98    1.0   3.0   3.0  3.3e+03  4.3e+04  1.0e+00
+divergent__     0.00      nan    0.00   0.00  0.00  0.00      nan      nan      nan
+energy__         7.8  2.6e-02     1.0    6.8   7.5   9.9  1.7e+03  2.2e+04  1.0e+00
+theta           0.25  2.9e-03    0.12  0.079  0.23  0.46  1.7e+03  2.1e+04  1.0e+00
+
+Samples were drawn using hmc with nuts.
+For each parameter, N_Eff is a crude measure of effective sample size,
+and R_hat is the potential scale reduction factor on split chains (at
+convergence, R_hat=1).
+```
+
+In this example, we conditioned the model on data consisting of the outcomes of
+10 bernoulli trials, where only 2 trials reported success.  The 5%, 50%, and 95%
+percentile values for `theta` reflect the uncertainty in our estimate, due to the
+small amount of data, given the prior of `beta(1, 1)`
+
+
+## Examples - older parallelism {#old-multichain}
 
 **Note**: Many of these examples can be simplified by using the [`num_chains`
 argument](#sampler-num-chains).
 
-The Quickstart Guide [MCMC Sampling chapter](mcmc_sampling_intro.qmd) section on multiple chains
-also showed how to run multiple chains given a model and data, using the minimal required
-command line options: the method, the name of the data file, and a chain-specific name for the output file.
+When the `num_chains` argument is not available or is undesirable for whatever reason,
+built-in tools in the system shell can be used.
 
-This creates multiple copies of the model process which will all load the data.
+To run multiple chains given a model and data, either sequentially or in parallel,
+we can also use the Unix or DOS shell `for` loop to set up index variables needed to identify
+each chain and its outputs.
 
-To run 4 chains in parallel on Mac OS and Linux, the syntax in both bash and zsh is the same:
+On MacOS or Linux, the for-loop syntax for both the bash and zsh interpreters
+is:
+```
+for NAME [in LIST]; do COMMANDS; done
+```
+The list can be a simple sequence of numbers, or you can use the shell expansion syntax `{1..N}`
+which expands to the sequence from $1$ to $N$, e.g. `{1..4}` expands to `1 2 3 4`.
+Note that the expression `{1..N}` cannot contain spaces.
+
+To run 4 chains for the example bernoulli model on MacOS or Linux:
 ```
 > for i in {1..4}
     do
-      ./bernoulli sample data file=my_model.data.json \
-                  output file=output_${i}.csv &
+      ./bernoulli sample data file=bernoulli.data.json \
+      output file=output_${i}.csv
     done
 ```
 The backslash (`\`) indicates a line continuation in Unix.
 The expression `${i}` substitutes in the value of loop index variable `i`.
-The ampersand (`&`) pushes each process into the background which allows the loop to continue
+To run chains in parallel, put an ampersand (`&`) at the end of the nested sampler command:
+```
+> for i in {1..4}
+    do
+      ./bernoulli sample data file=bernoulli.data.json \
+      output file=output_${i}.csv &
+    done
+```
+This pushes each process into the background which allows the loop to continue
 without waiting for the current chain to finish.
 
-On Windows the corresponding loop is:
+On Windows, the DOS [for-loop syntax](https://www.windows-commandline.com/windows-for-loop-examples/) is one of:
+```
+for %i in (SET) do COMMAND COMMAND-ARGUMENTS
+for /l %i in (START, STEP, END) do COMMAND COMMAND-ARGUMENTS
+```
+To run 4 chains in parallel on Windows:
 ```
 >for /l %i in (1, 1, 4) do start /b bernoulli.exe sample ^
-                                    data file=my_model.data.json my_data ^
+                                    data file=bernoulli.data.json my_data ^
                                     output file=output_%i.csv
 ```
 The caret (`^`) indicates a line continuation in DOS.
 The expression `%i` is the loop index.
 
-In the following examples, we focus on just the nested sampler command for Unix.
+In the following extended examples, we focus on just the nested sampler command for Unix.
 
 ### Running multiple chains with a specified RNG seed
 

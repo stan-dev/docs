@@ -90,7 +90,7 @@ def main():
 
     stan_version = f"{stan_major}_{stan_minor}"
     os.environ["STAN_DOCS_VERSION"] = f"{stan_major}.{stan_minor}"
-    os.environ["STAN_DOCS_VERSION_PDF"] = f"-{stan_version}.pdf"
+    os.environ["STAN_DOCS_VERSION_PATH"] = stan_version
     path = os.getcwd()
     docspath = os.path.join(path, "docs", stan_version)
     if not (os.path.exists(docspath)):

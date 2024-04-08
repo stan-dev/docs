@@ -8,6 +8,15 @@ import pathlib
 DOCS_DIR = pathlib.Path(__file__).parent / 'docs'
 LINK_FINDER = re.compile(r'(?:version,\s+<a\s+href="(.*)">view\s+current)|(?:link\s+rel="canonical"\s+href="(.*)"\s+/>)')
 
+
+redirected = set()
+with open('redirects.txt', 'r') as f:
+    for line in f:
+        if line.startswith("#"):
+            continue
+        old, new = line.strip().split()
+        redirected.add(old)
+
 links = set()
 
 def walk_html():
@@ -26,6 +35,10 @@ def find_links():
 def check_links():
     broken = 0
     for (i, link) in enumerate(links):
+        raw_link = link.split('#')[0]
+        if raw_link in redirected:
+            print(f'Redirected link: {link}')
+            continue
         if i % 50 == 0:
             # don't spam the server
             time.sleep(2)

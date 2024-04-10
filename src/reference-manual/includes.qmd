@@ -83,7 +83,7 @@ contents of the included file.
 
 ## Recursive includes
 
-Recursive includes will be ignored.  For example, suppose
+Recursive includes will lead to a compiler error.  For example, suppose
 `a.stan` contains
 
 ```stan
@@ -96,9 +96,20 @@ and `b.stan` contains
 #include a.stan
 ```
 
-The result of processing this file will be empty, because
-`a.stan` will include `b.stan`, from which the include of
-`a.stan` is ignored and a warning printed.
+This will result in an error explaining the circular dependency:
+
+```
+Syntax error in './b.stan', line 1, column 0, included from
+'./a.stan', line 1, column 0, included from
+'./b.stan', line 1, column 0, included from
+'a.stan', line 1, column 0, include error:
+   -------------------------------------------------
+     1:  #include a.stan
+         ^
+   -------------------------------------------------
+
+File a.stan recursively included itself.
+```
 
 ## Include paths
 

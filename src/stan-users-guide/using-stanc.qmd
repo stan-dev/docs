@@ -813,13 +813,14 @@ The levels include these optimizations:
     -   [Dead code elimination](#dead-code-elimination)
     -   [Copy propagation](#copy-propagation)
     -   [Constant propagation](#constant-propagation)
+    -   [Partial evaluation](#partial-evaluation)
+    -   [Function inlining](#function-inlining)
+    -   [Matrix memory layout optimization](#memory-patterns)
 -   **Oexperimental** includes optimizations specified by **O1** and also:
     -   [Automatic-differentiation level optimization](#automatic-differentiation-level-optimization)
     -   [One step loop unrolling](#one-step-loop-unrolling)
     -   [Expression propagation](#expression-propagation)
-    -   [Partial evaluation](#partial-evaluation)
     -   [Lazy code motion](#lazy-code-motion)
-    -   [Function inlining](#function-inlining)
     -   [Static loop unrolling](#static-loop-unrolling)
 
 In addition, **Oexperimental** will apply more repetitions of the optimizations,
@@ -998,6 +999,106 @@ log_prob {
 }
 ```
 
+
+#### Function inlining {-}
+
+Function inlining replaces each function call to each user-defined function `f`
+with the body of `f`. It does this by copying the function body to the call site
+and doing appropriately renaming the argument variables. This optimization can
+speed up a program by avoiding the overhead of a function call and providing
+more opportunities for further optimizations (such as partial evaluation).
+
+Example Stan program:
+
+```stan
+functions {
+  int incr(int x) {
+    int y = 1;
+    return x + y;
+  }
+}
+transformed data {
+  int a = 2;
+  int b = incr(a);
+}
+```
+
+Compiler representation of program **before function inlining** (simplified from
+the output of `--debug-transformed-mir-pretty`):
+
+```
+functions {
+  int incr(int x) {
+    int y = 1;
+    return (x + y);
+  }
+}
+
+prepare_data {
+  data int a = 2;
+  data int b = incr(a);
+}
+```
+
+Compiler representation of program **after function inlining** (simplified from
+the output of `--debug-optimized-mir-pretty`):
+
+```
+prepare_data {
+  data int a;
+  a = 2;
+  data int b;
+  data int inline_sym1__;
+  data int inline_sym3__;
+  inline_sym3__ = 0;
+  for(inline_sym4__ in 1:1) {
+    int inline_sym2__;
+    inline_sym2__ = 1;
+    inline_sym3__ = 1;
+    inline_sym1__ = (a + inline_sym2__);
+    break;
+  }
+  b = inline_sym1__;
+}
+```
+
+In this code, the `for` loop and `break` is used to simulate the behavior of a
+`return` statement. The value to be returned is held in `inline_sym1__`. The
+flag variable `inline_sym3__` indicates whether a return has occurred and is
+necessary to handle `return` statements nested inside loops within the function
+body.
+
+#### Matrix memory layout optimization { - #memory-patterns}
+
+Matrices and vector variables which require automatic-differentiation (AD) in Stan
+can be represented in two different forms.
+
+The first (and default) representation is the "Array of Structs" (AoS) or "Matrix of vars" (matvar)
+layout. A "var" is the term used in the Stan implementation of autodiff for a single real. It is represented as a
+structure containing it's value and its adjoint.
+The AoS representation constructs matrices and vectors by simply using those structures as the elements of the matrix
+internally. This is flexible and very general, but many operations want to deal with the values or the adjoints as blocks,
+requiring expensive memory access patterns.
+
+The second representation is the "Struct of Arrays" (SoA) or "Var of matrices" (varmat) layout.
+Rather than a matrix containing tiny structures of one value and one adjoint each, this representation
+uses a single structure which contains separately a matrix of values and a matrix of adjoints. Some operations,
+like iterating over elements or assigning to specific indices, become more expensive, but many matrix operations
+like multiplications become much faster in this representation.
+
+*More general reading on AoS vs SoA can be found on [Wikipedia](https://en.wikipedia.org/wiki/AoS_and_SoA)*
+
+
+This optimization pass attempts to identify which matrix or vector variables in the Stan
+program are candidates for using the SoA representation. The conditions change over time,
+but broadly speaking:
+
+- Any Stan Math Library functions the matrix is passed to must be able to support it.
+- The matrix should not be accessed/assigned elementwise in a loop.
+
+The debug flag `--debug-mem-patterns` will list each variable and whether it is
+using the AoS representation or the SoA representation.
+
 ### **0experimental** Optimizations {-}
 
 #### Automatic-differentiation level optimization {-}
@@ -1168,6 +1269,9 @@ To accomplish these goals, lazy code motion will perform optimizations such as:
 Lazy code motion can make some programs significantly more efficient by avoiding
 redundant or early computations.
 
+As currently implemented in the compiler, it may move items between blocks
+in a way that actually increases overall computation. Improving this is an ongoing project.
+
 Example Stan program:
 
 ```stan
@@ -1218,75 +1322,6 @@ log_prob {
   z = lcm_sym4__;
 }
 ```
-
-#### Function inlining {-}
-
-Function inlining replaces each function call to each user-defined function `f`
-with the body of `f`. It does this by copying the function body to the call site
-and doing appropriately renaming the argument variables. This optimization can
-speed up a program by avoiding the overhead of a function call and providing
-more opportunities for further optimizations (such as partial evaluation).
-
-Example Stan program:
-
-```stan
-functions {
-  int incr(int x) {
-    int y = 1;
-    return x + y;
-  }
-}
-transformed data {
-  int a = 2;
-  int b = incr(a);
-}
-```
-
-Compiler representation of program **before function inlining** (simplified from
-the output of `--debug-transformed-mir-pretty`):
-
-```
-functions {
-  int incr(int x) {
-    int y = 1;
-    return (x + y);
-  }
-}
-
-prepare_data {
-  data int a = 2;
-  data int b = incr(a);
-}
-```
-
-Compiler representation of program **after function inlining** (simplified from
-the output of `--debug-optimized-mir-pretty`):
-
-```
-prepare_data {
-  data int a;
-  a = 2;
-  data int b;
-  data int inline_sym1__;
-  data int inline_sym3__;
-  inline_sym3__ = 0;
-  for(inline_sym4__ in 1:1) {
-    int inline_sym2__;
-    inline_sym2__ = 1;
-    inline_sym3__ = 1;
-    inline_sym1__ = (a + inline_sym2__);
-    break;
-  }
-  b = inline_sym1__;
-}
-```
-
-In this code, the `for` loop and `break` is used to simulate the behavior of a
-`return` statement. The value to be returned is held in `inline_sym1__`. The
-flag variable `inline_sym3__` indicates whether a return has occurred and is
-necessary to handle `return` statements nested inside loops within the function
-body.
-
 
 #### Static loop unrolling {-}
 

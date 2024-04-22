@@ -579,6 +579,8 @@ necessary to achieve convergence.
 
 ```stan
 parameters {
+  real mu_beta;
+  real<lower=0> sigma_beta;
   vector[K] beta_raw;
   // ...
 }
@@ -614,7 +616,7 @@ model {
 ```
 
 Reparameterization of hierarchical models is not limited to the normal
-distribution, although the normal distribution is the best candidate
+`distribution, although the normal distribution is the best candidate
 for doing so. In general, any distribution of parameters in the
 location-scale family is a good candidate for reparameterization. Let
 $\beta = l + s\alpha$ where $l$ is a location parameter and $s$ is a
@@ -1416,15 +1418,15 @@ y_n
 $$
 has been transformed to a regression on the standardized variables,
 
-
-\begin{align*}
+$$
 y_n
 = \alpha' + \beta' \textrm{z}_x(x_n) + \epsilon_n.
 $$
 
 from which the original scale parameter values can be read off,
 
-$$
+
+\begin{align*}
 \alpha
 = \alpha'
 -
@@ -1432,6 +1434,20 @@ $$
 \qquad
 \beta = \frac{\beta'}{\texttt{sd}(x)};
 \end{align*}
+
+The independent priors on alpha and beta map to a multivariate normal prior on alpha_std and beta_std. 
+
+$$
+Cov(\alpha, \beta) = 0 \implies
+$$
+
+$$
+Cov(\alpha^\prime - \beta^\prime \frac{\bar{x}}{\text{sd}(x)}, \beta^\prime \frac{\bar{x}}{\text{sd}(x)}) = 0 \implies
+$$
+
+$$
+Cov(\alpha^\prime,\beta^\prime) = -\frac{\bar{x}}{\text{sd}(x)} Var(\beta^\prime)
+$$
 
 These recovered parameter values on the original scales can be
 calculated within Stan using a generated quantities block following

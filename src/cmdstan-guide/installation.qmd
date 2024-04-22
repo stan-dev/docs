@@ -174,13 +174,13 @@ and compiles all necessary C++ libraries.
 
 ```
 > cd <cmdstan-home>
-> make build    # on Windows use mingw32-make
+> make build
 ```
 
 If your computer has multiple cores and sufficient ram, the build process
 can be parallelized by providing the `-j` option. For example, to build on 4 cores, type:
 ```
-> make -j4 build    # on Windows use mingw32-make
+> make -j4 build
 ```
 
 When `make build` is successful, the directory `<cmdstan-home>/bin/`
@@ -202,7 +202,7 @@ See [these instructions](https://helpdeskgeek.com/windows-10/add-windows-path-en
 for details on changing the `PATH`.
 To permanently make this setting for the current user, you may execute:
 ```
-> mingw32-make install-tbb
+> make install-tbb
 ```
 After changing the `PATH` environment variable, you must open an new shell
 in order for the new environment variable settings to take effect.
@@ -238,7 +238,7 @@ On Windows:
 
 ```
 # compile the example
-> mingw32-make examples/bernoulli/bernoulli.exe
+> make examples/bernoulli/bernoulli.exe
 
 # fit to provided data (results of 10 trials, 2 out of 10 successes)
 > ./examples/bernoulli/bernoulli.exe sample data file=examples/bernoulli/bernoulli.data.json
@@ -261,7 +261,7 @@ from the `<cmdstan-home>` directory:
 
 ```
 > cd <cmdstan-home>
-> make clean-all    # on Windows use mingw32-make
+> make clean-all
 > make build
 ```
 
@@ -282,19 +282,7 @@ error: PCH file uses an older PCH format that is no longer supported
 In this case, clean and rebuild CmdStan, as shown in the previous section.
 
 
-**Windows: 'mingw32-make' is not recognised**
-
-If the C++ toolchain has been installed but not properly registered,
-then the call to `mingw32-make` will result in error message:
-```
-'mingw32-make' is not recognised as an internal or external command
-```
-To fix this, ensure you have followed the steps for adding the toolchain to your
-`PATH` and installing the additional utilities covered in the
-[configuration instructions](#windows)
-
-
-**Windows: 'g++' or 'cut' is not recognized**
+**Windows: 'g++', 'make', or 'cut' is not recognized**
 
 The CmdStan makefile uses a few shell utilities which might not be present in Windows,
 resulting in the error message:
@@ -308,7 +296,7 @@ To fix this, ensure you have followed the steps for adding the toolchain to your
 
 **Spaces in paths to CmdStan or model**
 
-Both `make` and `mingw32-make` can fail when dealing with files in folders
+`make` can fail when dealing with files in folders
 with a space somewhere in their file path. Particularly on Windows, this can
 be an issue when CmdStan, or the models you are trying to build, are placed in
 the `One Drive` folder.
@@ -317,7 +305,7 @@ Unfortunately, the errors created by this situation are not alwas informative.
 Some errors you may see are:
 
 ```
-mingw32-make: *** INTERNAL: readdir: Invalid argument
+make: *** INTERNAL: readdir: Invalid argument
 ```
 ```
 make: *** [make/program:50: x.hpp] Error 2
@@ -399,93 +387,44 @@ xcode-select --install
 #### Windows {#windows}
 
 
-The Windows toolchain consists of programs `g++`, the C++ compiler, and `mingw32-make`, the GNU Make utility.
+The Windows toolchain consists of programs `g++`, the C++ compiler, and `make`, the GNU Make utility.
 To check if these are present,
 open a command shell [^1]
 and type:
 ```
 g++ --version
-mingw32-make --version
+make --version
 ```
 
-CmdStan is known compatible with the RTools40, RTools42, and RTools43 toolchains. These require slightly
-different steps to configure, so please follow the appropriate steps below. All toolchains will require
+CmdStan is known compatible with the RTools43 toolchain. The toolchain will require
 updating your `PATH` variable, See [these instructions](https://helpdeskgeek.com/windows-10/add-windows-path-environment-variable/)
 for details on changing the `PATH` if you are unfamiliar. The following instructions will assume that the default installation
 directory was used, so be sure to update the paths accordingly if you have chosen a different
 directory.
 
-##### RTools40
 
-RTools40 provides both a standard `g++-8` toolchain and a `g++-10` Universal C Runtime (UCRT) toolchain.
-Note the that newer `g++-10` UCRT toolchain is only available for 64-bit systems, whereas the `g++-8`
-toolchain is available for both. Additionally the UCRT is only natively supported on Windows 10 and newer,
-older systems will require a [Microsoft update](https://support.microsoft.com/en-us/topic/update-for-universal-c-runtime-in-windows-c0514201-7fe6-95a3-b0a5-287930f3560c)
+##### RTools43
 
-###### Installation
+All required utilities (e.g., `make`, `g++`) for compiling and running CmdStan models on Windows are
+provided by the RTools43 toolchain from the R Project. Installation steps are provided below,
+and for more technical details on the toolchain refer to the [R Project documentation](https://cran.r-project.org/bin/windows/Rtools/rtools43/rtools.html).
 
-Download the [installer](https://github.com/r-windows/rtools-installer/releases/download/2022-02-06/rtools40-x86_64.exe)
-and complete the prompts to install.
-
-Next, you need to add the location of the toolchain to your `PATH` environment variable so that it
-can be called from the command line. Add the following lines to your `PATH`:
-```
-C:\rtools40\usr\bin
-
-# Add only one of the below
-C:\rtools40\mingw32\bin   # 32-bit g++-8
-C:\rtools40\mingw64\bin   # 64-bit g++-8
-C:\rtools40\ucrt64\bin    # 64-bit g++-10 (UCRT)
-```
-
-CmdStan additionally needs the `mingw32-make` utility, which you can install using RTools.
-Navigate to the installation directory (e.g., `C:\rtools40`) and launch the `msys2.exe` file.
-Execute the appropriate command below to install `mingw32-make` for your selected toolchain:
-```
-pacman -Sy mingw-w64-i686-make            # 32-bit g++-8
-pacman -Sy mingw-w64-x86_64-make          # 64-bit g++-8
-pacman -Sy mingw-w64-ucrt-x86_64-make     # 64-bit g++-10 (UCRT)
-```
-
-##### RTools42 & RTools43
-
-Both RTools42 & RTools43 provide 64-bit UCRT toolchains, where RTools42 provides g++-10 and
-RTools43 provides g++-12. The installation/configuration is identical for both toolchains.
+Note that the toolchain is only available for 64-bit systems, and uses the new Universal C Runtime (UCRT).
+UCRT is only natively supported on Windows 10 and newer, older systems will require a
+[Microsoft update](https://support.microsoft.com/en-us/topic/update-for-universal-c-runtime-in-windows-c0514201-7fe6-95a3-b0a5-287930f3560c).
 
 ###### Installation
 
-Download the installer for your preferred toolchain and complete the prompts for installation:
+Download the installer and complete the prompts for installation:
 
- - [RTools42](https://cran.r-project.org/bin/windows/Rtools/rtools42/files/rtools42-5355-5357.exe)
  - [RTools43](https://cran.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5958-5975.exe)
 
 Next, you need to add the toolchain directory to your `PATH` variable. Add the appropriate lines
 from below:
 ```
-# RTools42
-C:\rtools42\usr\bin
-C:\rtools42\ucrt64\bin
-
-# RTools43
 C:\rtools43\usr\bin
-C:\rtools43\ucrt64\bin
+C:\rtools43\x86_64-w64-mingw32.static.posix\bin
 ```
-
-Next, you need to install the `mingw32-make` utility and some additional compiler dependencies.
-Navigate to the installation directory of the toolchain and launch the `msys2.exe` file.
-Execute the below commands to install the needed dependencies:
-```
-pacman -Sy mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-gcc
-```
-
-[^1]:
-To open a Windows command shell, first open the __Start Menu__,
-(usually in the lower left of the screen), select option __All Programs__,
-then option __Accessories__, then program __Command Prompt__.
-Alternatively, enter `[Windows+r]` (both keys together on the
-keyboard), and enter `cmd` into the text field that pops up in the Run window,
-then press `[Return]` on the keyboard to run.
-
 
 ## Using GNU Make {#gnu-make}
 
@@ -533,7 +472,7 @@ into a binary executable.
 For example, to compile the Stan program `my_program.stan` in directory `../my_dir/`,
 the make target is `../my_dir/my_program` or ` ../my_dir/my_program.exe` (on Windows).
 
-To call Make, you invoke the utility name, either `make` or `mingw32-make`, followed by, in order:
+To call Make, you invoke the utility name, `make`, followed by, in order:
 
 - zero or more [Make program options](https://www.gnu.org/software/make/manual/html_node/Options-Summary.html), then specify any Make variables as a series of
 
@@ -552,7 +491,7 @@ Make targets can be preceded by any number of Makefile variable name=value pairs
 For example, to compile `../my_dir/my_program.stan` for an OpenCL (GPU) machine,
 set the makefile variable `STAN_OPENCL` to `TRUE`:
 ```
-> make STAN_OPENCL=TRUE ../my_dir/my_program    # on Windows use mingw32-make
+> make STAN_OPENCL=TRUE ../my_dir/my_program
 ```
 Makefile variables can also be set by creating a file named `local` in the
 CmdStan `make` subdirectory which contains a list of `<VARIABLE>=<VALUE>` pairs,
@@ -567,7 +506,7 @@ __Make Targets__
 
 When invoked without any arguments at all, Make prints a help message:
 ```
-> make    # on Windows use mingw32-make
+> make
 --------------------------------------------------------------------------------
 CmdStan v2.33.1 help
 

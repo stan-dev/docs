@@ -83,8 +83,6 @@ approximations of the density
 (or penalized maximum likelihood) being fitted, posterior curvature
 not captured by this first-order approximation plays a central role in
 determining the statistical efficiency of Stan's algorithms.
-^[Riemannian Manifold Hamiltonian Monte Carlo (RMHMC) overcomes this difficulty by simulating the Hamiltonian dynamics in a space with a position-dependent metric; see @GirolamiCalderhead:2011 and @Betancourt:2012, but this must be done on the fly at every step, making this conditioning very computationally expensive.]
-
 
 A second-order approximation to curvature is provided by the
 Hessian, the matrix of second derivatives of the log density $\log
@@ -452,7 +450,7 @@ $$
 \times
 \textsf{Gamma}\left(\tau \middle| \nu/2, \nu/2\right)
 \
-\textsf{d} \tau.
+\text{d} \tau.
 $$
 
 
@@ -610,13 +608,13 @@ parameters {
   // ...
 }
 model {
-  beta ~ std_normal();
+  beta ~ normal(mu_beta, sigma_beta);
   // ...
 }
 ```
 
 Reparameterization of hierarchical models is not limited to the normal
-`distribution, although the normal distribution is the best candidate
+distribution, although the normal distribution is the best candidate
 for doing so. In general, any distribution of parameters in the
 location-scale family is a good candidate for reparameterization. Let
 $\beta = l + s\alpha$ where $l$ is a location parameter and $s$ is a
@@ -1300,55 +1298,66 @@ defined to be `sum(y)` could be used in the place of `sum(y)`.
 
 ## Standardizing predictors
 
-Stan programs will run faster if the input is standardized to have a
+Stan programs will run faster if the data is standardized to have a
 zero sample mean and unit sample variance.  This section illustrates
 the principle with a simple linear regression.
 
 Suppose that $y = (y_1,\dotsc,y_N)$ is a sequence of $N$ outcomes and
-$x = (x_1,\dotsc,x_N)$ a parallel sequence of $N$ predictors.  A
-simple linear regression involving an intercept coefficient $\alpha$
-and slope coefficient $\beta$ can be expressed as
+$X$ is a matrix of size $N \times J$ where $J$ is the number of predictors.
+Each column $j$ of $X$ represents a feature vector $\textbf{x}_j$.
+
+A linear regression involving an intercept coefficient $\alpha$
+and an $J$-length vector of slope coefficients $\mathcal{B}$ can be expressed as
 $$
-y_n = \alpha + \beta x_n + \epsilon_n,
+y_n = \alpha + \mathcal{B} X[n, ] + \epsilon_n,
 $$
 where
 $$
 \epsilon_n \sim \textsf{normal}(0,\sigma).
 $$
 
-If vector $x$ has very large or very small values or if the
-sample mean of the values is far away from 0 (on the scale of the values),
-then it can be more efficient to standardize the
-predictors $x_n$, so that it has a mean of zero and standard deviation of 1.
-The data are first centered by subtracting the
-sample mean, and then scaled by dividing by the sample deviation.
-Thus a data point $u$ is standardized with respect to
-a vector $x$  by the function $\textsf{z}_x$, defined by
+If any of the columns of $X$ has a mean very far from $0$
+or a standard deviation far away from $1$,
+then it can be more efficient to standardize the columns of $X$
+so that each column has a mean of zero and standard deviation of 1.
+The data are first zero-centered by subtracting the
+column mean and then scaled by dividing by the column standard deviation.
+
+The mean $\mu_j$ of column $j$ is given by:
+
 $$
-\textsf{z}_x(u) = \frac{u - \bar{x}}{\texttt{sd}(x)}
+\mu_j = \frac{1}{N} \sum_{i=1}^{N} x_{ij}
 $$
-where the sample mean of $x$ is
+where $x_{ij}$ is the element in the $i$-th row and $j$-th column of $X$.
+
+
+The standard deviation $\sigma_j$ of column $j$ is calculated as:
 $$
-\bar{x}
-= \frac{1}{N} \sum_{n=1}^N x_n,
-$$
-and the sample standard deviation of $x$ is
-$$
-\texttt{sd}(x)
-= \left(
-\frac{1}{N} \sum_{n=1}^N (x_n - \bar{x})^2
-\right)^{1/2}.
-$$
-The inverse transform is
-defined by reversing the two normalization steps, first rescaling by
-the same deviation and relocating by the sample mean,
-$$
-\textrm{z}_x^{-1}(v) = \texttt{sd}(x) v + \bar{x}.
+\sigma_j = \sqrt{\frac{1}{N} \sum_{i=1}^{N} (x_{ij} - \mu_j)^2}
 $$
 
-To standardize a regression problem, standardize the predictors.
-This changes the scale of the variables, and hence
-changes the scale of the priors.
+Each element $x_{ij}$ in column $j$ is standardized by subtracting the mean $\mu_j$ of the column and dividing by the standard deviation $\sigma_j$,
+resulting in the standardized column $\mathbf{z}_j$:
+
+$$
+z_{ij} = \frac{x_{ij} - \mu_j}{\sigma_j}
+$$
+where $z_{ij}$ is the standardized value corresponding to $x_{ij}$.
+
+The inverse transform is
+defined by reversing the two normalization steps, first rescaling by
+the same deviation and relocating by the sample mean.
+
+$$
+x_{ij} = z_{ij} \sigma_j + \mu_j
+$$
+
+Standardizing the predictors standardizes the scale of the variables,
+and hence the scale of the priors.
+
+### Example: standardizing a simple linear regression {-}
+
+
 Consider the following initial model.
 
 ```stan
@@ -1366,7 +1375,7 @@ model {
   // priors
   alpha ~ normal(0, 10);
   beta ~ normal(0, 10);
-  sigma ~ cauchy(0, 5);
+  sigma ~ normal(0, 5);
   // likelihood
   for (n in 1:N) {
     y[n] ~ normal(alpha + beta * x[n], sigma);
@@ -1388,8 +1397,7 @@ data {
 transformed data {
   real mean_x = mean(x);
   real sd_x = sd(x);
-  vector[N] x_std;
-  x_std = (x - mean_x) / sd_x;
+  vector[N] x_std = (x - mean_x) / sd_x;
 }
 parameters {
   real alpha_std;
@@ -1399,7 +1407,7 @@ parameters {
 model {
   alpha_std ~ normal(0, 10);
   beta_std ~ normal(0, 10);
-  sigma ~ cauchy(0, 5);
+  sigma ~ normal(0, 5);
   y ~ normal(alpha_std + beta_std * x_std, sigma);
 }
 ```
@@ -1420,34 +1428,17 @@ has been transformed to a regression on the standardized variables,
 
 $$
 y_n
-= \alpha' + \beta' \textrm{z}_x(x_n) + \epsilon_n.
+= \alpha' + \beta' \text{z}_x(x_n) + \epsilon_n.
 $$
 
-from which the original scale parameter values can be read off,
-
+The original slope $\beta$ is the standardized slope $\beta'$ scaled by the inverse of the standard deviation of $x$.
+The original intercept $\alpha$ is the intercept from the standardized model $\alpha'$, corrected for the effect of scaling and centering $x$.
+Thus, the formulas to retrieve $\alpha$ and $\beta$ from $\alpha'$ and $\beta'$ are:
 
 \begin{align*}
-\alpha
-= \alpha'
--
-\beta' \frac{\bar{x}}{\texttt{sd}(x)};
-\qquad
-\beta = \frac{\beta'}{\texttt{sd}(x)};
+\beta = \frac{\beta'}{\sigma_x} \\
+\alpha = \alpha' - \beta' \frac{\mu_x}{\sigma_x}
 \end{align*}
-
-The independent priors on alpha and beta map to a multivariate normal prior on alpha_std and beta_std. 
-
-$$
-Cov(\alpha, \beta) = 0 \implies
-$$
-
-$$
-Cov(\alpha^\prime - \beta^\prime \frac{\bar{x}}{\text{sd}(x)}, \beta^\prime \frac{\bar{x}}{\text{sd}(x)}) = 0 \implies
-$$
-
-$$
-Cov(\alpha^\prime,\beta^\prime) = -\frac{\bar{x}}{\text{sd}(x)} Var(\beta^\prime)
-$$
 
 These recovered parameter values on the original scales can be
 calculated within Stan using a generated quantities block following
@@ -1455,14 +1446,11 @@ the model block,
 
 ```stan
 generated quantities {
-  real alpha;
-  real beta;
-  real<lower=0> sigma;
-  alpha = alpha_std - beta_std * mean_x / sd_x;
-  beta = beta_std / sd_x;
+  real beta = beta_std / sd_x;
+  real alpha = alpha_std - beta_std * mean_x / sd_x;
+
 }
 ```
-
 
 ### Standard normal distribution {-}
 

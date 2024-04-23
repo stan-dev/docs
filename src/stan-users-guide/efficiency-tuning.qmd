@@ -1307,9 +1307,9 @@ $X$ is a matrix of size $N \times J$ where $J$ is the number of predictors.
 Each column $j$ of $X$ represents a feature vector $\textbf{x}_j$.
 
 A linear regression involving an intercept coefficient $\alpha$
-and an $J$-length vector of slope coefficients $\mathcal{B}$ can be expressed as
+and an $J$-length vector of slope coefficients $\beta$ can be expressed as
 $$
-y_n = \alpha + \mathcal{B} X[n, ] + \epsilon_n,
+y_n = \alpha + X_{n, \cdot} \beta  + \epsilon_n,
 $$
 where
 $$
@@ -1326,30 +1326,30 @@ column mean and then scaled by dividing by the column standard deviation.
 The mean $\mu_j$ of column $j$ is given by:
 
 $$
-\mu_j = \frac{1}{N} \sum_{i=1}^{N} x_{ij}
+\mu_j = \frac{1}{N} \sum_{n=1}^{N} x_{n, j}
 $$
 where $x_{ij}$ is the element in the $i$-th row and $j$-th column of $X$.
 
 
-The standard deviation $\sigma_j$ of column $j$ is calculated as:
+The standard deviation $s_j$ of column $j$ is calculated as:
 $$
-\sigma_j = \sqrt{\frac{1}{N} \sum_{i=1}^{N} (x_{ij} - \mu_j)^2}
+s_j = \sqrt{\frac{1}{N} \sum_{n=1}^{N} (x_{n, j} - \mu_j)^2}
 $$
 
-Each element $x_{ij}$ in column $j$ is standardized by subtracting the mean $\mu_j$ of the column and dividing by the standard deviation $\sigma_j$,
-resulting in the standardized column $\mathbf{z}_j$:
+Each element $x_{i, j}$ in column $j$ is standardized by subtracting the mean $\mu_j$ of the column and dividing by the standard deviation $s_j$,
+resulting in the standardized column $z_j$:
 
 $$
-z_{ij} = \frac{x_{ij} - \mu_j}{\sigma_j}
+z_{i, j} = \frac{x_{i, j} - \mu_j}{s_j}
 $$
-where $z_{ij}$ is the standardized value corresponding to $x_{ij}$.
+where $z_{i, j}$ is the standardized value corresponding to $x_{i, j}$.
 
 The inverse transform is
 defined by reversing the two normalization steps, first rescaling by
 the same deviation and relocating by the sample mean.
 
 $$
-x_{ij} = z_{ij} \sigma_j + \mu_j
+x_{i, j} = z_{i, j} s_j + \mu_j
 $$
 
 Standardizing the predictors standardizes the scale of the variables,
@@ -1384,9 +1384,8 @@ model {
 ```
 
 The data block for the standardized model is identical.
-In the transformed data block the mean and standard deviation
-of the data are computed and saved as global variables,
-then used to define the standardized predictors.
+The mean and standard deviation of the data are defined
+in the transformed data block, along with the standardized predictors.
 
 ```stan
 data {

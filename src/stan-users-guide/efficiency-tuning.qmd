@@ -1298,65 +1298,63 @@ defined to be `sum(y)` could be used in the place of `sum(y)`.
 
 ## Standardizing predictors
 
-Stan programs will run faster if the data is standardized to have a
-zero sample mean and unit sample variance.  This section illustrates
-the principle with a simple linear regression.
+Standardizing the data so that all predictors have a zero sample mean and
+unit sample variance has the following potential benefits:
+
+* It helps in faster convergence of MCMC chains.
+* It makes the model less sensitive to the specifics of the parameterization.
+* It aids in the interpretation and comparison of the importance of coefficients across different predictors.
+
+It is very useful when there are large differences between the units and scales of the predictors.
+This section illustrates the principle for a simple linear regression.
 
 Suppose that $y = (y_1,\dotsc,y_N)$ is a sequence of $N$ outcomes and
-$X$ is a matrix of size $N \times J$ where $J$ is the number of predictors.
-Each column $j$ of $X$ represents a feature vector $\textbf{x}_j$.
-
-A linear regression involving an intercept coefficient $\alpha$
-and an $J$-length vector of slope coefficients $\beta$ can be expressed as
+$x = (x_1,\dotsc,x_N)$ the corresponding sequence of $N$ predictors.  A
+simple linear regression involving an intercept coefficient $\alpha$
+and slope coefficient $\beta$ can be expressed as
 $$
-y_n = \alpha + X_{n, \cdot} \beta  + \epsilon_n,
+y_n = \alpha + \beta x_n + \epsilon_n,
 $$
 where
 $$
 \epsilon_n \sim \textsf{normal}(0,\sigma).
 $$
 
-If any of the columns of $X$ has a mean very far from $0$
-or a standard deviation far away from $1$,
-then it can be more efficient to standardize the columns of $X$
-so that each column has a mean of zero and standard deviation of 1.
-The data are first zero-centered by subtracting the
-column mean and then scaled by dividing by the column standard deviation.
+If $x$ has very large or very small values
+or if the mean of the values is far away from 0 (on the scale of the values),
+then it can be more efficient to standardize the predictor values $x_n$.
+First the elements of $x$ are zero-centered by subtracting the mean,
+then scaled by dividing by the standard deviation.
 
-The mean $\mu_j$ of column $j$ is given by:
-
-$$
-\mu_j = \frac{1}{N} \sum_{n=1}^{N} x_{n, j}
-$$
-where $x_{ij}$ is the element in the $i$-th row and $j$-th column of $X$.
-
-
-The standard deviation $s_j$ of column $j$ is calculated as:
-$$
-s_j = \sqrt{\frac{1}{N} \sum_{n=1}^{N} (x_{n, j} - \mu_j)^2}
-$$
-
-Each element $x_{i, j}$ in column $j$ is standardized by subtracting the mean $\mu_j$ of the column and dividing by the standard deviation $s_j$,
-resulting in the standardized column $z_j$:
+The mean $\mu$ of $x$ is given by:
 
 $$
-z_{i, j} = \frac{x_{i, j} - \mu_j}{s_j}
+\mu_x = \frac{1}{N} \sum_{n=1}^{N} x_n
 $$
-where $z_{i, j}$ is the standardized value corresponding to $x_{i, j}$.
+
+The standard deviation of $x$ is calculated as:
+$$
+sd_x = {\left({\frac{1}{N} \sum_{n=1}^{N} (x_n - \mu_x)^2}\right)}^{1/2}
+$$
+
+With these, we compute the $z$, the standardized predictors
+
+$$
+z_n = \frac{x_n - \mu_x}{sd_x}
+$$
+
+where $z_n$ is the standardized value corresponding to $x_n$.
 
 The inverse transform is
 defined by reversing the two normalization steps, first rescaling by
 the same deviation and relocating by the sample mean.
 
 $$
-x_{i, j} = z_{i, j} s_j + \mu_j
+x_n = z_n sd_x + \mu_x
 $$
 
 Standardizing the predictors standardizes the scale of the variables,
 and hence the scale of the priors.
-
-### Example: standardizing a simple linear regression {-}
-
 
 Consider the following initial model.
 
@@ -1377,9 +1375,7 @@ model {
   beta ~ normal(0, 10);
   sigma ~ normal(0, 5);
   // likelihood
-  for (n in 1:N) {
-    y[n] ~ normal(alpha + beta * x[n], sigma);
-  }
+  y ~ normal(x * beta + alpha, sigma);
 }
 ```
 
@@ -1401,33 +1397,36 @@ transformed data {
 parameters {
   real alpha_std;
   real beta_std;
-  real<lower=0> sigma;
+  real<lower=0> sigma_std;
 }
 model {
   alpha_std ~ normal(0, 10);
   beta_std ~ normal(0, 10);
-  sigma ~ normal(0, 5);
-  y ~ normal(alpha_std + beta_std * x_std, sigma);
+  sigma_std ~ normal(0, 5);
+  y ~ normal(x_std * beta_std + alpha_std, sigma_std);
 }
 ```
 
 The parameters are renamed to indicate that they aren't the
-"natural" parameters, but the model is otherwise identical.  In
-particular, the fairly diffuse priors on the coefficients are the same.
+"natural" parameters, but the model is otherwise identical.
+The transformed data `x_std` is defined in terms of variables `mean_x` and `sd_x`;
+by declaring these variables in the `transformed data` block, they will be available
+in all following blocks, and therefore can be used in the `generated quantities` block
+to record the "natural" parameters `alpha` and `beta`.
+
+The fairly diffuse priors on the coefficients are the same.
 These could have been transformed as well, but
 here they are left as is, because the scales make sense as
 diffuse priors for standardized data.
 
 The original regression
 $$
-y_n
-= \alpha + \beta x_n + \epsilon_n
+y_n = \alpha + \beta x_n + \epsilon_n
 $$
-has been transformed to a regression on the standardized variables,
+has been transformed to a regression on the standardized data variable $z$,
 
 $$
-y_n
-= \alpha' + \beta' \text{z}_x(x_n) + \epsilon_n.
+y_n = \alpha' + \beta' z_n + \epsilon_n.
 $$
 
 The original slope $\beta$ is the standardized slope $\beta'$ scaled by the inverse of the standard deviation of $x$.
@@ -1450,6 +1449,14 @@ generated quantities {
 
 }
 ```
+
+When there are multiple real-valued predictors, i.e.,
+when `x` is an $N \times K$ matrix of predictors
+and `beta` a $K$-vector of coefficients, so `x * beta` is an
+$N$-vector of predictions, one for each of the $N$ data items,
+and you do not have an informative prior on the location of $\beta$,
+the [QR reparameterization](regression.qmd#QR-reparameterization.section)
+is recommended for linear and generalized linear models.
 
 ### Standard normal distribution {-}
 

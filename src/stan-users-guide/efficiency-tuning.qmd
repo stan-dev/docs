@@ -1305,7 +1305,8 @@ unit sample variance has the following potential benefits:
 * It makes the model less sensitive to the specifics of the parameterization.
 * It aids in the interpretation and comparison of the importance of coefficients across different predictors.
 
-It is very useful when there are large differences between the units and scales of the predictors.
+When there are large differences between the units and scales of the predictors,
+standardizating the predictors is especially useful.
 This section illustrates the principle for a simple linear regression.
 
 Suppose that $y = (y_1,\dotsc,y_N)$ is a vector of $N$ outcomes and
@@ -1326,21 +1327,21 @@ then it can be more efficient to standardize the predictor values $x_n$.
 First the elements of $x$ are zero-centered by subtracting the mean,
 then scaled by dividing by the standard deviation.
 
-The mean $\mu$ of $x$ is given by:
+The mean of $x$ is given by:
 
 $$
-\mu_x = \frac{1}{N} \sum_{n=1}^{N} x_n
+mean_x = \frac{1}{N} \sum_{n=1}^{N} x_n
 $$
 
 The standard deviation of $x$ is calculated as:
 $$
-sd_x = {\left({\frac{1}{N} \sum_{n=1}^{N} (x_n - \mu_x)^2}\right)}^{1/2}
+sd_x = {\left({\frac{1}{N} \sum_{n=1}^{N} (x_n - mean_x)^2}\right)}^{1/2}
 $$
 
 With these, we compute the $z$, the standardized predictors
 
 $$
-z_n = \frac{x_n - \mu_x}{sd_x}
+z_n = \frac{x_n - mean_x}{sd_x}
 $$
 
 where $z_n$ is the standardized value corresponding to $x_n$.
@@ -1350,7 +1351,7 @@ defined by reversing the two normalization steps, first rescaling by
 the same deviation and relocating by the sample mean.
 
 $$
-x_n = z_n sd_x + \mu_x
+x_n = z_n sd_x + mean_x
 $$
 
 Standardizing the predictors standardizes the scale of the variables,
@@ -1407,8 +1408,7 @@ model {
 }
 ```
 
-The parameters are renamed to indicate that they aren't the
-"natural" parameters, but the model is otherwise identical.
+The parameters are renamed to indicate that they aren't the "natural" parameters.
 The transformed data `x_std` is defined in terms of variables `mean_x` and `sd_x`;
 by declaring these variables in the `transformed data` block, they will be available
 in all following blocks, and therefore can be used in the `generated quantities` block
@@ -1429,6 +1429,7 @@ $$
 y_n = \alpha' + \beta' z_n + \epsilon_n.
 $$
 
+The likelihood is specified in terms of the standardized parameters.
 The original slope $\beta$ is the standardized slope $\beta'$ scaled by the inverse of the standard deviation of $x$.
 The original intercept $\alpha$ is the intercept from the standardized model $\alpha'$, corrected for the effect of scaling and centering $x$.
 Thus, the formulas to retrieve $\alpha$ and $\beta$ from $\alpha'$ and $\beta'$ are:
@@ -1452,9 +1453,9 @@ generated quantities {
 
 When there are multiple real-valued predictors, i.e.,
 when `K` is the number of predictors, `x` is an $N \times K$ matrix,
-and `beta` a $K$-vector of coefficients,
+and `beta` ia $K$-vector of coefficients,
 then `x * beta` is an $N$-vector of predictions, one for each of the $N$ data items.
-In these situations, 
+When `K` is smaller than `N`
 the [QR reparameterization](regression.qmd#QR-reparameterization.section)
 is recommended for linear and generalized linear models
 unless there is an informative prior on the location of $\beta$.

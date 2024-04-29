@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.550">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Array Operations</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../functions-reference/matrix_operations.html" rel="next">
+<link href="../functions-reference/complex-valued_basic_functions.html" rel="prev">
+<link href="../img/logo_tm.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 200,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../theming/quarto_styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../stan-users-guide/index.html"> 
+<span class="menu-text">Stan Users Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../reference-manual/index.html"> 
+<span class="menu-text">Reference Manual</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../functions-reference/index.html" aria-current="page"> 
+<span class="menu-text">Functions Reference</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-interfaces" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Interfaces</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-interfaces">    
+        <li>
+    <a class="dropdown-item" href="../cmdstan-guide/index.html">
+ <span class="dropdown-text">CmdStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy">
+ <span class="dropdown-text">CmdStanPy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr">
+ <span class="dropdown-text">CmdStanR</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/users/interfaces/pystan.html">
+ <span class="dropdown-text">PyStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstan">
+ <span class="dropdown-text">RStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/">
+ <span class="dropdown-text">Stan.jl</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-other-packages" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Other Packages</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/">
+ <span class="dropdown-text">bayesplot</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/">
+ <span class="dropdown-text">BridgeStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/">
+ <span class="dropdown-text">brms</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/loo/">
+ <span class="dropdown-text">loo</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/posterior">
+ <span class="dropdown-text">posterior</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/projpred">
+ <span class="dropdown-text">projpred</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm">
+ <span class="dropdown-text">rstanarm</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstantools">
+ <span class="dropdown-text">rstantools</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/shinystan">
+ <span class="dropdown-text">shinystan</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools tools-wide">
+    <a href="https://github.com/stan-dev" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-github"></i></a>
+    <a href="https://discourse.mc-stan.org" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-chat-text-fill"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../functions-reference/void_functions.html">Built-in Functions</a></li><li class="breadcrumb-item"><a href="../functions-reference/array_operations.html">Array Operations</a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Stan Functions Reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <span class="sidebar-item-text sidebar-link text-start">
+ <span class="menu-text">Version 2.34</span></span>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Built-in Functions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/void_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Void Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/integer-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Integer-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/real-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Real-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/complex-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Complex-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/array_operations.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Array Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/complex_matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Complex Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/sparse_matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sparse Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/mixed_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mixed Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/compound_arithmetic_and_assignment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Compound Arithmetic and Assignment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/higher-order_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Higher-Order Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/deprecated_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Deprecated Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/removed_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Removed Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/conventions_for_probability_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Conventions for Probability Functions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Discrete Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/binary_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Binary Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/bounded_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Bounded Discrete Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/unbounded_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Unbounded Discrete Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/multivariate_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Multivariate Discrete Distributions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">Continuous Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/unbounded_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Unbounded Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/positive_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Positive Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/positive_lower-bounded_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Positive Lower-Bounded Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/continuous_distributions_on_0_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Continuous Distributions on [0, 1]</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/circular_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Circular Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/bounded_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Bounded Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/distributions_over_unbounded_vectors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Distributions over Unbounded Vectors</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/simplex_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Simplex Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/correlation_matrix_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Correlation Matrix Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/covariance_matrix_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Covariance Matrix Distributions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">Additional Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/hidden_markov_models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Hidden Markov Models</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">Appendix</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/mathematical_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mathematical Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/functions_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Alphabetical Index</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#array-operations" id="toc-array-operations" class="nav-link active" data-scroll-target="#array-operations">Array Operations</a>
+  <ul class="collapse">
+  <li><a href="#array-reductions" id="toc-array-reductions" class="nav-link" data-scroll-target="#array-reductions">Reductions</a>
+  <ul class="collapse">
+  <li><a href="#minimum-and-maximum" id="toc-minimum-and-maximum" class="nav-link" data-scroll-target="#minimum-and-maximum">Minimum and maximum</a></li>
+  <li><a href="#sum-product-and-log-sum-of-exp" id="toc-sum-product-and-log-sum-of-exp" class="nav-link" data-scroll-target="#sum-product-and-log-sum-of-exp">Sum, product, and log sum of exp</a></li>
+  <li><a href="#sample-mean-variance-and-standard-deviation" id="toc-sample-mean-variance-and-standard-deviation" class="nav-link" data-scroll-target="#sample-mean-variance-and-standard-deviation">Sample mean, variance, and standard deviation</a></li>
+  <li><a href="#norms" id="toc-norms" class="nav-link" data-scroll-target="#norms">Norms</a></li>
+  <li><a href="#euclidean-distance-and-squared-distance" id="toc-euclidean-distance-and-squared-distance" class="nav-link" data-scroll-target="#euclidean-distance-and-squared-distance">Euclidean distance and squared distance</a></li>
+  <li><a href="#quantile" id="toc-quantile" class="nav-link" data-scroll-target="#quantile">Quantile</a></li>
+  </ul></li>
+  <li><a href="#array-size-and-dimension-function" id="toc-array-size-and-dimension-function" class="nav-link" data-scroll-target="#array-size-and-dimension-function">Array size and dimension function</a></li>
+  <li><a href="#array-broadcasting" id="toc-array-broadcasting" class="nav-link" data-scroll-target="#array-broadcasting">Array broadcasting</a></li>
+  <li><a href="#array-concatenation" id="toc-array-concatenation" class="nav-link" data-scroll-target="#array-concatenation">Array concatenation</a></li>
+  <li><a href="#sorting-functions" id="toc-sorting-functions" class="nav-link" data-scroll-target="#sorting-functions">Sorting functions</a></li>
+  <li><a href="#reversing-functions" id="toc-reversing-functions" class="nav-link" data-scroll-target="#reversing-functions">Reversing functions</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/functions-reference/array_operations.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="array-operations" class="level1">
+<h1>Array Operations</h1>
+<section id="array-reductions" class="level2">
+<h2 class="anchored" data-anchor-id="array-reductions">Reductions</h2>
+<p>The following operations take arrays as input and produce single output values. The boundary values for size 0 arrays are the unit with respect to the combination operation (min, max, sum, or product).</p>
+<section id="minimum-and-maximum" class="level3">
+<h3 class="anchored" data-anchor-id="minimum-and-maximum">Minimum and maximum</h3>
+<a id="index-entry-c4f3e810f70c09849013a04b92b38f9e93067e2f" class="index-entry"></a> <!-- real; min; (array[] real x); -->
+<p></p>
+<p><code>real</code> <strong><code>min</code></strong><code>(array[] real x)</code><br> The minimum value in x, or <span class="math inline">\(+\infty\)</span> if x is size 0.</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-6f45b7ae2a16ec959cb22d041d7b50c43dada819" class="index-entry"></a> <!-- int; min; (array[] int x); -->
+<p></p>
+<p><code>int</code> <strong><code>min</code></strong><code>(array[] int x)</code><br> The minimum value in x, or error if x is size 0.</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-1dc0a9e5bd6f78b5d2904cba8c6375fa264e6990" class="index-entry"></a> <!-- real; max; (array[] real x); -->
+<p></p>
+<p><code>real</code> <strong><code>max</code></strong><code>(array[] real x)</code><br> The maximum value in x, or <span class="math inline">\(-\infty\)</span> if x is size 0.</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-b77840f6a6da285fe070a2db533be9470af54dfc" class="index-entry"></a> <!-- int; max; (array[] int x); -->
+<p></p>
+<p><code>int</code> <strong><code>max</code></strong><code>(array[] int x)</code><br> The maximum value in x, or error if x is size 0.</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="sum-product-and-log-sum-of-exp" class="level3">
+<h3 class="anchored" data-anchor-id="sum-product-and-log-sum-of-exp">Sum, product, and log sum of exp</h3>
+<a id="index-entry-d97ce537eae8d48ac3ddc98520d0c5eaafd6fe27" class="index-entry"></a> <!-- int; sum; (array[] int x); -->
+<p></p>
+<p><code>int</code> <strong><code>sum</code></strong><code>(array[] int x)</code><br> The sum of the elements in x, or 0 if the array is empty.</p>
+<small><i>Available since 2.1</i></small>
+<a id="index-entry-acfd44849111bfa6024f821401db39f1181f4d14" class="index-entry"></a> <!-- real; sum; (array[] real x); -->
+<p></p>
+<p><code>real</code> <strong><code>sum</code></strong><code>(array[] real x)</code><br> The sum of the elements in x; see definition above.</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-e7ecc93be79d76e228adf2a4a2f9cdd908a7238b" class="index-entry"></a> <!-- complex; sum; (array[] complex x); -->
+<p></p>
+<p><code>complex</code> <strong><code>sum</code></strong><code>(array[] complex x)</code><br> The sum of the elements in x; see definition above.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-936503ecb56cc2f9aa31395e3b80d5dd901f14ab" class="index-entry"></a> <!-- real; prod; (array[] real x); -->
+<p></p>
+<p><code>real</code> <strong><code>prod</code></strong><code>(array[] real x)</code><br> The product of the elements in x, or 1 if x is size 0.</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-69d45ac78302f42fc87a23263c5230e4ee093a6e" class="index-entry"></a> <!-- real; prod; (array[] int x); -->
+<p></p>
+<p><code>real</code> <strong><code>prod</code></strong><code>(array[] int x)</code><br> The product of the elements in x, <span class="math display">\[\begin{equation*}
+\text{product}(x) = \begin{cases}
+\prod_{n=1}^N x_n &amp; \text{if} N &gt; 0 \\[4pt] 1 &amp; \text{if} N = 0
+\end{cases}
+\end{equation*}\]</span></p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-7b26d9d0a4894d9b4686f4847de2d728f050eeca" class="index-entry"></a> <!-- real; log_sum_exp; (array[] real x); -->
+<p></p>
+<p><code>real</code> <strong><code>log_sum_exp</code></strong><code>(array[] real x)</code><br> The natural logarithm of the sum of the exponentials of the elements in x, or <span class="math inline">\(-\infty\)</span> if the array is empty.</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="sample-mean-variance-and-standard-deviation" class="level3">
+<h3 class="anchored" data-anchor-id="sample-mean-variance-and-standard-deviation">Sample mean, variance, and standard deviation</h3>
+<p>The sample mean, variance, and standard deviation are calculated in the usual way. For i.i.d. draws from a distribution of finite mean, the sample mean is an unbiased estimate of the mean of the distribution. Similarly, for i.i.d. draws from a distribution of finite variance, the sample variance is an unbiased estimate of the variance.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> The sample deviation is defined as the square root of the sample deviation, but is not unbiased.</p>
+<a id="index-entry-bb1b7fccc6b17cde8f9e75a947464b97bc4082d3" class="index-entry"></a> <!-- real; mean; (array[] real x); -->
+<p></p>
+<p><code>real</code> <strong><code>mean</code></strong><code>(array[] real x)</code><br> The sample mean of the elements in x. For an array <span class="math inline">\(x\)</span> of size <span class="math inline">\(N &gt;
+0\)</span>, <span class="math display">\[\begin{equation*}
+\text{mean}(x) \ = \ \bar{x} \ = \ \frac{1}{N} \sum_{n=1}^N
+x_n.
+\end{equation*}\]</span> It is an error to the call the mean function with an array of size <span class="math inline">\(0\)</span>.</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-92ca3dfea614e505cf3d32942458a9c948f45e92" class="index-entry"></a> <!-- real; variance; (array[] real x); -->
+<p></p>
+<p><code>real</code> <strong><code>variance</code></strong><code>(array[] real x)</code><br> The sample variance of the elements in x. For <span class="math inline">\(N &gt; 0\)</span>, <span class="math display">\[\begin{equation*}
+\text{variance}(x) \ = \ \begin{cases} \frac{1}{N-1} \sum_{n=1}^N (x_n
+- \bar{x})^2 &amp; \text{if } N &gt; 1 \\[4pt] 0 &amp; \text{if } N = 1
+\end{cases}
+\end{equation*}\]</span> It is an error to call the <code>variance</code> function with an array of size 0.</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-2ff81571d634ef5353d30cfebadc9561bf519ee4" class="index-entry"></a> <!-- real; sd; (array[] real x); -->
+<p></p>
+<p><code>real</code> <strong><code>sd</code></strong><code>(array[] real x)</code><br> The sample standard deviation of elements in x. <span class="math display">\[\begin{equation*}
+\text{sd}(x) =
+\begin{cases} \sqrt{\, \text{variance}(x)} &amp; \text{if } N &gt; 1 \\[4pt]
+0 &amp; \text{if } N = 0 \end{cases}
+\end{equation*}\]</span> It is an error to call the <code>sd</code> function with an array of size 0.</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="norms" class="level3">
+<h3 class="anchored" data-anchor-id="norms">Norms</h3>
+<a id="index-entry-64a22469a1ca08b874dfd1f7dba4e60a02311a4d" class="index-entry"></a> <!-- real; norm1; (vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>norm1</code></strong><code>(vector x)</code><br> The L1 norm of x, defined by <span class="math display">\[\begin{equation*}
+\text{norm1}(x) \ = \ \textstyle \sum_{n=1}^N (|x_n|)
+\end{equation*}\]</span> where <code>N</code> is the size of x.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-3a384b9bbb192b688afb1c9e95a490200da65412" class="index-entry"></a> <!-- real; norm1; (row_vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>norm1</code></strong><code>(row_vector x)</code><br> The L1 norm of x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-d29d5686fa464cc82765e365c73f1ebb70954ffa" class="index-entry"></a> <!-- real; norm1; (array[] real x); -->
+<p></p>
+<p><code>real</code> <strong><code>norm1</code></strong><code>(array[] real x)</code><br> The L1 norm of x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-bd1aec552c96bca3230c994fb47fa42e54632e5e" class="index-entry"></a> <!-- real; norm2; (vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>norm2</code></strong><code>(vector x)</code><br> The L2 norm of x, defined by <span class="math display">\[\begin{equation*}
+\text{norm2}(x) \ = \ \sqrt{\textstyle \sum_{n=1}^N (x_n)^2}
+\end{equation*}\]</span> where <code>N</code> is the size of x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-15be5905b3ac40ce77299341b9e7434d6e5a721e" class="index-entry"></a> <!-- real; norm2; (row_vector x); -->
+<p></p>
+<p><code>real</code> <strong><code>norm2</code></strong><code>(row_vector x)</code><br> The L2 norm of x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-95748dc7d816217c82a900a5cefd801980794a10" class="index-entry"></a> <!-- real; norm2; (array[] real x); -->
+<p></p>
+<p><code>real</code> <strong><code>norm2</code></strong><code>(array[] real x)</code><br> The L2 norm of x</p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="euclidean-distance-and-squared-distance" class="level3">
+<h3 class="anchored" data-anchor-id="euclidean-distance-and-squared-distance">Euclidean distance and squared distance</h3>
+<a id="index-entry-702855e7be40e4fcfbe31b5f08538c5fbfba210e" class="index-entry"></a> <!-- real; distance; (vector x, vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>distance</code></strong><code>(vector x, vector y)</code><br> The Euclidean distance between x and y, defined by <span class="math display">\[\begin{equation*}
+\text{distance}(x,y) \ = \ \sqrt{\textstyle \sum_{n=1}^N (x_n - y_n)^2}
+\end{equation*}\]</span> where <code>N</code> is the size of x and y. It is an error to call <code>distance</code> with arguments of unequal size.</p>
+<small><i>Available since 2.2</i></small>
+<a id="index-entry-d68901fc0a3ff9e987854900a185ee2713e5c520" class="index-entry"></a> <!-- real; distance; (vector x, row_vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>distance</code></strong><code>(vector x, row_vector y)</code><br> The Euclidean distance between x and y</p>
+<small><i>Available since 2.2</i></small>
+<a id="index-entry-a9f701404655eb686e31e66d38918d7e08cd9f3b" class="index-entry"></a> <!-- real; distance; (row_vector x, vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>distance</code></strong><code>(row_vector x, vector y)</code><br> The Euclidean distance between x and y</p>
+<small><i>Available since 2.2</i></small>
+<a id="index-entry-c6112c85adc9432ce6b005aff57babec0dbee55e" class="index-entry"></a> <!-- real; distance; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>distance</code></strong><code>(row_vector x, row_vector y)</code><br> The Euclidean distance between x and y</p>
+<small><i>Available since 2.2</i></small>
+<a id="index-entry-47ca27c5ccd71b8bebcadb9723ea604c50120857" class="index-entry"></a> <!-- real; squared_distance; (vector x, vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>squared_distance</code></strong><code>(vector x, vector y)</code><br> The squared Euclidean distance between x and y, defined by <span class="math display">\[\begin{equation*}
+\mathrm{squared\_distance}(x,y) \ = \ \text{distance}(x,y)^2 \ = \ \textstyle \sum_{n=1}^N (x_n - y_n)^2,
+\end{equation*}\]</span> where <code>N</code> is the size of x and y. It is an error to call <code>squared_distance</code> with arguments of unequal size.</p>
+<small><i>Available since 2.7</i></small>
+<a id="index-entry-e2cb205544293c316ec3e5356c4d1dbebfafb159" class="index-entry"></a> <!-- real; squared_distance; (vector x, row_vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>squared_distance</code></strong><code>(vector x, row_vector y)</code><br> The squared Euclidean distance between x and y</p>
+<small><i>Available since 2.26</i></small>
+<a id="index-entry-8887aa905b17d368550a915063d1bb8fbf4ccf59" class="index-entry"></a> <!-- real; squared_distance; (row_vector x, vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>squared_distance</code></strong><code>(row_vector x, vector y)</code><br> The squared Euclidean distance between x and y</p>
+<small><i>Available since 2.26</i></small>
+<a id="index-entry-794d03938547aad86944e55cbb1f64f9ea22dee5" class="index-entry"></a> <!-- real; squared_distance; (row_vector x, row_vector y); -->
+<p></p>
+<p><code>real</code> <strong><code>squared_distance</code></strong><code>(row_vector x, row_vector y)</code><br> The Euclidean distance between x and y</p>
+<small><i>Available since 2.26</i></small>
+</section>
+<section id="quantile" class="level3">
+<h3 class="anchored" data-anchor-id="quantile">Quantile</h3>
+<p>Produces sample quantiles corresponding to the given probabilities. The smallest observation corresponds to a probability of 0 and the largest to a probability of 1.</p>
+<p>Implements algorithm 7 from Hyndman, R. J. and Fan, Y., Sample quantiles in Statistical Packages (R’s default quantile function).</p>
+<a id="index-entry-8c7df96194aa20f4691df231ed7577942daf6d6f" class="index-entry"></a> <!-- real; quantile; (data array[] real x, data real p); -->
+<p></p>
+<p><code>real</code> <strong><code>quantile</code></strong><code>(data array[] real x, data real p)</code><br> The p-th quantile of x</p>
+<small><i>Available since 2.27</i></small>
+<a id="index-entry-b0471485d6b0fd5b43b349cbe4e386d6c38f5064" class="index-entry"></a> <!-- array[] real; quantile; (data array[] real x, data array[] real p); -->
+<p></p>
+<p><code>array[] real</code> <strong><code>quantile</code></strong><code>(data array[] real x, data array[] real p)</code><br> An array containing the quantiles of x given by the array of probabilities p</p>
+<small><i>Available since 2.27</i></small>
+</section>
+</section>
+<section id="array-size-and-dimension-function" class="level2">
+<h2 class="anchored" data-anchor-id="array-size-and-dimension-function">Array size and dimension function</h2>
+<p>The size of an array or matrix can be obtained using the <code>dims()</code> function. The <code>dims()</code> function is defined to take an argument consisting of any variable with up to 8 array dimensions (and up to 2 additional matrix dimensions) and returns an array of integers with the dimensions. For example, if two variables are declared as follows,</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a> <span class="dt">array</span>[<span class="dv">7</span>, <span class="dv">8</span>, <span class="dv">9</span>] <span class="dt">real</span> x;</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a> <span class="dt">array</span>[<span class="dv">7</span>] <span class="dt">matrix</span>[<span class="dv">8</span>, <span class="dv">9</span>] y;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>then calling <code>dims(x)</code> or <code>dims(y)</code> returns an integer array of size 3 containing the elements 7, 8, and 9 in that order.</p>
+<p>The <code>size()</code> function extracts the number of elements in an array. This is just the top-level elements, so if the array is declared as</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a> <span class="dt">array</span>[M, N] <span class="dt">real</span> a;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>the size of <code>a</code> is <code>M</code>.</p>
+<p>The function <code>num_elements</code>, on the other hand, measures all of the elements, so that the array <code>a</code> above has <span class="math inline">\(M \times N\)</span> elements.</p>
+<p>The specialized functions <code>rows()</code> and <code>cols()</code> should be used to extract the dimensions of vectors and matrices.</p>
+<a id="index-entry-15460652371e3354bdc590e3632fc540ab76b525" class="index-entry"></a> <!-- array[] int; dims; (T x); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>dims</code></strong><code>(T x)</code><br> Return an integer array containing the dimensions of x; the type of the argument T can be any Stan type with up to 8 array dimensions.</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-a7f3950f11e27f31d9607b74a4cc9d5201f6f5ba" class="index-entry"></a> <!-- int; num_elements; (array[] T x); -->
+<p></p>
+<p><code>int</code> <strong><code>num_elements</code></strong><code>(array[] T x)</code><br> Return the total number of elements in the array x including all elements in contained arrays, vectors, and matrices. T can be any array type. For example, if <code>x</code> is of type <code>array[4, 3] real</code> then <code>num_elements(x)</code> is 12, and if <code>y</code> is declared as <code>array[5] matrix[3, 4] y</code>, then <code>size(y)</code> evaluates to 60.</p>
+<small><i>Available since 2.5</i></small>
+<a id="index-entry-c12761833dc86f2313582b4fe440b0b82d4c8cb6" class="index-entry"></a> <!-- int; size; (array[] T x); -->
+<p></p>
+<p><code>int</code> <strong><code>size</code></strong><code>(array[] T x)</code><br> Return the number of elements in the array x; the type of the array T can be any type, but the size is just the size of the top level array, not the total number of elements contained. For example, if <code>x</code> is of type <code>array[4, 3] real</code> then <code>size(x)</code> is 4.</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="array-broadcasting" class="level2">
+<h2 class="anchored" data-anchor-id="array-broadcasting">Array broadcasting</h2>
+<p>The following operations create arrays by repeating elements to fill an array of a specified size. These operations work for all input types T, including reals, integers, vectors, row vectors, matrices, or arrays.</p>
+<a id="index-entry-b16f7217e0f04da666e3544e1f8e27e04e429973" class="index-entry"></a> <!-- array[] T; rep_array; (T x, int n); -->
+<p></p>
+<p><code>array[] T</code> <strong><code>rep_array</code></strong><code>(T x, int n)</code><br> Return the n array with every entry assigned to x.</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-a5563d5b3ee4bd63fb6cbbef35e86bd940d587df" class="index-entry"></a> <!-- array[,] T; rep_array; (T x, int m, int n); -->
+<p></p>
+<p><code>array [,] T</code> <strong><code>rep_array</code></strong><code>(T x, int m, int n)</code><br> Return the m by n array with every entry assigned to x.</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-a2816f987a767657e3323203e069be5323f40964" class="index-entry"></a> <!-- array[,,] T; rep_array; (T x, int k, int m, int n); -->
+<p></p>
+<p><code>array[,,] T</code> <strong><code>rep_array</code></strong><code>(T x, int k, int m, int n)</code><br> Return the k by m by n array with every entry assigned to x.</p>
+<small><i>Available since 2.0</i></small>
+<p>For example, <code>rep_array(1.0,5)</code> produces a real array (type <code>array[] real</code>) of size 5 with all values set to 1.0. On the other hand, <code>rep_array(1,5)</code> produces an integer array (type <code>array[] int</code>) of size 5 with all values set to 1. This distinction is important because it is not possible to assign an integer array to a real array. For example, the following example contrasts legal with illegal array creation and assignment</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a> <span class="dt">array</span>[<span class="dv">5</span>] <span class="dt">real</span> y;</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a> <span class="dt">array</span>[<span class="dv">5</span>] <span class="dt">int</span> x;</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a> x = rep_array(<span class="dv">1</span>, <span class="dv">5</span>);     <span class="co">// ok</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a> y = rep_array(<span class="fl">1.0</span>, <span class="dv">5</span>);   <span class="co">// ok</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a> x = rep_array(<span class="fl">1.0</span>, <span class="dv">5</span>);   <span class="co">// illegal</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a> y = rep_array(<span class="dv">1</span>, <span class="dv">5</span>);     <span class="co">// illegal</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a> x = y;                  <span class="co">// illegal</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a> y = x;                  <span class="co">// illegal</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If the value being repeated <code>v</code> is a vector (i.e., <code>T</code> is <code>vector</code>), then <code>rep_array(v, 27)</code> is a size 27 array consisting of 27 copies of the vector <code>v</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a> <span class="dt">vector</span>[<span class="dv">5</span>] v;</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a> <span class="dt">array</span>[<span class="dv">3</span>] <span class="dt">vector</span>[<span class="dv">5</span>] a;</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a> a = rep_array(v, <span class="dv">3</span>);  <span class="co">// fill a with copies of v</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a> a[<span class="dv">2</span>, <span class="dv">4</span>] = <span class="fl">9.0</span>;        <span class="co">// v[4], a[1, 4], a[3, 4] unchanged</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If the type T of x is itself an array type, then the result will be an array with one, two, or three added dimensions, depending on which of the <code>rep_array</code> functions is called. For instance, consider the following legal code snippet.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a> <span class="dt">array</span>[<span class="dv">5</span>, <span class="dv">6</span>] <span class="dt">real</span> a;</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a> <span class="dt">array</span>[<span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>] <span class="dt">real</span> b;</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a> b = rep_array(a, <span class="dv">3</span>, <span class="dv">4</span>); <span class="co">//  make (3 x 4) copies of a</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a> b[<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>] = <span class="fl">27.9</span>;    <span class="co">//  a[1, 1] unchanged</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>After the assignment to <code>b</code>, the value for <code>b[j, k, m, n]</code> is equal to <code>a[m, n]</code> where it is defined, for <code>j</code> in <code>1:3</code>, <code>k</code> in <code>1:4</code>, <code>m</code> in <code>1:5</code>, and <code>n</code> in <code>1:6</code>.</p>
+</section>
+<section id="array-concatenation" class="level2">
+<h2 class="anchored" data-anchor-id="array-concatenation">Array concatenation</h2>
+<a id="index-entry-a92d8a1e904382ddb4b800a330feedcb3c04f2c2" class="index-entry"></a> <!-- T; append_array; (T x, T y); -->
+<p></p>
+<p><code>T</code> <strong><code>append_array</code></strong><code>(T x, T y)</code><br> Return the concatenation of two arrays in the order of the arguments. T must be an N-dimensional array of any Stan type (with a maximum N of 7). All dimensions but the first must match.</p>
+<small><i>Available since 2.18</i></small>
+<p>For example, the following code appends two three dimensional arrays of matrices together. Note that all dimensions except the first match. Any mismatches will cause an error to be thrown.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a> <span class="dt">array</span>[<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">7</span>] <span class="dt">matrix</span>[<span class="dv">4</span>, <span class="dv">6</span>] x1;</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a> <span class="dt">array</span>[<span class="dv">3</span>, <span class="dv">1</span>, <span class="dv">7</span>] <span class="dt">matrix</span>[<span class="dv">4</span>, <span class="dv">6</span>] x2;</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a> <span class="dt">array</span>[<span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">7</span>] <span class="dt">matrix</span>[<span class="dv">4</span>, <span class="dv">6</span>] x3;</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a> x3 = append_array(x1, x2);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="sorting-functions" class="level2">
+<h2 class="anchored" data-anchor-id="sorting-functions">Sorting functions</h2>
+<p>Sorting can be used to sort values or the indices of those values in either ascending or descending order. For example, if <code>v</code> is declared as a real array of size 3, with values <span class="math display">\[\begin{equation*}
+\text{v} = (1, -10.3,
+20.987),
+\end{equation*}\]</span> then the various sort routines produce <span class="math display">\[\begin{eqnarray*}
+\mathrm{sort\_asc(v)} &amp; = &amp;  (-10.3,1,20.987) \\[4pt]
+\mathrm{sort\_desc(v)} &amp; = &amp;  (20.987,1,-10.3) \\[4pt]
+\mathrm{sort\_indices\_asc(v)} &amp; = &amp;  (2,1,3) \\[4pt]
+\mathrm{sort\_indices\_desc(v)} &amp; = &amp;  (3,1,2)
+\end{eqnarray*}\]</span></p>
+<a id="index-entry-29411da2ef662a3af3793ab20c89f7e7b677bd0e" class="index-entry"></a> <!-- array[] real; sort_asc; (array[] real v); -->
+<p></p>
+<p><code>array[] real</code> <strong><code>sort_asc</code></strong><code>(array[] real v)</code><br> Sort the elements of v in ascending order</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-6e75416be841609073a75454c55e2fbc19f46f47" class="index-entry"></a> <!-- array[] int; sort_asc; (array[] int v); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>sort_asc</code></strong><code>(array[] int v)</code><br> Sort the elements of v in ascending order</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-fce023d8773b92438ce6a759565ce44deab3681c" class="index-entry"></a> <!-- array[] real; sort_desc; (array[] real v); -->
+<p></p>
+<p><code>array[] real</code> <strong><code>sort_desc</code></strong><code>(array[] real v)</code><br> Sort the elements of v in descending order</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-355460b3ae8892bf699932f697801d5f961e04e8" class="index-entry"></a> <!-- array[] int; sort_desc; (array[] int v); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>sort_desc</code></strong><code>(array[] int v)</code><br> Sort the elements of v in descending order</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-88b08c67456c5ae147bac2ccabf5a2435eb84def" class="index-entry"></a> <!-- array[] int; sort_indices_asc; (array[] real v); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>sort_indices_asc</code></strong><code>(array[] real v)</code><br> Return an array of indices between 1 and the size of v, sorted to index v in ascending order.</p>
+<small><i>Available since 2.3</i></small>
+<a id="index-entry-22998db91982cee6e0c3b1a618078f76b085d02c" class="index-entry"></a> <!-- array[] int; sort_indices_asc; (array[] int v); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>sort_indices_asc</code></strong><code>(array[] int v)</code><br> Return an array of indices between 1 and the size of v, sorted to index v in ascending order.</p>
+<small><i>Available since 2.3</i></small>
+<a id="index-entry-fa29a352fe066806f7fafbebc5a2510bab51596f" class="index-entry"></a> <!-- array[] int; sort_indices_desc; (array[] real v); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>sort_indices_desc</code></strong><code>(array[] real v)</code><br> Return an array of indices between 1 and the size of v, sorted to index v in descending order.</p>
+<small><i>Available since 2.3</i></small>
+<a id="index-entry-f8faa56dc58a61ee15ff8a3545ecc6aee8b3110d" class="index-entry"></a> <!-- array[] int; sort_indices_desc; (array[] int v); -->
+<p></p>
+<p><code>array[] int</code> <strong><code>sort_indices_desc</code></strong><code>(array[] int v)</code><br> Return an array of indices between 1 and the size of v, sorted to index v in descending order.</p>
+<small><i>Available since 2.3</i></small>
+<a id="index-entry-a28838301370f881f9ec571b8676f50b783b629c" class="index-entry"></a> <!-- int; rank; (array[] real v, int s); -->
+<p></p>
+<p><code>int</code> <strong><code>rank</code></strong><code>(array[] real v, int s)</code><br> Number of components of v less than v[s]</p>
+<small><i>Available since 2.0</i></small>
+<a id="index-entry-a6d0770a4ab5bc51a44d3626199ee7de7658377e" class="index-entry"></a> <!-- int; rank; (array[] int v, int s); -->
+<p></p>
+<p><code>int</code> <strong><code>rank</code></strong><code>(array[] int v, int s)</code><br> Number of components of v less than v[s]</p>
+<small><i>Available since 2.0</i></small>
+</section>
+<section id="reversing-functions" class="level2">
+<h2 class="anchored" data-anchor-id="reversing-functions">Reversing functions</h2>
+<p>Stan provides functions to create a new array by reversing the order of elements in an existing array. For example, if <code>v</code> is declared as a real array of size 3, with values <span class="math display">\[\begin{equation*}
+\text{v} = (1,\, -10.3,\, 20.987),
+\end{equation*}\]</span> then <span class="math display">\[\begin{equation*}
+\mathrm{reverse(v)} = (20.987,\, -10.3,\, 1).
+\end{equation*}\]</span></p>
+<a id="index-entry-9759b3b50ddba20806c98d04d90c234afd5b230e" class="index-entry"></a> <!-- array[] T; reverse; (array[] T v); -->
+<p></p>
+<p><code>array[] T</code> <strong><code>reverse</code></strong><code>(array[] T v)</code><br> Return a new array containing the elements of the argument in reverse order.</p>
+<small><i>Available since 2.23</i></small>
+
+
+</section>
+</section>
+
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>Dividing by <span class="math inline">\(N\)</span> rather than <span class="math inline">\((N-1)\)</span> produces a maximum likelihood estimate of variance, which is biased to underestimate variance.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../functions-reference/complex-valued_basic_functions.html" class="pagination-link" aria-label="Complex-Valued Basic Functions">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Complex-Valued Basic Functions</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../functions-reference/matrix_operations.html" class="pagination-link" aria-label="Matrix Operations">
+        <span class="nav-page-text">Matrix Operations</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/functions-reference/array_operations.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

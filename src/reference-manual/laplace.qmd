@@ -1,0 +1,36 @@
+---
+pagetitle: Laplace Approximation
+---
+
+# Laplace Approximation
+
+Stan provides a Laplace approximation algorithm
+which can be used to obtain samples from an approximated posterior.
+The Laplace approximation works in the unconstrained space,
+so that if there are constrained parameters, the normal approximation
+is centered at the mode in the unconstrained space and then
+the implemented method transforms the normal approximation sample
+to the constrained space before outputting them.
+
+Given the estimate of the mode  $\widehat{\theta}$,
+the Hessian $H(\widehat{\theta})$ is computed using
+central finite differences of the model functor. 
+Next the algorithm computes the Cholesky factor of the negative inverse Hessian:
+
+$R^{-1} = \textrm{chol}(-H(\widehat{\theta})) \backslash \mathbf{1}$.
+
+Each draw is generated on the unconstrained scale by sampling
+
+$\theta^{\textrm{std}(m)} \sim \textrm{normal}(0, \textrm{I})$ 
+
+and defining draw $m$ to be
+
+$\theta^{(m)} = \widehat{\theta} + R^{-1} \cdot \theta^{\textrm{std}(m)}$
+
+Finally, each $\theta^{(m)}$ is transformed back to the constrained scale.
+
+The one-time computation of the Cholesky factor incurs a high constant overhead of $\mathcal{O}(N^3)$ in $N$ dimensions.
+It also requires $2N$ gradient calculations to use as the basis, which scales at best as $\mathcal{O}(N^2)$ and is worse for models whose gradient calculation is super-linear in dimension.
+The algorithm also has a high per-draw overhead, requiring $N$ standard normal pseudorandom numbers and $\mathcal{O}(N^2)$ per draw (to multiply by the Cholesky factor).
+For $M$ draws, the total cost is proportional to $\mathcal{O}(N^3 + M \cdot N^2)$.
+

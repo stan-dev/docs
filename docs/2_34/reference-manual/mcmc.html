@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.550">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>MCMC Sampling</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../reference-manual/analysis.html" rel="next">
+<link href="../reference-manual/removals.html" rel="prev">
+<link href="../img/logo_tm.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 200,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../theming/quarto_styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../stan-users-guide/index.html"> 
+<span class="menu-text">Stan Users Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../reference-manual/index.html" aria-current="page"> 
+<span class="menu-text">Reference Manual</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../functions-reference/index.html"> 
+<span class="menu-text">Functions Reference</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-interfaces" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Interfaces</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-interfaces">    
+        <li>
+    <a class="dropdown-item" href="../cmdstan-guide/index.html">
+ <span class="dropdown-text">CmdStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy">
+ <span class="dropdown-text">CmdStanPy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr">
+ <span class="dropdown-text">CmdStanR</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/users/interfaces/pystan.html">
+ <span class="dropdown-text">PyStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstan">
+ <span class="dropdown-text">RStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/">
+ <span class="dropdown-text">Stan.jl</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-other-packages" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Other Packages</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/">
+ <span class="dropdown-text">bayesplot</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/">
+ <span class="dropdown-text">BridgeStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/">
+ <span class="dropdown-text">brms</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/loo/">
+ <span class="dropdown-text">loo</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/posterior">
+ <span class="dropdown-text">posterior</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/projpred">
+ <span class="dropdown-text">projpred</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm">
+ <span class="dropdown-text">rstanarm</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstantools">
+ <span class="dropdown-text">rstantools</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/shinystan">
+ <span class="dropdown-text">shinystan</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools tools-wide">
+    <a href="https://github.com/stan-dev" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-github"></i></a>
+    <a href="https://discourse.mc-stan.org" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-chat-text-fill"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference-manual/mcmc.html">Algorithms</a></li><li class="breadcrumb-item"><a href="../reference-manual/mcmc.html">MCMC Sampling</a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Stan Reference Manual</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <span class="sidebar-item-text sidebar-link text-start">
+ <span class="menu-text">Version 2.34</span></span>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Language</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/encoding.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Character Encoding</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/includes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Includes</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/comments.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Comments</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/whitespace.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Whitespace</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data Types and Declarations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/expressions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/statements.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Statements</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/blocks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Program Blocks</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/user-functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">User-Defined Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/transforms.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Constraint Transforms</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/syntax.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Language Syntax</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/execution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Program Execution</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/deprecations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Deprecated Features</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/removals.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Removed Features</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Algorithms</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/mcmc.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">MCMC Sampling</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Posterior Analysis</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/optimization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Optimization</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/pathfinder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Pathfinder</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/variational.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Variational Inference</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/laplace.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Laplace Approximation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/diagnostics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Diagnostic Mode</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">Usage</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Reproducibility</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/licenses.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Licenses and Dependencies</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#hmc.chapter" id="toc-hmc.chapter" class="nav-link active" data-scroll-target="#hmc.chapter">MCMC Sampling</a>
+  <ul class="collapse">
+  <li><a href="#hamiltonian-monte-carlo" id="toc-hamiltonian-monte-carlo" class="nav-link" data-scroll-target="#hamiltonian-monte-carlo">Hamiltonian Monte Carlo</a>
+  <ul class="collapse">
+  <li><a href="#target-density" id="toc-target-density" class="nav-link" data-scroll-target="#target-density">Target density</a></li>
+  <li><a href="#auxiliary-momentum-variable" id="toc-auxiliary-momentum-variable" class="nav-link" data-scroll-target="#auxiliary-momentum-variable">Auxiliary momentum variable</a></li>
+  <li><a href="#the-hamiltonian" id="toc-the-hamiltonian" class="nav-link" data-scroll-target="#the-hamiltonian">The Hamiltonian</a></li>
+  <li><a href="#generating-transitions" id="toc-generating-transitions" class="nav-link" data-scroll-target="#generating-transitions">Generating transitions</a></li>
+  <li><a href="#leapfrog-integrator" id="toc-leapfrog-integrator" class="nav-link" data-scroll-target="#leapfrog-integrator">Leapfrog integrator</a></li>
+  <li><a href="#metropolis-accept-step" id="toc-metropolis-accept-step" class="nav-link" data-scroll-target="#metropolis-accept-step">Metropolis accept step</a></li>
+  <li><a href="#algorithm-summary" id="toc-algorithm-summary" class="nav-link" data-scroll-target="#algorithm-summary">Algorithm summary</a></li>
+  </ul></li>
+  <li><a href="#hmc-algorithm-parameters" id="toc-hmc-algorithm-parameters" class="nav-link" data-scroll-target="#hmc-algorithm-parameters">HMC algorithm parameters</a>
+  <ul class="collapse">
+  <li><a href="#integration-time" id="toc-integration-time" class="nav-link" data-scroll-target="#integration-time">Integration time</a></li>
+  <li><a href="#automatic-parameter-tuning" id="toc-automatic-parameter-tuning" class="nav-link" data-scroll-target="#automatic-parameter-tuning">Automatic parameter tuning</a></li>
+  <li><a href="#discretization-interval-adaptation-parameters" id="toc-discretization-interval-adaptation-parameters" class="nav-link" data-scroll-target="#discretization-interval-adaptation-parameters">Discretization-interval adaptation parameters</a></li>
+  <li><a href="#step-size-jitter" id="toc-step-size-jitter" class="nav-link" data-scroll-target="#step-size-jitter">Step-size jitter</a></li>
+  <li><a href="#euclidean-metric" id="toc-euclidean-metric" class="nav-link" data-scroll-target="#euclidean-metric">Euclidean metric</a></li>
+  <li><a href="#nuts-and-its-configuration" id="toc-nuts-and-its-configuration" class="nav-link" data-scroll-target="#nuts-and-its-configuration">NUTS and its configuration</a></li>
+  </ul></li>
+  <li><a href="#sampling-without-parameters" id="toc-sampling-without-parameters" class="nav-link" data-scroll-target="#sampling-without-parameters">Sampling without parameters</a></li>
+  <li><a href="#general-config.section" id="toc-general-config.section" class="nav-link" data-scroll-target="#general-config.section">General configuration options</a>
+  <ul class="collapse">
+  <li><a href="#random-number-generator" id="toc-random-number-generator" class="nav-link" data-scroll-target="#random-number-generator">Random number generator</a></li>
+  <li><a href="#initialization" id="toc-initialization" class="nav-link" data-scroll-target="#initialization">Initialization</a></li>
+  </ul></li>
+  <li><a href="#divergent-transitions" id="toc-divergent-transitions" class="nav-link" data-scroll-target="#divergent-transitions">Divergent transitions</a>
+  <ul class="collapse">
+  <li><a href="#diagnosing-and-eliminating-divergences" id="toc-diagnosing-and-eliminating-divergences" class="nav-link" data-scroll-target="#diagnosing-and-eliminating-divergences">Diagnosing and eliminating divergences</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/reference-manual/mcmc.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="hmc.chapter" class="level1">
+<h1>MCMC Sampling</h1>
+<p>This chapter presents the two Markov chain Monte Carlo (MCMC) algorithms used in Stan, the Hamiltonian Monte Carlo (HMC) algorithm and its adaptive variant the no-U-turn sampler (NUTS), along with details of their implementation and configuration.</p>
+<section id="hamiltonian-monte-carlo" class="level2">
+<h2 class="anchored" data-anchor-id="hamiltonian-monte-carlo">Hamiltonian Monte Carlo</h2>
+<p>Hamiltonian Monte Carlo (HMC) is a Markov chain Monte Carlo (MCMC) method that uses the derivatives of the density function being sampled to generate efficient transitions spanning the posterior (see, e.g., <span class="citation" data-cites="Betancourt-Girolami:2013">Betancourt and Girolami (<a href="#ref-Betancourt-Girolami:2013" role="doc-biblioref">2013</a>)</span>, <span class="citation" data-cites="Neal:2011">Neal (<a href="#ref-Neal:2011" role="doc-biblioref">2011</a>)</span> for more details). It uses an approximate Hamiltonian dynamics simulation based on numerical integration which is then corrected by performing a Metropolis acceptance step.</p>
+<p>This section translates the presentation of HMC by <span class="citation" data-cites="Betancourt-Girolami:2013">Betancourt and Girolami (<a href="#ref-Betancourt-Girolami:2013" role="doc-biblioref">2013</a>)</span> into the notation of <span class="citation" data-cites="GelmanEtAl:2013">Gelman et al. (<a href="#ref-GelmanEtAl:2013" role="doc-biblioref">2013</a>)</span>.</p>
+<section id="target-density" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="target-density">Target density</h3>
+<p>The goal of sampling is to draw from a density <span class="math inline">\(p(\theta)\)</span> for parameters <span class="math inline">\(\theta\)</span>. This is typically a Bayesian posterior <span class="math inline">\(p(\theta|y)\)</span> given data <span class="math inline">\(y\)</span>, and in particular, a Bayesian posterior coded as a Stan program.</p>
+</section>
+<section id="auxiliary-momentum-variable" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="auxiliary-momentum-variable">Auxiliary momentum variable</h3>
+<p>HMC introduces auxiliary momentum variables <span class="math inline">\(\rho\)</span> and draws from a joint density</p>
+<p><span class="math display">\[
+p(\rho, \theta) = p(\rho | \theta) p(\theta).
+\]</span></p>
+<p>In most applications of HMC, including Stan, the auxiliary density is a multivariate normal that does not depend on the parameters <span class="math inline">\(\theta\)</span>,</p>
+<p><span class="math display">\[
+\rho \sim \mathsf{MultiNormal}(0, M).
+\]</span></p>
+<p><span class="math inline">\(M\)</span> is the Euclidean metric. It can be seen as a transform of parameter space that makes sampling more efficient; see <span class="citation" data-cites="Betancourt:2017">Betancourt (<a href="#ref-Betancourt:2017" role="doc-biblioref">2017</a>)</span> for details.</p>
+<p>By default Stan sets <span class="math inline">\(M^{-1}\)</span> equal to a diagonal estimate of the covariance computed during warmup.</p>
+</section>
+<section id="the-hamiltonian" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="the-hamiltonian">The Hamiltonian</h3>
+<p>The joint density <span class="math inline">\(p(\rho, \theta)\)</span> defines a Hamiltonian</p>
+<p><span class="math display">\[
+\begin{array}{rcl}
+H(\rho, \theta) &amp; = &amp; - \log p(\rho, \theta)
+\\[3pt]
+&amp; = &amp; - \log p(\rho | \theta) - \log p(\theta).
+\\[3pt]
+&amp; = &amp; T(\rho | \theta) + V(\theta),
+\end{array}
+\]</span></p>
+<p>where the term</p>
+<p><span class="math display">\[
+T(\rho | \theta) = - \log p(\rho | \theta)
+\]</span></p>
+<p>is called the “kinetic energy” and the term</p>
+<p><span class="math display">\[
+V(\theta) = - \log p(\theta)
+\]</span></p>
+<p>is called the “potential energy.” The potential energy is specified by the Stan program through its definition of a log density.</p>
+</section>
+<section id="generating-transitions" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="generating-transitions">Generating transitions</h3>
+<p>Starting from the current value of the parameters <span class="math inline">\(\theta\)</span>, a transition to a new state is generated in two stages before being subjected to a Metropolis accept step.</p>
+<p>First, a value for the momentum is drawn independently of the current parameter values,</p>
+<p><span class="math display">\[
+\rho \sim \mathsf{MultiNormal}(0, M).
+\]</span></p>
+<p>Thus momentum does not persist across iterations.</p>
+<p>Next, the joint system <span class="math inline">\((\theta,\rho)\)</span> made up of the current parameter values <span class="math inline">\(\theta\)</span> and new momentum <span class="math inline">\(\rho\)</span> is evolved via Hamilton’s equations,</p>
+<p><span class="math display">\[
+\begin{array}{rcccl}
+\displaystyle
+\frac{d\theta}{dt}
+&amp; = &amp;
+\displaystyle
++ \frac{\partial H}{\partial \rho}
+&amp; = &amp;
+\displaystyle
++ \frac{\partial T}{\partial \rho}
+\\[12pt]
+\displaystyle
+\frac{d\rho}{dt}
+&amp; = &amp;
+\displaystyle
+- \frac{\partial H}{\partial \theta }
+&amp; = &amp;
+\displaystyle
+- \frac{\partial T}{\partial \theta}
+- \frac{\partial V}{\partial \theta}.
+\end{array}
+\]</span></p>
+<p>With the momentum density being independent of the target density, i.e., <span class="math inline">\(p(\rho | \theta) = p(\rho)\)</span>, the first term in the momentum time derivative, <span class="math inline">\({\partial T} / {\partial \theta}\)</span> is zero, yielding the pair time derivatives</p>
+<p><span class="math display">\[
+\begin{array}{rcl}
+\frac{d \theta}{d t} &amp; = &amp; +\frac{\partial T}{\partial \rho}
+\\[2pt]
+\frac{d \rho}{d t} &amp; = &amp; -\frac{\partial V}{\partial \theta}.
+\end{array}
+\]</span></p>
+</section>
+<section id="leapfrog-integrator" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="leapfrog-integrator">Leapfrog integrator</h3>
+<p>The last section leaves a two-state differential equation to solve. Stan, like most other HMC implementations, uses the leapfrog integrator, which is a numerical integration algorithm that’s specifically adapted to provide stable results for Hamiltonian systems of equations.</p>
+<p>Like most numerical integrators, the leapfrog algorithm takes discrete steps of some small time interval <span class="math inline">\(\epsilon\)</span>. The leapfrog algorithm begins by drawing a fresh momentum term independently of the parameter values <span class="math inline">\(\theta\)</span> or previous momentum value.</p>
+<p><span class="math display">\[
+\rho \sim \mathsf{MultiNormal}(0, M).
+\]</span> It then alternates half-step updates of the momentum and full-step updates of the position.</p>
+<p><span class="math display">\[
+\begin{array}{rcl}
+\rho &amp; \leftarrow
+     &amp; \rho \, - \, \frac{\epsilon}{2} \frac{\partial V}{\partial \theta}
+\\[6pt]
+\theta &amp; \leftarrow
+       &amp; \theta \, + \, \epsilon \, M^{-1} \, \rho
+\\[6pt]
+\rho &amp; \leftarrow
+     &amp; \rho \, - \, \frac{\epsilon}{2} \frac{\partial V}{\partial \theta}.
+\end{array}
+\]</span></p>
+<p>By applying <span class="math inline">\(L\)</span> leapfrog steps, a total of <span class="math inline">\(L \, \epsilon\)</span> time is simulated. The resulting state at the end of the simulation (<span class="math inline">\(L\)</span> repetitions of the above three steps) will be denoted <span class="math inline">\((\rho^{*}, \theta^{*})\)</span>.</p>
+<p>The leapfrog integrator’s error is on the order of <span class="math inline">\(\epsilon^3\)</span> per step and <span class="math inline">\(\epsilon^2\)</span> globally, where <span class="math inline">\(\epsilon\)</span> is the time interval (also known as the step size); <span class="citation" data-cites="LeimkuhlerReich:2004">Leimkuhler and Reich (<a href="#ref-LeimkuhlerReich:2004" role="doc-biblioref">2004</a>)</span> provide a detailed analysis of numerical integration for Hamiltonian systems, including a derivation of the error bound for the leapfrog integrator.</p>
+</section>
+<section id="metropolis-accept-step" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="metropolis-accept-step">Metropolis accept step</h3>
+<p>If the leapfrog integrator were perfect numerically, there would no need to do any more randomization per transition than generating a random momentum vector. Instead, what is done in practice to account for numerical errors during integration is to apply a Metropolis acceptance step, where the probability of keeping the proposal <span class="math inline">\((\rho^{*}, \theta^{*})\)</span> generated by transitioning from <span class="math inline">\((\rho, \theta)\)</span> is</p>
+<p><span class="math display">\[
+\min \!
+\left(
+1,
+\ \exp \! \left( H(\rho, \theta) - H(\rho^{*}, \theta^{*}) \right)
+\right).
+\]</span></p>
+<p>If the proposal is not accepted, the previous parameter value is returned for the next draw and used to initialize the next iteration.</p>
+</section>
+<section id="algorithm-summary" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="algorithm-summary">Algorithm summary</h3>
+<p>The Hamiltonian Monte Carlo algorithm starts at a specified initial set of parameters <span class="math inline">\(\theta\)</span>; in Stan, this value is either user-specified or generated randomly. Then, for a given number of iterations, a new momentum vector is sampled and the current value of the parameter <span class="math inline">\(\theta\)</span> is updated using the leapfrog integrator with discretization time <span class="math inline">\(\epsilon\)</span> and number of steps <span class="math inline">\(L\)</span> according to the Hamiltonian dynamics. Then a Metropolis acceptance step is applied, and a decision is made whether to update to the new state <span class="math inline">\((\theta^{*}, \rho^{*})\)</span> or keep the existing state.</p>
+</section>
+</section>
+<section id="hmc-algorithm-parameters" class="level2">
+<h2 class="anchored" data-anchor-id="hmc-algorithm-parameters">HMC algorithm parameters</h2>
+<p>The Hamiltonian Monte Carlo algorithm has three parameters which must be set,</p>
+<ul>
+<li>discretization time <span class="math inline">\(\epsilon\)</span>,</li>
+<li>metric <span class="math inline">\(M\)</span>, and</li>
+<li>number of steps taken <span class="math inline">\(L\)</span>.</li>
+</ul>
+<p>In practice, sampling efficiency, both in terms of iteration speed and iterations per effective sample, is highly sensitive to these three tuning parameters <span class="citation" data-cites="Neal:2011">Neal (<a href="#ref-Neal:2011" role="doc-biblioref">2011</a>)</span>, <span class="citation" data-cites="Hoffman-Gelman:2014">Hoffman and Gelman (<a href="#ref-Hoffman-Gelman:2014" role="doc-biblioref">2014</a>)</span>.</p>
+<p>If <span class="math inline">\(\epsilon\)</span> is too large, the leapfrog integrator will be inaccurate and too many proposals will be rejected. If <span class="math inline">\(\epsilon\)</span> is too small, too many small steps will be taken by the leapfrog integrator leading to long simulation times per interval. Thus the goal is to balance the acceptance rate between these extremes.</p>
+<p>If <span class="math inline">\(L\)</span> is too small, the trajectory traced out in each iteration will be too short and sampling will devolve to a random walk. If <span class="math inline">\(L\)</span> is too large, the algorithm will do too much work on each iteration.</p>
+<p>If the inverse metric <span class="math inline">\(M^{-1}\)</span> is a poor estimate of the posterior covariance, the step size <span class="math inline">\(\epsilon\)</span> must be kept small to maintain arithmetic precision. This would lead to a large <span class="math inline">\(L\)</span> to compensate.</p>
+<section id="integration-time" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="integration-time">Integration time</h3>
+<p>The actual integration time is <span class="math inline">\(L \, \epsilon\)</span>, a function of number of steps. Some interfaces to Stan set an approximate integration time <span class="math inline">\(t\)</span> and the discretization interval (step size) <span class="math inline">\(\epsilon\)</span>. In these cases, the number of steps will be rounded down as</p>
+<p><span class="math display">\[
+L = \left\lfloor \frac{t}{\epsilon} \right\rfloor.
+\]</span></p>
+<p>and the actual integration time will still be <span class="math inline">\(L \, \epsilon\)</span>.</p>
+</section>
+<section id="automatic-parameter-tuning" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="automatic-parameter-tuning">Automatic parameter tuning</h3>
+<p>Stan is able to automatically optimize <span class="math inline">\(\epsilon\)</span> to match an acceptance-rate target, able to estimate <span class="math inline">\(M\)</span> based on warmup sample iterations, and able to dynamically adapt <span class="math inline">\(L\)</span> on the fly during sampling (and during warmup) using the no-U-turn sampling (NUTS) algorithm <span class="citation" data-cites="Hoffman-Gelman:2014">Hoffman and Gelman (<a href="#ref-Hoffman-Gelman:2014" role="doc-biblioref">2014</a>)</span>.</p>
+<p><strong>Warmup Epochs Figure.</strong> <a id="adaptation.figure"></a> <em>Adaptation during warmup occurs in three stages: an initial fast adaptation interval (I), a series of expanding slow adaptation intervals (II), and a final fast adaptation interval (III). For HMC, both the fast and slow intervals are used for adapting the step size, while the slow intervals are used for learning the (co)variance necessitated by the metric. Iteration numbering starts at 1 on the left side of the figure and increases to the right.</em></p>
+<p><img src="img/warmup-epochs.png" class="img-fluid"></p>
+<p>When adaptation is engaged (it may be turned off by fixing a step size and metric), the warmup period is split into three stages, as illustrated in the <a href="#adaptation.figure">warmup adaptation figure</a>, with two <em>fast</em> intervals surrounding a series of growing <em>slow</em> intervals. Here fast and slow refer to parameters that adapt using local and global information, respectively; the Hamiltonian Monte Carlo samplers, for example, define the step size as a fast parameter and the (co)variance as a slow parameter. The size of the the initial and final fast intervals and the initial size of the slow interval are all customizable, although user-specified values may be modified slightly in order to ensure alignment with the warmup period.</p>
+<p>The motivation behind this partitioning of the warmup period is to allow for more robust adaptation. The stages are as follows.</p>
+<ol type="1">
+<li><p>In the initial fast interval the chain is allowed to converge towards the typical set,<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> with only parameters that can learn from local information adapted.</p></li>
+<li><p>After this initial stage parameters that require global information, for example (co)variances, are estimated in a series of expanding, memoryless windows; often fast parameters will be adapted here as well.</p></li>
+<li><p>Lastly, the fast parameters are allowed to adapt to the final update of the slow parameters.</p></li>
+</ol>
+<p>These intervals may be controlled through the following configuration parameters, all of which must be positive integers:</p>
+<p><strong>Adaptation Parameters Table.</strong> <em>The parameters controlling adaptation and their default values.</em></p>
+<table class="table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 64%">
+<col style="width: 10%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">parameter</th>
+<th style="text-align: left;">description</th>
+<th style="text-align: center;">default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><em>initial buffer</em></td>
+<td style="text-align: left;">width of initial fast adaptation interval</td>
+<td style="text-align: center;">75</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><em>term buffer</em></td>
+<td style="text-align: left;">width of final fast adaptation interval</td>
+<td style="text-align: center;">50</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><em>window</em></td>
+<td style="text-align: left;">initial width of slow adaptation interval</td>
+<td style="text-align: center;">25</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="discretization-interval-adaptation-parameters" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="discretization-interval-adaptation-parameters">Discretization-interval adaptation parameters</h3>
+<p>Stan’s HMC algorithms utilize dual averaging <span class="citation" data-cites="Nesterov:2009">Nesterov (<a href="#ref-Nesterov:2009" role="doc-biblioref">2009</a>)</span> to optimize the step size.<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
+<p>This warmup optimization procedure is extremely flexible and for completeness, Stan exposes each tuning option for dual averaging, using the notation of <span class="citation" data-cites="Hoffman-Gelman:2014">Hoffman and Gelman (<a href="#ref-Hoffman-Gelman:2014" role="doc-biblioref">2014</a>)</span>. In practice, the efficacy of the optimization is sensitive to the value of these parameters, but we do not recommend changing the defaults without experience with the dual-averaging algorithm. For more information, see the discussion of dual averaging in Hoffman-Gelman:2014.</p>
+<p>The full set of dual-averaging parameters are</p>
+<p><strong>Step Size Adaptation Parameters Table</strong> <em>The parameters controlling step size adaptation, with constraints and default values.</em></p>
+<table class="table">
+<thead>
+<tr class="header">
+<th style="text-align: center;">parameter</th>
+<th style="text-align: left;">description</th>
+<th style="text-align: left;">constraint</th>
+<th style="text-align: center;">default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>delta</code></td>
+<td style="text-align: left;">target Metropolis acceptance rate</td>
+<td style="text-align: left;">[0, 1]</td>
+<td style="text-align: center;">0.8</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>gamma</code></td>
+<td style="text-align: left;">adaptation regularization scale</td>
+<td style="text-align: left;">(0, infty)</td>
+<td style="text-align: center;">0.05</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>kappa</code></td>
+<td style="text-align: left;">adaptation relaxation exponent</td>
+<td style="text-align: left;">(0, infty)</td>
+<td style="text-align: center;">0.75</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>t_0</code></td>
+<td style="text-align: left;">adaptation iteration offset</td>
+<td style="text-align: left;">(0, infty)</td>
+<td style="text-align: center;">10</td>
+</tr>
+</tbody>
+</table>
+<p>By setting the target acceptance parameter <span class="math inline">\(\delta\)</span> to a value closer to 1 (its value must be strictly less than 1 and its default value is 0.8), adaptation will be forced to use smaller step sizes. This can improve sampling efficiency (effective sample size per iteration) at the cost of increased iteration times. Raising the value of <span class="math inline">\(\delta\)</span> will also allow some models that would otherwise get stuck to overcome their blockages.</p>
+</section>
+<section id="step-size-jitter" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="step-size-jitter">Step-size jitter</h3>
+<p>All implementations of HMC use numerical integrators requiring a step size (equivalently, discretization time interval). Stan allows the step size to be adapted or set explicitly. Stan also allows the step size to be “jittered” randomly during sampling to avoid any poor interactions with a fixed step size and regions of high curvature. The jitter is a proportion that may be added or subtracted, so the maximum amount of jitter is 1, which will cause step sizes to be selected in the range of 0 to twice the adapted step size. The default value is 0, producing no jitter.</p>
+<p>Small step sizes can get HMC samplers unstuck that would otherwise get stuck with higher step sizes. The downside is that jittering below the adapted value will increase the number of leapfrog steps required and thus slow down iterations, whereas jittering above the adapted value can cause premature rejection due to simulation error in the Hamiltonian dynamics calculation. See <span class="citation" data-cites="Neal:2011">Neal (<a href="#ref-Neal:2011" role="doc-biblioref">2011</a>)</span> for further discussion of step-size jittering.</p>
+</section>
+<section id="euclidean-metric" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="euclidean-metric">Euclidean metric</h3>
+<p>All HMC implementations in Stan utilize quadratic kinetic energy functions which are specified up to the choice of a symmetric, positive-definite matrix known as a <em>mass matrix</em> or, more formally, a <em>metric</em> <span class="citation" data-cites="Betancourt:2017">Betancourt (<a href="#ref-Betancourt:2017" role="doc-biblioref">2017</a>)</span>.</p>
+<p>If the metric is constant then the resulting implementation is known as <em>Euclidean</em> HMC. Stan allows a choice among three Euclidean HMC implementations,</p>
+<ul>
+<li>a unit metric (diagonal matrix of ones),</li>
+<li>a diagonal metric (diagonal matrix with positive diagonal entries), and</li>
+<li>a dense metric (a dense, symmetric positive definite matrix)</li>
+</ul>
+<p>to be configured by the user.</p>
+<p>If the metric is specified to be diagonal, then regularized variances are estimated based on the iterations in each slow-stage block (labeled II in the <a href="#adaptation.figure">warmup adaptation stages figure</a>). Each of these estimates is based only on the iterations in that block. This allows early estimates to be used to help guide warmup and then be forgotten later so that they do not influence the final covariance estimate.</p>
+<p>If the metric is specified to be dense, then regularized covariance estimates will be carried out, regularizing the estimate to a diagonal matrix, which is itself regularized toward a unit matrix.</p>
+<p>Variances or covariances are estimated using Welford accumulators to avoid a loss of precision over many floating point operations.</p>
+<section id="warmup-times-and-estimating-the-metric" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="warmup-times-and-estimating-the-metric">Warmup times and estimating the metric</h4>
+<p>The metric can compensate for linear (i.e.&nbsp;global) correlations in the posterior which can dramatically improve the performance of HMC in some problems. This requires knowing the global correlations.</p>
+<p>In complex models, the global correlations are usually difficult, if not impossible, to derive analytically; for example, nonlinear model components convolve the scales of the data, so standardizing the data does not always help. Therefore, Stan estimates these correlations online with an adaptive warmup. In models with strong nonlinear (i.e.&nbsp;local) correlations this learning can be slow, even with regularization. This is ultimately why warmup in Stan often needs to be so long, and why a sufficiently long warmup can yield such substantial performance improvements.</p>
+</section>
+<section id="nonlinearity" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="nonlinearity">Nonlinearity</h4>
+<p>The metric compensates for only linear (equivalently global or position-independent) correlations in the posterior. The hierarchical parameterizations, on the other hand, affect some of the nasty nonlinear (equivalently local or position-dependent) correlations common in hierarchical models.<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
+<p>One of the biggest difficulties with dense metrics is the estimation of the metric itself which introduces a bit of a chicken-and-egg scenario; in order to estimate an appropriate metric for sampling, convergence is required, and in order to converge, an appropriate metric is required.</p>
+</section>
+<section id="dense-vs.-diagonal-metrics" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="dense-vs.-diagonal-metrics">Dense vs.&nbsp;diagonal metrics</h4>
+<p>Statistical models for which sampling is problematic are not typically dominated by linear correlations for which a dense metric can adjust. Rather, they are governed by more complex nonlinear correlations that are best tackled with better parameterizations or more advanced algorithms, such as Riemannian HMC.</p>
+</section>
+<section id="warmup-times-and-curvature" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="warmup-times-and-curvature">Warmup times and curvature</h4>
+<p>MCMC convergence time is roughly equivalent to the autocorrelation time. Because HMC (and NUTS) chains tend to be lowly autocorrelated they also tend to converge quite rapidly.</p>
+<p>This only applies when there is uniformity of curvature across the posterior, an assumption which is violated in many complex models. Quite often, the tails have large curvature while the bulk of the posterior mass is relatively well-behaved; in other words, warmup is slow not because the actual convergence time is slow but rather because the cost of an HMC iteration is more expensive out in the tails.</p>
+<p>Poor behavior in the tails is the kind of pathology that can be uncovered by running only a few warmup iterations. By looking at the acceptance probabilities and step sizes of the first few iterations provides an idea of how bad the problem is and whether it must be addressed with modeling efforts such as tighter priors or reparameterizations.</p>
+</section>
+</section>
+<section id="nuts-and-its-configuration" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="nuts-and-its-configuration">NUTS and its configuration</h3>
+<p>The no-U-turn sampler (NUTS) automatically selects an appropriate number of leapfrog steps in each iteration in order to allow the proposals to traverse the posterior without doing unnecessary work. The motivation is to maximize the expected squared jump distance (see, e.g., <span class="citation" data-cites="RobertsEtAl:1997">Roberts, Gelman, and Gilks (<a href="#ref-RobertsEtAl:1997" role="doc-biblioref">1997</a>)</span>) at each step and avoid the random-walk behavior that arises in random-walk Metropolis or Gibbs samplers when there is correlation in the posterior. For a precise definition of the NUTS algorithm and a proof of detailed balance, see <span class="citation" data-cites="Hoffman-Gelman:2014">Hoffman and Gelman (<a href="#ref-Hoffman-Gelman:2014" role="doc-biblioref">2014</a>)</span>.</p>
+<p>NUTS generates a proposal by starting at an initial position determined by the parameters drawn in the last iteration. It then generates an independent standard normal random momentum vector. It then evolves the initial system both forwards and backwards in time to form a balanced binary tree. At each iteration of the NUTS algorithm the tree depth is increased by one, doubling the number of leapfrog steps and effectively doubles the computation time. The algorithm terminates in one of two ways, either</p>
+<ul>
+<li>the NUTS criterion (i.e., a U-turn in Euclidean space on a subtree) is satisfied for a new subtree or the completed tree, or</li>
+<li>the depth of the completed tree hits the maximum depth allowed.</li>
+</ul>
+<p>Rather than using a standard Metropolis step, the final parameter value is selected via multinomial sampling with a bias toward the second half of the steps in the trajectory <span class="citation" data-cites="Betancourt:2016">Betancourt (<a href="#ref-Betancourt:2016" role="doc-biblioref">2016b</a>)</span>.<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a></p>
+<p>Configuring the no-U-turn sample involves putting a cap on the depth of the trees that it evaluates during each iteration. This is controlled through a maximum depth parameter. The number of leapfrog steps taken is then bounded by 2 to the power of the maximum depth minus 1.</p>
+<p>Both the tree depth and the actual number of leapfrog steps computed are reported along with the parameters in the output as <code>treedepth__</code> and <code>n_leapfrog__</code>, respectively. Because the final subtree may only be partially constructed, these two will always satisfy</p>
+<p><span class="math display">\[
+2^{\mathrm{treedepth} - 1} - 1
+\ &lt; \
+N_{\mathrm{leapfrog}}
+\ \le \
+2^{\mathrm{treedepth} } - 1.
+\]</span></p>
+<p>Tree depth is an important diagnostic tool for NUTS. For example, a tree depth of zero occurs when the first leapfrog step is immediately rejected and the initial state returned, indicating extreme curvature and poorly-chosen step size (at least relative to the current position). On the other hand, a tree depth equal to the maximum depth indicates that NUTS is taking many leapfrog steps and being terminated prematurely to avoid excessively long execution time. Taking very many steps may be a sign of poor adaptation, may be due to targeting a very high acceptance rate, or may simply indicate a difficult posterior from which to sample. In the latter case, reparameterization may help with efficiency. But in the rare cases where the model is correctly specified and a large number of steps is necessary, the maximum depth should be increased to ensure that that the NUTS tree can grow as large as necessary.</p>
+</section>
+</section>
+<section id="sampling-without-parameters" class="level2">
+<h2 class="anchored" data-anchor-id="sampling-without-parameters">Sampling without parameters</h2>
+<p>In some situations, such as pure forward data simulation in a directed graphical model (e.g., where you can work down generatively from known hyperpriors to simulate parameters and data), there is no need to declare any parameters in Stan, the model block will be empty (and thus can be omitted), and all output quantities will be produced in the generated quantities block.</p>
+<p>For example, to generate a sequence of <span class="math inline">\(N\)</span> draws from a binomial with trials <span class="math inline">\(K\)</span> and chance of success <span class="math inline">\(\theta\)</span>, the following program suffices.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; theta;</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; K;</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; N;</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span> {</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=K&gt; y;</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    y[n] = binomial_rng(K, theta);</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>For this model, the sampler must be configured to use the fixed-parameters setting because there are no parameters. Without parameter sampling there is no need for adaptation and the number of warmup iterations should be set to zero.</p>
+<p>Most models that are written to be sampled without parameters will not declare any parameters, instead putting anything parameter-like in the data block. Nevertheless, it is possible to include parameters for fixed-parameters sampling and initialize them in any of the usual ways (randomly, fixed to zero on the unconstrained scale, or with user-specified values). For example, <code>theta</code> in the example above could be declared as a parameter and initialized as a parameter.</p>
+</section>
+<section id="general-config.section" class="level2">
+<h2 class="anchored" data-anchor-id="general-config.section">General configuration options</h2>
+<p>Stan’s interfaces provide a number of configuration options that are shared among the MCMC algorithms (this chapter), the <a href="../reference-manual/optimization.html">optimization algorithms chapter</a>, and the <a href="../reference-manual/diagnostics.html">diagnostics chapter</a>.</p>
+<section id="random-number-generator" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="random-number-generator">Random number generator</h3>
+<p>The random-number generator’s behavior is fully determined by the unsigned seed (positive integer) it is started with. If a seed is not specified, or a seed of 0 or less is specified, the system time is used to generate a seed. The seed is recorded and included with Stan’s output regardless of whether it was specified or generated randomly from the system time.</p>
+<p>Stan also allows a chain identifier to be specified, which is useful when running multiple Markov chains for sampling. The chain identifier is used to advance the random number generator a very large number of random variates so that two chains with different identifiers draw from non-overlapping subsequences of the random-number sequence determined by the seed. When running multiple chains from a single command, Stan’s interfaces will manage the chain identifiers.</p>
+<section id="replication" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="replication">Replication</h4>
+<p>Together, the seed and chain identifier determine the behavior of the underlying random number generator. For complete reproducibility, every aspect of the environment needs to be locked down from the OS and version to the C++ compiler and version to the version of Stan and all dependent libraries.</p>
+</section>
+</section>
+<section id="initialization" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="initialization">Initialization</h3>
+<p>The initial parameter values for Stan’s algorithms (MCMC, optimization, or diagnostic) may be either specified by the user or generated randomly. If user-specified values are provided, all parameters must be given initial values or Stan will abort with an error message.</p>
+<section id="user-defined-initialization" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="user-defined-initialization">User-defined initialization</h4>
+<p>If the user specifies initial values, they must satisfy the constraints declared in the model (i.e., they are on the constrained scale).</p>
+</section>
+<section id="system-constant-zero-initialization" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="system-constant-zero-initialization">System constant zero initialization</h4>
+<p>It is also possible to provide an initialization of 0, which causes all variables to be initialized with zero values on the unconstrained scale. The transforms are arranged in such a way that zero initialization provides reasonable variable initializations for most parameters, such as 0 for unconstrained parameters, 1 for parameters constrained to be positive, 0.5 for variables to constrained to lie between 0 and 1, a symmetric (uniform) vector for simplexes, unit matrices for both correlation and covariance matrices, and so on.</p>
+</section>
+<section id="system-random-initialization" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="system-random-initialization">System random initialization</h4>
+<p>Random initialization by default initializes the parameter values with values drawn at random from a <span class="math inline">\(\mathsf{Uniform}(-2, 2)\)</span> distribution. Alternatively, a value other than 2 may be specified for the absolute bounds. These values are on the unconstrained scale, so must be inverse transformed back to satisfy the constraints declared for parameters.</p>
+<p>Because zero is chosen to be a reasonable default initial value for most parameters, the interval around zero provides a fairly diffuse starting point. For instance, unconstrained variables are initialized randomly in <span class="math inline">\((-2, 2)\)</span>, variables constrained to be positive are initialized roughly in <span class="math inline">\((0.14, 7.4)\)</span>, variables constrained to fall between 0 and 1 are initialized with values roughly in <span class="math inline">\((0.12, 0.88)\)</span>.</p>
+</section>
+</section>
+</section>
+<section id="divergent-transitions" class="level2">
+<h2 class="anchored" data-anchor-id="divergent-transitions">Divergent transitions</h2>
+<p>The Hamiltonian Monte Carlo algorithms (HMC and NUTS) simulate the trajectory of a fictitious particle representing parameter values when subject to a potential energy field, the value of which at a point is the negative log posterior density (up to a constant that does not depend on location). Random momentum is imparted independently in each direction, by drawing from a standard normal distribution. The Hamiltonian is defined to be the sum of the potential energy and kinetic energy of the system. The key feature of the Hamiltonian is that it is conserved along the trajectory the particle moves.</p>
+<p>In Stan, we use the leapfrog algorithm to simulate the path of a particle along the trajectory defined by the initial random momentum and the potential energy field. This is done by alternating updates of the position based on the momentum and the momentum based on the position. The momentum updates involve the potential energy and are applied along the gradient. This is essentially a stepwise (discretized) first-order approximation of the trajectory. <span class="citation" data-cites="LeimkuhlerReich:2004">Leimkuhler and Reich (<a href="#ref-LeimkuhlerReich:2004" role="doc-biblioref">2004</a>)</span> provide details and error analysis for the leapfrog algorithm.</p>
+<p>A divergence arises when the simulated Hamiltonian trajectory departs from the true trajectory as measured by departure of the Hamiltonian value from its initial value. When this divergence is too high,<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a> the simulation has gone off the rails and cannot be trusted. The positions along the simulated trajectory after the Hamiltonian diverges will never be selected as the next draw of the MCMC algorithm, potentially reducing Hamiltonian Monte Carlo to a simple random walk and biasing estimates by not being able to thoroughly explore the posterior distribution. <span class="citation" data-cites="Betancourt:2016b">Betancourt (<a href="#ref-Betancourt:2016b" role="doc-biblioref">2016a</a>)</span> provides details of the theory, computation, and practical implications of divergent transitions in Hamiltonian Monte Carlo.</p>
+<p>The Stan interfaces report divergences as warnings and provide ways to access which iterations encountered divergences. ShinyStan provides visualizations that highlight the starting point of divergent transitions to diagnose where the divergences arise in parameter space. A common location is in the neck of the funnel in a centered parameterization, an example of which is provided in the user’s guide.</p>
+<p>If the posterior is highly curved, very small step sizes are required for this gradient-based simulation of the Hamiltonian to be accurate. When the step size is too large (relative to the curvature), the simulation diverges from the true Hamiltonian. This definition is imprecise in the same way that stiffness for a differential equation is imprecise; both are defined by the way they cause traditional stepwise algorithms to diverge from where they should be.</p>
+<p>The primary cause of divergent transitions in Euclidean HMC (other than bugs in the code) is highly varying posterior curvature, for which small step sizes are too inefficient in some regions and diverge in other regions. If the step size is too small, the sampler becomes inefficient and halts before making a U-turn (hits the maximum tree depth in NUTS); if the step size is too large, the Hamiltonian simulation diverges.</p>
+<section id="diagnosing-and-eliminating-divergences" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="diagnosing-and-eliminating-divergences">Diagnosing and eliminating divergences</h3>
+<p>In some cases, simply lowering the initial step size and increasing the target acceptance rate will keep the step size small enough that sampling can proceed. In other cases, a reparameterization is required so that the posterior curvature is more manageable; see the funnel example in the user’s guide for an example.</p>
+<p>Before reparameterization, it may be helpful to plot the posterior draws, highlighting the divergent transitions to see where they arise. This is marked as a divergent transition in the interfaces; for example, ShinyStan and RStan have special plotting facilities to highlight where divergent transitions arise.</p>
+
+
+
+</section>
+</section>
+</section>
+
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-Betancourt:2016b" class="csl-entry" role="listitem">
+Betancourt, Michael. 2016a. <span>“Diagnosing Suboptimal Cotangent Disintegrations in <span>H</span>amiltonian <span>M</span>onte <span>C</span>arlo.”</span> <em>arXiv</em> 1604.00695. <a href="https://arxiv.org/abs/1604.00695">https://arxiv.org/abs/1604.00695</a>.
+</div>
+<div id="ref-Betancourt:2016" class="csl-entry" role="listitem">
+———. 2016b. <span>“Identifying the Optimal Integration Time in <span>H</span>amiltonian <span>M</span>onte <span>C</span>arlo.”</span> <em>arXiv</em> 1601.00225. <a href="https://arxiv.org/abs/1601.00225">https://arxiv.org/abs/1601.00225</a>.
+</div>
+<div id="ref-Betancourt:2017" class="csl-entry" role="listitem">
+———. 2017. <span>“A Conceptual Introduction to <span>H</span>amiltonian <span>M</span>onte <span>C</span>arlo.”</span> <em>arXiv</em> 1701.02434. <a href="https://arxiv.org/abs/1701.02434">https://arxiv.org/abs/1701.02434</a>.
+</div>
+<div id="ref-Betancourt-Girolami:2013" class="csl-entry" role="listitem">
+Betancourt, Michael, and Mark Girolami. 2013. <span>“<span>H</span>amiltonian <span>M</span>onte <span>C</span>arlo for Hierarchical Models.”</span> <em>arXiv</em> 1312.0906. <a href="http://arxiv.org/abs/1312.0906">http://arxiv.org/abs/1312.0906</a>.
+</div>
+<div id="ref-GelmanEtAl:2013" class="csl-entry" role="listitem">
+Gelman, Andrew, J. B. Carlin, Hal S. Stern, David B. Dunson, Aki Vehtari, and Donald B. Rubin. 2013. <em>Bayesian Data Analysis</em>. Third Edition. London: Chapman &amp; Hall / CRC Press.
+</div>
+<div id="ref-Hoffman-Gelman:2014" class="csl-entry" role="listitem">
+Hoffman, Matthew D., and Andrew Gelman. 2014. <span>“<span>T</span>he <span>N</span>o-<span>U</span>-<span>T</span>urn <span>S</span>ampler: <span>A</span>daptively <span>S</span>etting <span>P</span>ath <span>L</span>engths in <span>H</span>amiltonian <span>M</span>onte <span>C</span>arlo.”</span> <em>Journal of Machine Learning Research</em> 15: 1593–623. <a href="http://jmlr.org/papers/v15/hoffman14a.html">http://jmlr.org/papers/v15/hoffman14a.html</a>.
+</div>
+<div id="ref-LeimkuhlerReich:2004" class="csl-entry" role="listitem">
+Leimkuhler, Benedict, and Sebastian Reich. 2004. <em>Simulating Hamiltonian Dynamics</em>. Cambridge: Cambridge University Press.
+</div>
+<div id="ref-Neal:2011" class="csl-entry" role="listitem">
+Neal, Radford. 2011. <span>“<span>MCMC</span> Using <span>H</span>amiltonian Dynamics.”</span> In <em>Handbook of <span>M</span>arkov Chain <span>M</span>onte <span>C</span>arlo</em>, edited by Steve Brooks, Andrew Gelman, Galin L. Jones, and Xiao-Li Meng, 116–62. Chapman; Hall/CRC.
+</div>
+<div id="ref-Nesterov:2009" class="csl-entry" role="listitem">
+Nesterov, Y. 2009. <span>“Primal-Dual Subgradient Methods for Convex Problems.”</span> <em>Mathematical Programming</em> 120 (1): 221–59.
+</div>
+<div id="ref-RobertsEtAl:1997" class="csl-entry" role="listitem">
+Roberts, G. O., Andrew Gelman, and Walter R. Gilks. 1997. <span>“Weak Convergence and Optimal Scaling of Random Walk <span>M</span>etropolis Algorithms.”</span> <em>Annals of Applied Probability</em> 7 (1): 110–20.
+</div>
+</div></section><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>The typical set is a concept borrowed from information theory and refers to the neighborhood (or neighborhoods in multimodal models) of substantial posterior probability mass through which the Markov chain will travel in equilibrium.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>This optimization of step size during adaptation of the sampler should not be confused with running Stan’s optimization method.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>In Riemannian HMC the metric compensates for nonlinear correlations.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>Stan previously used slice sampling along the trajectory, following the original NUTS paper of <span class="citation" data-cites="Hoffman-Gelman:2014">Hoffman and Gelman (<a href="#ref-Hoffman-Gelman:2014" role="doc-biblioref">2014</a>)</span>.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p>The current default threshold is a factor of <span class="math inline">\(10^3\)</span>, whereas when the leapfrog integrator is working properly, the divergences will be around <span class="math inline">\(10^{-7}\)</span> and do not compound due to the symplectic nature of the leapfrog integrator.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../reference-manual/removals.html" class="pagination-link" aria-label="Removed Features">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Removed Features</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../reference-manual/analysis.html" class="pagination-link" aria-label="Posterior Analysis">
+        <span class="nav-page-text">Posterior Analysis</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/reference-manual/mcmc.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

@@ -1,0 +1,1499 @@
+---
+pagetitle: Complex Matrix Operations
+---
+
+# Complex Matrix Operations {#complex_matrix-operations}
+
+
+## Complex promotion
+
+This chapter provides the details of functions that operate over
+complex matrices, vectors, and row vectors.  These mirror the
+operations over real complex_matrix types and are defined in the usual way for
+complex numbers.
+
+### Promotion of complex arguments
+
+If an expression `e` can be assigned to a variable of type `T`, then
+it can be used as an argument to a function that is specified to take
+arguments of type `T`.  For instance, `sqrt(real)` is specified to
+take a `real` argument, but an integer expression such as `2 + 2` of
+type `int` can be passed to `sqrt`, so that `sqrt(2 + 2)` is well
+defined.   This works by promoting the integer expression `2 + 2` to
+be of `real` type.
+
+The rules for promotion in Stan are simple:
+
+* `int` may be promoted to `real`,
+* `real` may be promoted to `complex`,
+* `vector` can be promoted to `complex_vector`,
+* `row_vector` can be promoted to `complex_row_vector`,
+* `matrix` can be promoted to `complex_matrix`,
+* if `T` can be promoted to `U` and `U` can be promoted to `V`, then `T` can be promoted to `V` (transitive), and
+* if `T` can be promoted to `U`, then `T[]` can be promoted to `U[]` (covariant).
+
+### Signature selection
+
+When a function is called, the definition requiring the fewest number
+of promotions is used.  For example, when calling `vector + vector`,
+the real-valued signature is used.  When calling any of
+`complex_vector + vector`, `vector + complex_vector`, or
+`complex_vector + complex_vector`, the complex signature is used.  If
+more than one signature matches with a the minimal number of
+promotions, the call is ambiguous, and an error will be raised by the
+compiler.  Promotion ambiguity leading to ill-defined calls should
+never happen with Stan built-in functions.
+
+### Signatures for complex functions
+
+Complex function signatures will only list the fully complex type.
+For example, with complex vector addition, we will list a single
+signature, `complex operator+(complex_vector, complex_vector)`.
+Through promotion, `operator+` may be called with one complex vector
+and one real vector as well, but the documentation elides the implied
+signatures `operator+(complex_vector, vector)` and
+`operator+(vector, complex_vector)`.
+
+### Generic functions work for complex containers
+
+Generic functions work for arrays containing complex, complex matrix,
+complex vector, or complex row vector types.  This includes the
+functions `append_array`, `dims`, `head`, `num_elements`, `rep_array`,
+`reverse`, `segment`, `size`, and `tail`.
+
+
+## Integer-valued complex matrix size functions
+
+<!-- int; num_elements; (complex_vector x); -->
+\index{{\tt \bfseries num\_elements }!{\tt (complex\_vector x): int}|hyperpage}
+
+`int` **`num_elements`**`(complex_vector x)`<br>\newline
+The total number of elements in the vector x (same as function `rows`)
+{{< since 2.30 >}}
+
+<!-- int; num_elements; (complex_row_vector x); -->
+\index{{\tt \bfseries num\_elements }!{\tt (complex\_row\_vector x): int}|hyperpage}
+
+`int` **`num_elements`**`(complex_row_vector x)`<br>\newline
+The total number of elements in the vector x (same as function `cols`)
+{{< since 2.30 >}}
+
+<!-- int; num_elements; (complex_matrix x); -->
+\index{{\tt \bfseries num\_elements }!{\tt (complex\_matrix x): int}|hyperpage}
+
+`int` **`num_elements`**`(complex_matrix x)`<br>\newline
+The total number of elements in the matrix x. For example, if `x` is a
+$5 \times 3$ matrix, then `num_elements(x)` is 15
+{{< since 2.30 >}}
+
+<!-- int; rows; (complex_vector x); -->
+\index{{\tt \bfseries rows }!{\tt (complex\_vector x): int}|hyperpage}
+
+`int` **`rows`**`(complex_vector x)`<br>\newline
+The number of rows in the vector x
+{{< since 2.30 >}}
+
+<!-- int; rows; (complex_row_vector x); -->
+\index{{\tt \bfseries rows }!{\tt (complex\_row\_vector x): int}|hyperpage}
+
+`int` **`rows`**`(complex_row_vector x)`<br>\newline
+The number of rows in the row vector x, namely 1
+{{< since 2.30 >}}
+
+<!-- int; rows; (complex_matrix x); -->
+\index{{\tt \bfseries rows }!{\tt (complex\_matrix x): int}|hyperpage}
+
+`int` **`rows`**`(complex_matrix x)`<br>\newline
+The number of rows in the matrix x
+{{< since 2.30 >}}
+
+<!-- int; cols; (complex_vector x); -->
+\index{{\tt \bfseries cols }!{\tt (complex\_vector x): int}|hyperpage}
+
+`int` **`cols`**`(complex_vector x)`<br>\newline
+The number of columns in the vector x, namely 1
+{{< since 2.30 >}}
+
+<!-- int; cols; (complex_row_vector x); -->
+\index{{\tt \bfseries cols }!{\tt (complex\_row\_vector x): int}|hyperpage}
+
+`int` **`cols`**`(complex_row_vector x)`<br>\newline
+The number of columns in the row vector x
+{{< since 2.30 >}}
+
+<!-- int; cols; (complex_matrix x); -->
+\index{{\tt \bfseries cols }!{\tt (complex\_matrix x): int}|hyperpage}
+
+`int` **`cols`**`(complex_matrix x)`<br>\newline
+The number of columns in the matrix x
+{{< since 2.30 >}}
+
+<!-- int; size; (complex_vector x); -->
+\index{{\tt \bfseries size }!{\tt (complex\_vector x): int}|hyperpage}
+
+`int` **`size`**`(complex_vector x)`<br>\newline
+The size of `x`, i.e., the number of elements
+{{< since 2.30 >}}
+
+<!-- int; size; (complex_row_vector x); -->
+\index{{\tt \bfseries size }!{\tt (complex\_row\_vector x): int}|hyperpage}
+
+`int` **`size`**`(complex_row_vector x)`<br>\newline
+The size of `x`, i.e., the number of elements
+{{< since 2.30 >}}
+
+<!-- int; size; (matrix x); -->
+\index{{\tt \bfseries size }!{\tt (complex\_matrix x): int}|hyperpage}
+
+`int` **`size`**`(matrix x)`<br>\newline
+The size of the matrix `x`.  For example, if `x` is a
+$5 \times 3$ matrix, then `size(x)` is 15.
+{{< since 2.30 >}}
+
+
+## Complex matrix arithmetic operators
+
+Stan supports all basic complex arithmetic operators using infix,
+prefix and postfix operations. This section lists the operations
+supported by Stan along with their argument and result types.
+
+### Negation prefix operators
+
+<!-- complex_vector; operator-; (complex_vector x); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (complex\_vector x): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator-`**`(complex_vector x)`<br>\newline
+The negation of the vector x.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator-; (complex_row_vector x); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (row\_complex\_vector x): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator-`**`(complex_row_vector x)`<br>\newline
+The negation of the row vector x.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator-; (complex_matrix x); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (complex\_matrix x): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator-`**`(complex_matrix x)`<br>\newline
+The negation of the matrix x.
+{{< since 2.30 >}}
+
+
+<!-- T; operator-; (T x); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (T x): T}|hyperpage}
+
+`T` **`operator-`**`(T x)`<br>\newline
+Vectorized version of `operator-`. If `T x` is a (possibly nested) array of
+matrix types, `-x` is the same shape array where each individual value is negated.
+{{< since 2.31 >}}
+
+### Infix complex_matrix operators
+
+<!-- complex_vector; operator+; (complex_vector x, complex_vector y); -->
+\index{{\tt \bfseries operator\_add }!{\tt (complex\_vector x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator+`**`(complex_vector x, complex_vector y)`<br>\newline
+The sum of the vectors x and y.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator+; (complex_row_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries operator\_add }!{\tt (row\_complex\_vector x, row\_complex\_vector y): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator+`**`(complex_row_vector x, complex_row_vector y)`<br>\newline
+The sum of the row vectors x and y.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator+; (complex_matrix x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_add }!{\tt (complex\_matrix x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator+`**`(complex_matrix x, complex_matrix y)`<br>\newline
+The sum of the matrices x and y
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator-; (complex_vector x, complex_vector y); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (complex\_vector x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator-`**`(complex_vector x, complex_vector y)`<br>\newline
+The difference between the vectors x and y.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator-; (complex_row_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (row\_complex\_vector x, row\_complex\_vector y): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator-`**`(complex_row_vector x, complex_row_vector y)`<br>\newline
+The difference between the row vectors x and y
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator-; (complex_matrix x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (complex\_matrix x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator-`**`(complex_matrix x, complex_matrix y)`<br>\newline
+The difference between the matrices x and y
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator*; (complex x, complex_vector y); -->
+\index{{\tt \bfseries operator\_multiply }!{\tt (complex x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator*`**`(complex x, complex_vector y)`<br>\newline
+The product of the scalar x and vector y
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator*; (complex x, complex_row_vector y); -->
+\index{{\tt \bfseries operator\_multiply }!{\tt (complex x, row\_complex\_vector y): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator*`**`(complex x, complex_row_vector y)`<br>\newline
+The product of the scalar x and the row vector y
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator*; (complex x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_multiply }!{\tt (complex x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator*`**`(complex x, complex_matrix y)`<br>\newline
+The product of the scalar x and the matrix y
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator*; (complex_vector x, complex y); -->
+\index{{\tt \bfseries operator\_multiply }!{\tt (complex\_vector x, complex y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator*`**`(complex_vector x, complex y)`<br>\newline
+The product of the scalar y and vector x
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator*; (complex_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries operator\_multiply }!{\tt (complex\_vector x, row\_complex\_vector y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator*`**`(complex_vector x, complex_row_vector y)`<br>\newline
+The product of the vector x and row vector y
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator*; (complex_row_vector x, complex y); -->
+\index{{\tt \bfseries operator\_multiply }!{\tt (row\_complex\_vector x, complex y): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator*`**`(complex_row_vector x, complex y)`<br>\newline
+The product of the scalar y and row vector x
+{{< since 2.30 >}}
+
+<!-- complex; operator*; (complex_row_vector x, complex_vector y); -->
+\index{{\tt \bfseries operator\_multiply }!{\tt (row\_complex\_vector x, complex\_vector y): complex}|hyperpage}
+
+`complex` **`operator*`**`(complex_row_vector x, complex_vector y)`<br>\newline
+The product of the row vector x and vector y
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator*; (complex_row_vector x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_multiply }!{\tt (row\_complex\_vector x, complex\_matrix y): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator*`**`(complex_row_vector x, complex_matrix y)`<br>\newline
+The product of the row vector x and matrix y
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator*; (complex_matrix x, complex y); -->
+\index{{\tt \bfseries operator\_multiply }!{\tt (complex\_matrix x, complex y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator*`**`(complex_matrix x, complex y)`<br>\newline
+The product of the scalar y and matrix x
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator*; (complex_matrix x, complex_vector y); -->
+\index{{\tt \bfseries operator\_multiply }!{\tt (complex\_matrix x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator*`**`(complex_matrix x, complex_vector y)`<br>\newline
+The product of the matrix x and vector y
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator*; (complex_matrix x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_multiply }!{\tt (complex\_matrix x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator*`**`(complex_matrix x, complex_matrix y)`<br>\newline
+The product of the matrices x and y
+{{< since 2.30 >}}
+
+### Broadcast infix operators
+
+<!-- complex_vector; operator+; (complex_vector x, complex y); -->
+\index{{\tt \bfseries operator\_add }!{\tt (complex\_vector x, complex y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator+`**`(complex_vector x, complex y)`<br>\newline
+The result of adding y to every entry in the vector x
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator+; (complex x, complex_vector y); -->
+\index{{\tt \bfseries operator\_add }!{\tt (complex x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator+`**`(complex x, complex_vector y)`<br>\newline
+The result of adding x to every entry in the vector y
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator+; (complex_row_vector x, complex y); -->
+\index{{\tt \bfseries operator\_add }!{\tt (row\_complex\_vector x, complex y): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator+`**`(complex_row_vector x, complex y)`<br>\newline
+The result of adding y to every entry in the row vector x
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator+; (complex x, complex_row_vector y); -->
+\index{{\tt \bfseries operator\_add }!{\tt (complex x, row\_complex\_vector y): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator+`**`(complex x, complex_row_vector y)`<br>\newline
+The result of adding x to every entry in the row vector y
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator+; (complex_matrix x, complex y); -->
+\index{{\tt \bfseries operator\_add }!{\tt (complex\_matrix x, complex y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator+`**`(complex_matrix x, complex y)`<br>\newline
+The result of adding y to every entry in the matrix x
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator+; (complex x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_add }!{\tt (complex x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator+`**`(complex x, complex_matrix y)`<br>\newline
+The result of adding x to every entry in the matrix y
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator-; (complex_vector x, complex y); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (complex\_vector x, complex y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator-`**`(complex_vector x, complex y)`<br>\newline
+The result of subtracting y from every entry in the vector x
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator-; (complex x, complex_vector y); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (complex x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator-`**`(complex x, complex_vector y)`<br>\newline
+The result of adding x to every entry in the negation of the vector y
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator-; (complex_row_vector x, complex y); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (row\_complex\_vector x, complex y): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator-`**`(complex_row_vector x, complex y)`<br>\newline
+The result of subtracting y from every entry in the row vector x
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator-; (complex x, complex_row_vector y); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (complex x, row\_complex\_vector y): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator-`**`(complex x, complex_row_vector y)`<br>\newline
+The result of adding x to every entry in the negation of the row vector y
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator-; (complex_matrix x, complex y); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (complex\_matrix x, complex y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator-`**`(complex_matrix x, complex y)`<br>\newline
+The result of subtracting y from every entry in the matrix x
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator-; (complex x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_subtract }!{\tt (complex x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator-`**`(complex x, complex_matrix y)`<br>\newline
+The result of adding x to every entry in negation of the matrix y
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator/; (complex_vector x, complex y); -->
+\index{{\tt \bfseries operator\_divide }!{\tt (complex\_vector x, complex y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator/`**`(complex_vector x, complex y)`<br>\newline
+The result of dividing each entry in the vector x by y
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator/; (complex_row_vector x, complex y); -->
+\index{{\tt \bfseries operator\_divide }!{\tt (row\_complex\_vector x, complex y): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator/`**`(complex_row_vector x, complex y)`<br>\newline
+The result of dividing each entry in the row vector x by y
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator/; (complex_matrix x, complex y); -->
+\index{{\tt \bfseries operator\_divide }!{\tt (complex\_matrix x, complex y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator/`**`(complex_matrix x, complex y)`<br>\newline
+The result of dividing each entry in the matrix x by y
+{{< since 2.30 >}}
+
+
+## Complex Transposition Operator
+
+Complex complex_matrix transposition is represented using a postfix operator.
+
+<!-- complex_matrix; operator'; (complex_matrix x); -->
+\index{{\tt \bfseries operator\_transpose }!{\tt (complex\_matrix x): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator'`**`(complex_matrix x)`<br>\newline
+The transpose of the matrix `x`, written as `x'`
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator'; (complex_vector x); -->
+\index{{\tt \bfseries operator\_transpose }!{\tt (complex\_vector x): row\_complex\_vector}|hyperpage}
+
+`complex_row_vector` **`operator'`**`(complex_vector x)`<br>\newline
+The transpose of the vector `x`, written as `x'`
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator'; (complex_row_vector x); -->
+\index{{\tt \bfseries operator\_transpose }!{\tt (row\_complex\_vector x): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator'`**`(complex_row_vector x)`<br>\newline
+The transpose of the row vector `x`, written as `x'`
+{{< since 2.30 >}}
+
+
+
+## Complex elementwise functions
+
+As in the real case, elementwise complex functions apply a function to
+each element of a vector or matrix, returning a result of the same
+shape as the argument.
+
+<!-- complex_vector; operator.*; (complex_vector x, complex_vector y); -->
+\index{{\tt \bfseries operator\_elt\_multiply }!{\tt (complex\_vector x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator.*`**`(complex_vector x, complex_vector y)`<br>\newline
+The elementwise product of `x` and `y`
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator.*; (complex_row_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries operator\_elt\_multiply }!{\tt (complex\_row\_vector x, complex\_row\_vector y): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`operator.*`**`(complex_row_vector x, complex_row_vector y)`<br>\newline
+The elementwise product of `x` and `y`
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator.*; (complex_matrix x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_elt\_multiply }!{\tt (complex\_matrix x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator.*`**`(complex_matrix x, complex_matrix y)`<br>\newline
+The elementwise product of `x` and `y`
+{{< since 2.30 >}}
+
+
+
+<!-- complex_vector; operator./; (complex_vector x, complex_vector y); -->
+\index{{\tt \bfseries operator\_elt\_divide }!{\tt (complex\_vector x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator./`**`(complex_vector x, complex_vector y)`<br>\newline
+The elementwise quotient of `x` and `y`
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator./; (complex x, complex_vector y); -->
+\index{{\tt \bfseries operator\_elt\_divide }!{\tt (complex x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator./`**`(complex x, complex_vector y)`<br>\newline
+The elementwise quotient of `x` and `y`
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator./; (complex_vector x, complex y); -->
+\index{{\tt \bfseries operator\_elt\_divide }!{\tt (complex\_vector x, complex y): complex\_vector}|hyperpage}
+
+`complex_vector` **`operator./`**`(complex_vector x, complex y)`<br>\newline
+The elementwise quotient of `x` and `y`
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator./; (complex_row_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries operator\_elt\_divide }!{\tt (complex\_row\_vector x, complex\_row\_vector y): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`operator./`**`(complex_row_vector x, complex_row_vector y)`<br>\newline
+The elementwise quotient of `x` and `y`
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator./; (complex x, complex_row_vector y); -->
+\index{{\tt \bfseries operator\_elt\_divide }!{\tt (complex x, complex\_row\_vector y): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`operator./`**`(complex x, complex_row_vector y)`<br>\newline
+The elementwise quotient of `x` and `y`
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator./; (complex_row_vector x, complex y); -->
+\index{{\tt \bfseries operator\_elt\_divide }!{\tt (complex\_row\_vector x, complex y): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`operator./`**`(complex_row_vector x, complex y)`<br>\newline
+The elementwise quotient of `x` and `y`
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator./; (complex_matrix x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_elt\_divide }!{\tt (complex\_matrix x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator./`**`(complex_matrix x, complex_matrix y)`<br>\newline
+The elementwise quotient of `x` and `y`
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator./; (complex x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_elt\_divide }!{\tt (complex x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator./`**`(complex x, complex_matrix y)`<br>\newline
+The elementwise quotient of `x` and `y`
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator./; (complex_matrix x, complex y); -->
+\index{{\tt \bfseries operator\_elt\_divide }!{\tt (complex\_matrix x, complex y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator./`**`(complex_matrix x, complex y)`<br>\newline
+The elementwise quotient of `x` and `y`
+{{< since 2.30 >}}
+
+
+<!-- complex_vector; operator.^; (complex_vector x, complex_vector y); -->
+\index{{\tt \bfseries operator\_elt\_pow }!{\tt (complex\_vector x, complex\_vector y): vector}|hyperpage}
+
+`vector` **`operator.^`**`(complex_vector x, complex_vector y)`<br>\newline
+The elementwise power of y and x
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator.^; (complex_vector x, complex y); -->
+\index{{\tt \bfseries operator\_elt\_pow }!{\tt (complex\_vector x, complex y): vector}|hyperpage}
+
+`vector` **`operator.^`**`(complex_vector x, complex y)`<br>\newline
+The elementwise power of y and x
+{{< since 2.30 >}}
+
+<!-- complex_vector; operator.^; (complex x, complex_vector y); -->
+\index{{\tt \bfseries operator\_elt\_pow }!{\tt (complex x, complex\_vector y): vector}|hyperpage}
+
+`vector` **`operator.^`**`(complex x, complex_vector y)`<br>\newline
+The elementwise power of y and x
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator.^; (complex_row_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries operator\_elt\_pow }!{\tt (complex\_row\_vector x, complex\_row\_vector y): complex\_row\_vector}|hyperpage}
+
+`row_vector` **`operator.^`**`(complex_row_vector x, complex_row_vector y)`<br>\newline
+The elementwise power of y and x
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator.^; (complex_row_vector x, complex y); -->
+\index{{\tt \bfseries operator\_elt\_pow }!{\tt (complex\_row\_vector x, complex y): complex\_row\_vector}|hyperpage}
+
+`row_vector` **`operator.^`**`(complex_row_vector x, complex y)`<br>\newline
+The elementwise power of y and x
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; operator.^; (complex x, complex_row_vector y); -->
+\index{{\tt \bfseries operator\_elt\_pow }!{\tt (complex x, complex\_row\_vector y): complex\_row\_vector}|hyperpage}
+
+`row_vector` **`operator.^`**`(complex x, complex_row_vector y)`<br>\newline
+The elementwise power of y and x
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator.^; ( complex_matrix x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_elt\_pow }!{\tt ( complex\_matrix x, complex\_matrix y): matrix}|hyperpage}
+
+`matrix` **`operator.^`**`( complex_matrix x, complex_matrix y)`<br>\newline
+The elementwise power of y and x
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator.^; ( complex_matrix x, complex y); -->
+\index{{\tt \bfseries operator\_elt\_pow }!{\tt ( complex\_matrix x, complex y): matrix}|hyperpage}
+
+`matrix` **`operator.^`**`( complex_matrix x, complex y)`<br>\newline
+The elementwise power of y and x
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator.^; (complex x, complex_matrix y); -->
+\index{{\tt \bfseries operator\_elt\_pow }!{\tt (complex x, complex\_matrix y): matrix}|hyperpage}
+
+`matrix` **`operator.^`**`(complex x, complex_matrix y)`<br>\newline
+The elementwise power of y and x
+{{< since 2.30 >}}
+
+
+## Dot products and specialized products for complex matrices
+
+<!-- complex; dot_product; (complex_vector x, complex_vector y); -->
+\index{{\tt \bfseries dot\_product }!{\tt (complex\_vector x, complex\_vector y): complex}|hyperpage}
+
+`complex` **`dot_product`**`(complex_vector x, complex_vector y)`<br>\newline
+The dot product of x and y
+{{< since 2.30 >}}
+
+<!-- complex; dot_product; (complex_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries dot\_product }!{\tt (complex\_vector x, complex\_row\_vector y): complex}|hyperpage}
+
+`complex` **`dot_product`**`(complex_vector x, complex_row_vector y)`<br>\newline
+The dot product of x and y
+{{< since 2.30 >}}
+
+<!-- complex; dot_product; (complex_row_vector x, complex_vector y); -->
+\index{{\tt \bfseries dot\_product }!{\tt (complex\_row\_vector x, complex\_vector y): complex}|hyperpage}
+
+`complex` **`dot_product`**`(complex_row_vector x, complex_vector y)`<br>\newline
+The dot product of x and y
+{{< since 2.30 >}}
+
+
+<!-- complex; dot_product; (complex_row_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries dot\_product }!{\tt (complex\_row\_vector x, complex\_row\_vector y): complex}|hyperpage}
+
+`complex` **`dot_product`**`(complex_row_vector x, complex_row_vector y)`<br>\newline
+The dot product of x and y
+{{< since 2.30 >}}
+
+
+<!-- complex_row_vector; columns_dot_product; (complex_vector x, complex_vector y); -->
+\index{{\tt \bfseries columns\_dot\_product }!{\tt (complex\_vector x, complex\_vector y): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`columns_dot_product`**`(complex_vector x, complex_vector y)`<br>\newline
+The dot product of the columns of x and y
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; columns_dot_product; (complex_row_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries columns\_dot\_product }!{\tt (complex\_row\_vector x, complex\_row\_vector y): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`columns_dot_product`**`(complex_row_vector x, complex_row_vector y)`<br>\newline
+The dot product of the columns of x and y
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; columns_dot_product; (complex_matrix x, complex_matrix y); -->
+\index{{\tt \bfseries columns\_dot\_product }!{\tt (complex\_matrix x, complex\_matrix y): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`columns_dot_product`**`(complex_matrix x, complex_matrix y)`<br>\newline
+The dot product of the columns of x and y
+{{< since 2.30 >}}
+
+<!-- complex_vector; rows_dot_product; (complex_vector x, complex_vector y); -->
+\index{{\tt \bfseries rows\_dot\_product }!{\tt (complex\_vector x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`rows_dot_product`**`(complex_vector x, complex_vector y)`<br>\newline
+The dot product of the rows of x and y
+{{< since 2.30 >}}
+
+<!-- complex_vector; rows_dot_product; (complex_row_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries rows\_dot\_product }!{\tt (complex\_row\_vector x, complex\_row\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`rows_dot_product`**`(complex_row_vector x, complex_row_vector y)`<br>\newline
+The dot product of the rows of x and y
+{{< since 2.30 >}}
+
+<!-- complex_vector; rows_dot_product; (complex_matrix x, complex_matrix y); -->
+\index{{\tt \bfseries rows\_dot\_product }!{\tt (complex\_matrix x, complex\_matrix y): complex\_vector}|hyperpage}
+
+`complex_vector` **`rows_dot_product`**`(complex_matrix x, complex_matrix y)`<br>\newline
+The dot product of the rows of x and y
+{{< since 2.30 >}}
+
+<!-- complex; dot_self; (complex_vector x); -->
+\index{{\tt \bfseries dot\_self }!{\tt (complex\_vector x): complex}|hyperpage}
+
+`complex` **`dot_self`**`(complex_vector x)`<br>\newline
+The dot product of the vector x with itself
+{{< since 2.30 >}}
+
+
+<!-- complex; dot_self; (complex_row_vector x); -->
+\index{{\tt \bfseries dot\_self }!{\tt (complex\_row\_vector x): complex}|hyperpage}
+
+`complex` **`dot_self`**`(complex_row_vector x)`<br>\newline
+The dot product of the row vector x with itself
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; columns_dot_self; (complex_vector x); -->
+\index{{\tt \bfseries columns\_dot\_self }!{\tt (complex\_vector x): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`columns_dot_self`**`(complex_vector x)`<br>\newline
+The dot product of the columns of x with themselves
+{{< since 2.30 >}}
+
+
+<!-- complex_row_vector; columns_dot_self; (complex_row_vector x); -->
+\index{{\tt \bfseries columns\_dot\_self }!{\tt (complex\_row\_vector x): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`columns_dot_self`**`(complex_row_vector x)`<br>\newline
+The dot product of the columns of x with themselves
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; columns_dot_self; (complex_matrix x); -->
+\index{{\tt \bfseries columns\_dot\_self }!{\tt (complex\_matrix x): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`columns_dot_self`**`(complex_matrix x)`<br>\newline
+The dot product of the columns of x with themselves
+{{< since 2.30 >}}
+
+<!-- complex_vector; rows_dot_self; (complex_vector x); -->
+\index{{\tt \bfseries rows\_dot\_self }!{\tt (complex\_vector x): complex\_vector}|hyperpage}
+
+`complex_vector` **`rows_dot_self`**`(complex_vector x)`<br>\newline
+The dot product of the rows of x with themselves
+{{< since 2.30 >}}
+
+<!-- complex_vector; rows_dot_self; (complex_row_vector x); -->
+\index{{\tt \bfseries rows\_dot\_self }!{\tt (complex\_row\_vector x): complex\_vector}|hyperpage}
+
+`complex_vector` **`rows_dot_self`**`(complex_row_vector x)`<br>\newline
+The dot product of the rows of x with themselves
+{{< since 2.30 >}}
+
+
+<!-- complex_vector; rows_dot_self; (complex_matrix x); -->
+\index{{\tt \bfseries rows\_dot\_self }!{\tt (complex\_matrix x): complex\_vector}|hyperpage}
+
+`complex_vector` **`rows_dot_self`**`(complex_matrix x)`<br>\newline
+The dot product of the rows of x with themselves
+{{< since 2.30 >}}
+
+### Specialized products
+
+<!-- complex_matrix; diag_pre_multiply; (complex_vector v, complex_matrix m); -->
+\index{{\tt \bfseries diag\_pre\_multiply }!{\tt (complex\_vector v, complex\_matrix m): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`diag_pre_multiply`**`(complex_vector v, complex_matrix m)`<br>\newline
+Return the product of the diagonal matrix formed from the vector v and
+the matrix m, i.e., `diag_matrix(v) * m`.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; diag_pre_multiply; (complex_row_vector v, complex_matrix m); -->
+\index{{\tt \bfseries diag\_pre\_multiply }!{\tt (complex\_row\_vector v, complex\_matrix m): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`diag_pre_multiply`**`(complex_row_vector v, complex_matrix m)`<br>\newline
+Return the product of the diagonal matrix formed from the vector rv
+and the matrix m, i.e., `diag_matrix(rv) * m`.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; diag_post_multiply; (complex_matrix m, complex_vector v); -->
+\index{{\tt \bfseries diag\_post\_multiply }!{\tt (complex\_matrix m, complex\_vector v): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`diag_post_multiply`**`(complex_matrix m, complex_vector v)`<br>\newline
+Return the product of the matrix m and the diagonal matrix formed from
+the vector v, i.e., `m * diag_matrix(v)`.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; diag_post_multiply; (complex_matrix m, complex_row_vector v); -->
+\index{{\tt \bfseries diag\_post\_multiply }!{\tt (complex\_matrix m, complex\_row\_vector v): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`diag_post_multiply`**`(complex_matrix m, complex_row_vector v)`<br>\newline
+Return the product of the matrix `m` and the diagonal matrix formed
+from the the row vector `rv`, i.e., `m * diag_matrix(rv)`.
+{{< since 2.30 >}}
+
+
+## Complex reductions
+
+### Sums and products
+
+<!-- complex; sum; (complex_vector x); -->
+\index{{\tt \bfseries sum }!{\tt (complex\_vector x): complex}|hyperpage}
+
+`complex` **`sum`**`(complex_vector x)`<br>\newline
+The sum of the values in x, or 0 if x is empty
+{{< since 2.30 >}}
+
+<!-- complex; sum; (complex_row_vector x); -->
+\index{{\tt \bfseries sum }!{\tt (complex\_row\_vector x): complex}|hyperpage}
+
+`complex` **`sum`**`(complex_row_vector x)`<br>\newline
+The sum of the values in x, or 0 if x is empty
+{{< since 2.30 >}}
+
+<!-- complex; sum; (complex_matrix x); -->
+\index{{\tt \bfseries sum }!{\tt (complex\_matrix x): complex}|hyperpage}
+
+`complex` **`sum`**`(complex_matrix x)`<br>\newline
+The sum of the values in x, or 0 if x is empty
+{{< since 2.30 >}}
+
+<!-- complex; prod; (complex_vector x); -->
+\index{{\tt \bfseries prod }!{\tt (complex\_vector x): complex}|hyperpage}
+
+`complex` **`prod`**`(complex_vector x)`<br>\newline
+The product of the values in x, or 1 if x is empty
+{{< since 2.30 >}}
+
+<!-- complex; prod; (complex_row_vector x); -->
+\index{{\tt \bfseries prod }!{\tt (complex\_row\_vector x): complex}|hyperpage}
+
+`complex` **`prod`**`(complex_row_vector x)`<br>\newline
+The product of the values in x, or 1 if x is empty
+{{< since 2.30 >}}
+
+<!-- complex; prod; (complex_matrix x); -->
+\index{{\tt \bfseries prod }!{\tt (complex\_matrix x): complex}|hyperpage}
+
+`complex` **`prod`**`(complex_matrix x)`<br>\newline
+The product of the values in x, or 1 if x is empty
+{{< since 2.30 >}}
+
+
+## Vectorized accessor functions
+
+Much like with complex scalars, two functions are
+defined to get the real and imaginary components of complex-valued
+objects.
+
+### Type "demotion"
+
+These functions return the same shape (e.g., matrix, vector, row vector,
+or array) object as their input, but demoted to a `real` type. For example,
+`get_real(complex_matrix M)` yields a `matrix` containing the real component of
+each value in `M`.
+
+The following table contains examples of what this notation can mean:
+
+| Type `T`             | Type `T_demoted` |
+|:---------------------|:-----------------|
+| `complex`            | `real`           |
+| `complex_vector`     | `vector`         |
+| `complex_row_vector` | `row_vector`     |
+| `complex_matrix`     | `matrix`         |
+| `array[] complex`    | `array[] real`   |
+| `array[,,] complex`  | `array[,,] real` |
+
+
+
+### Real and imaginary component accessor functions
+
+<!-- T; get_real; (T x); -->
+\index{{\tt \bfseries get\_real }!{\tt (T x): T\_demoted}|hyperpage}
+
+`T_demoted` **`get_real`**`(T x)`<br>\newline
+Given an object of complex type `T`, return the same shape object but of type
+`real` by getting the real component of each element of `x`.
+{{< since 2.30 >}}
+
+<!-- T; get_imag; (T x); -->
+\index{{\tt \bfseries get\_imag }!{\tt (T x): T\_demoted}|hyperpage}
+
+`T_demoted` **`get_imag`**`(T x)`<br>\newline
+Given an object of complex type `T`, return the same shape object but of type
+`real` by getting the imaginary component of each element of `x`.
+{{< since 2.30 >}}
+
+
+For example, given the Stan declaration
+
+```stan
+  complex_vector[2] z = [3+4i, 5+6i]';
+
+```
+
+A call `get_real(z)` will yield the vector `[3, 5]'`, and a call `get_imag(z)`
+will yield the vector `[4, 6]'`.
+
+
+## Complex broadcast functions
+The following broadcast functions allow vectors, row vectors and matrices to be
+created by copying a single element into all of their cells. Matrices may also
+be created by stacking copies of row vectors vertically or stacking copies of
+column vectors horizontally.
+
+<!-- complex_vector; rep_vector; (complex z, int m); -->
+\index{{\tt \bfseries rep\_vector }!{\tt (complex z, int m): complex\_vector}|hyperpage}
+
+`complex_vector` **`rep_vector`**`(complex z, int m)`<br>\newline
+Return the size m (column) vector consisting of copies of z.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; rep_row_vector; (complex z, int n); -->
+\index{{\tt \bfseries rep\_row\_vector }!{\tt (complex z, int n): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`rep_row_vector`**`(complex z, int n)`<br>\newline
+Return the size n row vector consisting of copies of z.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; rep_matrix; (complex z, int m, int n); -->
+\index{{\tt \bfseries rep\_matrix }!{\tt (complex z, int m, int n): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`rep_matrix`**`(complex z, int m, int n)`<br>\newline
+Return the m by n matrix consisting of copies of z.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; rep_matrix; (complex_vector v, int n); -->
+\index{{\tt \bfseries rep\_matrix }!{\tt (complex\_vector v, int n): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`rep_matrix`**`(complex_vector v, int n)`<br>\newline
+Return the m by n matrix consisting of n copies of the (column) vector v of size m.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; rep_matrix; (complex_row_vector rv, int m); -->
+\index{{\tt \bfseries rep\_matrix }!{\tt (complex\_row\_vector rv, int m): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`rep_matrix`**`(complex_row_vector rv, int m)`<br>\newline
+Return the m by n matrix consisting of m copies of the row vector rv of size n.
+{{< since 2.30 >}}
+
+### Symmetrization
+
+<!-- complex_matrix; symmetrize_from_lower_tri; (complex_matrix A); -->
+\index{{\tt \bfseries symmetrize\_from\_lower\_tri }!{\tt (complex\_matrix A): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`symmetrize_from_lower_tri`**`(complex_matrix A)`<br>\newline
+Construct a symmetric matrix from the lower triangle of A.
+{{< since 2.30 >}}
+
+
+## Diagonal complex matrix functions
+
+<!-- complex_matrix; add_diag; (complex_matrix m, complex_row_vector d); -->
+\index{{\tt \bfseries add\_diag }!{\tt (complex\_matrix m, complex\_row\_vector d): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`add_diag`**`(complex_matrix m, complex_row_vector d)`<br>\newline
+Add row_vector `d` to the diagonal of matrix `m`.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; add_diag; (complex_matrix m, complex_vector d); -->
+\index{{\tt \bfseries add\_diag }!{\tt (complex\_matrix m, complex\_vector d): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`add_diag`**`(complex_matrix m, complex_vector d)`<br>\newline
+Add vector `d` to the diagonal of matrix `m`.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; add_diag; (complex_matrix m, complex_real d); -->
+\index{{\tt \bfseries add\_diag }!{\tt (complex\_matrix m, complex d): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`add_diag`**`(complex_matrix m, complex d)`<br>\newline
+Add scalar `d` to every diagonal element of matrix `m`.
+{{< since 2.30 >}}
+
+<!-- complex_vector; diagonal; (complex_matrix x); -->
+\index{{\tt \bfseries diagonal }!{\tt (complex\_matrix x): complex\_vector}|hyperpage}
+
+`complex_vector` **`diagonal`**`(complex_matrix x)`<br>\newline
+The diagonal of the matrix x
+{{< since 2.30 >}}
+
+<!-- complex_matrix; diag_matrix; (complex_vector x); -->
+\index{{\tt \bfseries diag\_matrix }!{\tt (complex\_vector x): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`diag_matrix`**`(complex_vector x)`<br>\newline
+The diagonal matrix with diagonal x
+{{< since 2.30 >}}
+
+## Slicing and blocking functions for complex matrices
+Stan provides several functions for generating slices or blocks or diagonal
+entries for matrices.
+
+### Columns and rows
+
+<!-- complex_vector; col; (complex_matrix x, int n); -->
+\index{{\tt \bfseries col }!{\tt (complex\_matrix x, int n): complex\_vector}|hyperpage}
+
+`complex_vector` **`col`**`(complex_matrix x, int n)`<br>\newline
+ The n-th column of matrix x
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; row; (complex_matrix x, int m); -->
+\index{{\tt \bfseries row }!{\tt (complex\_matrix x, int m): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`row`**`(complex_matrix x, int m)`<br>\newline
+ The m-th row of matrix x
+{{< since 2.30 >}}
+
+### Block operations
+
+#### Matrix slicing operations
+
+<!-- complex_matrix; block; (complex_matrix x, int i, int j, int n_rows, int n_cols); -->
+\index{{\tt \bfseries block }!{\tt (complex\_matrix x, int i, int j, int n\_rows, int n\_cols): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`block`**`(complex_matrix x, int i, int j, int n_rows, int n_cols)`<br>\newline
+Return the submatrix of x that starts at row i and column j and extends n_rows rows and n_cols columns.
+{{< since 2.30 >}}
+
+<!-- complex_vector; sub_col; (complex_matrix x, int i, int j, int n_rows); -->
+\index{{\tt \bfseries sub\_col }!{\tt (complex\_matrix x, int i, int j, int n\_rows): complex\_vector}|hyperpage}
+
+`complex_vector` **`sub_col`**`(complex_matrix x, int i, int j, int n_rows)`<br>\newline
+ Return the sub-column of x that starts at row i and column j and extends n_rows rows and 1 column.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; sub_row; (complex_matrix x, int i, int j, int n_cols); -->
+\index{{\tt \bfseries sub\_row }!{\tt (complex\_matrix x, int i, int j, int n\_cols): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`sub_row`**`(complex_matrix x, int i, int j, int n_cols)`<br>\newline
+ Return the sub-row of x that starts at row i and column j and extends 1 row and n_cols columns.
+{{< since 2.30 >}}
+
+#### Vector slicing operations.
+
+<!-- complex_vector; head; (complex_vector v, int n); -->
+\index{{\tt \bfseries head }!{\tt (complex\_vector v, int n): complex\_vector}|hyperpage}
+
+`complex_vector` **`head`**`(complex_vector v, int n)`<br>\newline
+ Return the vector consisting of the first n elements of v.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; head; (complex_row_vector rv, int n); -->
+\index{{\tt \bfseries head }!{\tt (complex\_row\_vector rv, int n): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`head`**`(complex_row_vector rv, int n)`<br>\newline
+ Return the row vector consisting of the first n elements of rv.
+{{< since 2.30 >}}
+
+<!-- complex_vector; tail; (complex_vector v, int n); -->
+\index{{\tt \bfseries tail }!{\tt (complex\_vector v, int n): complex\_vector}|hyperpage}
+
+`complex_vector` **`tail`**`(complex_vector v, int n)`<br>\newline
+ Return the vector consisting of the last n elements of v.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; tail; (complex_row_vector rv, int n); -->
+\index{{\tt \bfseries tail }!{\tt (complex\_row\_vector rv, int n): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`tail`**`(complex_row_vector rv, int n)`<br>\newline
+ Return the row vector consisting of the last n elements of rv.
+{{< since 2.30 >}}
+
+<!-- complex_vector; segment; (complex_vector v, int i, int n); -->
+\index{{\tt \bfseries segment }!{\tt (complex\_vector v, int i, int n): complex\_vector}|hyperpage}
+
+`complex_vector` **`segment`**`(complex_vector v, int i, int n)`<br>\newline
+Return the vector consisting of the n elements of v starting at i; i.e.,
+elements i through through i + n - 1.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; segment; (complex_row_vector rv, int i, int n); -->
+\index{{\tt \bfseries segment }!{\tt (complex\_row\_vector rv, int i, int n): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`segment`**`(complex_row_vector rv, int i, int n)`<br>\newline
+Return the row vector consisting of the n elements of rv starting at i; i.e.,
+elements i through through i + n - 1.
+{{< since 2.30 >}}
+
+
+## Complex matrix concatenation
+
+### Horizontal concatenation
+
+<!-- complex_matrix; append_col; (complex_matrix x, complex_matrix y); -->
+\index{{\tt \bfseries append\_col }!{\tt (complex\_matrix x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`append_col`**`(complex_matrix x, complex_matrix y)`<br>\newline
+Combine matrices x and y by column. The matrices must have the same number of
+rows.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; append_col; (complex_matrix x, complex_vector y); -->
+\index{{\tt \bfseries append\_col }!{\tt (complex\_matrix x, complex\_vector y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`append_col`**`(complex_matrix x, complex_vector y)`<br>\newline
+Combine matrix x and vector y by column. The matrix and the vector must have
+the same number of rows.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; append_col; (complex_vector x, complex_matrix y); -->
+\index{{\tt \bfseries append\_col }!{\tt (complex\_vector x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`append_col`**`(complex_vector x, complex_matrix y)`<br>\newline
+Combine vector x and matrix y by column. The vector and the matrix must have
+the same number of rows.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; append_col; (complex_vector x, complex_vector y); -->
+\index{{\tt \bfseries append\_col }!{\tt (complex\_vector x, complex\_vector y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`append_col`**`(complex_vector x, complex_vector y)`<br>\newline
+Combine vectors x and y by column. The vectors must have the same number of
+rows.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; append_col; (complex_row_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries append\_col }!{\tt (complex\_row\_vector x, complex\_row\_vector y): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`append_col`**`(complex_row_vector x, complex_row_vector y)`<br>\newline
+Combine row vectors x and y (of any size) into another row vector by appending y
+to the end of x.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; append_col; (complex x, complex_row_vector y); -->
+\index{{\tt \bfseries append\_col }!{\tt (complex x, complex\_row\_vector y): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`append_col`**`(complex x, complex_row_vector y)`<br>\newline
+Append x to the front of y, returning another row vector.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; append_col; (complex_row_vector x, complex y); -->
+\index{{\tt \bfseries append\_col }!{\tt (complex\_row\_vector x, complex y): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`append_col`**`(complex_row_vector x, complex y)`<br>\newline
+Append y to the end of x, returning another row vector.
+{{< since 2.30 >}}
+
+### Vertical concatenation
+
+<!-- complex_matrix; append_row; (complex_matrix x, complex_matrix y); -->
+\index{{\tt \bfseries append\_row }!{\tt (complex\_matrix x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`append_row`**`(complex_matrix x, complex_matrix y)`<br>\newline
+Combine matrices x and y by row. The matrices must have the same number of
+columns.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; append_row; (complex_matrix x, complex_row_vector y); -->
+\index{{\tt \bfseries append\_row }!{\tt (complex\_matrix x, complex\_row\_vector y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`append_row`**`(complex_matrix x, complex_row_vector y)`<br>\newline
+Combine matrix x and row vector y by row. The matrix and the row vector must
+have the same number of columns.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; append_row; (complex_row_vector x, complex_matrix y); -->
+\index{{\tt \bfseries append\_row }!{\tt (complex\_row\_vector x, complex\_matrix y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`append_row`**`(complex_row_vector x, complex_matrix y)`<br>\newline
+Combine row vector x and matrix y by row. The row vector and the matrix must
+have the same number of columns.
+{{< since 2.30 >}}
+
+<!-- complex_matrix; append_row; (complex_row_vector x, complex_row_vector y); -->
+\index{{\tt \bfseries append\_row }!{\tt (complex\_row\_vector x, complex\_row\_vector y): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`append_row`**`(complex_row_vector x, complex_row_vector y)`<br>\newline
+Combine row vectors x and y by row. The row vectors must have the same number
+of columns.
+{{< since 2.30 >}}
+
+<!-- complex_vector; append_row; (complex_vector x, complex_vector y); -->
+\index{{\tt \bfseries append\_row }!{\tt (complex\_vector x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`append_row`**`(complex_vector x, complex_vector y)`<br>\newline
+Concatenate vectors x and y of any size into another vector.
+{{< since 2.30 >}}
+
+<!-- complex_vector; append_row; (complex x, complex_vector y); -->
+\index{{\tt \bfseries append\_row }!{\tt (complex x, complex\_vector y): complex\_vector}|hyperpage}
+
+`complex_vector` **`append_row`**`(complex x, complex_vector y)`<br>\newline
+Append x to the top of y, returning another vector.
+{{< since 2.30 >}}
+
+<!-- complex_vector; append_row; (complex_vector x, complex y); -->
+\index{{\tt \bfseries append\_row }!{\tt (complex\_vector x, complex y): complex\_vector}|hyperpage}
+
+`complex_vector` **`append_row`**`(complex_vector x, complex y)`<br>\newline
+Append y to the bottom of x, returning another vector.
+{{< since 2.30 >}}
+
+
+## Complex special matrix functions
+
+### Fast Fourier transforms
+
+Stan's fast Fourier transform functions take the standard definition
+of the discrete Fourier transform (see the definitions below for
+specifics) and scale the inverse transform by one over dimensionality
+so that the following identities hold for complex vectors `u` and `v`,
+
+```
+    fft(inv_fft(u)) == u        inv_fft(fft(v)) == v
+```
+
+and in the 2-dimensional case for complex matrices `A` and `B`,
+
+```
+    fft2(inv_fft2(A)) == A      inv_fft2(fft2(B)) == B
+```
+
+Although the FFT functions only accept complex inputs, real vectors
+and matrices will be promoted to their complex counterparts before
+applying the FFT functions.
+
+
+<!-- complex_vector; fft; (complex_vector v); -->
+\index{{\tt \bfseries fft }!{\tt (complex\_vector v): complex\_vector}|hyperpage}
+
+`complex_vector` **`fft`**`(complex_vector v)`<br>\newline
+Return the discrete Fourier transform of the specified complex vector `v`.
+If $v \in \mathbb{C}^N$ is a complex vector with $N$ elements and $u =
+\textrm{fft}(v)$, then
+\begin{equation*}
+u_n = \sum_{m < n}
+v_m \cdot
+\exp\left(\frac{-n \cdot m \cdot 2 \cdot \pi \cdot \sqrt{-1}}{N}\right).
+\end{equation*}
+{{< since 2.30 >}}
+
+
+<!-- complex_matrix; fft2; (complex_matrix m); -->
+\index{{\tt \bfseries fft2 }!{\tt (complex\_matrix m): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`fft2`**`(complex_matrix m)`<br>\newline
+Return the 2D discrete Fourier transform of the specified complex
+matrix `m`.  The 2D FFT is defined as the result of applying the FFT
+to each row and then to each column.
+{{< since 2.30 >}}
+
+
+<!-- complex_vector; inv_fft; (complex_vector u); -->
+\index{{\tt \bfseries inv\_fft }!{\tt (complex\_vector u): complex\_vector}|hyperpage}
+
+`complex_vector` **`inv_fft`**`(complex_vector u)`<br>\newline
+Return the inverse of the discrete Fourier transform of the specified complex
+vector `u`.  The inverse FFT (this function) is scaled so that
+`fft(inv_fft(u)) == u`.  If $u \in \mathbb{C}^N$ is a complex vector
+with $N$ elements and $v = \textrm{fft}^{-1}(u)$, then
+\begin{equation*}
+v_n =  \frac{1}{N} \sum_{m < n}
+u_m \cdot
+\exp\left(\frac{n \cdot m \cdot 2 \cdot \pi \cdot \sqrt{-1}}{N}\right).
+\end{equation*}
+This only differs from the FFT by the sign inside the exponential and
+the scaling.  The $\frac{1}{N}$ scaling ensures that `fft(inv_fft(u))
+== u` and `inv_fft(fft(v)) == v` for complex vectors `u` and `v`.
+{{< since 2.30 >}}
+
+
+<!-- complex_matrix; inv_fft2; (complex_matrix m); -->
+\index{{\tt \bfseries inv\_fft2 }!{\tt (complex\_matrix m): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`inv_fft2`**`(complex_matrix m)`<br>\newline
+Return the inverse of the 2D discrete Fourier transform of the
+specified complex matrix `m`.  The 2D inverse FFT is defined as the
+result of applying the inverse FFT to each row and then to each
+column. The invertible scaling of the inverse FFT ensures
+`fft2(inv_fft2(A)) == A` and `inv_fft2(fft2(B)) == B`.
+{{< since 2.30 >}}
+
+
+### Cumulative sums
+
+The cumulative sum of a sequence $x_1,\ldots,x_N$ is the sequence
+$y_1,\ldots,y_N$, where \begin{equation*} y_n = \sum_{m = 1}^{n} x_m. \end{equation*}
+
+<!-- array[] complex; cumulative_sum; (array[] complex x); -->
+\index{{\tt \bfseries cumulative\_sum }!{\tt (array[] complex x): array[] real}|hyperpage}
+
+`array[] complex` **`cumulative_sum`**`(array[] complex x)`<br>\newline
+The cumulative sum of x
+{{< since 2.30 >}}
+
+<!-- complex_vector; cumulative_sum; (complex_vector v); -->
+\index{{\tt \bfseries cumulative\_sum }!{\tt (complex\_vector v): complex\_vector}|hyperpage}
+
+`complex_vector` **`cumulative_sum`**`(complex_vector v)`<br>\newline
+The cumulative sum of v
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; cumulative_sum; (complex_row_vector rv); -->
+\index{{\tt \bfseries cumulative\_sum }!{\tt (complex\_row\_vector rv): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`cumulative_sum`**`(complex_row_vector rv)`<br>\newline
+The cumulative sum of rv
+{{< since 2.30 >}}
+
+
+## Complex linear algebra functions
+
+### Complex matrix division operators and functions
+In general, it is much more efficient and also more arithmetically stable to use
+matrix division than to multiply by an inverse.
+
+#### Complex matrix division operators
+
+<!-- complex_row_vector; operator/; (complex_row_vector b, complex_matrix A); -->
+\index{{\tt \bfseries operator/ }!{\tt (complex\_row\_vector b, complex\_matrix A): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`operator/`**`(complex_row_vector b, complex_matrix A)`<br>\newline
+The right division of b by A; equivalently `b * inverse(A)`
+{{< since 2.30 >}}
+
+<!-- complex_matrix; operator/; (complex_matrix B, complex_matrix A); -->
+\index{{\tt \bfseries operator/ }!{\tt (complex\_matrix B, complex\_matrix A): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`operator/`**`(complex_matrix B, complex_matrix A)`<br>\newline
+The right division of B by A; equivalently `B * inverse(A)`
+{{< since 2.30 >}}
+
+### Linear algebra functions
+
+#### Trace
+
+<!-- complex; trace; (complex_matrix A); -->
+\index{{\tt \bfseries trace }!{\tt (complex\_matrix A): complex}|hyperpage}
+
+`complex` **`trace`**`(complex_matrix A)`<br>\newline
+ The trace of A, or 0 if A is empty; A is not required to be diagonal
+{{< since 2.30 >}}
+
+#### Eigendecomposition
+
+<!-- complex_vector; eigenvalues; (complex_matrix A); -->
+\index{{\tt \bfseries eigenvalues }!{\tt (complex\_matrix A): complex\_vector}|hyperpage}
+
+`complex_vector` **`eigenvalues`**`(complex_matrix A)`<br>\newline
+The complex-valued vector of eigenvalues of the matrix `A`. The eigenvalues are
+repeated according to their algebraic multiplicity, so there are as many
+eigenvalues as rows in the matrix. The eigenvalues are not sorted in any
+particular order.
+{{< since 2.32 >}}
+
+<!-- complex_matrix; eigenvectors; (complex_matrix A); -->
+\index{{\tt \bfseries eigenvectors }!{\tt (complex\_matrix A): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`eigenvectors`**`(complex_matrix A)`<br>\newline
+The matrix with the complex-valued (column) eigenvectors of the matrix `A` in the
+same order as returned by the function `eigenvalues`
+{{< since 2.32 >}}
+
+<!-- tuple(complex_matrix, complex_vector); eigendecompose; (complex_matrix A); -->
+\index{{\tt \bfseries eigendecompose }!{\tt (complex\_matrix A): tuple(complex\_matrix, complex\_vector)}|hyperpage}
+
+`tuple(complex_matrix, complex_vector)` **`eigendecompose`**`(complex_matrix A)`<br>\newline
+Return the matrix of (column) eigenvectors and vector of eigenvalues of the
+matrix `A`. This function is equivalent to `(eigenvectors(A), eigenvalues(A))`
+but with a lower computational cost due to the shared work between the two
+results.
+{{< since 2.33 >}}
+
+<!-- complex_vector; eigenvalues_sym; (complex_matrix A); -->
+\index{{\tt \bfseries eigenvalues\_sym }!{\tt (complex\_matrix A): complex\_vector}|hyperpage}
+
+`complex_vector` **`eigenvalues_sym`**`(complex_matrix A)`<br>\newline
+The vector of eigenvalues of a symmetric matrix `A` in ascending order
+{{< since 2.30 >}}
+
+<!-- complex_matrix; eigenvectors_sym; (complex_matrix A); -->
+\index{{\tt \bfseries eigenvectors\_sym }!{\tt (complex\_matrix A): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`eigenvectors_sym`**`(complex_matrix A)`<br>\newline
+The matrix with the (column) eigenvectors of symmetric matrix `A` in the
+same order as returned by the function `eigenvalues_sym`
+{{< since 2.30 >}}
+
+<!-- tuple(complex_matrix, complex_vector); eigendecompose_sym; (complex_matrix A); -->
+\index{{\tt \bfseries eigendecompose\_sym }!{\tt (complex\_matrix A): tuple(complex\_matrix, complex\_vector)}|hyperpage}
+
+`tuple(complex_matrix, complex_vector)` **`eigendecompose_sym`**`(complex_matrix A)`<br>\newline
+Return the matrix of (column) eigenvectors and vector of eigenvalues of the
+symmetric matrix `A`. This function is equivalent to `(eigenvectors_sym(A),
+eigenvalues_sym(A))` but with a lower computational cost due to the shared work
+between the two results.
+{{< since 2.33 >}}
+
+Because multiplying an eigenvector by $-1$ results in an eigenvector,
+eigenvectors returned by a decomposition are only identified up to a
+sign change.  In order to compare the eigenvectors produced by Stan's
+eigendecomposition to others, signs may need to be normalized in some
+way, such as by fixing the sign of a component, or doing comparisons
+allowing a multiplication by $-1$.
+
+The condition number of a symmetric matrix is defined to be the ratio
+of the largest eigenvalue to the smallest eigenvalue.  Large condition
+numbers lead to difficulty in numerical algorithms such as computing
+inverses, and thus known as "ill conditioned."  The ratio can even be
+infinite in the case of singular matrices (i.e., those with
+eigenvalues of 0).
+
+#### Singular value decomposition
+
+The matrix A can be decomposed into a diagonal matrix of singular values, D, and
+matrices of its left and right singular vectors, U and V, \begin{equation*} A = U D V^T. \end{equation*}
+The matrices of singular vectors here are thin. That is for an $N$ by $P$ input A,
+$M = min(N, P)$, U is size $N$ by $M$ and V is size $P$ by $M$.
+
+<!-- vector; singular_values; (complex_matrix A); -->
+\index{{\tt \bfseries singular\_values }!{\tt (complex\_matrix A): vector}|hyperpage}
+
+`vector` **`singular_values`**`(complex_matrix A)`<br>\newline
+The singular values of `A` in descending order
+{{< since 2.30 >}}
+
+<!-- complex_matrix; svd_U; (complex_matrix A); -->
+\index{{\tt \bfseries svd\_U }!{\tt (complex\_matrix A): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`svd_U`**`(complex_matrix A)`<br>\newline
+The left-singular vectors of `A`
+{{< since 2.30 >}}
+
+<!-- complex_matrix; svd_V; (complex_matrix A); -->
+\index{{\tt \bfseries svd\_V }!{\tt (complex\_matrix A): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`svd_V`**`(complex_matrix A)`<br>\newline
+The right-singular vectors of `A`
+{{< since 2.30 >}}
+
+
+<!-- tuple(complex_matrix, vector, complex_matrix); svd; (complex_matrix A); -->
+\index{{\tt \bfseries svd }!{\tt (complex\_matrix A): tuple(complex\_matrix, vector, complex\_matrix)}|hyperpage}
+
+`tuple(complex_matrix, vector, complex_matrix)` **`svd`**`(complex_matrix A)`<br>\newline
+Returns a tuple containing the left-singular vectors of `A`, the
+singular values of `A` in descending order, and the right-singular values of
+`A`. This function is equivalent to `(svd_U(A), singular_values(A), svd_V(A))`
+but with a lower computational cost due to the shared work between the different
+components.
+{{< since 2.33 >}}
+
+#### Complex Schur Decomposition
+
+The complex Schur decomposition of a square matrix $A$ produces a
+complex unitary matrix $U$ and a complex upper-triangular Schur
+form matrix $T$ such that $$A = U \cdot T \cdot U^{-1}$$
+
+Since $U$ is unitary, its inverse is also its conjugate transpose,
+$U^{-1} = U^*$, $U^*(i, j) = \mathrm{conj}(U(j, i))$
+
+<!-- complex_matrix; complex_schur_decompose_t; (matrix A); -->
+\index{{\tt \bfseries complex\_schur\_decompose\_t }!{\tt (matrix A): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`complex_schur_decompose_t`**`(matrix A)`<br>\newline
+Compute the upper-triangular Schur form matrix of the complex Schur decomposition of `A`.
+{{< since 2.31 >}}
+
+
+<!-- complex_matrix; complex_schur_decompose_t; (complex_matrix A); -->
+\index{{\tt \bfseries complex\_schur\_decompose\_t }!{\tt (complex\_matrix A): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`complex_schur_decompose_t`**`(complex_matrix A)`<br>\newline
+Compute the upper-triangular Schur form matrix of the complex Schur decomposition of `A`.
+{{< since 2.31 >}}
+
+
+<!-- complex_matrix; complex_schur_decompose_u; (matrix A); -->
+\index{{\tt \bfseries complex\_schur\_decompose\_u }!{\tt (matrix A): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`complex_schur_decompose_u`**`(matrix A)`<br>\newline
+Compute the unitary matrix of the complex Schur decomposition of `A`.
+{{< since 2.31 >}}
+
+
+<!-- complex_matrix; complex_schur_decompose_u; (complex_matrix A); -->
+\index{{\tt \bfseries complex\_schur\_decompose\_u }!{\tt (complex\_matrix A): complex\_matrix}|hyperpage}
+
+`complex_matrix` **`complex_schur_decompose_u`**`(complex_matrix A)`<br>\newline
+Compute the unitary matrix of the complex Schur decomposition of `A`.
+{{< since 2.31 >}}
+
+
+<!-- tuple(complex_matrix, complex_matrix); complex_schur_decompose; (matrix A); -->
+\index{{\tt \bfseries complex\_schur\_decompose }!{\tt (matrix A): tuple(complex\_matrix, complex\_matrix)}|hyperpage}
+
+`tuple(complex_matrix, complex_matrix)` **`complex_schur_decompose`**`(matrix A)`<br>\newline
+Returns the unitary matrix and the upper-triangular Schur form matrix of the
+complex Schur decomposition of `A`. This function is equivalent to
+`(complex_schur_decompose_u(A), complex_schur_decompose_t(A))` but with a lower
+computational cost due to the shared work between the two results.
+This overload is equivalent to `complex_schur_decompose(to_complex(A,0))` but is
+more efficient.
+{{< since 2.33 >}}
+
+<!-- tuple(complex_matrix, complex_matrix); complex_schur_decompose; (complex_matrix A); -->
+\index{{\tt \bfseries complex\_schur\_decompose }!{\tt (complex\_matrix A): tuple(complex\_matrix, complex\_matrix)}|hyperpage}
+
+`tuple(complex_matrix, complex_matrix)` **`complex_schur_decompose`**`(complex_matrix A)`<br>\newline
+Returns the unitary matrix and the upper-triangular Schur form matrix of the
+complex Schur decomposition of `A`. This function is equivalent to
+`(complex_schur_decompose_u(A), complex_schur_decompose_t(A))` but with a lower
+computational cost due to the shared work between the two results.
+{{< since 2.33 >}}
+
+
+
+## Reverse functions for complex matrices
+
+<!-- complex_vector; reverse; (complex_vector v); -->
+\index{{\tt \bfseries reverse }!{\tt (complex\_vector v): complex\_vector}|hyperpage}
+
+`complex_vector` **`reverse`**`(complex_vector v)`<br>\newline
+ Return a new vector containing the elements of the argument in reverse order.
+{{< since 2.30 >}}
+
+<!-- complex_row_vector; reverse; (complex_row_vector v); -->
+\index{{\tt \bfseries reverse }!{\tt (complex\_row\_vector v): complex\_row\_vector}|hyperpage}
+
+`complex_row_vector` **`reverse`**`(complex_row_vector v)`<br>\newline
+ Return a new row vector containing the elements of the argument in reverse
+ order.
+ {{< since 2.30 >}}

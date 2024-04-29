@@ -1,0 +1,1407 @@
+---
+pagetitle: Expressions
+---
+
+# Expressions
+
+An expression is the syntactic unit in a Stan program that denotes a
+value.  Every expression in a well-formed Stan program has a type that
+is determined statically (at compile time), based only on the type of
+its variables and the types of the functions used in it.  If an
+expressions type cannot be determined statically, the Stan compiler
+will report the location of the problem.
+
+This chapter covers the syntax, typing, and usage of the various forms
+of expressions in Stan.
+
+
+## Numeric literals
+
+The simplest form of expression is a literal that denotes a primitive
+numerical value.
+
+
+### Integer literals {-}
+
+Integer literals represent integers of type `int`.  Integer
+literals are written in base 10 without any separators.  Integer
+literals may contain a single negative sign.  (The expression
+`--1` is interpreted as the negation of the literal `-1`.)
+
+The following list contains well-formed integer literals.
+
+```
+0, 1, -1, 256, -127098, 24567898765
+```
+
+Integer literals must have values that fall within the bounds for integer values
+(see [the section on numerical data types](types.qmd#numerical-data-types.section)).
+
+Integer literals may not contain decimal points (`.`).  Thus the
+expressions `1.` and `1.0` are of type `real` and may
+not be used where a value of type `int` is required.
+
+
+### Real literals {-}
+
+A number written with a period or with scientific notation is assigned
+to a the continuous numeric type `real`.  Real literals are
+written in base 10 with a period (`.`) as a separator and
+optionally an exponent with optional sign.  Examples
+of well-formed real literals include the following.
+
+```
+0.0, 1.0, 3.14, -217.9387, 2.7e3, -2E-5, 1.23e+3.
+```
+
+The notation `e` or `E` followed by a positive or negative
+integer denotes a power of 10 to multiply.  For instance, `2.7e3`
+and `2.7e+3` denote $2.7 \times 10^3$, whereas `-2E-5` denotes $-2 \times
+10^{-5}$.
+
+### Imaginary literals {-}
+
+A number followed by the character `i` denotes an imaginary number and
+is assigned to the numeric type `complex`.  The number preceding `i`
+may be either a real or integer literal and determines the magnitude
+of the imaginary number.  Examples of well-formed imaginary literals
+include the following.
+
+```
+1i, 2i, -325.786i, 1e10i, 2.87e-10i.
+```
+
+Note that the character `i` by itself is _not_ a well-formed imaginary
+literal.  The unit imaginary number must be written as `1i`.
+
+
+### Complex literals {-}
+
+Stan does not include complex literals directly, but a real or integer
+literal can be added to an imaginary literal to derive an expression
+that behaves like a complex literal.  Examples include the following.
+
+```
+1 + 2i, -3.2e9 + 1e10i
+```
+
+These will be assigned the type `complex`, which is the result of
+adding a real or integer and a complex number.  They will also
+function like literals in the sense that the C++ compiler is able to
+reduce them to a single complex constant at compile time.
+
+
+## Variables {#variables.section}
+
+A variable by itself is a well-formed expression of the same type as
+the variable.  Variables in Stan consist of ASCII strings containing
+only the basic lower-case and upper-case Roman letters, digits, and
+the underscore (`_`) character.  Variables must start with a
+letter (`a--z` and `A--Z`) and may not end with two underscores
+(`__`).
+
+Examples of legal variable identifiers are as follows.
+
+```
+a, a3, a_3, Sigma, my_cpp_style_variable, myCamelCaseVariable
+```
+
+Unlike in R and BUGS, variable identifiers in Stan may not contain
+a period character.
+
+
+### Reserved names {-}
+
+Stan reserves many strings for internal use and these may not be used
+as the name of a variable.  An attempt to name a variable after an
+internal string results in the `stanc` translator halting with an
+error message indicating which reserved name was used and its location
+in the model code.
+
+
+#### Model name {-}
+
+The name of the model cannot be used as a variable within the model.
+This is usually not a problem because the default in `bin/stanc`
+is to append `_model` to the name of the file containing the
+model specification.  For example, if the model is in file
+`foo.stan`, it would not be legal to have a variable named
+`foo_model` when using the default model name through
+`bin/stanc`.  With user-specified model names, variables cannot
+match the model.
+
+
+#### Reserved words from Stan language {-}
+
+The following list contains reserved words for Stan's programming
+language.  Not all of these features are implemented in Stan yet, but
+the tokens are reserved for future use.
+
+```
+for, in, while, repeat, until, if, then, else,
+true, false, target, struct, typedef, export,
+auto, extern, var, static, lower, upper, offset,
+multiplier
+```
+
+Variables should not be named after types, either, and thus may not be
+any of the following.
+
+```
+int, real, complex, vector, simplex, unit_vector,
+ordered, positive_ordered, row_vector, matrix,
+cholesky_factor_corr, cholesky_factor_cov,
+corr_matrix, cov_matrix, array
+```
+
+The following built in functions are also reserved and
+cannot be used as variable names:
+
+```
+print, reject, profile, fatal_error, target
+```
+
+The following block identifiers are reserved and cannot be used as variable names:
+
+```
+functions, model, data, parameters, quantities,
+transformed, generated
+```
+
+
+#### Reserved distribution names {-}
+
+Variable names will also conflict with the names of distributions
+suffixed with `_lpdf`, `_lpmf`, `_lcdf`, and `_lccdf`, `_cdf`, and
+`_ccdf`, such as `normal_lcdf_log`. No user-defined variable can take a name
+ending in `_lupdf` or `_lupmf` even if a corresponding `_lpdf` or `_lpmf` is not
+defined.
+
+Using any of these variable names causes the `stanc` translator
+to halt and report the name and location of the variable causing the
+conflict.
+
+
+#### Reserved names backend languages {-}
+
+Stan primarily generates code in C++, which features its own
+reserved words. It is legal to name a variable any of the
+following names, however doing so will lead to it being renamed
+`_stan_NAME` (e.g. `_stan_public`) behind the scenes (in the
+generated C++ code).
+
+<!-- corresponds to the list in stanc3/src/stan_math_backend/Mangle.ml -->
+```
+alignas, alignof, and, and_eq, asm, bitand, bitor, bool,
+case, catch, char, char16_t, char32_t, class, compl, const,
+constexpr, const_cast, decltype, default, delete, do,
+double, dynamic_cast, enum, explicit, float, friend, goto,
+inline, long, mutable, namespace, new, noexcept, not, not_eq,
+nullptr, operator, or, or_eq, private, protected, public,
+register, reinterpret_cast, short, signed, sizeof,
+static_assert, static_cast, switch, template, this, thread_local,
+throw, try, typeid, typename, union, unsigned, using, virtual,
+volatile, wchar_t, xor, xor_eq, fvar, STAN_MAJOR, STAN_MINOR,
+STAN_PATCH, STAN_MATH_MAJOR, STAN_MATH_MINOR, STAN_MATH_PATCH
+```
+
+### Legal characters {-}
+
+The legal characters for variable identifiers are given in the following table.
+
+##### Identifier Characters Table {- #identifier-characters-table}
+
+*The alphanumeric characters and underscore in base ASCII are the only
+legal characters in Stan identifiers.*
+
+ | characters | ASCII code points |
+ | :--------: | :---------------: |
+ |  `a -- z`  |     97 -- 122     |
+ |  `A -- Z`  |     65 --  90     |
+ |  `0 -- 9`  |     48 --  57     |
+ |    `_`     |        95         |
+
+Although not the most expressive character set, ASCII is the most
+portable and least prone to corruption through improper character
+encodings or decodings.  Sticking to this range of ASCII makes Stan
+compatible with Latin-1 or UTF-8 encodings of these characters, which
+are byte-for-byte identical to ASCII.
+
+
+#### Comments allow ASCII-compatible encoding {-}
+
+Within comments, Stan can work with any ASCII-compatible character
+encoding, such as ASCII itself, UTF-8, or Latin1.  It is up to user
+shells and editors to display them properly.
+
+
+## Container expressions {#vector-matrix-array-expressions.section}
+
+Expressions for the Stan container objects, namely arrays, vectors,
+row vectors, matrices, and tuples, can all be constructed using expressions.
+
+### Vector expressions {-}
+
+Square brackets may be wrapped around a sequence of comma separated
+primitive expressions to produce a row vector expression.   For
+example, the expression `[ 1, 10, 100 ]` denotes a row vector of
+three elements with real values 1.0, 10.0, and 100.0.
+Applying the transpose operator to a row vector expression produces
+a vector expression.
+This syntax provides a way declare and define small vectors a single
+line, as follows.
+
+```stan
+row_vector[2] rv2 =  [ 1, 2 ];
+vector[3] v3 = [ 3, 4, 5 ]';
+```
+
+The vector expression values may be compound expressions
+or variable names,  so it is legal to write
+`[ 2 * 3, 1 + 4]`  or `[ x, y ]`, providing that `x`
+and `y` are primitive variables.
+
+
+### Matrix expressions {-}
+
+A matrix expression consists of square brackets wrapped
+around a sequence of comma separated row vector expressions.
+This syntax provides a way declare and define a matrix in a single
+line, as follows.
+
+```stan
+matrix[3, 2] m1 = [ [ 1, 2 ], [ 3, 4 ], [5, 6 ] ];
+```
+
+Any expression denoting a row vector can be used in a matrix expression.
+For example, the following code is valid:
+
+```stan
+vector[2] vX = [ 1, 10 ]';
+row_vector[2] vY = [ 100, 1000 ];
+matrix[3, 2] m2 = [ vX', vY, [ 1, 2 ]  ];
+```
+
+### Complex vector and matrix expressions {-}
+
+Complex vector expressions work the same way as real vector
+expressions.  For example, the following are all legal Stan
+expressions and assignments.
+
+```stan
+complex_vector[3] = [1 + 2i, 3 - 1.7i, 0]';
+complex_row_vector[2] = [12, -2i];
+complex_matrix[2, 3] = [[1 + 2i, 3 - 1.7i, 0],
+                        [3.9 - 1.234i, 176i, 1 + 1i]];
+```
+
+#### No empty vector or matrix expressions {-}
+
+The empty expression `[ ]` is ambiguous and therefore is not
+allowed and similarly expressions such as `[ [ ] ]` or
+`[ [ ], [ ] ]` are not allowed.
+
+
+### Array expressions {-}
+
+Curly braces may be wrapped around a sequence of expressions to
+produce an array expression.  For example, the expression
+`{ 1, 10, 100 }` denotes an integer array of three elements with
+values 1, 10, and 100.  This syntax is particularly convenient to
+define small arrays in a single line, as follows.
+
+```stan
+array[3] int a = { 1, 10, 100 };
+```
+
+The values may be compound expressions, so it is legal to write
+`{ 2 * 3, 1 + 4 }`. It is also possible to write two dimensional
+arrays directly, as in the following example.
+
+```stan
+array[2, 3] int b = { { 1, 2, 3 }, { 4, 5, 6 } };
+```
+
+This way, `b[1]` is `{ 1, 2, 3 }` and `b[2]` is
+`{ 4, 5, 6 }`.
+
+Whitespace is always interchangeable in Stan, so the above can be laid
+out as follows to more clearly indicate the row and column structure
+of the resulting two dimensional array.
+
+```stan
+array[2, 3] int b = { { 1, 2, 3 },
+                { 4, 5, 6 } };
+```
+
+
+### Array expression types {-}
+
+Any type of expression may be used within braces to form an array
+expression.  In the simplest case, all of the elements will be of the
+same type and the result will be an array of elements of that type.
+For example, the elements of the array can be vectors, in which case
+the result is an array of vectors.
+
+```stan
+vector[3] b;
+vector[3] c;
+// ...
+array[2] vector[3] d = { b, c };
+```
+
+The elements may also be a mixture of `int` and `real` typed
+expressions, in which case the result is an array of real values.
+
+```stan
+array[2] real b = { 1, 1.9 };
+```
+
+### Tuple expressions and types {-}
+
+Stan uses parentheses around a comma-separated sequence of expressions
+to construct a tuple.  For example, we can construct a 2-tuple as follows.
+
+```stan
+tuple(int, vector[3]) xy = (42, [1, 2.9, -1.3]');
+```
+
+The expression `42` is of type `int` and the expression `[1, 2.9,
+-1.3]` is of type `row_vector` so that `[1, 2.9, -1.3]'` is of type
+`vector` and of size 3.  The whole tuple expression `(42, [1, 2.9,
+-1.3]')` thus has a sized type of `tuple(int, vector[3])` and an
+unsized type (e.g., for a function argument) of `tuple(int, vector)`.
+
+Stan does *not* support the Python notation with trailing commas, such
+as `(1, 2, 3, )` for a 3-tuple.
+
+### Restrictions on values {-}
+
+There are some restrictions on how array expressions may be used that
+arise from their types being calculated bottom up and the basic data
+type and assignment rules of Stan.
+
+
+#### Rectangular array expressions only {-}
+
+Although it is tempting to try to define a ragged array expression,
+all Stan data types are rectangular (or boxes or other
+higher-dimensional generalizations).  Thus the following nested array
+expression will cause an error when it tries to create a
+non-rectangular array.
+
+```stan
+{ { 1, 2, 3 }, { 4, 5 } }  // compile time error: size mismatch
+```
+
+This may appear to be OK, because it is creating a two-dimensional
+integer array (`array[,] int`) out of two one-dimensional array
+integer arrays (`array[] int`).  But it is not allowed because the two
+one-dimensional arrays are not the same size.  If the elements are
+array expressions, this can be diagnosed at compile time.  If one or
+both expressions is a variable, then that won't be caught until
+runtime.
+
+```stan
+{ { 1, 2, 3 }, m }  // runtime error if m not size 3
+```
+
+#### No empty array expressions {-}
+
+Because there is no way to infer the type of the result, the empty
+array expression (`{ }`) is not allowed.  This does not sacrifice
+expressive power, because a declaration is sufficient to initialize a
+zero-element array.
+
+```stan
+array[0] int a;   // a is fully defined as zero element array
+```
+
+#### No zero-tuples or one-tuples {-}
+
+There is no way to declare or construct a zero-tuple or one-tuple in
+Stan.  Tuples must be at least two elements long.  The expression `()`
+does not pick out a zero-tuple---it is ill formed.  Similarly, the
+expression `(1)` is of type `int` rather than a tuple.
+
+## Parentheses for grouping
+
+Any expression wrapped in parentheses is also an expression. Like in
+C++, but unlike in R, only the round parentheses, `(` and
+`)`, are allowed.  The square brackets `[` and `]` are
+reserved for array indexing and the curly braces `{` and
+`}` for grouping statements.
+
+With parentheses it is possible to explicitly group subexpressions
+with operators.  Without parentheses, the expression `1 + 2 * 3`
+has a subexpression `2 * 3` and evaluates to 7.  With
+parentheses, this grouping may be made explicit with the expression
+`1 + (2 * 3)`.  More importantly, the expression `(1 + 2) *
+  3` has `1 + 2` as a subexpression and evaluates to 9.
+
+
+## Arithmetic and matrix operations on expressions {#arithmetic-expressions.section}
+
+For integer and real-valued expressions, Stan supports the basic
+binary arithmetic operations of addition (`+`), subtraction
+(`-`), multiplication (`*`) and division (`/`) in the
+usual ways.
+
+For integer expressions, Stan supports the modulus (`%`) binary
+arithmetic operation.  Stan also supports the unary operation of
+negation for integer and real-valued expressions.  For example,
+assuming `n` and `m` are integer variables and `x` and
+`y` real variables, the following expressions are legal.
+
+```stan
+3.0 + 0.14
+-15
+2 * 3 + 1
+(x - y) / 2.0
+(n * (n + 1)) / 2
+x / n
+m % n
+```
+
+The negation, addition, subtraction, and multiplication operations are
+extended to matrices, vectors, and row vectors.  The transpose
+operation, written using an apostrophe (`'`) is also supported
+for vectors, row vectors, and matrices.  Return types for matrix
+operations are the smallest types that can be statically guaranteed to
+contain the result.  The full set of allowable input types and
+corresponding return types is detailed in the list of functions.
+
+For example, if `y` and `mu` are variables of type `vector` and
+`Sigma` is a variable of type `matrix`, then `(y - mu)' * Sigma * (y -
+mu)` is a well-formed expression of type `real`.  The type of the
+complete expression is inferred working outward from the
+subexpressions.  The subexpression(s) `y - mu` are of type `vector`
+because the variables `y` and `mu` are of type `vector`.  The
+transpose of this expression, the subexpression `(y - mu)'` is of type
+`row_vector`.  Multiplication is left associative and transpose has
+higher precedence than multiplication, so the above expression is
+equivalent to the following fully specified form `(((y - mu)') *
+Sigma) * (y - mu)`.
+
+The type of subexpression `(y - mu)' * Sigma` is inferred to be
+`row_vector`, being the result of multiplying a row vector by a
+matrix.  The whole expression's type is thus the type of a row vector
+multiplied by a (column) vector, which produces a `real` value.
+
+Stan provides elementwise matrix multiplication (e.g., `a .* b`) and
+division (e.g., `a ./ b`) operations.  These provide a shorthand to
+replace loops, but are not intrinsically more efficient than a version
+programmed with an elementwise calculations and assignments in a loop.
+For example, given declarations,
+
+```stan
+vector[N] a;
+vector[N] b;
+vector[N] c;
+```
+
+the assignment,
+
+```stan
+c = a .* b;
+```
+
+produces the same result with roughly the same efficiency as the loop
+
+```stan
+for (n in 1:N) {
+  c[n] = a[n] * b[n];
+}
+```
+
+Stan supports exponentiation (`^`) of integer and
+real-valued expressions.  The return type of exponentiation is always
+a real-value.  For example, assuming `n` and `m` are integer
+variables and `x` and `y` real variables, the following
+expressions are legal.
+
+```stan
+3 ^ 2
+3.0 ^ -2
+3.0 ^ 0.14
+x ^ n
+n ^ x
+n ^ m
+x ^ y
+```
+
+Exponentiation is right associative, so the expression `2 ^ 3 ^ 4`
+is equivalent to the fully specified form `2 ^ (3 ^ 4)`.
+
+
+### Operator precedence and associativity {-}
+
+The precedence and associativity of operators, as well as built-in
+syntax such as array indexing and function application is given in
+tabular form in the following table.
+
+##### Operator Precedence Table {- #operator-precedence-table}
+
+*Stan's unary, binary, and ternary
+operators, with their precedences, associativities, place in an
+expression, and a description.  The last two lines list the precedence
+of function application and array, matrix, and vector indexing. The
+operators are listed in order of precedence, from least tightly
+binding to most tightly binding.  The full set of legal arguments and
+corresponding result types are provided in the function documentation
+for the operators (i.e.,* `operator*(int, int):int` *indicates the
+application of the multiplication operator to two integers, which
+returns an integer).  Parentheses may be used to group expressions
+explicitly rather than relying on precedence and
+associativity.*
+
+ |   Op.   | Prec. | Assoc. | Placement     | Description                |
+ | :-----: | ----: | :----: | :------------ | :------------------------- |
+ | `? ~ :` |    10 | right  | ternary infix | conditional                |
+ |  `||`   |     9 |  left  | binary infix  | logical or                 |
+ |  `&&`   |     8 |  left  | binary infix  | logical and                |
+ |  `==`   |     7 |  left  | binary infix  | equality                   |
+ |  `!=`   |     7 |  left  | binary infix  | inequality                 |
+ |   `<`   |     6 |  left  | binary infix  | less than                  |
+ |  `<=`   |     6 |  left  | binary infix  | less than or equal         |
+ |   `>`   |     6 |  left  | binary infix  | greater than               |
+ |  `>=`   |     6 |  left  | binary infix  | greater than or equal      |
+ |   `+`   |     5 |  left  | binary infix  | addition                   |
+ |   `-`   |     5 |  left  | binary infix  | subtraction                |
+ |   `*`   |     4 |  left  | binary infix  | multiplication             |
+ |  `.*`   |     4 |  left  | binary infix  | elementwise multiplication |
+ |   `/`   |     4 |  left  | binary infix  | (right) division           |
+ |  `./`   |     4 |  left  | binary infix  | elementwise division       |
+ |   `%`   |     4 |  left  | binary infix  | modulus                    |
+ |   `\`   |     3 |  left  | binary infix  | left division              |
+ |  `%/%`  |     3 |  left  | binary infix  | integer division           |
+ |   `!`   |     2 |  n/a   | unary prefix  | logical negation           |
+ |   `-`   |     2 |  n/a   | unary prefix  | negation                   |
+ |   `+`   |     2 |  n/a   | unary prefix  | promotion (no-op in Stan)  |
+ |   `^`   |     1 | right  | binary infix  | exponentiation             |
+ |  `.^`   |     1 | right  | binary infix  | elementwise exponentiation |
+ |   `'`   |     0 |  n/a   | unary postfix | transposition              |
+ |  `()`   |     0 |  n/a   | prefix, wrap  | function application       |
+ |  `[]`   |     0 |  left  | prefix, wrap  | array, matrix indexing     |
+
+Other expression-forming operations, such as function application and
+subscripting bind more tightly than any of the arithmetic operations.
+
+The precedence and associativity determine how expressions are
+interpreted.  Because addition is left associative, the expression
+`a + b + c` is interpreted as `(a + b) + c`.  Similarly,
+`a / b * c` is interpreted as `(a / b) * c`.
+
+Because multiplication has higher precedence than addition, the
+expression `a * b + c` is interpreted as `(a * b) + c` and the
+expression `a + b * c` is interpreted as `a + (b * c)`.  Similarly,
+`2 * x + 3 * - y` is interpreted as `(2 * x) + (3 * (-y))`.
+
+Transposition and exponentiation bind more tightly
+than any other arithmetic or logical operation.
+For vectors, row vectors, and matrices,
+`-u'` is interpreted as `-(u')`, `u * v'` as
+`u* (v')`, and `u' * v` as `(u') * v`.
+For integer and reals, `-n ^ 3` is interpreted as `-(n ^ 3)`.
+
+
+## Conditional operator {#conditional-operator.section}
+
+
+### Conditional operator syntax {-}
+
+The ternary conditional operator is unique in that it takes three
+arguments and uses a mixed syntax.  If `a` is an expression of
+type `int` and `b` and `c` are expressions that can be
+converted to one another (e.g., compared with `==`), then
+
+```stan
+a ? b : c
+```
+
+is an expression of the promoted type of `b` and `c`.  The
+only promotion allowed in Stan is integer -> real -> complex; e.g. if one
+argument is of type `int` and the other of type `real`, the
+conditional expression as a whole is of type `real`.
+In other cases, the arguments have to be of the same underlying Stan type
+(i.e., constraints don't count, only the shape) and the conditional
+expression is of that type.
+
+#### Conditional operator precedence {-}
+
+The conditional operator is the most loosely binding operator, so its
+arguments rarely require parentheses for disambiguation.  For example,
+
+```stan
+a > 0 || b < 0 ? c + d : e - f
+```
+
+is equivalent to the explicitly grouped version
+
+```stan
+(a > 0 || b < 0) ? (c + d) : (e - f)
+```
+
+The latter is easier to read even if the parentheses are not strictly
+necessary.
+
+#### Conditional operator associativity {-}
+
+The conditional operator is right associative, so that
+
+```stan
+a ? b : c ? d : e
+```
+
+parses as if explicitly grouped as
+
+```stan
+a ? b : (c ? d : e)
+```
+
+Again, the explicitly grouped version is easier to read.
+
+
+### Conditional operator semantics {-}
+
+Stan's conditional operator works very much like its C++ analogue.
+The first argument must be an expression denoting an integer.
+Typically this is a variable or a relation operator, as in the
+variable `a` in the example above.  Then there are two resulting
+arguments, the first being the result returned if the condition
+evaluates to true (i.e., non-zero) and the second if the condition
+evaluates to false (i.e., zero).  In the example above, the value
+`b` is returned if the condition evaluates to a non-zero value
+and `c` is returned if the condition evaluates to zero.
+
+
+#### Lazy evaluation of results {-}
+
+The key property of the conditional operator that makes it so useful
+in high-performance computing is that it only evaluates the returned
+subexpression, not the alternative expression.  In other words, it is
+not like a typical function that evaluates its argument expressions
+eagerly in order to pass their values to the function.  As usual, the
+saving is mostly in the derivatives that do not get computed rather
+than the unnecessary function evaluation itself.
+
+
+#### Promotion to parameter {-}
+
+If one return expression is a data value (an expression involving only
+constants and variables defined in the data or transformed data
+block), and the other is not, then the ternary operator will promote
+the data value to a parameter value.  This can cause needless work
+calculating derivatives in some cases and be less efficient than a full
+`if`-`then` conditional statement.  For example,
+
+```stan
+data {
+  array[10] real x;
+  // ...
+}
+parameters {
+  array[10] real z;
+  // ...
+}
+model {
+  y ~ normal(cond ? x : z, sigma);
+  // ...
+}
+```
+
+would be more efficiently (if not more transparently) coded as
+
+```stan
+if (cond) {
+  y ~ normal(x, sigma);
+} else {
+  y ~ normal(z, sigma);
+}
+```
+
+The conditional statement, like the conditional operator, only
+evaluates one of the result statements.  In this case, the variable
+`x` will not be promoted to a parameter and thus not cause any
+needless work to be carried out when propagating the chain rule during
+derivative calculations.
+
+
+## Indexing {#language-indexing.section}
+
+Stan arrays, matrices, vectors, and row vectors are all accessed
+using the same array-like notation.  For instance, if `x` is a
+variable of type `array [] real` (a one-dimensional array of reals)
+then `x[1]` is the value of the first element of the
+array.
+
+Subscripting has higher precedence than any of the arithmetic
+operations.  For example, `alpha * x[1]` is equivalent to
+`alpha * (x[1])`.
+
+Multiple subscripts may be provided within a single pair of square
+brackets.  If `x` is of type `array[,] real`, a two-dimensional
+array, then `x[2, 501]` is of type `real`.
+
+
+### Accessing subarrays {-}
+
+The subscripting operator also returns subarrays of arrays.  For
+example, if `x` is of type `array[,,] real`, then `x[2]`
+is of type `array[,] real`, and `x[2, 3]` is of type
+`array[] real`.  As a result, the expressions `x[2, 3]` and
+`x[2][3]` have the same meaning.
+
+
+### Accessing matrix rows {-}
+
+If `Sigma` is a variable of type `matrix`, then
+`Sigma[1]` denotes the first row of `Sigma` and has the
+type `row_vector`.
+
+
+### Mixing array and vector/matrix indexes {-}
+
+Stan supports mixed indexing of arrays and their vector, row vector
+or matrix values.  For example, if `m` is of type
+`matrix[ , ]`, a two-dimensional array of matrices, then
+`m[1]` refers to the first row of the array, which is a
+one-dimensional array of matrices.  More than one index may be used,
+so that `m[1, 2]` is of type `matrix` and denotes the matrix
+in the first row and second column of the array.  Continuing to add
+indices, `m[1, 2, 3]` is of type `row_vector` and denotes
+the third row of the matrix denoted by `m[1, 2]`.  Finally,
+`m[1, 2, 3, 4]` is of type `real` and denotes the value in the
+third row and fourth column of the matrix that is found at the first
+row and second column of the array `m`.
+
+
+## Multiple indexing and range indexing {#language-multi-indexing.section}
+
+In addition to single integer indexes, as described in
+[the language indexing section](#language-indexing.section), Stan supports multiple indexing.
+Multiple indexes can be integer arrays of indexes, lower
+bounds, upper bounds, lower and upper bounds, or simply shorthand for
+all of the indexes.  A complete table of index types is given in the
+following table.
+
+##### Indexing Options Table {- #index-types-table}
+
+*Types of indexes and examples with one-dimensional containers of size
+  `N` and an integer array `ii` of type `array [] real` size `K`.*
+
+ |  index type   | example  |            value            |
+ | :-----------: | :------: | :-------------------------: |
+ |    integer    | `a[11]`  |  value of `a` at index 11   |
+ | integer array | `a[ii]`  | `a[ii[1]]`, ..., `a[ii[K]]` |
+ |  lower bound  | `a[3:]`  |     `a[3]`, ..., `a[N]`     |
+ |  upper bound  | `a[:5]`  |     `a[1]`, ..., `a[5]`     |
+ |     range     | `a[2:7]` |    `a[2]`, ...,  `a[7]`     |
+ |      all      |  `a[:]`  |     `a[1]`, ..., `a[N]`     |
+ |      all      |  `a[]`   |     `a[1]`, ..., `a[N]`     |
+
+
+### Multiple index semantics {-}
+
+The fundamental semantic rule for dealing with multiple indexes is the
+following.  If `idxs` is a multiple index, then it produces an
+indexable position in the result.  To evaluate that index position in
+the result, the index is first passed to the multiple index, and the
+resulting index used.
+
+```stan
+a[idxs, ...][i, ...] = a[idxs[i], ...][...]
+```
+
+On the other hand, if `idx` is a single index, it reduces the
+dimensionality of the output, so that
+
+```stan
+a[idx, ...] = a[idx][...]
+```
+
+The only issue is what happens with matrices and vectors.  Vectors
+work just like arrays.  Matrices with multiple row indexes and
+multiple column indexes produce matrices.  Matrices with multiple row
+indexes and a single column index become (column) vectors.  Matrices
+with a single row index and multiple column indexes become row
+vectors.  The types are summarized in the following table.
+
+##### Matrix Indexing Table {- #matrix-indexing-table}
+
+*Special rules for reducing matrices based on whether the argument is
+a single or multiple index.  Examples are for a matrix `a`, with
+integer single indexes `i` and `j` and integer array multiple
+indexes `is` and `js`.  The same typing rules apply for all multiple
+indexes.*
+
+  |   example   | row index | column index | result type |
+  | :---------: | :-------: | :----------: | :---------: |
+  |   `a[i]`    |  single   |     n/a      | row vector  |
+  |   `a[is]`   | multiple  |     n/a      |   matrix    |
+  |  `a[i, j]`  |  single   |    single    |    real     |
+  | `a[i, js]`  |  single   |   multiple   | row vector  |
+  | `a[is, j]`  | multiple  |    single    |   vector    |
+  | `a[is, js]` | multiple  |   multiple   |   matrix    |
+
+Evaluation of matrices with multiple indexes is defined to respect the
+following distributivity conditions.
+
+```stan
+m[idxs1, idxs2][i, j] = m[idxs1[i], idxs2[j]]
+m[idxs, idx][j] = m[idxs[j], idx]
+m[idx, idxs][j] = m[idx, idxs[j]]
+```
+
+
+Evaluation of arrays of matrices and arrays of vectors or row vectors
+is defined recursively, beginning with the array dimensions.
+
+
+## Function application {#function-application.section}
+
+Stan provides a range of built in mathematical and statistical
+functions, which are documented in the built-in function documentation.
+
+Expressions in Stan may consist of the name of function followed by a
+sequence of zero or more argument expressions.  For instance,
+`log(2.0)` is the expression of type `real` denoting the
+result of applying the natural logarithm to the value of the real
+literal `2.0`.
+
+Syntactically, function application has higher precedence than any of
+the other operators, so that `y + log(x)` is interpreted as
+`y + (log(x))`.
+
+### Type signatures and result type inference {-}
+
+Each function has a type signature which determines the allowable type
+of its arguments and its return type.  For instance, the function
+signature for the logarithm function can be expressed as
+
+```stan
+real log(real);
+```
+
+and the signature for the `lmultiply` function is
+
+`real lmultiply(real, real);`
+
+A function is uniquely determined by its name and its sequence of
+argument types.  For instance, the following two functions are
+different functions.
+
+`real mean(array [] real);`
+
+`real mean(vector);`
+
+The first applies to a one-dimensional array of real values and the
+second to a vector.
+
+The identity conditions for functions explicitly forbids having two
+functions with the same name and argument types but different return
+types.  This restriction also makes it possible to infer the type of a
+function expression compositionally by only examining the type of its
+subexpressions.
+
+
+### Constants {-}
+
+Constants in Stan are nothing more than nullary (no-argument)
+functions.  For instance, the mathematical constants $\pi$ and $e$ are
+represented as nullary functions named `pi()` and `e()`.
+See the [Stan Functions Reference built-in constants section](https://mc-stan.org/docs/functions-reference/real-valued_basic_functions.html#built-in-constants)
+for a list of built-in constants.
+
+
+### Type promotion and function resolution {-}
+
+Because of integer to real type promotion, rules must be established
+for which function is called given a sequence of argument types.  The
+scheme employed by Stan is the same as that used by C++, which
+resolves a function call to the function requiring the minimum number
+of type promotions.
+
+For example, consider a situation in which the following two function
+signatures have been registered for `foo`.
+
+```stan
+real foo(real, real);
+int foo(int, int);
+```
+
+The use of `foo` in the expression `foo(1.0, 1.0)` resolves
+to `foo(real, real)`, and thus the expression `foo(1.0, 1.0)`
+itself is assigned a type of `real`.
+
+Because integers may be promoted to real values, the expression
+`foo(1, 1)` could potentially match either `foo(real, real)`
+or `foo(int, int)`.  The former requires two type promotions and
+the latter requires none, so `foo(1, 1)` is resolved to function
+`foo(int, int)` and is thus assigned the type `int`.
+
+The expression `foo(1, 1.0)` has argument types `(int, real)`
+and thus does not explicitly match either function signature.  By
+promoting the integer expression `1` to type `real`, it is
+able to match `foo(real, real)`, and hence the type of the
+function expression `foo(1, 1.0)` is `real`.
+
+In some cases (though not for any built-in Stan functions), a
+situation may arise in which the function referred to by an
+expression remains ambiguous.  For example, consider a situation in
+which there are exactly two functions named `bar` with the
+following signatures.
+
+```stan
+real bar(real, int);
+real bar(int, real);
+```
+
+With these signatures, the expression `bar(1.0, 1)` and
+`bar(1, 1.0)` resolve to the first and second of the above
+functions, respectively.  The expression `bar(1.0, 1.0)` is
+illegal because real values may not be demoted to integers.  The
+expression `bar(1, 1)` is illegal for a different reason.  If the
+first argument is promoted to a real value, it matches the first
+signature, whereas if the second argument is promoted to a real value,
+it matches the second signature.  The problem is that these both
+require one promotion, so the function name `bar` is ambiguous.
+If there is not a unique function requiring fewer promotions than all
+others, as with `bar(1, 1)` given the two declarations above,
+the Stan compiler will flag the expression as illegal.
+
+
+### Random-number generating functions {-}
+
+For most of the distributions supported by Stan, there is a
+corresponding random-number generating function.  These random number
+generators are named by the distribution with the suffix `_rng`.
+For example, a univariate normal random number can be generated by
+`normal_rng(0, 1)`;  only the parameters of the distribution,
+here a location (0) and scale (1) are specified because the variate is
+generated.
+
+
+#### Random-number generators locations {-}
+
+The use of random-number generating functions is restricted to the
+transformed data and generated quantities blocks; attempts to use them
+elsewhere will result in a parsing error with a diagnostic message.
+They may also be used in the bodies of user-defined functions whose
+names end in `_rng`.
+
+This allows the random number generating functions to be used for
+simulation in general, and for Bayesian posterior predictive checking
+in particular.
+
+
+#### Posterior predictive checking {-}
+
+Posterior predictive checks typically use the parameters of the model
+to generate simulated data (at the individual and optionally at the
+group level for hierarchical models), which can then be compared
+informally using plots and formally by means of test statistics, to
+the actual data in order to assess the suitability of the model; see
+Chapter 6 of [@GelmanEtAl:2013] for more information on
+posterior predictive checks.
+
+
+## Type inference
+
+Stan is strongly statically typed, meaning that the implementation
+type of an expression can be resolved at compile time.
+
+
+### Implementation types {-}
+
+The primitive implementation types for Stan are
+
+```
+int, real, complex, vector, row_vector,  matrix, complex_vector,
+complex_row_vector, complex_matrix
+```
+
+Every basic declared type corresponds to a primitive type;
+the following table shows the mapping from types to their primitive types.
+
+##### Primitive Type Table {- #primitive-type-table}
+
+*The table shows the variable declaration types of Stan
+  and their corresponding primitive implementation type.  Stan
+  functions, operators, and probability functions have argument and
+  result types declared in terms of primitive types plus array
+  dimensionality.*
+
+   | type                   | primitive type       |
+   | :--------------------- | :------------------- |
+   | `int`                  | `int`                |
+   | `real`                 | `real`               |
+   | `vector`               | `vector`             |
+   | `simplex`              | `vector`             |
+   | `unit_vector`          | `vector`             |
+   | `ordered`              | `vector`             |
+   | `positive_ordered`     | `vector`             |
+   | `row_vector`           | `row_vector`         |
+   | `matrix`               | `matrix`             |
+   | `cov_matrix`           | `matrix`             |
+   | `corr_matrix`          | `matrix`             |
+   | `cholesky_factor_cov`  | `matrix`             |
+   | `cholesky_factor_corr` | `matrix`             |
+   | `complex_vector`       | `complex_vector`     |
+   | `complex_row_vector`   | `complex_row_vector` |
+   | `complex_matrix`       | `complex_matrix`     |
+
+
+A full implementation type consists of a primitive implementation type
+and an integer array dimensionality greater than or equal to zero.
+These will be written to emphasize their array-like nature.  For
+example, `array [] real` has an array dimensionality of 1, `int` an
+array dimensionality of 0, and `array [,,] int` an array dimensionality
+of 3. The implementation type `matrix[ , , ]` has a total of five
+dimensions and takes up to five indices, three from the array and two
+from the matrix.
+
+Recall that the array dimensions come before the matrix or vector
+dimensions in an expression such as the following declaration of a
+three-dimensional array of matrices.
+
+```stan
+array[I, J, K] matrix[M, N] a;
+```
+
+The matrix `a` is indexed as `a[i, j, k, m, n]` with the array
+indices first, followed by the matrix indices, with `a[i, j, k]`
+being a matrix and `a[i, j, k, m]` being a row vector.
+
+
+### Type inference rules {-}
+
+Stan's type inference rules define the implementation type of an
+expression based on a background set of variable declarations.  The
+rules work bottom up from primitive literal and variable expressions
+to complex expressions.
+
+### Promotion {-}
+
+There are two basic promotion rules,
+
+1. `int` types may be promoted to `real`, and
+2. `real` types may be promoted to `complex`.
+
+Plus, promotion is transitive, so that
+
+3.  if type `U` can be promoted to type `V` and type `V` can be
+promoted to type `T`, then `U` can be promoted to `T`.
+
+The first rule means that expressions of type `int` may be used
+anywhere an expression of type `real` is specified, namely in
+assignment or function argument passing.  An integer is promoted to
+real by casting it in the underlying C++ code.
+
+The remaining rules have to do with covariant typing rules, which say
+that a container of type `U` may be promoted to a container of the
+same shape of type `T` if `U` can be promoted to `T`.  For vector and
+matrix types, this induces three rules,
+
+4. `vector` may be promoted to `complex_vector`,
+5. `row_vector` may be promoted to `complex_row_vector`
+6. `matrix` may be promoted to `complex_matrix`.
+
+For array types, there's a single rule
+
+7. `array[...] U` may be promoted to `array[...] T` if `U` can be
+promoted to `T`.
+
+For example, this means `array[,] int` may be used where `array [,]
+real` or `array [,] complex` is required; as another example, `array[]
+real` may be used anywhere `array[] complex` is required.
+
+Tuples have the natural extension of the above rules, applied to all
+sub-types at once
+
+8. A `tuple(U1, ..., UN)` may be promoted to a `tuple(T1, ..., TN)` if
+ every `Un` can be promoted to `Tn` for `n` in `1:N`
+
+#### Literals {-}
+
+An integer literal expression such as `42` is of type `int`.
+Real literals such as `42.0` are of type `real`.  Imaginary literals
+such as `-17i` are of type `complex`.  the expression `7 - 2i` acts
+like a complex literal, but technically it combines a real literal `7`
+and an imaginary literal `2i` through subtraction.
+
+#### Variables {-}
+
+The type of a variable declared locally or in a previous block is
+determined by its declaration.  The type of a loop variable is
+`int`.
+
+There is always a unique declaration for each variable in each scope
+because Stan prohibits the redeclaration of an already-declared
+variables.^[Languages such as C++ and R allow the declaration of a variable of a given name in a narrower scope to hide (take precedence over for evaluation) a variable defined in a containing scope.]
+
+
+#### Indexing {-}
+
+If `x` is an expression of total dimensionality greater than or equal
+to $N$, then the type of expression `e[i1, i2, ..., iN]` is the same as
+that of `e[i1][i2]...[iN]`, so it suffices to define the type of a
+singly-indexed function.  Suppose `e` is an expression and `i` is an
+expression of primitive type `int`.  Then
+
+* if `e` is an expression of type `array[i1, i2, ..., iN] T` and `k,` `i1`,
+  ..., `iN` are expressions of type `int`, then
+  `e[k]` is an expression of type `array[i2, ..., iN] T`,
+* if `e` is an expression of type `array[i] T` with `i` and `k`
+  expressions of type `int`, then `e[k]` is of type `T`,
+* if `e` has implementation type `vector` or `row_vector`,
+    dimensionality 0, then `e[i]` has implementation type `real`,
+* if `e` has implementation type `matrix`, then `e[i]` has type
+  `row_vector`,
+* if `e` has implementation type `complex_vector` or
+  `complex_row_vector` and `i` is an expression of type `int`, then
+  `e[i]` is an expression of type `complex`, and
+* if `e` has implementation type `complex_matrix`, and `i` is an
+  expression of type `int`, then `e[i]` is an expression of type
+  `complex_row_vector`.
+
+
+#### Function application {-}
+
+If `f` is the name of a function and `e1,...,eN` are
+expressions for $N \geq 0$, then `f(e1,...,eN)` is an expression
+whose type is determined by the return type in the function signature
+for `f` given `e1` through `eN`.  Recall that a
+function signature is a declaration of the argument types and the
+result type.
+
+In looking up functions, binary operators like `real * real` are
+defined as `operator*(real, real)` in the documentation and index.
+
+In matching a function definition, all of the promotion rules are in
+play (integers may be promoted to reals, reals to complex, and
+containers may be promoted if their types are promoted).  For example,
+arguments of type `int` may be promoted to type `real` or `complex` if
+necessary (see the subsection on type promotion in [the function
+application section](#function-application), a `real` argument will be
+promoted to `complex` if necessary, a `vector` will be promoted to
+`complex_vector` if necessary, and so on.
+
+In general, matrix operations return the lowest inferable type.  For
+example, `row_vector * vector` returns a value of type
+`real`, which is declared in the function documentation and index
+as `real operator*(row_vector, vector)`.
+
+
+## Higher-order functions
+
+There are several expression constructions in Stan that act as
+higher-order functions.^[Internally, they are implemented as their own expression types because Stan doesn't have object-level functional types (yet).]
+
+The higher-order functions and the signature of their argument
+functions are listed in the following pair of tables.
+
+##### Higher-order Functions Table {- #higher-order-functions-table}
+
+*Higher-order functions in Stan with their argument
+function types.  The first group of arguments can be a function of parameters
+or data. The second group of arguments, consisting of a real and integer
+array in all cases, must be expressions involving only data and
+literals.*
+
+  |                function |        parameter or data args        |           data args            |   return type   |
+  | ----------------------: | :----------------------------------: | :----------------------------: | :-------------: |
+  |        `algebra_solver` |           `vector, vector`           | `array [] real, array [] real` |    `vector`     |
+  | `algebra_solver_newton` |           `vector, vector`           | `array [] real, array [] real` |    `vector`     |
+  |         `integrate_1d`, |     `real, real, array [] real`      | `array [] real, array [] real` |     `real`      |
+  |      `integrate_ode_X`, | `real, array [] real, array [] real` | `array [] real, array [] real` | `array [] real` |
+  |              `map_rect` |           `vector, vector`           | `array [] real, array [] real` |    `vector`     |
+
+For example, the `integrate_ode_rk45` function can be used to integrate
+differential equations in Stan:
+
+```stan
+functions {
+  array [] real foo(real t,
+                    array [] real y,
+                    array [] real theta,
+                    array [] real x_r,
+                    array [] real x_i) {
+    // ...
+  }
+}
+// ...
+int<lower=1> T;
+array[2] real y0;
+real t0;
+array[T] real ts;
+array[1] real theta;
+array[0] real x_r;
+array[0] int x_i;
+// ...
+array[T, 2] real y_hat = integrate_ode_rk45(foo, y0, t0,
+                                              ts, theta, x_r, x_i);
+```
+
+The function argument is `foo`, the name of the user-defined
+function;  as shown in the [higher-order functions table](#higher-order-functions),
+`integrate_ode_rk45` takes a real array, a real, three more real arrays, and
+an integer array as arguments and returns 2D real array.
+
+##### Variadic Higher-order Functions Table {- #variadic-higher-order-functions-table}
+
+*Variadic Higher-order functions in Stan with their argument
+function types.  The first group of arguments are restricted in type.
+The sequence of trailing arguments can be of any length with any types.*
+
+  |     function |        restricted args        | return type |
+  | -----------: | :---------------------------: | :---------: |
+  |    `solve_X` | `vector`                      | `vector`    |
+  |     `ode_X`, | `vector, real, array [] real` | `vector[]`  |
+  | `reduce_sum` |    ```array[] T, T1, T2```    |   `real`    |
+
+`T`, `T1`, and `T2` can be any Stan type.
+
+For example, the `ode_rk45` function can be used to integrate
+differential equations in Stan:
+
+```stan
+functions {
+  vector foo(real t, vector y, real theta, vector beta,
+            array [] real x_i, int index) {
+    // ...
+  }
+}
+// ...
+int<lower=1> T;
+vector[2] y0;
+real t0;
+array[T] real ts;
+real theta;
+vector[7] beta;
+array[10] int x_i;
+int index;
+// ...
+vector[2] y_hat[T] = ode_rk45(foo, y0, t0, ts, theta,
+                              beta, x_i, index);
+```
+
+The function argument is `foo`, the name of the user-defined
+function. As shown in the
+[variadic higher-order functions table](#variadic-higher-order-functions-table),
+`ode_rk45` takes a real, a vector, a real, a real array, and a sequence of
+arguments whose types match those at the end of `foo` and returns an array of
+vectors.
+
+### Functions passed by reference {-}
+
+The function argument to higher-order functions is always passed as
+the first argument.  This function argument must be provided as the
+name of a user-defined or built-in function.  No quotes are
+necessary.
+
+### Data-restricted arguments {-}
+
+Some of the arguments to higher-order functions are restricted to
+data.  This means they must be expressions containing only data
+variables, transformed data variables, or literals;  the may contain
+arbitrary functions applied to data variables or literals, but must
+not contain parameters, transformed parameters, or local variables
+from any block other than transformed data.
+
+For user-defined functions the qualifier `data` may be prepended
+to the type to restrict the argument to data-only variables.
+
+
+
+## Chain rule and derivatives
+
+Derivatives of the log probability function defined by a model are
+used in several ways by Stan.  The Hamiltonian Monte Carlo samplers,
+including NUTS, use gradients to guide updates.  The BFGS optimizers
+also use gradients to guide search for posterior modes.
+
+
+### Errors due to chain rule {-}
+
+Unlike evaluations in pure mathematics, evaluation of derivatives in
+Stan is done by applying the chain rule on an expression-by-expression
+basis, evaluating using floating-point arithmetic.  As a result,
+models such as the following are problematic for inference involving
+derivatives.
+
+```stan
+parameters {
+  real x;
+}
+model {
+  x ~ normal(sqrt(x - x), 1);
+}
+```
+
+Algebraically, the sampling statement in the model could be reduced to
+
+```stan
+  x ~ normal(0, 1);
+```
+
+and it would seem the model should produce unit normal draws for
+`x`.  But rather than canceling, the expression `sqrt(x -
+  x)` causes a problem for derivatives.  The cause is the mechanistic
+evaluation of the chain rule,
+
+$$
+\begin{array}{rcl}
+\frac{d}{dx} \sqrt{x - x}
+& = &
+\frac{1}{2 \sqrt{x - x}} \times \frac{d}{dx} (x - x)
+\\[4pt]
+& = &
+\frac{1}{0} \times (1 - 1)
+\\[4pt]
+& = &
+\infty \times 0
+\\[4pt]
+& = & \mathrm{NaN}.
+\end{array}
+$$
+
+Rather than the $x - x$ canceling out, it introduces a 0 into the
+numerator and denominator of the chain-rule evaluation.
+
+The only way to avoid this kind problem is to be careful to do the
+necessary algebraic reductions as part of the model and not introduce
+expressions like `sqrt(x - x)` for which the chain rule produces
+not-a-number values.
+
+
+### Diagnosing problems with derivatives {-}
+
+The best way to diagnose whether something is going wrong with the
+derivatives is to use the test-gradient option to the sampler or
+optimizer inputs; this option is available in both Stan and RStan
+(though it may be slow, because it relies on finite differences to
+make a comparison to the built-in automatic differentiation).
+
+For example, compiling the above model to an executable
+`sqrt-x-minus-x` in CmdStan, the test can be run as
+
+```
+> ./sqrt-x-minus-x diagnose test=gradient
+```
+
+which produces
+
+```
+...
+TEST GRADIENT MODE
+
+ Log probability=-0.393734
+
+ param idx           value           model     finite diff           error
+         0       -0.887393             nan               0             nan
+```
+
+Even though finite differences calculates the right gradient of 0,
+automatic differentiation follows the chain rule and produces a
+not-a-number output.

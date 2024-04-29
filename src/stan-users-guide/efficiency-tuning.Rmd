@@ -1176,9 +1176,15 @@ should be faster.
 
 ## Exploiting sufficient statistics
 
-In some cases, models can be recoded to exploit sufficient statistics
-in estimation.  This can lead to large efficiency gains compared to an
-expanded model.  For example, consider the following Bernoulli
+In some cases of exponential family likelihoods, models can be recoded
+to exploit sufficient statistics in estimation.  This can lead to
+large efficiency gains compared to an expanded model.  This section
+provides examples for Bernoulli and normal distributions, but the same
+approach can be applied to other members of the exponential family.
+
+### Bernoulli to binomial sufficient statistics
+
+For example, consider the following Bernoulli
 sampling model.
 
 ```stan
@@ -1235,6 +1241,96 @@ the weights `f[k]` are counts and thus sufficient statistics for
 the PMF and simply amount to an alternative, more efficient coding of
 the same likelihood.  For efficiency, the frequencies `f[k]`
 should be counted once in the transformed data block and stored.
+
+
+### Normal sufficient statistics
+
+Consider the following Stan model for fitting a normal distribution to data.
+
+```stan
+data {
+  int N;
+  vector[N] y;
+}
+parameters {
+  real mu;
+  real<lower=0> sigma;
+}
+model {
+  y ~ normal(mu, sigma);
+}
+```
+
+This is going to evaluate the normal for `y[1]` to `y[N]`.  With the
+vectorized form above, Stan is clever enough to only evaluate
+`log(sigma)` once, but it still has to evaluate the normal for all of
+`y[1]` to `y[N]`, which involves subtracting the mean and dividing by
+the standard deviation and then squaring.
+
+An equivalent density up to normalizing constants, is given in the
+following form
+
+```stan
+data {
+  int N;
+  vector[N] y;
+}
+transformed data {
+  real mean_y = mean(y);
+  real<lower=0> var_y = variance(y);
+  real nm1_over2 = (N - 1) / 2.0;
+  real sqrt_N = sqrt(N);
+}
+parameters {
+  real mu;
+  real<lower=0> sigma;
+}
+model {
+  mean_y ~ normal(mu, sigma / sqrt_N);
+  var_y ~ gamma(nm1_over2, nm1_over2 / sigma^2);
+}
+
+```
+
+The data and parameters are the same in this model as in the first.
+This model adds a transformed data block to compute the mean and
+variance of the data, which are the sufficient statistics here.  These
+are stored along with two other useful constants.  Then the model
+defining a distribution over data is converted to model over just the
+single mean and variance value.
+
+
+The original model and this one define the same log density up to a
+constant additive term that does not depend on the parameters.  The
+priors on `mu` and `sigma` are both improper, but they could be
+upgraded to proper priors without changing the drop-in
+replacement---the priors are just additional statements in the model
+block.
+
+This transform explicitly relies on aggregating the data.  If instead
+this trick is used for parameters `y`, then the change of variables
+adjustment for the non-linear variance calculation needs to be
+included, and there won't be any efficiency gain, because the
+calculations involve in variance are the same as those involved in
+calculating the normal density.
+
+### Poisson sufficient statistics
+
+The Poisson distribution is the easiest case, because the sum of
+observations is sufficient.  Specifically, we can replace
+
+```stan
+y ~ poisson(lambda);
+```
+
+with
+
+```stan
+sum(y) ~ poisson(size(y) * lambda);
+```
+
+This will work even if `y` is a parameter vector because no Jacobian
+adjustment is required for summation.
 
 
 ## Aggregating common subexpressions

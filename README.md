@@ -21,13 +21,16 @@ GitHub (re)builds and (re)deploys the website.
 
 ## Documentation toolset
 
-We use [Quarto](https://quarto.org/) to build the HTML website and standalone pdfs;
-previously, we used [bookdown](https://github.com/rstudio/bookdown).
-[Download quarto](https://quarto.org/docs/download/)
-To build the pdf version of the docs, you will need to [install LaTeX](https://www.latex-project.org/get/) as well.
+The documentation source files are written in [Rmarkdown](https://rmarkdown.rstudio.com)
+and the RStudio's [bookdown package](https://github.com/rstudio/bookdown) converts these to HTML and pdf.
+The conversion engine is [Pandoc](https://pandoc.org).  It is bundled with RStudio.
+To use the build scripts to build the docset,
+you might need to [install Pandoc](https://pandoc.org/installing.html) separately.
 
-Quarto accepts [`.qmd`](https://quarto.org/docs/authoring/markdown-basics.html) source files
-and uses the [Pandoc](https://pandoc.org) conversion engine.
+To build the pdf version of the docs, you will need to [install LaTeX](https://www.latex-project.org/get/) as well.
+The Stan documentation uses the [Lucida fonts](https://www.pctex.com/Lucida_Fonts.html),
+which must be [installed manually](https://tex.stackexchange.com/questions/88423/manual-font-installation).
+
 
 ## Scripts to build and maintain the docset
 
@@ -35,17 +38,17 @@ and uses the [Pandoc](https://pandoc.org) conversion engine.
 
 The program `build.py` convert the markdown files under `src` to html and pdf and populates the `docs` dir with the generated documentation.
 Requires Python 3.7 or higher, due to call to `subprocess.run`, kwarg `capture_output`.
-  + 2 required arguments:  <Major> <minor> Stan version, expecting 2 positive integer arguments, e.g. `2 28`
-  + 2 optional arguments:  <format> <document>.  The output format is either `website` or `pdf`.  The document name corresponds to the name of the `src` subdirectory or `all`.
+  + 2 required argments:  <Major> <minor> Stan version, expecting 2 positive integer arguments, e.g. `2 28`
+  + 2 optional arguments:  <document> <format>.  The document name corresponds to the name of the `src` subdirectory or `all`.  The output format is either `html` or `pdf`.
 
 
 **Build script examples**
 
-* `python build.py 2 35` - creates directory `docs/2_42` as needed; populates it will all generated documentation.
-* `python build.py 2 35 website` - builds the docs website in `docs/2_42`.
-* `python build.py 2 35 pdf functions-reference` - builds only the pdf version of the Stan functions reference,  resulting document is `docs/2_35/functions-reference-2_35.pdf`
-* `python build.py 2 35 pdf all` - builds all pdfs from the Stan documentation set, resulting pdfs are in `docs/2_35`.
-
+* `python build.py 2 28` - creates directory `docs/2_28` as needed; populates it will all generated documentation.
+* `python build.py 2 28 functions-reference` - builds both HTML and pdf versions of the Stan functions reference, resulting documents are under `docs/2_28`
+* `python build.py 2 28 pdf functions-reference` - builds only the pdf version of the Stan functions reference,  resulting document is `docs/2_28/functions-reference_2_28.pdf`
+* `python build.py 2 28 all pdf` - builds all pdfs from the Stan documentation set, resulting pdfs are in `docs/2_28`.
+ 
 
 **Additional scripts**
 
@@ -56,6 +59,21 @@ The release process generates a new documentation set and adds links and redirec
 
 The Stan Functions Reference contains HTML comments which describe the function signature for all functions.  The script `extract_function_sigs.py` is used to scrape these signatures into a plain text file.
 
+## Build a single docset in R:  `bookdown::render_book`
+
+To build a single documet, you must have R or RStudio installed.
+To build a document from the command line, first `cd` to the correct `src` dir,
+then use the `Rscript` utility.
+
+```
+# build html
+> Rscript -e "bookdown::render_book('index.Rmd', output_format='bookdown::gitbook')"
+
+# build pdf
+> Rscript -e "bookdown::render_book('index.Rmd', output_format='bookdown::pdf_book')"
+```
+
+The output will be written to subdirectory `_build`.
 
 ## GitHub Pages
 

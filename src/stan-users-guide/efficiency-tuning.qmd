@@ -1195,6 +1195,7 @@ faster, but for moderate to large sized groups, the full expansion
 should be faster.
 
 
+
 ## Exploiting sufficient statistics
 
 In some cases of exponential family likelihoods, models can be recoded
@@ -1203,7 +1204,7 @@ large efficiency gains compared to an expanded model.  This section
 provides examples for Bernoulli and normal distributions, but the same
 approach can be applied to other members of the exponential family.
 
-### Bernoulli to binomial sufficient statistics
+### Bernoulli sufficient statistics {-}
 
 For example, consider the following Bernoulli
 sampling model.
@@ -1263,8 +1264,10 @@ the PMF and simply amount to an alternative, more efficient coding of
 the same likelihood.  For efficiency, the frequencies `f[k]`
 should be counted once in the transformed data block and stored.
 
+The same trick works for combining multiple binomial observations.
 
-### Normal sufficient statistics
+
+### Normal sufficient statistics {-}
 
 Consider the following Stan model for fitting a normal distribution to data.
 
@@ -1282,14 +1285,14 @@ model {
 }
 ```
 
-This is going to evaluate the normal for `y[1]` to `y[N]`.  With the
-vectorized form above, Stan is clever enough to only evaluate
-`log(sigma)` once, but it still has to evaluate the normal for all of
-`y[1]` to `y[N]`, which involves subtracting the mean and dividing by
-the standard deviation and then squaring.
+With the vectorized form used for `y`, Stan is clever enough to only
+evaluate `log(sigma)` once, but it still has to evaluate the normal
+for all of `y[1]` to `y[N]`, which involves adding up all the squared
+differences from the mean and then dividing by `sigma` squared.
 
-An equivalent density up to normalizing constants, is given in the
-following form
+An equivalent density to the one above (up to normalizing constants
+that do not depend on parameters), is given in the following Stan
+program.
 
 ```stan
 data {
@@ -1299,7 +1302,7 @@ data {
 transformed data {
   real mean_y = mean(y);
   real<lower=0> var_y = variance(y);
-  real nm1_over2 = (N - 1) / 2.0;
+  real nm1_over2 = 0.5 * (N - 1);
   real sqrt_N = sqrt(N);
 }
 parameters {
@@ -1313,29 +1316,26 @@ model {
 
 ```
 
-The data and parameters are the same in this model as in the first.
-This model adds a transformed data block to compute the mean and
-variance of the data, which are the sufficient statistics here.  These
-are stored along with two other useful constants.  Then the model
-defining a distribution over data is converted to model over just the
-single mean and variance value.
+The data and parameters are the same in this program as in the first.
+The second version adds a transformed data block to compute the mean
+and variance of the data, which are the sufficient statistics here.
+These are stored along with two other useful constants.  Then the
+program can define distributions over the mean and variance, both of
+which are scalars here.
 
+The original Stan program and this one define the same model in the
+sense that they define the same log density up to a constant additive
+term that does not depend on the parameters.  The priors on `mu` and
+`sigma` are both improper, but proper priors could be added as
+additional statements in the model block without affecting the
+sufficiency.
 
-The original model and this one define the same log density up to a
-constant additive term that does not depend on the parameters.  The
-priors on `mu` and `sigma` are both improper, but they could be
-upgraded to proper priors without changing the drop-in
-replacement---the priors are just additional statements in the model
-block.
+This transform explicitly relies on aggregating the data.  Using this
+trick on parameters leads to more computation than just computing the
+normal log density, even before accounting for the non-linear change
+of variables in the variance.
 
-This transform explicitly relies on aggregating the data.  If instead
-this trick is used for parameters `y`, then the change of variables
-adjustment for the non-linear variance calculation needs to be
-included, and there won't be any efficiency gain, because the
-calculations involve in variance are the same as those involved in
-calculating the normal density.
-
-### Poisson sufficient statistics
+### Poisson sufficient statistics {-}
 
 The Poisson distribution is the easiest case, because the sum of
 observations is sufficient.  Specifically, we can replace
@@ -1402,7 +1402,7 @@ unit sample variance has the following potential benefits:
 * It aids in the interpretation and comparison of the importance of coefficients across different predictors.
 
 When there are large differences between the units and scales of the predictors,
-standardizating the predictors is especially useful.
+standardizing the predictors is especially useful.
 This section illustrates the principle for a simple linear regression.
 
 Suppose that $y = (y_1,\dotsc,y_N)$ is a vector of $N$ outcomes and

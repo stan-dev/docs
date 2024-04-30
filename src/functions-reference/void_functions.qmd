@@ -5,14 +5,12 @@ pagetitle: Void Functions
 # Void Functions
 
 
+Stan supports a few special statements for printing or for signaling
+an issue with the program.
 
-Stan does not technically support functions that do not return values.
-It does support two types of statements, one printing and one for rejecting
-outputs.
-
-Although `print` and `reject` appear to have the syntax of functions,
-they are actually special kinds of statements with slightly different
-form and behavior than other functions.  First, they are the
+Although `print`, `reject`, and `fatal_error` appear to have the syntax of
+functions, they are actually special kinds of statements with slightly
+different form and behavior than other functions.  First, they are the
 constructs that allow a variable number of arguments.  Second, they
 are the the only constructs to accept string literals (e.g., `"hello
 world"`) as arguments.  Third, they have no effect on the log density
@@ -20,7 +18,7 @@ function and operate solely through side effects.
 
 The special keyword `void` is used for their return type because they behave
 like variadic functions with void return type, even though they are special
-kinds of statements.
+kinds of statements built in to the language.
 
 ## Print statement
 
@@ -34,7 +32,7 @@ or the R console in RStan).
 \index{{\tt \bfseries print }!{\tt (T1 x1,..., TN xN): void}|hyperpage}
 
 `void` **`print`**`(T1 x1,..., TN xN)`<br>\newline
-Print the values denoted by the arguments x1 through xN on the output
+Print the values denoted by the arguments `x1` through `xN` on the output
 message stream. There are no spaces between items in the print, but a
 line feed (LF; Unicode U+000A; C++ literal `'\n'`) is inserted at
 the end of the printed line. The types `T1` through `TN` can be any of
@@ -57,9 +55,33 @@ context in which it occurs).
 
 `void` **`reject`**`(T1 x1,..., TN xN)`<br>\newline
 Reject the current iteration and print the values denoted by the
-arguments x1 through xN on the output message stream. There are no
+arguments `x1` through `xN` on the output message stream. There are no
 spaces between items in the print, but a line feed (LF; Unicode
 U+000A; C++ literal `'\n'`) is inserted at the end of the printed
 line. The types `T1` through `TN` can be any of Stan's built-in
 numerical types or double quoted strings of characters (bytes).
 {{< since 2.18 >}}
+
+
+## Fatal error statement
+
+The fatal error statement has the same syntax as the print and reject
+statements, accepting an arbitrary number of arguments of any type
+(including string literals). The effect of executing a fatal_error
+statement is to throw an exception internally that terminates the
+algorithm completely. It can be viewed as an unrecoverable version
+of reject, and as such should be used only when exiting the algorithm
+is the only option.
+
+<!-- void; fatal_error; (T1 x1,..., TN xN); -->
+\index{{\tt \bfseries fatal\_error }!{\tt (T1 x1,..., TN xN): void}|hyperpage}
+
+`void` **`fatal_error`**`(T1 x1,..., TN xN)`<br>\newline
+Print the values denoted by the arguments `x1` through `xN` on the output
+message stream and then exit the currently running algorithm.
+There are no spaces between items in the print, but a line feed
+(LF; Unicode U+000A; C++ literal `'\n'`) is inserted at the end
+of the printed line. The types `T1` through `TN` can be any of
+Stan's built-in numerical types or double quoted strings of
+characters (bytes).
+{{< since 2.35 >}}

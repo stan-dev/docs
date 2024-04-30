@@ -1476,15 +1476,17 @@ to find out earlier rather than later when there is a problem.
 
 #### Fatal exception contexts {-}
 
-In both the transformed data block and generated quantities block,
-rejections are fatal.  This is because if initialization fails or if
-generating output fails, there is no way to recover values.
+Rejections are fatal in the transformed data block. This is because if
+initialization fails there is no way to recover values, so the
+algorithm will not begin execution.
 
 Reject statements placed in the transformed data block can be used
 to validate both the data and transformed data (if any).  This allows
 more complicated constraints to be enforced that can be specified with
 Stan's constrained variable declarations.
 
+Fatal errors in other blocks may also be signaled by use of the
+`fatal_error` statement.
 
 #### Recoverable rejection contexts {-}
 
@@ -1560,3 +1562,16 @@ is negligible or constant, we can't sample from that truncated
 posterior efficiently.  Programs need to use one-to-one mappings that
 guarantee the constraints are satisfied and only use reject statements
 to raise errors or help with debugging.
+
+## Fatal error statements
+
+The Stan `fatal_error` statement provides a mechanism to
+report errors or problematic values encountered during program
+execution and uniformly halt processing.
+
+Like the `print` or `reject` statements, the fatal error statement
+accepts any number of quoted string literals or Stan expressions as arguments.
+
+The fatal error may be used to signal an unrecoverable error in blocks
+where `reject` leads to the algorithm attempting to try again,
+such as the `model` block.

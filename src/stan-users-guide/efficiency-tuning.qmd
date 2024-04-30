@@ -78,8 +78,8 @@ better or optimization algorithms require less adaptation.
 
 ## Model conditioning and curvature
 
-Because Stan's algorithms (other than Riemannian Hamiltonian Monte
-Carlo) rely on step-based gradient-based approximations of the density
+Because Stan's algorithms rely on step-based gradient-based
+approximations of the density
 (or penalized maximum likelihood) being fitted, posterior curvature
 not captured by this first-order approximation plays a central role in
 determining the statistical efficiency of Stan's algorithms.
@@ -120,9 +120,7 @@ scale and so that posterior correlation is reduced; together, these
 properties mean that there is no rotation or scaling required for
 optimal performance of Stan's algorithms.  For Hamiltonian Monte
 Carlo, this implies a unit mass matrix, which requires no adaptation
-as it is where the algorithm initializes.  Riemannian Hamiltonian
-Monte Carlo performs this conditioning on the fly at every step, but
-such conditioning is  expensive computationally.
+as it is where the algorithm initializes.
 
 ### Varying curvature {-}
 
@@ -130,9 +128,8 @@ In all but very simple models (such as multivariate normals), the
 Hessian will vary as $\theta$ varies (an extreme example is Neal's
 funnel, as naturally arises in hierarchical models with little or no
 data).  The more the curvature varies, the harder it is for all of the
-algorithms with fixed adaptation parameters (that is, everything but
-Riemannian Hamiltonian Monte Carlo) to find adaptations that cover the
-entire density well.  Many of the variable transforms proposed are
+algorithms with fixed adaptation parameters to find adaptations that
+cover the entire density well.  Many of the variable transforms proposed are
 aimed at improving the conditioning of the Hessian and/or making it
 more consistent across the relevant portions of the density (or
 penalized maximum likelihood function) being fit.
@@ -339,7 +336,7 @@ transformed parameter.
 
 Sampling from heavy tailed distributions such as the Cauchy is
 difficult for Hamiltonian Monte Carlo, which operates within a
-Euclidean geometry.^[Riemannian Manifold Hamiltonian Monte Carlo (RMHMC) overcomes this difficulty by simulating the Hamiltonian dynamics in a space with a position-dependent metric; see @GirolamiCalderhead:2011 and @Betancourt:2012.]
+Euclidean geometry.
 
 The practical problem is that tail of the Cauchy
 requires a relatively large step size compared to the trunk.  With a
@@ -453,7 +450,7 @@ $$
 \times
 \textsf{Gamma}\left(\tau \middle| \nu/2, \nu/2\right)
 \
-\textsf{d} \tau.
+\text{d} \tau.
 $$
 
 
@@ -523,8 +520,8 @@ distribution approaches a normal distribution.  Thus the parameter
 
 Unfortunately, the usual situation in applied Bayesian modeling
 involves complex geometries and interactions that are not known
-analytically.  Nevertheless, reparameterization can still be
-effective for separating parameters.
+analytically.  Nevertheless, the non-centered parameterization
+can still be effective for separating parameters.
 
 #### Centered parameterization {-}
 
@@ -577,8 +574,11 @@ effective sample size when there is not much data (see
 @Betancourt-Girolami:2013), and in more extreme cases will be
 necessary to achieve convergence.
 
+
 ```stan
 parameters {
+  real mu_beta;
+  real<lower=0> sigma_beta;
   vector[K] beta_raw;
   // ...
 }
@@ -595,6 +595,23 @@ model {
 
 Any priors defined for `mu_beta` and `sigma_beta` remain as
 defined in the original model.
+
+Alternatively, Stan's
+[affine transform](https://mc-stan.org/docs/reference-manual/types.html#affinely-transformed-real)
+can be used to decouple `sigma` and `beta`:
+
+```stan
+parameters {
+  real mu_beta;
+  real<lower=0> sigma_beta;
+  vector<offset=mu_beta, multiplier=sigma_beta>[K] beta;
+  // ...
+}
+model {
+  beta ~ normal(mu_beta, sigma_beta);
+  // ...
+}
+```
 
 Reparameterization of hierarchical models is not limited to the normal
 distribution, although the normal distribution is the best candidate
@@ -1279,14 +1296,21 @@ To make the model even more efficient, a transformed data variable
 defined to be `sum(y)` could be used in the place of `sum(y)`.
 
 
-## Standardizing predictors and outputs
+## Standardizing predictors
 
-Stan programs will run faster if the input is standardized to have a
-zero sample mean and unit sample variance.  This section illustrates
-the principle with a simple linear regression.
+Standardizing the data so that all predictors have a zero sample mean and
+unit sample variance has the following potential benefits:
 
-Suppose that $y = (y_1,\dotsc,y_N)$ is a sequence of $N$ outcomes and
-$x = (x_1,\dotsc,x_N)$ a parallel sequence of $N$ predictors.  A
+* It helps in faster convergence of MCMC chains.
+* It makes the model less sensitive to the specifics of the parameterization.
+* It aids in the interpretation and comparison of the importance of coefficients across different predictors.
+
+When there are large differences between the units and scales of the predictors,
+standardizating the predictors is especially useful.
+This section illustrates the principle for a simple linear regression.
+
+Suppose that $y = (y_1,\dotsc,y_N)$ is a vector of $N$ outcomes and
+$x = (x_1,\dotsc,x_N)$ the corresponding vector of $N$ predictors.  A
 simple linear regression involving an intercept coefficient $\alpha$
 and slope coefficient $\beta$ can be expressed as
 $$
@@ -1297,39 +1321,43 @@ $$
 \epsilon_n \sim \textsf{normal}(0,\sigma).
 $$
 
-If either vector $x$ or $y$ has very large or very small values or if the
-sample mean of the values is far away from 0 (on the scale of the values),
-then it can be more efficient to standardize the outputs $y_n$ and
-predictors $x_n$.  The data are first centered by subtracting the
-sample mean, and then scaled by dividing by the sample deviation.
-Thus a data point $u$ is standardized with respect to
-a vector $y$  by the function $\textsf{z}_y$, defined by
+If $x$ has very large or very small values
+or if the mean of the values is far away from 0 (on the scale of the values),
+then it can be more efficient to standardize the predictor values $x_n$.
+First the elements of $x$ are zero-centered by subtracting the mean,
+then scaled by dividing by the standard deviation.
+
+The mean of $x$ is given by:
+
 $$
-\textsf{z}_y(u) = \frac{u - \bar{y}}{\texttt{sd}(y)}
-$$
-where the sample mean of $y$ is
-$$
-\bar{y}
-= \frac{1}{N} \sum_{n=1}^N y_n,
-$$
-and the sample standard deviation of $y$ is
-$$
-\texttt{sd}(y)
-= \left(
-\frac{1}{N} \sum_{n=1}^N (y_n - \bar{y})^2
-\right)^{1/2}.
-$$
-The inverse transform is
-defined by reversing the two normalization steps, first rescaling by
-the same deviation and relocating by the sample mean,
-$$
-\textrm{z}_y^{-1}(v) = \texttt{sd}(y) v + \bar{y}.
+mean_x = \frac{1}{N} \sum_{n=1}^{N} x_n
 $$
 
-To standardize a regression problem, the predictors and outcomes are
-standardized.  This changes the scale of the variables, and hence
-changes the scale of the priors.  Consider the following initial
-model.
+The standard deviation of $x$ is calculated as:
+$$
+sd_x = {\left({\frac{1}{N} \sum_{n=1}^{N} (x_n - mean_x)^2}\right)}^{1/2}
+$$
+
+With these, we compute the $z$, the standardized predictors
+
+$$
+z_n = \frac{x_n - mean_x}{sd_x}
+$$
+
+where $z_n$ is the standardized value corresponding to $x_n$.
+
+The inverse transform is
+defined by reversing the two normalization steps, first rescaling by
+the same deviation and relocating by the sample mean.
+
+$$
+x_n = z_n sd_x + mean_x
+$$
+
+Standardizing the predictors standardizes the scale of the variables,
+and hence the scale of the priors.
+
+Consider the following initial model.
 
 ```stan
 data {
@@ -1346,18 +1374,15 @@ model {
   // priors
   alpha ~ normal(0, 10);
   beta ~ normal(0, 10);
-  sigma ~ cauchy(0, 5);
+  sigma ~ normal(0, 5);
   // likelihood
-  for (n in 1:N) {
-    y[n] ~ normal(alpha + beta * x[n], sigma);
-  }
+  y ~ normal(x * beta + alpha, sigma);
 }
 ```
 
-
-The data block for the standardized model is identical.  The
-standardized predictors and outputs are defined in the transformed
-data block.
+The data block for the standardized model is identical.
+The mean and standard deviation of the data are defined
+in the transformed data block, along with the standardized predictors.
 
 ```stan
 data {
@@ -1366,10 +1391,9 @@ data {
   vector[N] x;
 }
 transformed data {
-  vector[N] x_std;
-  vector[N] y_std;
-  x_std = (x - mean(x)) / sd(x);
-  y_std = (y - mean(y)) / sd(y);
+  real mean_x = mean(x);
+  real sd_x = sd(x);
+  vector[N] x_std = (x - mean_x) / sd_x;
 }
 parameters {
   real alpha_std;
@@ -1379,89 +1403,63 @@ parameters {
 model {
   alpha_std ~ normal(0, 10);
   beta_std ~ normal(0, 10);
-  sigma_std ~ cauchy(0, 5);
-  for (n in 1:N) {
-    y_std[n] ~ normal(alpha_std + beta_std * x_std[n],
-                      sigma_std);
-  }
+  sigma_std ~ normal(0, 5);
+  y ~ normal(x_std * beta_std + alpha_std, sigma_std);
 }
 ```
 
-The parameters are renamed to indicate that they aren't the
-"natural" parameters, but the model is otherwise identical.  In
-particular, the fairly diffuse priors on the coefficients and error
-scale are the same.  These could have been transformed as well, but
+The parameters are renamed to indicate that they aren't the "natural" parameters.
+The transformed data `x_std` is defined in terms of variables `mean_x` and `sd_x`;
+by declaring these variables in the `transformed data` block, they will be available
+in all following blocks, and therefore can be used in the `generated quantities` block
+to record the "natural" parameters `alpha` and `beta`.
+
+The fairly diffuse priors on the coefficients are the same.
+These could have been transformed as well, but
 here they are left as is, because the scales make sense as
-diffuse priors for standardized data; the priors could be made more
-informative.  For instance, because the outputs $y$ have been
-standardized, the error $\sigma$ should not be greater than 1, because
-that's the scale of the noise for predictors $\alpha = \beta = 0$.
+diffuse priors for standardized data.
 
 The original regression
 $$
-y_n
-= \alpha + \beta x_n + \epsilon_n
+y_n = \alpha + \beta x_n + \epsilon_n
 $$
-has been transformed to a regression on the standardized variables,
+has been transformed to a regression on the standardized data variable $z$,
+
 $$
-\textrm{z}_y(y_n)
-= \alpha'
-+ \beta' \textrm{z}_x(x_n)
-+ \epsilon'_n.
+y_n = \alpha' + \beta' z_n + \epsilon_n.
 $$
-The original parameters can be recovered with a little algebra,
+
+The likelihood is specified in terms of the standardized parameters.
+The original slope $\beta$ is the standardized slope $\beta'$ scaled by the inverse of the standard deviation of $x$.
+The original intercept $\alpha$ is the intercept from the standardized model $\alpha'$, corrected for the effect of scaling and centering $x$.
+Thus, the formulas to retrieve $\alpha$ and $\beta$ from $\alpha'$ and $\beta'$ are:
+
 \begin{align*}
-y_n &= \textrm{z}_y^{-1}(\textrm{z}_y(y_n)) \\
-    &= \textrm{z}_y^{-1}
-\left( \alpha' + \beta' \textrm{z}_x(x_n) + \epsilon_n' \right) \\
-    &= \textrm{z}_y^{-1}
-\left( \alpha' + \beta' \left( \frac{x_n - \bar{x}}{\texttt{sd}(x)} \right) + \epsilon_n' \right) \\
-    &= \texttt{sd}(y)
-\left( \alpha' + \beta' \left( \frac{x_n - \bar{x}}{\texttt{sd}(x)} \right) + \epsilon_n' \right) + \bar{y} \\
-    &=
-\left( \texttt{sd}(y) \left( \alpha' - \beta' \frac{\bar{x}}{\texttt{sd}(x)} \right) + \bar{y} \right)
-+ \left( \beta' \frac{\texttt{sd}(y)}{\texttt{sd}(x)} \right) x_n
-+ \texttt{sd}(y) \epsilon'_n,
+\beta = \frac{\beta'}{\sigma_x} \\
+\alpha = \alpha' - \beta' \frac{\mu_x}{\sigma_x}
 \end{align*}
-from which the original scale parameter values can be read off,
-$$
-\alpha
-=
-\texttt{sd}(y)
-      \left(
-          \alpha'
-          - \beta' \frac{\bar{x}}{\texttt{sd}(x)}
-      \right)
-  + \bar{y};
-\qquad
-\beta = \beta' \frac{\texttt{sd}(y)}{\texttt{sd}(x)};
-\qquad
-\sigma = \texttt{sd}(y) \sigma'.
-$$
 
 These recovered parameter values on the original scales can be
 calculated within Stan using a generated quantities block following
 the model block,
+
 ```stan
 generated quantities {
-  real alpha;
-  real beta;
-  real<lower=0> sigma;
-  alpha = sd(y) * (alpha_std - beta_std * mean(x) / sd(x))
-           + mean(y);
-  beta = beta_std * sd(y) / sd(x);
-  sigma = sd(y) * sigma_std;
+  real beta = beta_std / sd_x;
+  real alpha = alpha_std - beta_std * mean_x / sd_x;
+
 }
 ```
 
-It is inefficient to compute all of the means and standard
-deviations every iteration; for more efficiency, these can be
-calculated once and stored as transformed data.  Furthermore, the
-model sampling statement can be easily vectorized, for instance, in
-the transformed model, to
-```stan
-y_std ~ normal(alpha_std + beta_std * x_std, sigma_std);
-```
+When there are multiple real-valued predictors, i.e.,
+when `K` is the number of predictors, `x` is an $N \times K$ matrix,
+and `beta` ia $K$-vector of coefficients,
+then `x * beta` is an $N$-vector of predictions, one for each of the $N$ data items.
+When $K \ll N$
+the [QR reparameterization](regression.qmd#QR-reparameterization.section)
+is recommended for linear and generalized linear models
+unless there is an informative prior on the location of $\beta$.
+
 
 ### Standard normal distribution {-}
 

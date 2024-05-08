@@ -13,9 +13,10 @@ have some value (as well as declared to have some type) before they
 are used --- if they do not, the behavior is undefined.
 
 The basis of Stan's execution is the evaluation of a log probability
-function (specifically, a probability density function) for a given
+function (specifically, a log probability density function) for a given
 set of (real-valued) parameters. Log probability function can be
-constructed by using assignment statements.  Statements may be grouped
+constructed by using distribution statements and log probability increment 
+statements.  Statements may be grouped
 into sequences and into for-each loops.  In addition, Stan allows
 local variables to be declared in blocks and also allows an empty
 statement consisting only of a semicolon.
@@ -241,14 +242,14 @@ corresponding long form would be legal and it has the same effect._
 ## Increment log density {#increment-log-prob.section}
 
 The basis of Stan's execution is the evaluation of a log probability
-function (specifically, a probability density function) for a given
+function (specifically, a log probability density function) for a given
 set of (real-valued) parameters; this function returns the log density
 of the posterior up to an additive constant.  Data and transformed
 data are fixed before the log density is evaluated.  The total log
 probability is initialized to zero.  Next, any log Jacobian
 adjustments accrued by the variable constraints are added to the log
 density (the Jacobian adjustment may be skipped for optimization).
-Sampling and log probability increment statements may add to the log
+Distribution statements and log probability increment statements may add to the log
 density in the model block.  A log probability increment statement
 directly increments the log density with the value of an expression as
 follows.^[The current notation replaces two previous versions.  Originally, a variable `lp__` was directly exposed and manipulated;  this is no longer allowed.  The original statement syntax for `target += u` was `increment_log_prob(u)`, but this form was removed in Stan 2.33]
@@ -266,7 +267,7 @@ variable $y$ is added to the total log probability.  In the general
 case, the argument can be any expression.^[Writing this model with the expression `-0.5 * y * y` is more efficient than with the equivalent expression `y * y / -2` because multiplication is more efficient than division; in both cases, the negation is rolled into the numeric literal (`-0.5` and `-2`).  Writing `square(y)` instead of `y * y` would be even more efficient because the derivatives can be precomputed, reducing the memory and number of operations required for automatic differentiation.]
 
 An entire Stan model can be implemented this way.  For instance, the
-following model will draw a single variable according to a unit normal
+following model has a single variable according to a unit normal
 probability.
 
 ```stan
@@ -365,34 +366,62 @@ To access accumulated log density up to the current execution point,
 the function `target()` may be used.
 
 
-## Sampling statements {#sampling-statements.section}
+## Distribution statements {#sampling-statements.section}
 
-Stan supports writing probability statements also in sampling
-notation, such as
+Stan supports writing probability statements also using distribution
+statements, for example
 
 ```stan
 y ~ normal(mu, sigma);
+mu ~ normal(0, 10);
+sigma ~ normal(0, 1);
 ```
+The symbol $\sim$ is called tilde. Due to historical reasons, the distribution statements used to be called ``sampling statements`` in Stan, but that term is not recommended anymore as it is less accurate description.
 
-The name "sampling statement" is meant to be suggestive, not
-interpreted literally.  Conceptually, the variable `y`, which may
-be an unknown parameter or known, modeled data, is being declared
-to have the distribution indicated by the right-hand side of the
-sampling statement. The above statement can read as "y is distributed
-as normal distribution with parameters mu and sigma.". The symbol `~`
-is called tilde.
+In general, we can read $\sim$ as ``is distributed as,'' and overall this notation is used as a shorthand for defining distributions as
+$$
+\begin{aligned}
+   p(y| \mu, \sigma) & = \mathrm{normal}(y |  \mu, \sigma)\\
+   p(\mu) & = \mathrm{normal}(\mu |  0, 10)\\
+   p(\sigma) & = \mathrm{normal}^+(\sigma |  0, 1).
+\end{aligned}
+$$
+A collection of distribution statements define an unnormalized joint distribution as the product of component distributions
+$$
+p(y,\mu,\sigma) \propto p(y| \mu, \sigma )p(\mu) p(\sigma).
+$$
+In general, the product of arbitrary probability density functions is not a normalized probability density function---that is, it will be positive but will not in general integrate to 1---but the proportionality is sufficient for the Stan algorithms.
 
-Executing such a statement does not perform any sampling.  In Stan, a
-sampling statement is merely a notational convenience following the typical
+Stan always constructs the target function---in Bayesian terms, the log posterior density function of the parameter vector---by adding terms in the model block.  Equivalently, each $\sim$ statement corresponds to a multiplicative factor in the unnormalized posterior density.
+
+This works even if the model is not constructed generatively.  For example, suppose you include the following code in a Stan model:
+```stan
+  a ~ normal(0, 1);
+  a ~ normal(0, 1);
+```
+This is translated to
+$$
+    p(a) = \mathrm{normal}(a | 0, 1)\mathrm{normal}(a |  0, 1),
+$$
+which in this case is $\mathrm{normal}(a|0,1/\sqrt{2})$.  One might expect that the above two lines of code would represent a redundant expression of a $\mathrm{normal}(a|0,1)$ prior, but, no, each line of code corresponds to an additional term in the target, or log posterior, density.  You can think of each line as representing an additional piece of information.
+
+Distribution statement `... ~ ...` accepts only distributions on the right side. These distributions can be built in or user defined distributions.  The left side of a distribution statement may be data, parameter, or a complex expression, but the evaluated type needs to match one of the allowed type of the right hand side distribution (see more below).
+
+In Stan, a distribution statement is merely a notational convenience following the typical
 notation used to present models in the literature.  The above
-sampling statement could be expressed as a direct increment on the
+model defined with distribution statements could be expressed as a direct increment on the
 total log probability density as
 
 ```stan
 target += normal_lpdf(y | mu, sigma);
+target += normal_lpdf(mu | 0, 10);
+target += normal_lpdf(sigma | 0, 1);
 ```
 
-In general, a sampling statement of the form
+Stan model can mix distribution statements and log probability increment 
+statements. Although we often prefer to present models as joint distributions, there are several cases due to computational efficiency (e.g. censored data model) or Stan language limitations (e.g. mixture models), that we may want to define the log likelihood or parts of it directly, which is possible with log probability increment statements. See also below discussion about Jacobians.
+
+In general, a distribution statement of the form
 
 ```stan
 y ~ dist(theta1, ..., thetaN);
@@ -400,7 +429,7 @@ y ~ dist(theta1, ..., thetaN);
 
 involving subexpressions `y` and `theta1` through
 `thetaN` (including the case where `N` is zero) will be well
-formed if and only if the corresponding assignment statement is
+formed if and only if the corresponding log probability increment statement is
 well-formed.  For densities allowing real `y` values, the log
 probability density function is used,
 
@@ -417,13 +446,15 @@ target += dist_lpmf(y | theta1, ..., thetaN);
 
 This will be well formed if and only if `dist_lpdf(y | theta1,
   ..., thetaN)` or `dist_lpmf(y | theta1, ..., thetaN)` is a
-well-formed expression of type `real`.
+well-formed expression of type `real`. User defined distributions 
+can be defined in functions block by using function names ending with `_lpdf`.
 
 
-### Log probability increment vs. sampling statement {-}
+### Log probability increment vs. distribution statement {-}
 
-Although both lead to the same sampling behavior in Stan, there is one
-critical difference between using the sampling statement, as in
+Although both lead to the same inference algorithm behavior in Stan,
+there is one
+critical difference between using the distribution statement, as in
 
 ```stan
 y ~ normal(mu, sigma);
@@ -435,20 +466,20 @@ and explicitly incrementing the log probability function, as in
 target += normal_lpdf(y | mu, sigma);
 ```
 
-The sampling statement drops all the terms in the log probability
+The distribution statement drops all the terms in the log probability
 function that are constant, whereas the explicit call to
 `normal_lpdf` adds all of the terms in the definition of the log
 normal probability function, including all of the constant normalizing
 terms.  Therefore, the explicit increment form can be used to recreate
 the exact log probability values for the model.  Otherwise, the
-sampling statement form will be faster if any of the input expressions,
+distribution statement form will be faster if any of the input expressions,
 `y`, `mu`, or `sigma`, involve only constants, data
 variables, and transformed data variables.
 
 
 ### User-transformed variables {-}
 
-The left-hand side of a sampling statement may be a complex
+The left-hand side of a distribution statement may be a complex
 expression.  For instance, it is legal syntactically to write
 
 ```stan
@@ -464,7 +495,7 @@ model {
 Unfortunately, this is not enough to properly model `beta` as
 having a lognormal distribution.  Whenever a nonlinear transform is
 applied to a parameter, such as the logarithm function being applied
-to `beta` here, and then used on the left-hand side of a sampling
+to `beta` here, and then used on the left-hand side of a distribution
 statement or on the left of a vertical bar in a log pdf function, an
 adjustment must be made to account for the differential change in
 scale and ensure `beta` gets the correct distribution.  The
@@ -630,7 +661,7 @@ $$
 
 Stan allows probability functions to be truncated.  For example, a
 truncated unit normal distributions restricted to $[-0.5, 2.1]$
-can be coded with the following sampling statement.
+can be presented with the following distribution statement.
 
 ```stan
 y ~ normal(0, 1) T[-0.5, 2.1];
@@ -638,7 +669,7 @@ y ~ normal(0, 1) T[-0.5, 2.1];
 
 Truncated distributions are translated as an additional term in the
 accumulated log density function plus error checking to make sure the
-variate in the sampling statement is within the bounds of the
+variate in the distribution statement is within the bounds of the
 truncation.
 
 In general, the truncation bounds and parameters may be parameters or
@@ -696,7 +727,7 @@ For truncating with only a lower bound, the upper limit is left blank.
 y ~ normal(0, 1) T[-0.5, ];
 ```
 
-This truncated sampling statement has the same behavior as the
+This truncated distribution statement has the same behavior as the
 following code.
 
 ```stan
@@ -735,7 +766,7 @@ if (y < 2) {
 #### Truncation with upper bounds in Stan {-}
 
 To truncate with only an upper bound, the lower bound is left blank.
-The upper truncated sampling statement
+The upper truncated distribution statement
 
 ```stan
 y ~ normal(0, 1) T[ , 2.1];
@@ -753,7 +784,7 @@ if (y > 2.1) {
 ```
 
 With only an upper bound, the discrete case does not need a boundary
-adjustment.  The upper-truncated sampling statement
+adjustment.  The upper-truncated distribution statement
 
 ```stan
 y ~ poisson(3.7) T[ , 10];
@@ -792,7 +823,7 @@ points must be expressions of type `int`.
 
 #### Variates outside of truncation bounds {-}
 
-For a truncated sampling statement, if the value sampled is not within
+For a truncated distribution statement, if the value sampled is not within
 the bounds specified by the truncation expression, the result is zero
 probability and the entire statement adds $-\infty$ to the total log
 probability, which in turn results in the sample being rejected.
@@ -1422,9 +1453,9 @@ print("log density after =", target());
 ```
 
 The example has a bug in that `y[2]` is not defined before the
-vector `y` is used in the sampling statement.  By printing the
+vector `y` is used in the distribution statement.  By printing the
 value of the log probability accumulator before and after each
-sampling statement, it's possible to isolate where the log probability
+distribution statement, it's possible to isolate where the log probability
 becomes ill-defined (i.e., becomes not-a-number).
 
 Note that print statements may not always be displayed immediately,

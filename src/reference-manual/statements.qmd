@@ -301,7 +301,7 @@ depend on the parameters.  This is convenient because often the
 normalizing constant $Z$ is either time-consuming to compute or
 intractable to evaluate.
 
-#### Built in distributions {-}
+#### Built in distributions {#built-in-distributions}
 
 The built in distribution functions in Stan are all available in normalized
 and unnormalized form. The normalized forms include all of the terms in the log
@@ -318,11 +318,12 @@ $$
 -\frac{1}{2} \left( \frac{x - \mu}{\sigma} \right)^2
 $$
 
-The `normal_lupdf` function returns the log density of an unnormalized distribution.
-With the unnormalized version of the function, Stan does not define what the
-normalization constant will be, though usually as many terms as possible are dropped
-to make the calculation fast. Dropping a constant `sigma` term, `normal_lupdf` would
-be equivalent to:
+The `normal_lupdf` function returns the log density of an unnormalized
+distribution.  With the unnormalized version of the function, Stan
+does not define what the normalization constant will be, though
+usually as many terms as possible are dropped to make the calculation
+fast. Dropping a constant `sigma` term, `normal_lupdf` would be
+equivalent to:
 
 $$
 \textsf{normal\_lupdf}(x | \mu, \sigma) =
@@ -376,9 +377,14 @@ y ~ normal(mu, sigma);
 mu ~ normal(0, 10);
 sigma ~ normal(0, 1);
 ```
-The symbol $\sim$ is called tilde. Due to historical reasons, the distribution statements used to be called "sampling statements" in Stan, but that term is not recommended anymore as it is less accurate description.
+The symbol $\sim$ is called tilde. Due to historical reasons, the
+distribution statements used to be called "sampling statements" in
+Stan, but that term is not recommended anymore as it is less accurate
+description.
 
-In general, we can read $\sim$ as "is distributed as," and overall this notation is used as a shorthand for defining distributions as
+In general, we can read $\sim$ as "is distributed as," and overall
+this notation is used as a shorthand for defining distributions, so
+that the above example can be written also as
 $$
 \begin{aligned}
    p(y| \mu, \sigma) & = \mathrm{normal}(y |  \mu, \sigma)\\
@@ -386,15 +392,14 @@ $$
    p(\sigma) & = \mathrm{normal}^+(\sigma |  0, 1).
 \end{aligned}
 $$
-A collection of distribution statements define an unnormalized joint distribution as the product of component distributions
+A collection of distribution statements define a joint
+distribution as the product of component distributions
 $$
-p(y,\mu,\sigma) \propto p(y| \mu, \sigma )p(\mu) p(\sigma).
+p(y,\mu,\sigma) = p(y| \mu, \sigma )p(\mu) p(\sigma).
 $$
-In general, the product of arbitrary probability density functions is not a normalized probability density function---that is, it will be positive but will not in general integrate to 1---but the proportionality is sufficient for the Stan algorithms.
 
-Stan always constructs the target function---in Bayesian terms, the log posterior density function of the parameter vector---by adding terms in the model block.  Equivalently, each $\sim$ statement corresponds to a multiplicative factor in the unnormalized posterior density.
-
-This works even if the model is not constructed generatively.  For example, suppose you include the following code in a Stan model:
+This works even if the model is not constructed generatively.  For
+example, suppose you include the following code in a Stan model:
 ```stan
   a ~ normal(0, 1);
   a ~ normal(0, 1);
@@ -403,14 +408,38 @@ This is translated to
 $$
     p(a) = \mathrm{normal}(a | 0, 1)\mathrm{normal}(a |  0, 1),
 $$
-which in this case is $\mathrm{normal}(a|0,1/\sqrt{2})$.  One might expect that the above two lines of code would represent a redundant expression of a $\mathrm{normal}(a|0,1)$ prior, but, no, each line of code corresponds to an additional term in the target, or log posterior, density.  You can think of each line as representing an additional piece of information.
+which in this case is $\mathrm{normal}(a|0,1/\sqrt{2})$.  One might
+expect that the above two lines of code would represent a redundant
+expression of a $\mathrm{normal}(a|0,1)$ prior, but, no, each line of
+code corresponds to an additional term in the target, or log posterior
+density.  You can think of each line as representing an additional
+piece of information.
 
-Distribution statement `... ~ ...` accepts only distributions on the right side. These distributions can be built in or user defined distributions.  The left side of a distribution statement may be data, parameter, or a complex expression, but the evaluated type needs to match one of the allowed type of the right hand side distribution (see more below).
+When the joint distribution is considered as a function of parameters
+(e.g. $\mu$, $\sigma$) given fixed data, it is proportional to
+posterior distribution. In general, the posterior distribution is not
+a normalized probability density function---that is, it will be
+positive but will not in general integrate to 1---but the
+proportionality is sufficient for the Stan algorithms.
 
-In Stan, a distribution statement is merely a notational convenience following the typical
-notation used to present models in the literature.  The above
-model defined with distribution statements could be expressed as a direct increment on the
-total log probability density as
+Stan always constructs the target function---in Bayesian terms, the
+log posterior density function of the parameter vector---by adding
+terms in the model block.  Equivalently, each $\sim$ statement
+corresponds to a multiplicative factor in the unnormalized posterior
+density.
+
+Distribution statement `... ~ ...` accepts only distributions on the
+right side. These distributions can be built in or user defined
+distributions.  The left side of a distribution statement may be data,
+parameter, or a complex expression, but the evaluated type needs to
+match one of the allowed type of the right hand side distribution (see
+more below).
+
+In Stan, a distribution statement is merely a notational convenience
+following the typical notation used to present models in the
+literature.  The above model defined with distribution statements
+could be expressed as a direct increment on the total log probability
+density as
 
 ```stan
 target += normal_lpdf(y | mu, sigma);
@@ -418,8 +447,14 @@ target += normal_lpdf(mu | 0, 10);
 target += normal_lpdf(sigma | 0, 1);
 ```
 
-Stan model can mix distribution statements and log probability increment 
-statements. Although we often prefer to present models as joint distributions, there are several cases due to computational efficiency (e.g. censored data model) or Stan language limitations (e.g. mixture models), that we may want to define the log likelihood or parts of it directly, which is possible with log probability increment statements. See also below discussion about Jacobians.
+Stan models can mix distribution statements and log probability
+increment statements. Although in the literature statistical models
+are usually defined with distributions, there are several cases due to
+computational efficiency (e.g. censored data model) or coding language
+limitations (e.g. mixture models in Stan), that we may want to code
+the log likelihood or parts of it directly, which is possible with log
+probability increment statements. See the discussion below about
+Jacobians.
 
 In general, a distribution statement of the form
 
@@ -474,13 +509,16 @@ terms.  Therefore, the explicit increment form can be used to recreate
 the exact log probability values for the model.  Otherwise, the
 distribution statement form will be faster if any of the input expressions,
 `y`, `mu`, or `sigma`, involve only constants, data
-variables, and transformed data variables.
+variables, and transformed data variables. See the section
+[#built-in-distributions](Built in distributions) above discussing
+`_lupdf` and `_lupmf` functions that also drops all the constant terms.
 
 
 ### User-transformed variables {-}
 
-The left-hand side of a distribution statement may be a complex
-expression.  For instance, it is legal syntactically to write
+The left-hand side of a distribution statement may be an arbitrary
+expression (of compatible type)".  For instance, it is legal
+syntactically to write
 
 ```stan
 parameters {
@@ -661,7 +699,7 @@ $$
 
 Stan allows probability functions to be truncated.  For example, a
 truncated unit normal distributions restricted to $[-0.5, 2.1]$
-can be presented with the following distribution statement.
+can be coded with the following distribution statement.
 
 ```stan
 y ~ normal(0, 1) T[-0.5, 2.1];
@@ -839,8 +877,8 @@ The equivalent code for a vectorized truncation depends on which of the
 variables are non-scalars (arrays, vectors, etc.):
 
 1. If the variate `y` is the only non-scalar, the result is the same as
-   described in the above sections, but the `lcdf`/`lccdf` calculation is multiplied
-   by `size(y)`.
+   described in the above sections, but the `lcdf`/`lccdf` calculation is 
+   multiplied by `size(y)`.
 
 2. If the other arguments to the distribution are non-scalars, then the
    vectorized version of the `lcdf`/`lccdf` is used. These functions return the
@@ -973,7 +1011,8 @@ for (y in ys) {
 }
 ```
 
-The order in which elements of `ys` are visited is defined for container types as follows.
+The order in which elements of `ys` are visited is defined for
+container types as follows.
 
 * `vector`, `row_vector`: elements visited in order, `y` is of type `double`
 
@@ -1442,7 +1481,8 @@ program.  They are particularly useful for spotting problematic
 not-a-number of infinite values, both of which will be printed.
 
 It is particularly useful to print the value of the target log
-density accumulator (through the `target()` function), as in the following example.
+density accumulator (through the `target()` function), as in the
+following example.
 
 ```stan
 vector[2] y;

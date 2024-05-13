@@ -24,12 +24,7 @@ and how much the true posterior in the unconstrained space resembles a Gaussian.
 
 ## Configuration
 
-This method takes 2 arguments:
-
-- `jacobian` - Whether or not the
-[Jacobian adjustment](https://mc-stan.org/docs/stan-users-guide/reparameterization.html)
-should be included in the gradient. The default value is `true` (include adjustment).
-(Note: in optimization, the default value is `false`, for historical reasons.)
+This method takes several arguments:
 
 - `mode` - Input file of parameters values on the constrained scale.
 When Stan's `optimize` method is used to estimate the modal values,
@@ -38,6 +33,16 @@ run with default settings, i.e., the input is the MLE estimate;
 if `optimize` was run with argument `jacobian=true`, then the `laplace`
 method default setting, `jacobian=true`, should be used.
 
+- `jacobian` - Whether or not the
+[Jacobian adjustment](https://mc-stan.org/docs/stan-users-guide/reparameterization.html)
+should be included in the gradient. The default value is `true` (include adjustment).
+(Note: in optimization, the default value is `false`, for historical reasons.)
+
+- `draws` - How many total draws to return. The default is $1000$.
+
+- `calculate_lp` - Whether to calculate the log probability of the model at
+each draw. If this is `false`, the `log_p__` column of the output will be
+entirely `nan`. The default value is `true`.
 
 
 ## CSV output
@@ -52,6 +57,12 @@ unnormalized density of the Laplace approximation, respectively.
 These can be used for diagnostics and importance sampling.
 
 - Output columns for all model parameters on the constrained scale.
+
+## Diagnostic file outputs
+
+If requested with `output diagnostic_file=`, a JSON file will be
+created which contains the log density, the gradient, and the Hessian
+of the log density evaluated at the mode.
 
 ## Example
 
@@ -83,7 +94,7 @@ The header and first few data rows of the output sample are shown below.
 
 ```
 # stan_version_major = 2
-# stan_version_minor = 31
+# stan_version_minor = 35
 # stan_version_patch = 0
 # model = bernoulli_model
 # start_datetime = 2022-12-20 01:01:14 UTC
@@ -92,6 +103,7 @@ The header and first few data rows of the output sample are shown below.
 #     mode = bernoulli_lbfgs.csv
 #     jacobian = true (Default)
 #     draws = 1000 (Default)
+#     calculate_lp = true (default)
 # id = 1 (Default)
 # data
 #   file = examples/bernoulli/bernoulli.data.json

@@ -54,7 +54,7 @@ def write_index_page(index):
 
             escaped_name = name.replace("\\", "\\\\").replace("*", "\\*")
             f.write(f"**{escaped_name}**:\n\n")
-            for link, entry in sorted(links, key=lambda x: x[1].lower()):
+            for link, entry in sorted(links, key=lambda x: x[1].lower() + x[0]):
                 f.write(f" - [{entry}]({link})\n")
             f.write("\n\n")
 

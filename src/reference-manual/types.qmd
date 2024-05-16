@@ -1455,9 +1455,8 @@ Sizes are determined dynamically (at run time) and thus cannot be
 type-checked statically when the program is compiled.  As a result,
 any conformance error on size will raise a run-time error.  For
 example, trying to assign an array of size 5 to an array of size 6
-will cause a run-time error.  Similarly, multiplying an $N
-\times M$ by a $J \times K$ matrix will raise a run-time error if $M
-\neq J$.
+will cause a run-time error.  Similarly, multiplying an $N \times M$
+by a $J \times K$ matrix will raise a run-time error if $M \neq J$.
 
 ### Type information excludes constraints {-}
 
@@ -1533,13 +1532,19 @@ a vector of length `N` (the previously declared variable), and a
 variable `A`, which is a length-5 array where each element is a 3 by 4
 matrix.
 
-There are several different places a variable is declared in Stan. They are
-block variables, like those inside `data`, which can have
-[constraints](#constrained-data-types) and must include sizes for their types,
-like in the above examples. Local variables, like those defined inside loops
-or local blocks cannot be constrained, but still include sizes. Finally,
-variables declared as [function parameters](user-functions.qmd#argument-types-and-qualifiers)
-are not constrained types and _exclude_ sizes.
+The size of top-level variables in the `parameters`, `transformed parameters`, and `generated quantities`
+must remain constant across all iterations, therefore only data variables can be used in top-level size declarations.
+
+```stan
+// illegal and will be flagged by the compiler:
+generated quantities {
+  int N = 10;
+  array[N] int foo;
+```
+
+Depending on where the variable is declared in the Stan program,
+it either must or cannot have size information, and constraints
+are either optional or not allowed.
 
 ```stan
 // valid block variables, but not locals or function parameters
@@ -1552,6 +1557,11 @@ array[3] int is;
 void pretty_print_tri_lower(matrix x) { ... }
 ```
 
+Top-level variables can have [constraints](#constrained-data-types) and
+must include sizes for their types, as in the above examples.
+Local variables, like those defined inside loops or local blocks cannot be constrained, but still include sizes.
+Finally, variables declared as [function parameters](user-functions.qmd#argument-types-and-qualifiers)
+are not constrained types and _exclude_ sizes.
 
 In the following table, the leftmost column is a list of the
 unconstrained and undimensioned basic types; these are used as

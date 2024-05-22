@@ -55,7 +55,7 @@ improper priors for the two regression coefficients.
 
 ### Matrix notation and vectorization {- #vectorization.section}
 
-The sampling statement in the previous model is vectorized, with
+The distribution statement in the previous model is vectorized, with
 
 ```stan
 y ~ normal(alpha + beta * x, sigma);
@@ -114,7 +114,7 @@ the entire model may be written using matrix arithmetic as shown.  It
 would be possible to include a column of ones in the data matrix `x` to
 remove the `alpha` parameter.
 
-The sampling statement in the model above is just a more efficient,
+The distribution statement in the model above is just a more efficient,
 vector-based approach to coding the model with a loop, as in the
 following statistically equivalent model.
 
@@ -259,7 +259,7 @@ term $\epsilon$ as having a normal distribution.  From Stan's
 perspective, there is nothing special about normally distributed
 noise.  For instance, robust regression can be accommodated by giving
 the noise term a Student-$t$ distribution.  To code this in Stan, the
-sampling distribution is changed to the following.
+distribution distribution is changed to the following.
 
 
 ```stan
@@ -357,7 +357,7 @@ $$
 
 The cumulative standard normal distribution function $\Phi$ is implemented
 in Stan as the function `Phi`.  The probit regression model
-may be coded in Stan by replacing the logistic model's sampling
+may be coded in Stan by replacing the logistic model's distribution
 statement with the following.
 
 
@@ -806,7 +806,7 @@ recommendations on priors for regression coefficients and scales.
 
 #### Optimizing the model {-}
 
-Where possible, vectorizing sampling statements leads to faster log
+Where possible, vectorizing distribution statements leads to faster log
 probability and derivative evaluations.  The speed boost is not
 because loops are eliminated, but because vectorization allows sharing
 subcomputations in the log probability and gradient calculations and
@@ -847,7 +847,7 @@ Stan because they are translated directly to C++.  In most cases, the
 cost of allocating and assigning to a container is more than made up
 for by the increased efficiency due to vectorizing the log probability
 and gradient calculations.  Thus the following version is faster than
-the original formulation as a loop over a sampling statement.
+the original formulation as a loop over a distribution statement.
 
 
 ```stan
@@ -1062,7 +1062,7 @@ $$
 \textsf{normal}\left(y \mid 0, 1\right).
 $$
 
-The sampling statement is also vectorized using elementwise
+The distribution statement is also vectorized using elementwise
 multiplication;  it is equivalent to
 
 ```stan
@@ -1409,13 +1409,13 @@ with the vectorized form:
 
 The outer brackets create a local scope in which to define the
 variable `x_beta_jj`, which is then filled in a loop and used
-to define a vectorized sampling statement.  The reason this is such a
+to define a vectorized distribution statement.  The reason this is such a
 big win is that it allows us to take the log of sigma only once and it
 greatly reduces the size of the resulting expression graph by packing
 all of the work into a single density function.
 
 Although it is tempting to redeclare `beta` and include a revised
-model block sampling statement,
+model block distribution statement,
 
 ```stan
 parameters {
@@ -1428,7 +1428,7 @@ model {
 }
 ```
 
-this fails because it breaks the vectorization of sampling for
+this fails because it breaks the vectorization for
 `beta`,^[Thanks to Mike Lawrence for pointing this out in the GitHub issue for the manual.]
 
 ```stan

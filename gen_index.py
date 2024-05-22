@@ -28,7 +28,7 @@ def make_index_mapping(sigs):
         sig = f"<!-- {returntype}; {name}"
         if args.strip() == "~":
             sig += " ~; "
-            index_entry = "sampling statement"
+            index_entry = "distribution statement"
         else:
             sig += f"; {args}; "
             index_entry = f"`{args} : {returntype}`"

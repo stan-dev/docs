@@ -190,23 +190,25 @@ location and scale, it is not necessary to impute values.  Instead,
 the values can be integrated out.  Each censored data point has a
 probability of
 \begin{align*}
-\Pr[y > U]
-  &= \int_U^{\infty} \textsf{normal}\left(y \mid \mu,\sigma \right) \,\textsf{d}y \\
+\Pr[y_{\mathrm{cens},m} > U]
+  &= \int_U^{\infty} \textsf{normal}\left(y_{\mathrm{cens},m} \mid \mu,\sigma \right) \,\textsf{d}y_{\mathrm{cens},m} \\
   &= 1 - \Phi\left(\frac{U - \mu}{\sigma}\right),
 \end{align*}
 
-where $\Phi()$ is the standard normal cumulative distribution function.
-With $M$ censored observations, the total probability on the log scale
+where $\Phi()$ is the standard normal cumulative distribution function. 
+This probability is equivalent to the likelihood contribution of knowing
+that $y_{\mathrm{cens},m}>U$.
+With $M$ censored observations, the likelihood on the log scale
 is
 \begin{align*}
-\log \prod_{m=1}^M \Pr[y_m > U]
+\log \prod_{m=1}^M \Pr[y_{\mathrm{cens},m} > U]
   &= \log \left( 1 - \Phi\left(\left(\frac{U - \mu}{\sigma}\right)\right)^{M}\right) \\
   &= M \times \texttt{normal}\mathtt{\_}\texttt{lccdf}\left(U \mid \mu, \sigma \right),
 \end{align*}
 
 where `normal_lccdf` is the log of complementary CDF
 (Stan provides `<distr>_lccdf` for each distribution
-implemented in Stan).
+implemented in Stan). 
 
 The following right-censored model assumes
 that the censoring point is known, so it is declared as data.
@@ -229,9 +231,10 @@ model {
 ```
 
 For the observed values in `y_obs`, the normal model is
-used without truncation.  The log probability is directly incremented
-using the calculated log cumulative normal probability of the censored
-data items.
+used without truncation.  The likelihood contribution from the
+integrated out censored values can not be coded with distribution
+statement, and the log probability is directly incremented using the
+calculated log cumulative normal probability of the censored observations.
 
 For the left-censored data the CDF (`normal_lcdf`) has to be
 used instead of complementary CDF.  If the censoring point variable

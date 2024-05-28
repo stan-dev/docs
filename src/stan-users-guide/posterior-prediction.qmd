@@ -84,13 +84,13 @@ $$
 \tilde{y}^{(m)} \sim p(y \mid \theta^{(m)}).
 $$
 
-Randomly drawing $\tilde{y}$ from the sampling distribution is
+Randomly drawing $\tilde{y}$ from the data model is
 critical because there are two forms of uncertainty in posterior
-predictive quantities, sampling uncertainty and estimation
-uncertainty.  Estimation uncertainty arises because $\theta$ is being
-estimated based only on a sample of data $y$. Sampling uncertainty
-arises because even a known value of $\theta$ leads to a sampling
-distribution $p(\tilde{y} \mid \theta)$ with variation in $\tilde{y}$.
+predictive quantities, aleatoric uncertainty and epistemic
+uncertainty.  Epistemic uncertainty arises because $\theta$ is unknown
+and estimated based only on a finite sample of data $y$. Aleatoric uncertainty
+arises because even a known value of $\theta$ leads to uncertainty about
+new $\tilde{y}$ as described by the data model $p(\tilde{y} \mid \theta)$.
 Both forms of uncertainty show up in the factored form of the
 posterior predictive distribution,
 $$
@@ -98,11 +98,11 @@ p(\tilde{y} \mid y)
 =
 \int
 \underbrace{p(\tilde{y} \mid \theta)}_{\begin{array}{l}
-                                         \textrm{sampling}
+                                         \textrm{aleatoric}
                                          \\[-2pt] \textrm{uncertainty}
                                        \end{array}}
 \cdot \underbrace{p(\theta \mid y)}_{\begin{array}{l}
-                                         \textrm{estimation}
+                                         \textrm{epistemic}
                                          \\[-2pt] \textrm{uncertainty}
                                        \end{array}}
 \, \textrm{d}\theta.
@@ -117,12 +117,12 @@ using the generated quantities block.
 ### Simple Poisson model {-}
 
 For example, consider a simple Poisson model for count data with a
-rate parameter $\lambda > 0$ following a gamma-distributed prior,
+rate parameter $\lambda > 0$ having a gamma-distributed prior,
 $$
 \lambda \sim \textrm{gamma}(1, 1).
 $$
-The likelihood for $N$ observations $y_1, \ldots, y_N$ is modeled as
-Poisson,
+The $N$ observations $y_1, \ldots, y_N$ are modeled as
+Poisson distributed,
 $$
 y_n \sim \textrm{poisson}(\lambda).
 $$
@@ -148,10 +148,10 @@ generated quantities {
   int<lower=0> y_tilde = poisson_rng(lambda);
 }
 ```
-The random draw from the sampling distribution for $\tilde{y}$ is
+The random draw from the data model for $\tilde{y}$ is
 coded using Stan's Poisson random number generator in the generated
-quantities block.  This accounts for the sampling component of the
-uncertainty; Stan's posterior sampler will account for the estimation
+quantities block.  This accounts for the aleatoric component of the
+uncertainty; Stan's posterior sampler will account for the epistemic
 uncertainty, generating a new $\tilde{y}^{(m)} \sim p(y \mid
 \lambda^{(m)})$ for each posterior draw $\lambda^{(m)} \sim p(\theta
 \mid y).$
@@ -262,14 +262,14 @@ The result from running Stan is a predictive sample $\tilde{y}^{(1)},
 The mean of the posterior predictive distribution is the expected value
 \begin{align}
 \mathbb{E}[\tilde{y} \mid \tilde{x}, x, y]
-& = &
+& = 
 \int
 \tilde{y}
 \cdot p(\tilde{y} \mid \tilde{x}, \theta)
 \cdot p(\theta \mid x, y)
 \, \textrm{d}\theta
 \\[4pt]
-& \approx & \frac{1}{M} \sum_{m = 1}^M \tilde{y}^{(m)},
+& \approx \frac{1}{M} \sum_{m = 1}^M \tilde{y}^{(m)},
 \end{align}
 where the $\tilde{y}^{(m)} \sim p(\tilde{y} \mid \tilde{x}, x, y)$ are
 drawn from the posterior predictive distribution.  Thus the posterior
@@ -372,7 +372,7 @@ Posterior predictive draws $\tilde{y}^{(m)} \sim p(\tilde{y} \mid
 $$
 \tilde{y}^{(m)} \sim p(y \mid \tilde{x}, \theta^{(m)})
 $$
-from the sampling distribution.  Note that drawing $\tilde{y}^{(m)}$
+from the data model.  Note that drawing $\tilde{y}^{(m)}$
 only depends on the new predictors $\tilde{x}$ and the posterior draws
 $\theta^{(m)}$.  Most importantly, neither the original data or the
 model density is required.

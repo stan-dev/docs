@@ -14,27 +14,29 @@ need normalized to perform variational inference or do optimizations. The advant
 of working with unnormalized distributions is they can make computation quite a
 bit cheaper.
 
-There are three different syntaxes to work with distributions in Stan. The way
+There are three different syntaxes to build the model in Stan. The way
 to select between them is by determining if the proportionality constants are
-necessary. If performance is not a problem, it is always safe to use the normalized
-densities.
+necessary. If performance is not a problem, it is always safe to use the 
+normalized densities.
 
-The first two syntaxes use unnormalized densities (dropping proportionality
-constants):
+The distribution statement (`~`) and log density increment statement
+(`target +=`) with `_lupdf()` use unnormalized densities for $x$
+(dropping proportionality constants):
 
 ```stan
 x ~ normal(0, 1);
 target += normal_lupdf(x | 0, 1); // the 'u' is for unnormalized
 ```
 
-The final syntax uses the full normalized density (dropping no constants):
+The log density increment statement (`target +=`) with `_lpdf()`
+uses the full normalized density for $x$ (dropping no constants):
 
 ```stan
 target += normal_lpdf(x | 0, 1);
 ```
 
-For discrete distributions, the `target +=` syntax is `_lupmf` and `_lpmf`
-instead:
+For discrete distributions, the `target +=` syntax is using `_lupmf`
+and `_lpmf` instead:
 
 ```stan
 y ~ bernoulli(0.5);
@@ -55,7 +57,7 @@ approximated with variational inference), there is no need to compute it
 because it will not affect the results.
 
 Stan takes advantage of the proportionality constant fact with the `~` syntax.
-Take for instance the normal likelihood:
+Take for instance the normal data model:
 
 ```stan
 data {
@@ -94,7 +96,7 @@ statement here is:
 $$
 \textsf{normal\_lpdf}(x | \mu, \sigma) =
 -\log \left( \sigma \sqrt{2 \pi} \right)
--\frac{1}{2} \left( \frac{x - \mu}{\sigma} \right)^2
+-\frac{1}{2} \left( \frac{x - \mu}{\sigma} \right)^2.
 $$
 
 Now because the density here is only a function of $x$, the additive terms in
@@ -103,7 +105,7 @@ is enough to know only the quadratic term:
 
 $$
 \textsf{normal\_lupdf}(x | \mu, \sigma) =
--\frac{1}{2} \left( \frac{x - \mu}{\sigma} \right)^2
+-\frac{1}{2} \left( \frac{x - \mu}{\sigma} \right)^2.
 $$
 
 ## Keeping Proportionality Constants

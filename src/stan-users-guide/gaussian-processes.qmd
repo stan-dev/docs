@@ -27,9 +27,9 @@ covariance of the outputs corresponding to those input points in the
 functions drawn from the process.
 
 Gaussian processes can be encoded in Stan by implementing their mean and
-covariance functions and plugging the result into the Gaussian form of their
-sampling distribution, or by using the specialized covariance functions
-outlined below.  This form of model is straightforward and may be used for
+covariance functions or by using the specialized covariance functions
+outlined below, and plugging the result into the Gaussian model.  
+This form of model is straightforward and may be used for
 simulation, model fitting, or posterior predictive inference. A more efficient
 Stan implementation for the GP with a normally distributed outcome marginalizes
 over the latent Gaussian process, and applies a Cholesky-factor
@@ -360,7 +360,7 @@ constrained to be non-negative.  The computation of the covariance matrix
 `K` is now in the model block because it involves unknown parameters and
 thus can't simply be precomputed as transformed data.  The rest of the model
 consists of the priors for the hyperparameters and the multivariate
-Cholesky-parameterized normal likelihood, only now the value `y` is known
+Cholesky-parameterized normal distribution, only now the value `y` is known
 and the covariance matrix `K` is an unknown dependent on the
 hyperparameters, allowing us to learn the hyperparameters.
 
@@ -431,10 +431,10 @@ a new parameter vector of length $N$ called `eta`. This is used in the model
 block to generate a multivariate normal vector called $f$, corresponding to the
 latent GP. We put a $\textsf{normal}(0,1)$ prior on `eta` like we did in the
 Cholesky-parameterized GP in the simulation section.  The second difference is
-that our likelihood is now univariate, though we could code $N$ likelihood
-terms as one $N$-dimensional multivariate normal with an identity covariance
-matrix multiplied by $\sigma^2$. However, it is more efficient to use the
-vectorized statement as shown above.
+that although we could code the distribution statement for $y$ with
+one $N$-dimensional multivariate normal with an identity covariance
+matrix multiplied by $\sigma^2$, we instead use vectorized univariate
+normal distribution, which is equivalent but more efficient to use.
 
 ### Discrete outcomes with Gaussian processes {-}
 
@@ -445,7 +445,8 @@ discrete data models.
 #### Poisson GP {-}
 
 If we want to model count data, we can remove the $\sigma$ parameter, and use
-`poisson_log`, which implements a log link, for our likelihood rather
+`poisson_log`, which implements a Poisson distribution with log link function,
+rather
 than `normal`. We can also add an overall mean parameter, $a$, which
 will account for the marginal expected value for $y$. We do this because we
 cannot center count data like we would for normally distributed data.

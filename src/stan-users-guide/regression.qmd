@@ -96,7 +96,7 @@ parameters {
   real<lower=0> sigma;  // error scale
 }
 model {
-  y ~ normal(x * beta + alpha, sigma);  // likelihood
+  y ~ normal(x * beta + alpha, sigma);  // data model
 }
 ```
 
@@ -191,7 +191,7 @@ parameters {
   real<lower=0> sigma;  // error scale
 }
 model {
-  y ~ normal(Q_ast * theta + alpha, sigma);  // likelihood
+  y ~ normal(Q_ast * theta + alpha, sigma);  // data model
 }
 generated quantities {
   vector[K] beta;
@@ -1207,11 +1207,11 @@ predictor.  To encode group membership, they assume individual $n$
 belongs to group $jj[n] \in \{ 1, \dotsc, J \}$.  Each individual $n$ also has an
 observed outcome $y_n$ taking on real values.
 
-#### Likelihood {-}
+#### Data model {-}
 
 The model is a linear regression with slope and intercept coefficients
 varying by group, so that $\beta_j$ is the coefficient $K$-vector for
-group $j$.  The likelihood function for individual $n$ is then just
+group $j$.  The data model for individual $n$ is then just
 $$
 y_n \sim \textsf{normal}(x_n \, \beta_{jj[n]}, \, \sigma)
 \quad\text{for}\quad n \in \{ 1, \dotsc, N \}.
@@ -1387,7 +1387,7 @@ functions, see the function reference manual.
 
 #### Optimization through vectorization {-}
 
-The code in the Stan program above can be sped up dramatically by replacing:
+The code in the Stan program above can be sped up dramatically by replacing the the distribution statement inside the for loop:
 
 ```stan
 for (n in 1:N) {
@@ -1395,7 +1395,7 @@ for (n in 1:N) {
 }
 ```
 
-with the vectorized form:
+with the vectorized distribution statement:
 
 ```stan
 {
@@ -1412,7 +1412,7 @@ variable `x_beta_jj`, which is then filled in a loop and used
 to define a vectorized distribution statement.  The reason this is such a
 big win is that it allows us to take the log of sigma only once and it
 greatly reduces the size of the resulting expression graph by packing
-all of the work into a single density function.
+all of the work into a single distribution function.
 
 Although it is tempting to redeclare `beta` and include a revised
 model block distribution statement,

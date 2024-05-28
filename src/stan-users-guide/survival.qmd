@@ -167,7 +167,7 @@ parameters {
 ```
 
 The exponential survival model and the prior are coded directly using
-vectorized sampling and ccdf statements.  This both simplifies the
+vectorized distribution and ccdf statements.  This both simplifies the
 code and makes it more computationally efficient by sharing
 computation across instances.
 
@@ -180,10 +180,10 @@ model {
 }
 ```
 
-The likelihood for observed failures is just the exponential
-distribution with rate `lambda`.  The Stan code is vectorized,
+The likelihood for rate `lambda` is just the density of exponential
+distribution for observed failure time.  The Stan code is vectorized,
 modeling each entry of the vector `t` as a having an exponential
-distribution with rate `lambda`. This likelihood could have been
+distribution with rate `lambda`. This data model could have been
 written as
 
 ```stan
@@ -192,10 +192,10 @@ for (n in 1:N) {
 }
 ```
 
-The log likelihood for censored items is the number of censored items
-times the log complementary cumulative distribution function (lccdf) at the
-censoring time of the exponential distribution with rate
-`lambda`.  The log likelihoods for the censored events could have
+The log likelihood contribution given censored items is the number of
+censored items times the log complementary cumulative distribution function
+(lccdf) at the censoring time of the exponential distribution with rate
+`lambda`.  The log likelihood terms arising from the censored events could have
 been added to the target log density one at a time,
 
 ```stan
@@ -273,8 +273,8 @@ the mode is nonzero ($t > 0$).
 
 ### Stan program {-}
 
-With Stan, one can just swap the exponential density for the Weibull
-density with the appropriate parameters and the model remains
+With Stan, one can just swap the exponential distribution for the Weibull
+distribution with the appropriate parameters and the model remains
 essentially the same.  Recall the exponential model's parameters and
 model block.
 
@@ -291,7 +291,8 @@ model {
 ```
 
 The Stan program for the Weibull model just swaps in the Weibull
-distribution with its shape (`alpha`) and scale (`sigma`) parameters.
+distribution and complementary cumulative distribution function
+with shape (`alpha`) and scale (`sigma`) parameters.
 
 ```stan
 parameters {
@@ -340,7 +341,7 @@ The censored items have probability
 \cdot \beta).
 \end{equation*}
 
-The the covariates form an $N \times K$ data matrix, $x \in
+The covariates form an $N \times K$ data matrix, $x \in
 \mathbb{R}^{N \times K}$. An intercept can be introduced by adding a
 column of 1 values to $x$.
 
@@ -368,9 +369,10 @@ model {
 }
 ```
 
-Both the censored and uncensored likelihoods are vectorized, one in
-terms of the log complementary cumulative distribution function and
-one in terms of the exponential distribution.
+Both the distribution statement for uncensored times and the
+log density increment statement for censored times are vectorized, one 
+in terms of the exponential distribution and one in
+terms of the log complementary cumulative distribution function.
 
 
 ## Hazard and survival functions
@@ -497,17 +499,20 @@ hazard function $h_0(t)$ is not modeled.  This is why it is called
 determines how individual $n$ varies by a proportion from the baseline
 hazard, is modeled.  This is why it's called "proportional hazards."
 
-The proportional hazards model is not fully generative.  There is no
+Cox's proportional hazards model is not fully generative.  There is no
 way to generate the times of failure because the baseline hazard
 function $h_0(t)$ is unmodeled; if the baseline hazard were known,
-failure times could be generated.  The proportional hazards model is
+failure times could be generated.  Cox's proportional hazards model is
 generative for the ordering of failures conditional on a number of
-censored items.
+censored items. Proportional hazard models may also include parametric
+or non-parametric model for the baseline hazard function^[Cox mentioned
+in his seminal paper that modeling the baseline hazard function would improve
+statistical efficiency, but he did not do it for computational reasons.].
 
 
 ### Partial likelihood function {-}
 
-The proportional specification of the hazard function is insufficient
+Cox's proportional specification of the hazard function is insufficient
 to generate random variates because the baseline hazard function
 $h_0(t)$ is unknown.  On the other hand, the proportional
 specification is sufficient to generate a partial likelihood that

@@ -298,7 +298,7 @@ and can apply the standard tests.
 
 The second technical difficulty posed by MCMC methods is that the
 samples will typically be autocorrelated (or anticorrelated) within a
-chain.  This increases the uncertainty of the estimation of posterior
+chain.  This increases (or reduces) the uncertainty of the estimation of posterior
 quantities of interest, such as means, variances, or quantiles; see
 @Geyer:2011.
 
@@ -309,19 +309,19 @@ central limit theorem (CLT).
 
 Unlike most packages, the particular calculations used by Stan follow
 those for split-$\hat{R}$, which involve both cross-chain (mean) and
-within-chain calculations (autocorrelation); see @GelmanEtAl:2013.
+within-chain calculations (autocorrelation); see @GelmanEtAl:2013 and
+@Vehtari+etal:2021:Rhat.
 
 
 ### Definition of effective sample size {-}
 
 The amount by which autocorrelation within the chains increases
 uncertainty in estimates can be measured by effective sample size (ESS).
-Given independent samples, the central limit theorem
-bounds uncertainty in estimates based on the number of samples $N$.
-Given dependent samples, the number of independent samples is replaced
-with the effective sample size $N_{\mathrm{eff}}$, which is
-the number of independent samples with the same estimation power as
-the $N$ autocorrelated samples.  For example, estimation error is
+Given independent sample (with finite variance), the central limit theorem
+bounds uncertainty in estimates based on the sample size $N$.
+Given dependent sample, the sample size is replaced
+with the effective sample size $N_{\mathrm{eff}}$.  
+For example, Monte Carlo standard error (MCSE) is
 proportional to $1 / \sqrt{N_{\mathrm{eff}}}$ rather than
 $1/\sqrt{N}$.
 
@@ -364,15 +364,14 @@ $$
 
 
 For independent draws, the effective sample size is just the number of
-iterations.  For correlated draws, the effective sample size will be
-lower than the number of iterations.  For anticorrelated draws, the
+iterations.  For correlated draws, the effective sample size is usually 
+lower than the number of iterations, but in case of anticorrelated draws, the
 effective sample size can be larger than the number of iterations.  In
 this latter case, MCMC can work better than independent sampling for
 some estimation problems.  Hamiltonian Monte Carlo, including the
 no-U-turn sampler used by default in Stan, can produce anticorrelated
 draws if the posterior is close to Gaussian with little posterior
 correlation.
-
 
 ### Estimation of effective sample size {-}
 
@@ -493,8 +492,8 @@ second approach with thinning can produce a higher effective sample
 size when the draws are positively correlated.  That's because the
 autocorrelation $\rho_t$ for the thinned sequence is equivalent to
 $\rho_{10t}$ in the unthinned sequence, so the sum of the
-autocorrelations will be lower and thus the effective sample size
-higher.
+autocorrelations usually will be lower and thus the effective sample size
+higher. 
 
 Now contrast the second approach above with the unthinned alternative,
 
@@ -506,4 +505,4 @@ large.  To summarize, *the only reason to thin a sample is to reduce
 memory requirements*.
 
 If draws are anticorrelated, then thinning will increase correlation
-and reduce the overall effective sample size.
+and further reduce the overall effective sample size.

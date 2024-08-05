@@ -24,9 +24,6 @@
 
 <identifier> ::= IDENTIFIER
                | TRUNCATE
-               | <future_keyword>
-
-<future_keyword> ::= JACOBIAN
 
 <decl_identifier> ::= <identifier>
                     | <reserved_word>
@@ -86,6 +83,7 @@
 
 <unsized_type> ::= ARRAY <unsized_dims> <basic_type>
                  | ARRAY <unsized_dims> <unsized_tuple_type>
+                 | <basic_type> <unsized_dims>
                  | <basic_type>
                  | <unsized_tuple_type>
 
@@ -115,7 +113,9 @@
                                   <id_and_optional_assignment(rhs,
                                   <decl_identifier_after_comma>)>)*
 
-<decl(type_rule, rhs)> ::= <higher_type(type_rule)>
+<decl(type_rule, rhs)> ::= type_rule <decl_identifier> LBRACK <expression>
+                           (COMMA <expression>)* RBRACK
+                         | <higher_type(type_rule)>
                            <id_and_optional_assignment(rhs,
                            <decl_identifier>)>
                            [<remaining_declarations(rhs)>] SEMICOLON
@@ -272,6 +272,7 @@
                      | <expression> TILDE <identifier> LPAREN [<expression>
                        (COMMA <expression>)*] RPAREN [<truncation>] SEMICOLON
                      | TARGET PLUSASSIGN <expression> SEMICOLON
+                     | JACOBIAN PLUSASSIGN <expression> SEMICOLON
                      | BREAK SEMICOLON
                      | CONTINUE SEMICOLON
                      | PRINT LPAREN <printables> RPAREN SEMICOLON

@@ -287,6 +287,32 @@ transformed parameters {
 }
 ```
 
+## Functions implementing change-of-variable adjustments
+
+Functions whose names end in `_jacobian` can use the
+`jacobian +=` statement. This can be used to implement a custom
+change of variables for arbitrary parameters.
+
+For example, here is a program which re-creates the built-in
+`<upper=x>` transform on real numbers:
+
+```stan
+functions {
+  real upper_bound_jacobian(real x, real ub) {
+    jacobian += x;
+    return ub - exp(x);
+  }
+}
+data {
+  real ub;
+}
+parameters {
+  real b_raw;
+}
+transformed parameters {
+  real b = upper_bound_jacobian(b_raw, ub);
+}
+```
 
 ## Functions acting as random number generators
 

@@ -15,7 +15,7 @@ are used --- if they do not, the behavior is undefined.
 The basis of Stan's execution is the evaluation of a log probability
 function (specifically, a log probability density function) for a given
 set of (real-valued) parameters. Log probability functions can be
-constructed by using distribution statements and log probability increment 
+constructed by using distribution statements and log probability increment
 statements.  Statements may be grouped
 into sequences and into for-each loops.  In addition, Stan allows
 local variables to be declared in blocks and also allows an empty
@@ -248,7 +248,8 @@ of the posterior up to an additive constant.  Data and transformed
 data are fixed before the log density is evaluated.  The total log
 probability is initialized to zero.  Next, any log Jacobian
 adjustments accrued by the variable constraints are added to the log
-density (the Jacobian adjustment may be skipped for optimization).
+density (the Jacobian adjustment may be skipped for maximum likelihood estimation
+via optimization).
 Distribution statements and log probability increment statements may add to the log
 density in the model block.  A log probability increment statement
 directly increments the log density with the value of an expression as
@@ -361,14 +362,51 @@ including arrays of vectors and matrices.   For container arguments,
 their sum will be added to the total log density.
 
 
+## Increment log density with a change of variables adjustment
+
+
+A variant of the `target +=` statement described above is the
+`jacobian +=` statement. This can be used in the transformed parameters block
+or in functions ending with `_jacobian` to mimic the log Jacobian
+adjustments accrued by built-in variable transforms.
+
+Similarly to those implemented for the built-in transforms, these Jacobian adjustment
+may be skipped for maximum likelihood estimation via optimization.
+
+For example, here is a program which recreates the existing
+[`<upper=x>` transform](transforms.qmd#upper-bounded-scalar) on real numbers:
+
+```stan
+functions {
+  real upper_bound_jacobian(real x, real ub) {
+    jacobian += x;
+    return ub - exp(x);
+  }
+}
+data {
+  real ub;
+}
+parameters {
+  real b_raw;
+}
+transformed parameters {
+  real b = upper_bound_jacobian(b_raw, ub);
+}
+model {
+  // use b as if it was declared `real<upper=ub> b;` in parameters
+  // e.g.
+  // b ~ lognormal(0, 1);
+}
+```
+
 ### Accessing the log density {-}
 
-To access accumulated log density up to the current execution point,
+To access the accumulated log density up to the current execution point,
 the function `target()` may be used.
 
 ## Sampling statements {#sampling-statements.section}
 
-The term "sampling statement" has been replaced with 
+The term "sampling statement" has been replaced with
 [distribution statement](#distribution-statements.section).
 
 ## Distribution statements {#distribution-statements.section}
@@ -432,7 +470,7 @@ terms in the model block.  Equivalently, each $\sim$ statement
 corresponds to a multiplicative factor in the unnormalized posterior
 density.
 
-Distribution statements (`~`) accept only built-in or user-defined 
+Distribution statements (`~`) accept only built-in or user-defined
 distributions on the
 right side. The left side of a distribution statement may be data,
 parameter, or a complex expression, but the evaluated type needs to
@@ -452,8 +490,8 @@ target += normal_lpdf(sigma | 0, 1);
 ```
 
 Stan models can mix distribution statements and log probability
-increment statements. Although statistical models 
-are usually defined with distributions in the literature, 
+increment statements. Although statistical models
+are usually defined with distributions in the literature,
 there are several scenarios in which we may want to code the log
 likelihood or parts of it directly, for example, due to computational
 efficiency (e.g. censored data model) or coding language limitations
@@ -485,7 +523,7 @@ target += dist_lpmf(y | theta1, ..., thetaN);
 
 This will be well formed if and only if `dist_lpdf(y | theta1,
   ..., thetaN)` or `dist_lpmf(y | theta1, ..., thetaN)` is a
-well-formed expression of type `real`. User defined distributions 
+well-formed expression of type `real`. User defined distributions
 can be defined in functions block by using function names ending with `_lpdf`.
 
 
@@ -881,7 +919,7 @@ The equivalent code for a vectorized truncation depends on which of the
 variables are non-scalars (arrays, vectors, etc.):
 
 1. If the variate `y` is the only non-scalar, the result is the same as
-   described in the above sections, but the `lcdf`/`lccdf` calculation is 
+   described in the above sections, but the `lcdf`/`lccdf` calculation is
    multiplied by `size(y)`.
 
 2. If the other arguments to the distribution are non-scalars, then the

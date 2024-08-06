@@ -37,7 +37,7 @@ def make_index_mapping(sigs):
 
         sha = hashlib.sha1(sig.encode("utf-8")).hexdigest()
         link = f"{file}#index-entry-{sha}"
-        index[name].append((link, index_entry))
+        index[name].append((link, index_entry, file.replace(".qmd", ".html")))
 
     return index
 
@@ -53,9 +53,9 @@ def write_index_page(index):
                 f.write(f"\n## {start.upper()}\n")
 
             escaped_name = name.replace("\\", "\\\\").replace("*", "\\*")
-            f.write(f"**{escaped_name}**<a id=\"{escaped_name}\" class=\"index-fn\"></a>:\n\n")
-            for link, entry in sorted(links, key=lambda x: x[1].lower() + x[0]):
-                f.write(f" - [{entry}]({link})\n")
+            f.write(f"<a id='{escaped_name}' href='#{escaped_name}' class='anchored unlink'>**{escaped_name}**:</a>\n\n")
+            for link, entry, file in sorted(links, key=lambda x: x[1].lower() + x[2] + x[0]):
+                f.write(f" - <div class='index-container'>[{entry}]({link}) <span class='detail'>({file})</span></div>\n")
             f.write("\n\n")
 
 

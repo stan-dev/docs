@@ -95,7 +95,8 @@ arguments to produce an expression, which has a value when executed.
 ### Functions as statements {-}
 
 Functions with void return types may be applied to arguments and used
-as statements.  These act like sampling statements or print
+as [statements.qmd](statements).
+These act like distribution statements or print
 statements.  Such uses are only appropriate for functions that act
 through side effects, such as incrementing the log probability
 accumulator, printing, or raising exceptions.
@@ -147,12 +148,12 @@ for containers, so an array of `int` may be assigned to an array of
 `real` of the same shape.  And we can also promote `vector` to
 `complex_vector` and similarly for row vectors and matrices.
 
-### Probability functions in sampling statements {-}
+### Probability functions in distribution statements {-}
 
-Functions whose name ends in `_lpdf` or `_lpmf` (density
+Functions whose name ends in `_lpdf` or `_lpmf` (log density
 and mass functions) may be used as probability functions and may be
-used in place of parameterized distributions on the right-hand-side of
-sampling statements.
+used in place of parameterized distributions on the right side of
+[statements.qmd#distribution-statements.section](distribution statements).
 
 
 ### Restrictions on placement {-}
@@ -160,7 +161,11 @@ sampling statements.
 Functions of certain types are restricted on scope of usage.
 Functions whose names end in `_lp` assume access to the log
 probability accumulator and are only available in the transformed
-parameter and model blocks.
+parameters and model blocks.
+
+Functions whose name end in `_jacobian` assume access to the log
+probability accumulator may only be used within the transformed parameters
+block.
 
 Functions whose names end in `_rng`
 assume access to the random number generator and may only be used
@@ -292,12 +297,14 @@ a function elsewhere results in a compile-time error.
 
 ### Log probability access in functions {-}
 
-Functions that include sampling statements or log probability
-increment statements must have a name that ends in `_lp`.
-Attempts to use sampling statements or increment log probability
+Functions that include
+[statements.qmd#distribution-statements.section](distribution statements) or
+[statements.qmd#increment-log-prob.section](log probability increment statements)
+must have a name that ends in `_lp`.
+Attempts to use distribution statements or increment log probability
 statements in other functions lead to a compile-time error.
 
-Like the target log density increment statement and sampling
+Like the target log density increment statement and distribution
 statements, user-defined functions with names that end in `_lp`
 may only be used in blocks where the log probability accumulator is
 accessible, namely the transformed parameters and model blocks.  An
@@ -305,15 +312,15 @@ attempt to use such a function elsewhere results in a compile-time
 error.
 
 
-### Defining probability functions for sampling statements {-}
+### Defining probability functions for distribution statements {-}
 
 Functions whose names end in `_lpdf` and `_lpmf` (density
-and mass functions) can be used as probability functions in sampling
+and mass functions) can be used as probability functions in distribution
 statements.  As with the built-in functions, the first argument will
-appear on the left of the sampling statement operator (`~`) in
-the sampling statement and the other arguments follow.  For example,
+appear on the left of the distribution statement operator (`~`) in
+the distribution statement and the other arguments follow.  For example,
 suppose a function returning the log of the density of `y` given
-parameter `theta` allows the use of the sampling statement is
+parameter `theta` allows the use of the distribution statement is
 defined as follows.
 
 ```stan
@@ -335,7 +342,7 @@ The `_lupdf` and `_lupmf` forms of the user-defined functions will
 instead allow other unnormalized density functions to drop additive
 constants.
 
-The sampling shorthand
+The distribution statement shorthand
 
 ```stan
 z ~ foo(phi);

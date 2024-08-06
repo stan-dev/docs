@@ -364,9 +364,9 @@ posterior inferences which do not refer to specific component labels
 are invariant under label switching and may be used directly.  This
 subsection considers a pair of examples.
 
-#### Predictive likelihood {-}
+#### Posterior predictive distribution {-}
 
-Predictive likelihood for a new observation $\tilde{y}$ given the
+Posterior predictive distribution for a new observation $\tilde{y}$ given the
 complete parameter vector $\theta$ will be
 $$
 p(\tilde{y} \mid y)
@@ -378,7 +378,7 @@ p(\tilde{y} \mid \theta)
 $$
 
 The normal mixture example from the previous section, with $\theta =
-(\mu, \sigma, \lambda)$, shows that the likelihood returns the same
+(\mu, \sigma, \lambda)$, shows that the model returns the same
 density under label switching and thus the predictive inference is
 sound.  In Stan, that predictive inference can be done either by
 computing $p(\tilde{y} \mid y)$, which is more efficient
@@ -435,9 +435,9 @@ $$
 As with other event probabilities, this can be calculated in the
 generated quantities block either by sampling $z_i$ and $z_j$ and
 using the indicator function on their equality, or by computing the
-term inside the integral as a generated quantity.  As with predictive
-likelihood, working in expectation is more statistically efficient than
-sampling.
+term inside the integral as a generated quantity.  As with posterior
+predictive distribute, working in expectation is more statistically
+efficient than sampling.
 
 ## Zero-inflated and hurdle models {#zero-inflated.section}
 
@@ -468,15 +468,13 @@ of observing a count with a $\textsf{Poisson}(\lambda)$ distribution
 used for mixing proportions because $\lambda$ is the traditional
 notation for a Poisson mean parameter). Given the probability $\theta$
 and the intensity $\lambda$, the distribution for $y_n$ can be written as
-$$
-y_n \sim
-\begin{cases}
- 0 & \quad\text{with probability } \theta, \text{ and}\\
- \textsf{Poisson}(y_n \mid \lambda) & \quad\text{with probability } 1-\theta.
-\end{cases}
-$$
+\begin{align*}
+y_n & = 0 & \quad\text{with probability } \theta, \text{ and}\\
+y_n & \sim \textsf{Poisson}(y_n \mid \lambda) & \quad\text{with probability } 1-\theta.
+\end{align*}
 
-Stan does not support conditional sampling statements (with `~`) conditional on some parameter, and we need to consider the corresponding likelihood
+
+Stan does not support conditional distribution statements (with `~`) conditional on some parameter, and we need to consider the corresponding likelihood
 $$
 p(y_n \mid \theta,\lambda)
 =
@@ -485,7 +483,7 @@ p(y_n \mid \theta,\lambda)
 (1-\theta) \times \textsf{Poisson}(y_n \mid \lambda) &\quad\text{if } y_n > 0.
 \end{cases}
 $$
-The log likelihood can be implemented directly in Stan (with `target +=`) as follows.
+The log likelihood can be coded directly in Stan (with `target +=`) as follows.
 
 
 ```stan
@@ -577,13 +575,12 @@ The hurdle model is similar to the zero-inflated model, but more
 flexible in that the zero outcomes can be deflated as well as
 inflated. Given the probability $\theta$ and the intensity $\lambda$,
 the distribution for $y_n$ can be written as
-$$
-y_n \sim
-\begin{cases}
- 0 & \quad\text{with probability } \theta, \text{and }\\
- \textsf{Poisson}_{x\neq 0}(y_n \mid \lambda) & \quad\text{with probability } 1-\theta,
-\end{cases}
-$$
+\[
+\begin{align*}
+y_n & = 0 \quad\text{with probability } \theta, \text{ and}\\
+y_n & \sim \textsf{Poisson}_{x\neq 0}(y_n \mid \lambda) \quad\text{with probability } 1-\theta,
+\end{align*}
+\]
 Where $\textsf{Poisson}_{x\neq 0}$ is a truncated Poisson distribution, truncated at $0$.
 
 The corresponding likelihood function for the hurdle model is

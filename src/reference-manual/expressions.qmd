@@ -301,6 +301,19 @@ The empty expression `[ ]` is ambiguous and therefore is not
 allowed and similarly expressions such as `[ [ ] ]` or
 `[ [ ], [ ] ]` are not allowed.
 
+### Empty vectors and matrices {-}
+
+If needed, it is possible to create an empty vector with
+```stan
+rep_vector(e, 0)
+```
+where the first expression `e` needs to scalar of type `real`.
+
+If needed, it is possible to create an empty matrix with
+```stan
+rep_matrix(e, 0, 0)
+```
+where the first expression `e` needs to scalar of type `real`.
 
 ### Array expressions {-}
 
@@ -333,6 +346,21 @@ of the resulting two dimensional array.
 array[2, 3] int b = { { 1, 2, 3 },
                 { 4, 5, 6 } };
 ```
+
+### Empty arrays {-}
+
+The empty array expression (`{ }`) is not allowed. See more about restrictions on array expressions in subsection [Restrictions on values](#array-expressions).
+
+If needed, it is possible to create an empty array with
+```stan
+rep_array(e, 0)
+```
+where the first expression `e` determines the type of the array. For
+example, `rep_array(0.0, 0)` returns an empty real array of type
+`real[]`, whereas `rep_array({123}, 0)` returns an empty two
+dimensional integer array of type `int[ , ]`. Only the type of the
+first argument is used, so the integer arrays `{123}` and `{0}`
+produce equivalent values.
 
 
 ### Array expression types {-}
@@ -782,8 +810,10 @@ In addition to single integer indexes, as described in
 [the language indexing section](#language-indexing.section), Stan supports multiple indexing.
 Multiple indexes can be integer arrays of indexes, lower
 bounds, upper bounds, lower and upper bounds, or simply shorthand for
-all of the indexes.  A complete table of index types is given in the
-following table.
+all of the indexes.  If the upper bound is smaller than the lower bound, 
+the range is empty (unlike, e.g., in R). The upper bound and lower bound can be 
+expressions that evaluate to integer. A complete list of index types is 
+given in the following table.
 
 ##### Indexing Options Table {- #index-types-table}
 
@@ -797,9 +827,18 @@ following table.
  |  lower bound  | `a[3:]`  |     `a[3]`, ..., `a[N]`     |
  |  upper bound  | `a[:5]`  |     `a[1]`, ..., `a[5]`     |
  |     range     | `a[2:7]` |    `a[2]`, ...,  `a[7]`     |
+ |     range     | `a[7:2]` |             []              |
+ |     range     | `a[5-3:5+2]` |    `a[2]`, ...,  `a[7]`     |
  |      all      |  `a[:]`  |     `a[1]`, ..., `a[N]`     |
  |      all      |  `a[]`   |     `a[1]`, ..., `a[N]`     |
 
+The range indexing with `:` allows only increasing sequences. Indexing
+with a decereasing sequence can be made by creating an integer array in
+the following way:
+```stan
+  array[6] int ii = reverse(linspaced_int_array(6, 2, 7));
+```
+Then `a[ii]` evaluates to `a[7]`, ...,  `a[2]`.
 
 ### Multiple index semantics {-}
 
@@ -1339,7 +1378,9 @@ model {
 }
 ```
 
-Algebraically, the sampling statement in the model could be reduced to
+Algebraically, 
+[the distribution statement](statements.qmd#distribution-statements.section)
+in the model could be reduced to
 
 ```stan
   x ~ normal(0, 1);

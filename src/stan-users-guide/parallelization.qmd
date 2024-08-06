@@ -514,7 +514,7 @@ Each of the fifty states $k \in \{1,\dotsc,50\}$ will have its own slope
 $\beta_k$ and intercept $\alpha_k$ to model the log odds of voting for
 the Republican candidate as a function of income.  Suppose there are
 $N$ voters and with voter $n \in 1{:}N$ being in state $s[n]$ with
-income $x_n$.  The likelihood for the vote $y_n \in \{ 0, 1 \}$ is
+income $x_n$.  The data model for the vote $y_n \in \{ 0, 1 \}$ is
 $$
 y_n \sim \textsf{Bernoulli}
 \Big(
@@ -556,16 +556,16 @@ model {
 ```
 
 For this model the vector of predictors `x` is coded as a vector,
-corresponding to how it is used in the likelihood.
+corresponding to how it is used in the model.
 The priors for `mu` and `sigma` are vectorized.  The priors
 on the two components of `beta` (intercept and slope,
 respectively) are stored in a $K \times 2$ matrix.
 
-The likelihood is also
+The distribution statement is also
 vectorized using multi-indexing with index `kk` for the states
 and elementwise multiplication (`.*`) for the income `x`.
-The vectorized likelihood works out to the same thing as the following
-less efficient looped form.
+The vectorized distribution statement works out to the same thing 
+as the following less efficient looped form.
 
 ```stan
 for (n in 1:N) {
@@ -579,11 +579,13 @@ The mapped version of the model will map over the states `K`.
 This means the group-level parameters, real data, and integer-data
 must be arrays of the same size.
 
-The mapped implementation requires a function to be mapped.  The
+The mapped implementation requires a function to be mapped.  In this
+function we can't use distribution statements, but need to accumulate
+the desired log prior and log likelihood terms to the return value. The
 following function evaluates both the likelihood for the data observed
 for a group as well as the prior for the group-specific parameters
-(the name `bl_glm` derives from the fact that it's a generalized
-linear model with a Bernoulli likelihood and logistic link function).
+(the name `bernoulli_logit_glm` derives from the fact that it's a generalized
+linear model with a Bernoulli data model and logistic link function).
 
 ```stan
 functions {
@@ -669,7 +671,8 @@ model {
 The model as written here computes the priors for each group's
 parameters along with the likelihood contribution for the group.  An
 alternative mapping would leave the prior in the model block and only
-map the likelihood.  In a serial setting this shouldn't make much of a
+map the likelihood computation.  In a serial setting this shouldn't 
+make much of a
 difference, but with parallelization, there is reduced communication
 (the prior's parameters need not be transmitted) and also reduced
 parallelization with the version that leaves the prior in the model

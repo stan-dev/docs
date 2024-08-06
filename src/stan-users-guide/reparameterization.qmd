@@ -396,7 +396,7 @@ transforms a parameter, then samples it.  Only the latter requires a
 Jacobian adjustment.
 
 It does not matter whether the probability function is
-expressed using a sampling statement, such as
+expressed using a distribution statement, such as
 
 ```stan
 log(y) ~ normal(mu, sigma);
@@ -415,7 +415,7 @@ of variables whose inverse has a gamma distribution.  This section
 contrasts two approaches, first with a transform, then with a change
 of variables.
 
-The transform based approach to sampling `y_inv` with an inverse
+The transform based approach to defining `y_inv` to have an inverse
 gamma distribution can be coded as follows.
 
 ```stan
@@ -431,7 +431,7 @@ model {
 }
 ```
 
-The change-of-variables approach to sampling `y_inv` with an
+The change-of-variables approach to defining `y_inv` to have an
 inverse gamma distribution can be coded as follows.
 
 ```stan
@@ -441,10 +441,10 @@ parameters {
 transformed parameters {
   real<lower=0> y;
   y = 1 / y_inv;  // change variables
+  jacobian += -2 * log(y_inv); // Jacobian adjustment
 }
 model {
   y ~ gamma(2,4);
-  target +=  -2 * log(y_inv);  //  Jacobian adjustment;
 }
 ```
 
@@ -476,7 +476,7 @@ transformed parameters {
   matrix[K, K] J;   // Jacobian matrix of transform
   // ... compute v as a function of u ...
   // ... compute J[m, n] = d.v[m] / d.u[n] ...
-  target += log(abs(determinant(J)));
+  jacobian += log(abs(determinant(J)));
   // ...
 }
 model {
@@ -505,7 +505,7 @@ transformed parameters {
   vector[K] J_diag;  // diagonals of Jacobian matrix
   // ...
   // ... compute J[k, k] = d.v[k] / d.u[k] ...
-  target += sum(log(J_diag));
+  jacobian += sum(log(J_diag));
   // ...
 }
 ```
@@ -596,10 +596,10 @@ parameters {
 }
 transformed parameters {
   vector[N] alpha = L + exp(alpha_raw);
+  jacobian += sum(alpha_raw); // log Jacobian
   // ...
 }
 model {
-  target += sum(alpha_raw);  // log Jacobian
   // ...
 }
 ```

@@ -49,7 +49,7 @@ when the data are loaded into the model before sampling begins.
 
 This model implicitly uses an improper flat prior on the scale and
 location parameters; these could be given priors in the model using
-sampling statements.
+distribution statements.
 
 ### Constraints and out-of-bounds returns {-}
 
@@ -63,7 +63,7 @@ y ~ normal(mu, sigma) T[L, U];
 ```
 
 then if any value inside `y` is less than the value of `L`
-or greater than the value of `U`, the sampling statement produces
+or greater than the value of `U`, the distribution statement produces
 a zero-probability estimate.  For user-defined truncation, this
 zeroing outside of truncation bounds must be handled explicitly.
 
@@ -142,7 +142,7 @@ order for this model to not concentrate `L` strongly around
 `min(y)` and `U` strongly around `max(y)`.
 
 
-## Censored data
+## Censored data {#censored.section}
 
 Censoring hides values from points that are too large, too small, or
 both.  Unlike with truncated data, the number of data points that were
@@ -181,7 +181,7 @@ and `sigma`.  Because the censored data array `y_cens` is
 declared to have values of type `real<lower=U>`, all imputed values
 for censored data will be greater than `U`.  The imputed censored
 data affects the location and scale parameters through the last
-sampling statement in the model.
+distribution statement in the model.
 
 ### Integrating out censored values {-}
 
@@ -190,23 +190,25 @@ location and scale, it is not necessary to impute values.  Instead,
 the values can be integrated out.  Each censored data point has a
 probability of
 \begin{align*}
-\Pr[y > U]
-  &= \int_U^{\infty} \textsf{normal}\left(y \mid \mu,\sigma \right) \,\textsf{d}y \\
+\Pr[y_{\mathrm{cens},m} > U]
+  &= \int_U^{\infty} \textsf{normal}\left(y_{\mathrm{cens},m} \mid \mu,\sigma \right) \,\textsf{d}y_{\mathrm{cens},m} \\
   &= 1 - \Phi\left(\frac{U - \mu}{\sigma}\right),
 \end{align*}
 
-where $\Phi()$ is the standard normal cumulative distribution function.
-With $M$ censored observations, the total probability on the log scale
+where $\Phi()$ is the standard normal cumulative distribution function. 
+This probability is equivalent to the likelihood contribution of knowing
+that $y_{\mathrm{cens},m}>U$.
+With $M$ censored observations, the likelihood on the log scale
 is
 \begin{align*}
-\log \prod_{m=1}^M \Pr[y_m > U]
+\log \prod_{m=1}^M \Pr[y_{\mathrm{cens},m} > U]
   &= \log \left( 1 - \Phi\left(\left(\frac{U - \mu}{\sigma}\right)\right)^{M}\right) \\
   &= M \times \texttt{normal}\mathtt{\_}\texttt{lccdf}\left(U \mid \mu, \sigma \right),
 \end{align*}
 
 where `normal_lccdf` is the log of complementary CDF
 (Stan provides `<distr>_lccdf` for each distribution
-implemented in Stan).
+implemented in Stan). 
 
 The following right-censored model assumes
 that the censoring point is known, so it is declared as data.
@@ -228,10 +230,11 @@ model {
 }
 ```
 
-For the observed values in `y_obs`, the normal sampling model is
-used without truncation.  The log probability is directly incremented
-using the calculated log cumulative normal probability of the censored
-data items.
+For the observed values in `y_obs`, the normal model is
+used without truncation.  The likelihood contribution from the
+integrated out censored values can not be coded with distribution
+statement, and the log probability is directly incremented using the
+calculated log cumulative normal probability of the censored observations.
 
 For the left-censored data the CDF (`normal_lcdf`) has to be
 used instead of complementary CDF.  If the censoring point variable

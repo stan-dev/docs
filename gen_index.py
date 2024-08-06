@@ -28,7 +28,7 @@ def make_index_mapping(sigs):
         sig = f"<!-- {returntype}; {name}"
         if args.strip() == "~":
             sig += " ~; "
-            index_entry = "sampling statement"
+            index_entry = "distribution statement"
         else:
             sig += f"; {args}; "
             index_entry = f"`{args} : {returntype}`"
@@ -53,7 +53,7 @@ def write_index_page(index):
                 f.write(f"\n## {start.upper()}\n")
 
             escaped_name = name.replace("\\", "\\\\").replace("*", "\\*")
-            f.write(f"**{escaped_name}**:\n\n")
+            f.write(f"**{escaped_name}**<a id=\"{escaped_name}\" class=\"index-fn\"></a>:\n\n")
             for link, entry in sorted(links, key=lambda x: x[1].lower() + x[0]):
                 f.write(f" - [{entry}]({link})\n")
             f.write("\n\n")

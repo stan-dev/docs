@@ -287,6 +287,41 @@ transformed parameters {
 }
 ```
 
+## Functions implementing change-of-variable adjustments
+
+Functions whose names end in `_jacobian` can use the
+`jacobian +=` statement. This can be used to implement a custom
+change of variables for arbitrary parameters.
+
+For example, this function recreates the built-in
+`<upper=x>` transform on real numbers:
+```stan
+real upper_bound_jacobian(real x, real ub) {
+  jacobian += x;
+  return ub - exp(x);
+}
+```
+
+It can be used as a replacement for `real<lower=ub>` as follows:
+
+```stan
+functions {
+  // upper_bound_jacobian as above
+}
+data {
+  real ub;
+}
+parameters {
+  real b_raw;
+}
+transformed parameters {
+  real b = upper_bound_jacobian(b_raw, ub);
+}
+model {
+  b ~ lognormal(0, 1);
+  // ...
+}
+```
 
 ## Functions acting as random number generators
 
@@ -399,8 +434,8 @@ target += foo_lpdf(y | theta1, ..., thetaN);
 ```
 
 As with the built-in functions, the suffix `_lpdf` is dropped and
-the first argument moves to the left of the sampling symbol (`~`)
-in the sampling statement.
+the first argument moves to the left of the tilde symbol (`~`)
+in the distribution statement.
 
 Functions ending in `_lpmf` (for probability mass functions),
 behave exactly the same way.  The difference is that the first
@@ -533,7 +568,7 @@ Doxygen, so this just looks like a big comment starting with `/*`
 and ending with `*/` to the Stan parser.
 
 For functions that raise exceptions, exceptions can be documented using
-`@throws`.^[As of Stan 2.9.0, the only way a user-defined producer will raise an exception is if a function it calls (including sampling statements) raises an exception via the reject statement.]
+`@throws`.^[As of Stan 2.9.0, the only way a user-defined producer will raise an exception is if a function it calls (including distribution statements) raises an exception via the reject statement.]
 
 For example,
 
@@ -571,10 +606,10 @@ arguments of a type that matches the declared return type.
 
 Only functions ending in `_lpmf` or `_lpdf` and with
 return type `real` may be used as probability functions in
-sampling statements.
+distribution statements.
 
 Only functions ending in `_lp` may access the log probability
-accumulator through sampling statements or `target +=`
+accumulator through distribution statements or `target +=`
 statements.  Such functions may only be used in the transformed
 parameters or model blocks.
 

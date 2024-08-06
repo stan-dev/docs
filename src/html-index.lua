@@ -22,6 +22,7 @@ end
 if quarto.doc.is_format("html") then -- latex uses mkindex, not this
   return {
     RawBlock = function(el)
+      -- this filter is in charge of producing the HTML anchors the index will link to
       if el.format == "html" then
         local indexEntry = extractIndexEntry(el.text)
         if indexEntry ~= nil then
@@ -33,6 +34,9 @@ if quarto.doc.is_format("html") then -- latex uses mkindex, not this
     Strong = function(el2)
       return pandoc.walk_inline(el2, {
         Code = function(el3)
+          -- this filter produces links to the index from the function's name
+          -- Because we format these as **``functionName``** in the markdown
+          -- it will always be a Strong element containing a Code element
           if el3.text ~= nil then
             -- only create a link if this appears in the index
             local escaped = escape(el3.text)

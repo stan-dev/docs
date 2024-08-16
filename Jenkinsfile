@@ -42,6 +42,12 @@ pipeline {
 
                 sh "ls -lhart"
 
+                script {
+                    if (params.linkDocs) {
+                        sh "python add_old_links.py $major_version $minor_version"
+                    }
+                }
+
                 /* Build docs */
                 sh """
                     rm -rf ./docs/$major_version"_"$minor_version

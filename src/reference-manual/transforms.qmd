@@ -672,6 +672,107 @@ z_k
 .
 $$
 
+## Column Stochastic Matrix {#column-stochastic-matrix-transform.section}
+
+The `column_stochastic_matrix[N, M]` type in Stan represents an \(N \times M\) 
+matrix where each column is a unit simplex of dimension \(N\). In other words, 
+each column of the matrix is a vector constrained to have non-negative entries 
+that sum to one.
+
+### Definition of a Column Stochastic Matrix {-}
+
+A column stochastic matrix \(X \in \mathbb{R}^{N \times M}\) is defined such 
+that for each column \(j\) (where \(1 \leq j \leq M\)):
+
+$$
+X_{ij} \geq 0 \quad \text{for } 1 \leq i \leq N,
+$$
+
+and
+
+$$
+\sum_{i=1}^N X_{ij} = 1.
+$$
+
+This definition ensures that each column of the matrix \(X\) lies on the 
+\(N-1\) dimensional unit simplex, similar to the `simplex[N]` type, but 
+extended across multiple columns.
+
+### Inverse Transform for Column Stochastic Matrix {-}
+
+The inverse transform for the `column_stochastic_matrix` type is an extension 
+of the unit simplex inverse transform to multiple columns. The process can be 
+understood by applying the stick-breaking metaphor independently to each column.
+
+For each column \(j\) of the matrix \(X\), an unconstrained vector \(y_j \in 
+\mathbb{R}^{N-1}\) is mapped to the column \(X_{\cdot j}\) on the unit simplex 
+using the following steps:
+
+1.  Begin with a stick of unit length.
+2.  Break off a piece corresponding to each element \(X_{ij}\) of the column 
+vector, where the size of each piece is determined by an intermediate value 
+\(z_{ij}\), which is itself derived from the unconstrained 
+parameter \(y_{ij}\).
+3.  The intermediate vector \(z_j \in \mathbb{R}^{N-1}\) is 
+defined elementwise for each \(j\) and for \(1 \leq i < N\) by
+
+$$
+z_{ij} = \mathrm{logit}^{-1}\left( y_{ij} + \log\left(\frac{1}{N - i}\right) \right).
+$$
+
+4.  The stick sizes \(X_{ij}\) for \(1 \leq i < N\) are then calculated recursively by
+
+$$
+X_{ij} = \left( 1 - \sum_{i'=1}^{i-1} X_{i'j} \right) z_{ij}.
+$$
+
+5.  The last element of each column \(X_{Nj}\) is set to the length of the remaining piece of the stick:
+
+$$
+X_{Nj} = 1 - \sum_{i=1}^{N-1} X_{ij}.
+$$
+
+### Absolute Jacobian Determinant for the Inverse Transform {-}
+
+The Jacobian determinant of the inverse transform for each column \(j\) in 
+the matrix is given by the product of the diagonal entries \(J_{i,i,j}\) of 
+the lower-triangular Jacobian matrix. This determinant is calculated as:
+
+$$
+\left| \det J_j \right| = \prod_{i=1}^{N-1} \left( z_{ij} (1 - z_{ij}) \left( 1 - \sum_{i'=1}^{i-1} X_{i'j} \right) \right).
+$$
+
+Thus, the overall Jacobian determinant for the entire `column_stochastic_matrix` 
+is the product of the determinants for each column:
+
+$$
+\left| \det J \right| = \prod_{j=1}^{M} \left| \det J_j \right|.
+$$
+
+### Transform for Column Stochastic Matrix {-}
+
+To transform from a column stochastic matrix \(X\) back to the unconstrained space \(y_j\) 
+for each column \(j\):
+
+1. The break proportions \(z_{ij}\) are first determined by
+
+$$
+z_{ij} = \frac{X_{ij}}{1 - \sum_{i'=1}^{i-1} X_{i'j}}.
+$$
+
+2. The corresponding unconstrained parameters \(y_{ij}\) are then computed as
+
+$$
+y_{ij} = \mathrm{logit}(z_{ij}) - \log\left(\frac{1}{N - i}\right).
+$$
+
+By applying this process to each column \(j\) independently, the entire column 
+stochastic matrix \(X\) can be transformed to or from the unconstrained space.
+
+This formulation allows the `column_stochastic_matrix[N, M]` type to be used 
+effectively in models requiring columns of a matrix to be unit simplexes, 
+such as in multi-category probability models or compositional data analysis.
+
 
 ## Unit vector {#unit-vector.section}
 

@@ -673,6 +673,86 @@ iterations, and in either case, with less dispersed parameter
 initialization or custom initialization if there are informative
 priors for some parameters.
 
+### Stochastic Matrices {-}
+
+A stochastic matrix is a matrix where each column, row, or both is a 
+unit simplex, meaning that each column(row) vector has non-negative 
+values that sum to 1. For example, a \(3 \times 4\) 
+column stochastic matrix will look like:
+
+$$
+\begin{bmatrix}
+0.2 & 0.5 & 0.1 & 0.3 \\
+0.3 & 0.3 & 0.6 & 0.4 \\
+0.5 & 0.2 & 0.3 & 0.3
+\end{bmatrix}
+$$
+
+While a row stochastic matrix will look like:
+
+$$
+\begin{bmatrix}
+0.2 & 0.5 & 0.1 & 0.2 \\
+0.2 & 0.1 & 0.6 & 0.1 \\
+0.5 & 0.2 & 0.2 & 0.1
+\end{bmatrix}
+$$
+
+
+In this example, each column(row) sums to 1, making the matrix a 
+valid `column_stochastic_matrix` and `row_stochastic_matrix`.
+
+Column stochastic matrices are often used in models where 
+each column represents a probability distribution across a 
+set of categories, such as in multiple multinomial distributions, 
+transition matrices in Markov models, or compositional data analysis. 
+They can also be used in situations where multiple Dirichlet-distributed v
+ariables are required across different dimensions.
+
+The `column_stochastic_matrix` and `row_stochastic_matrix` types are declared 
+with full dimensionality. For instance, a matrix `theta` with 
+3 rows and 4 columns, where each 
+column is a 3-simplex, is declared as:
+
+```stan
+column_stochastic_matrix[3, 4] theta;
+```
+
+A matrix `theta` with 
+3 rows and 4 columns, where each 
+row is a 4-simplex, is declared as:
+
+```stan
+row_stochastic_matrix[3, 4] theta;
+```
+
+The `column_stochastic_matrix` type is implemented as a matrix where each 
+column is individually constrained to be a simplex. This means that each 
+column must be a valid simplex with non-negative elements that sum to 1.
+
+As with simplexes, `column_stochastic_matrix` variables are subject to 
+validation, ensuring that each column satisfies the simplex constraints. 
+This validation accounts for floating-point imprecision, with checks 
+performed up to a statically specified accuracy threshold \(\epsilon\).
+
+#### Stability Considerations {-}
+
+In high-dimensional settings or when the matrix has many columns, 
+`column_stochastic_matrix` types may require careful tuning of the inference 
+algorithms. To ensure stability:
+
+- **Smaller Step Sizes:** In samplers like Hamiltonian Monte Carlo (HMC), 
+smaller step sizes can help maintain stability, especially in high dimensions.
+- **Higher Target Acceptance Rates:** Setting higher target acceptance 
+rates can improve the robustness of the sampling process.
+- **Longer Warmup Periods:** Increasing the warmup period allows the sampler 
+to better explore the parameter space before the actual sampling begins.
+- **Tighter Optimization Tolerances:** For optimization-based inference, 
+tighter tolerances with more iterations can yield more accurate results.
+- **Custom Initialization:** If prior information about the parameters is 
+available, custom initialization or less dispersed initialization can lead 
+to more efficient inference.
+
 ### Unit vectors {-}
 
 A unit vector is a vector with a norm of one.  For instance, $[0.5,

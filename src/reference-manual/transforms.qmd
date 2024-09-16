@@ -15,7 +15,7 @@ constrained to be ordered, positive ordered, or simplexes.  Matrices
 may be constrained to be correlation matrices or covariance matrices.
 This chapter provides a definition of the transforms used for each
 type of variable.   For examples of how to declare and define these
-variables in a Stan program, see section 
+variables in a Stan program, see section
 [Variable declaration](types.qmd#variable-declaration.section).
 
 Stan converts models to C++ classes which define probability
@@ -39,7 +39,7 @@ the exact arithmetic:
     rounded to the boundary. This may cause unexpected warnings or
     errors, if in other parts of the code the boundary value is
     invalid. For example, we may observe floating-point value 0 for
-    a variance parameter that has been declared to be larger than 0. 
+    a variance parameter that has been declared to be larger than 0.
 	See more about [Floating point Arithmetic in Stan user's guide](../stan-users-guide/floating-point.qmd)).
   - CmdStan stores the output to CSV files with 6 significant digits
     accuracy by default, but the constraints are checked with 8
@@ -674,61 +674,61 @@ $$
 
 ## Stochastic Matrix {#stochastic-matrix-transform.section}
 
-The `column_stochastic_matrix[N, M]` and `row_stochastic_matrix[N, M]` type in 
-Stan represents an \(N \times M\) matrix where each column(row) is a unit simplex 
-of dimension \(N\). In other words, each column(row) of the matrix is a vector 
+The `column_stochastic_matrix[N, M]` and `row_stochastic_matrix[N, M]` type in
+Stan represents an \(N \times M\) matrix where each column (row) is a unit simplex
+of dimension \(N\). In other words, each column (row) of the matrix is a vector
 constrained to have non-negative entries that sum to one.
 
 ### Definition of a Stochastic Matrix {-}
 
-A column stochastic matrix \(X \in \mathbb{R}^{N \times M}\) is defined such 
-that for each column \(j\) (where \(1 \leq j \leq M\)):
+A column stochastic matrix \(X \in \mathbb{R}^{N \times M}\) is defined such
+that each column is a simplex. For column \(j\) (where \(1 \leq j \leq M\)):
 
 $$
-X_{ij} \geq 0 \quad \text{for } 1 \leq i \leq N,
-$$
-
-and
-
-$$
-\sum_{i=1}^N X_{ij} = 1.
-$$
-
-A row stochastic matrix is defined similarly but with the axis flipped such
-that 
-
-
-$$
-X_{ij} \geq 0 \quad \text{for } 1 \leq j \leq N,
+X_{i, j} \geq 0 \quad \text{for } 1 \leq i \leq N,
 $$
 
 and
 
 $$
-\sum_{j=1}^N X_{ij} = 1.
+\sum_{i=1}^N X_{i, j} = 1.
 $$
 
-This definition ensures that each column(row) of the matrix \(X\) lies on the 
-\(N-1\) dimensional unit simplex, similar to the `simplex[N]` type, but 
+A row stochastic matrix is any matrix whose transpose is a column stochastic matrix
+(i.e. the rows of the matrix are simplexes)
+
+
+$$
+X_{i, j} \geq 0 \quad \text{for } 1 \leq j \leq N,
+$$
+
+and
+
+$$
+\sum_{j=1}^N X_{i, j} = 1.
+$$
+
+This definition ensures that each column (row) of the matrix \(X\) lies on the
+\(N-1\) dimensional unit simplex, similar to the `simplex[N]` type, but
 extended across multiple columns(rows).
 
 ### Inverse Transform for Stochastic Matrix {-}
 
 For the column and row stochastic matrices the inverse transform is the same
-as simplex, but applied to each column(row).
+as simplex, but applied to each column (row).
 
 ### Absolute Jacobian Determinant for the Inverse Transform {-}
 
-The Jacobian determinant of the inverse transform for each column \(j\) in 
-the matrix is given by the product of the diagonal entries \(J_{i,i,j}\) of 
+The Jacobian determinant of the inverse transform for each column \(j\) in
+the matrix is given by the product of the diagonal entries \(J_{i,i,j}\) of
 the lower-triangular Jacobian matrix. This determinant is calculated as:
 
 $$
-\left| \det J_j \right| = \prod_{i=1}^{N-1} \left( z_{ij} (1 - z_{ij}) \left( 1 - \sum_{i'=1}^{i-1} X_{i'j} \right) \right).
+\left| \det J_j \right| = \prod_{i=1}^{N-1} \left( z_{i, j} (1 - z_{i, j}) \left( 1 - \sum_{i'=1}^{i-1} X_{i'j} \right) \right).
 $$
 
-Thus, the overall Jacobian determinant for the entire `column_stochastic_matrix` and `row_stochastic_matrix` 
-is the product of the determinants for each column(row):
+Thus, the overall Jacobian determinant for the entire `column_stochastic_matrix` and `row_stochastic_matrix`
+is the product of the determinants for each column (row):
 
 $$
 \left| \det J \right| = \prod_{j=1}^{M} \left| \det J_j \right|.
@@ -737,7 +737,7 @@ $$
 ### Transform for Stochastic Matrix {-}
 
 For the column and row stochastic matrices the transform is the same
-as simplex, but applied to each column(row).
+as simplex, but applied to each column (row).
 
 ## Unit vector {#unit-vector.section}
 

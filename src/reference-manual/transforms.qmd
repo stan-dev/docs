@@ -465,43 +465,79 @@ $$
 
 ## Zero sum vector
 
-Vectors that are constrained to sum to zero are useful
-in regression tasks where nonidentifiability is an issue
-or for ability or difficulty parameters (but not both) in an IRT model.
+Vectors that are constrained to sum to zero are useful for, among
+other things, additive varying effects, such as varying slopes or
+intercepts in a regression model (e.g., for income deciles).
 
-In constraint terms, a zero sum $K$-vector $x \in \mathbb{R}^K$ satisfies
-
+A zero sum $K$-vector $x \in \mathbb{R}^K$ satisfies the constraint
 $$
 \sum_{k=1}^K x_k = 0.
 $$
 
+For the transform, Stan uses the first part of an isometric log ratio
+transform;  see [@egozcue+etal:2003] for the basic
+definitions and Chapter 3 of [@filzmoser+etal:2018] for the pivot
+coordinate version used here.
 
 
 ### Zero sum transform {-}
 
-TODO: Document isometric log ratio transform
+The (unconstraining) transform is defined iteratively.  Given an $x \in
+\mathbb{R}^{N + 1}$ that sums to zero (i.e., $\sum_{n=1}^{N+1} x_n =
+0$), the transform proceeds as follows to produce an unconstrained $y
+\in \mathbb{R}^N$.
 
-Egozcue, Juan Jose; Pawlowsky-Glahn, Vera; Mateu-Figueras, Gloria;
-Barcelo-Vidal, Carles (2003), "Isometric logratio transformations for
-compositional data analysis", Mathematical Geology, 35 (3): 279–300,
-doi:10.1023/A:1023818214614, S2CID 122844634
-
-See also, description of the same using "pivot coordinates" in
-
-Filzmoser, P., Hron, K., Templ, M. (2018). Geometrical Properties of
-Compositional Data. In: Applied Compositional Data Analysis. Springer Series
-in Statistics. Springer, Cham. https://doi.org/10.1007/978-3-319-96422-5_3
-
+The transform is initialized by setting
+$$
+S_N = 0
+$$
+and
+$$
+y_N = -x_{N + 1} \cdot \frac{\sqrt{N \cdot (N + 1)}{N}}.
+$$
+The for each $n$ from $N - 1$ down to $1$, let
+$$
+w_{n + 1} = \frac{y_{n + 1}}{\sqrt{(n + 1) \cdot (n + 2)}},
+$$
+$$
+S_n = S_{n + 1} + w_{n + 1},
+$$
+and
+$$
+y_n = (S_n - x_{n + 1}) \cdot \frac{\sqrt{n \cdot (n + 1)}}{n}.
+$$
 
 ### Zero sum inverse transform {-}
 
-TODO: Document inverse isometric log ratio transform
+The inverse (constraining) transform follows the isometric logratio tranform.
+It maps an unconstrained vector $y \in \mathbb{R}^N$ to a zero-sum vector $x \in
+\mathbb{R}^{N + 1}$ such that
+$$
+\sum_{n=1}^{N + 1} x_n = 0.
+$$
+The values are defined inductively, starting with 
+$$
+x_1 = \sum_{n=1}^N \frac{y_n}{\sqrt{n \cdot (n + 1)}}
+$$
+and then setting
+$$
+x_{n + 1} = \sum_{i = n + 1}^N \frac{\sqrt{y_i}}{\sqrt{i \cdot (i + 1)}}
+- n \cdot \frac{y_n}{\sqrt{n \cdot (n + 1)}}.
+$$
+for $n \in 1{:}N$.
 
+The definition is such that
+$$
+\sum_{n = 1}^{N + 1} x_n = 0
+$$
+by construction, because each of the terms added to $x_{n}$ is then
+subtracted from $x_{n + 1}$ the number of times it shows up in earlier terms. 
 
 ### Absolute Jacobian determinant of the zero sum inverse transform {-}
 
 The inverse transform is a linear operation, leading to a constant Jacobian
 determinant which is therefore not included.
+
 
 ## Unit simplex {#simplex-transform.section}
 

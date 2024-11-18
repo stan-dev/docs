@@ -15,7 +15,7 @@ constrained to be ordered, positive ordered, or simplexes.  Matrices
 may be constrained to be correlation matrices or covariance matrices.
 This chapter provides a definition of the transforms used for each
 type of variable.   For examples of how to declare and define these
-variables in a Stan program, see section 
+variables in a Stan program, see section
 [Variable declaration](types.qmd#variable-declaration.section).
 
 Stan converts models to C++ classes which define probability
@@ -39,7 +39,7 @@ the exact arithmetic:
     rounded to the boundary. This may cause unexpected warnings or
     errors, if in other parts of the code the boundary value is
     invalid. For example, we may observe floating-point value 0 for
-    a variance parameter that has been declared to be larger than 0. 
+    a variance parameter that has been declared to be larger than 0.
 	See more about [Floating point Arithmetic in Stan user's guide](../stan-users-guide/floating-point.qmd)).
   - CmdStan stores the output to CSV files with 6 significant digits
     accuracy by default, but the constraints are checked with 8
@@ -460,6 +460,89 @@ p_Y(y)
 \
 \prod_{k=2}^K \exp(y_k).
 $$
+
+
+
+## Zero sum vector
+
+Vectors that are constrained to sum to zero are useful for, among
+other things, additive varying effects, such as varying slopes or
+intercepts in a regression model (e.g., for income deciles).
+
+A zero sum $K$-vector $x \in \mathbb{R}^K$ satisfies the constraint
+$$
+\sum_{k=1}^K x_k = 0.
+$$
+
+For the transform, Stan uses the first part of an isometric log ratio
+transform; see [@egozcue+etal:2003] for the basic definitions and
+Chapter 3 of [@filzmoser+etal:2018] for the pivot coordinate version
+used here.  Stan uses the isometric log ratio transform because it
+induces a geometry with zero correlation among the dimensions, making
+it easier for HMC to explore than simpler alternatives such as setting
+the final element to the negative sum of the first elements; see, e.g.,
+[@seyboldt:2024].
+
+
+
+
+### Zero sum transform {-}
+
+The (unconstraining) transform is defined iteratively.  Given an $x \in
+\mathbb{R}^{N + 1}$ that sums to zero (i.e., $\sum_{n=1}^{N+1} x_n =
+0$), the transform proceeds as follows to produce an unconstrained $y
+\in \mathbb{R}^N$.
+
+The transform is initialized by setting
+$$
+S_N = 0
+$$
+and
+$$
+y_N = -x_{N + 1} \cdot \frac{\sqrt{N \cdot (N + 1)}{N}}.
+$$
+The for each $n$ from $N - 1$ down to $1$, let
+$$
+w_{n + 1} = \frac{y_{n + 1}}{\sqrt{(n + 1) \cdot (n + 2)}},
+$$
+$$
+S_n = S_{n + 1} + w_{n + 1},
+$$
+and
+$$
+y_n = (S_n - x_{n + 1}) \cdot \frac{\sqrt{n \cdot (n + 1)}}{n}.
+$$
+
+### Zero sum inverse transform {-}
+
+The inverse (constraining) transform follows the isometric logratio tranform.
+It maps an unconstrained vector $y \in \mathbb{R}^N$ to a zero-sum vector $x \in
+\mathbb{R}^{N + 1}$ such that
+$$
+\sum_{n=1}^{N + 1} x_n = 0.
+$$
+The values are defined inductively, starting with 
+$$
+x_1 = \sum_{n=1}^N \frac{y_n}{\sqrt{n \cdot (n + 1)}}
+$$
+and then setting
+$$
+x_{n + 1} = \sum_{i = n + 1}^N \frac{\sqrt{y_i}}{\sqrt{i \cdot (i + 1)}}
+- n \cdot \frac{y_n}{\sqrt{n \cdot (n + 1)}}.
+$$
+for $n \in 1{:}N$.
+
+The definition is such that
+$$
+\sum_{n = 1}^{N + 1} x_n = 0
+$$
+by construction, because each of the terms added to $x_{n}$ is then
+subtracted from $x_{n + 1}$ the number of times it shows up in earlier terms. 
+
+### Absolute Jacobian determinant of the zero sum inverse transform {-}
+
+The inverse transform is a linear operation, leading to a constant Jacobian
+determinant which is therefore not included.
 
 
 ## Unit simplex {#simplex-transform.section}

@@ -4,7 +4,7 @@ pagetitle: Pathfinder
 
 # Pathfinder
 
-Stan supports the Pathfinder algorithm @zhang_pathfinder:2022.
+Stan supports the Pathfinder algorithm [@zhang_pathfinder:2022].
 Pathfinder is a variational method for approximately
 sampling from differentiable log densities.  Starting from a random
 initialization, Pathfinder locates normal approximations to the target
@@ -22,6 +22,31 @@ the problem of L-BFGS getting stuck at local optima or in saddle points on plate
 Compared to ADVI and short dynamic HMC runs, Pathfinder
 requires one to two orders of magnitude fewer log density and gradient
 evaluations, with greater reductions for more challenging posteriors.
-While the evaluations in @zhang_pathfinder:2022 found that
-single-path and multi-path Pathfinder outperform ADVI for most of the models in the PosteriorDB evaluation set,
+While the evaluations by @zhang_pathfinder:2022 found that
+single-path and multi-path Pathfinder outperform ADVI for most of the models in the PosteriorDB [@Magnusson+etal:2024:posteriordb] evaluation set,
 we recognize the need for further experiments on a wider range of models.
+
+## Diagnosing Pathfinder
+
+Pathfinder diagnoses the accuracy of the approximation by computing the density ratio of the true posterior and 
+the approximation and using Pareto-$\hat{k}$ diagnostic [@Vehtari+etal:2024:PSIS] to assess whether these ratios can
+be used to improve the approximation via resampling. The
+normalization for the posterior can be  estimated reliably [@Vehtari+etal:2024:PSIS, Section 3], which is the
+first requirement for reliable resampling.  If estimated Pareto-$\hat{k}$ for the ratios is smaller than 0.7,
+there is still need to further diagnose reliability of importance sampling estimate for all quantities of interest [@Vehtari+etal:2024:PSIS, Section 2.2]. If estimated Pareto-$\hat{k}$ is larger than 0.7, then the 
+estimate for the normalization is unreliable and any Monte Carlo estimate may have a big error. The resampled draws
+can still contain some useful information about the location and shape of the posterior which can be used in early
+parts of Bayesian workflow [@Gelman:etal:2020:workflow].
+
+## Using Pathfinder for initializing MCMC
+
+If estimated Pareto-$\hat{k}$ for the ratios is smaller than 0.7, the resampled posterior draws are almost as
+good for initializing MCMC as would independent draws from the posterior be. If estimated Pareto-$\hat{k}$ for the 
+ratios is larger than 0.7, the Pathfinder draws are not reliable for posterior inference directly, but they are still 
+very likely better for initializing MCMC than random draws from an arbitrary pre-defined distribution (e.g. uniform from 
+-2 to 2 used by Stan by default). If Pareto-$\hat{k}$ is larger than 0.7, it is likely that one of the ratios is much bigger
+than others and the default resampling with replacement would produce copies of one unique draw. For initializing several
+Markov chains, it is better to use resampling without replacement to guarantee unique initialization for each chain. At the
+moment Stan allows turning off the resampling completely, and then the resampling without replacement can be done outside of
+Stan.
+

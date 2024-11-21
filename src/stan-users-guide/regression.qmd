@@ -521,46 +521,79 @@ centered around zero, as is typical for regression coefficients.
 
 ## Parameterizing centered vectors
 
-It is often convenient to define a parameter vector $\beta$ that is
-centered in the sense of satisfying the sum-to-zero constraint,
-$$
-\sum_{k=1}^K \beta_k = 0.
-$$
+When there are varying effects in a regression, the resulting
+likelihood is not identified unless further steps are taken.  For
+example, we might have a global intercept $\alpha$ and then a varying
+effect $\beta_k$ for age group $k$ to make a linear predictor $\alpha +
+\beta_k$.  With this predictor, we can add a constant to $\alpha$ and
+subtract from each $\beta_k$ and get exactly the same likelihood.
 
-Such a parameter vector may be used to identify a multi-logit
-regression parameter vector (see the [multi-logit
-section](#multi-logit.section) for details), or may be used for
-ability or difficulty parameters (but not both) in an IRT model (see
-the [item-response model section](#item-response-models.section) for
-details).
+The traditional approach to identifying such a model is to pin the
+first varing effect to zero, i.e., $\beta_1 = 0$.  With one of the
+varying effects fixed, you can no longer add a constant to all of them
+and the model's likelihood is identified.  In addition to the
+difficulty in specifying such a model in Stan, it is awkward to
+formulate priors because the other coefficients are all interpreted
+relative to $\beta_1$.  
+
+In a Bayesian setting, a proper prior on each of the $\beta$ is enough
+to identify the model.  Unfortunately, this can lead to inefficiency
+during sampling as the model is still only weakly identified through
+the prior---there is a very simple example of the difference in
+the discussion of collinearity in @collinearity.section.
+
+An alternative identification strategy that allows a symmetric prior
+is to enforce a sum-to-zero constraint on the varying effects, i.e.,
+$\sum_{k=1}^K \beta_k = 0.$
+
+A parameter vector constrained to sum to zero may also be used to
+identify a multi-logit regression parameter vector (see the
+[multi-logit section](#multi-logit.section) for details), or may be
+used for ability or difficulty parameters (but not both) in an IRT
+model (see the [item-response model
+section](#item-response-models.section) for details).
 
 
-### $K-1$ degrees of freedom {-}
+### Built-in sum-to-zero vector {-}
 
-There is more than one way to enforce a sum-to-zero constraint on a
-parameter vector, the most efficient of which is to define the $K$-th
-element as the negation of the sum of the elements $1$ through $K-1$.
+As of Stan 2.36, there is a built in `sum_to_zero_vector` type, which
+can be used as follows.
 
 ```stan
 parameters {
-  vector[K - 1] beta_raw;
-  // ...
-}
-transformed parameters {
-  vector[K] beta = append_row(beta_raw, -sum(beta_raw));
+  sum_to_zero_vector[K] beta;
   // ...
 }
 ```
 
-Placing a prior on `beta_raw` in this parameterization leads to
-a subtly different posterior than that resulting from the same prior
-on `beta` in the original parameterization without the
-sum-to-zero constraint.  Most notably, a simple prior on each
-component of `beta_raw` produces different results than putting
-the same prior on each component of an unconstrained $K$-vector
-`beta`.  For example, providing a $\textsf{normal}(0,5)$ prior
-on `beta` will produce a different posterior mode than placing
-the same prior on `beta_raw`.
+This produces a vector of size `K` such that `sum(beta) = 0`.  In the
+unconstrained representation requires only `K - 1` values because the
+last is determined by the first `K - 1`.  
+
+Placing a prior on `beta` in this parameterization, for example,
+
+```stan
+  beta ~ normal(0, 1);
+```
+
+leads to a subtly different posterior than what you would get with the
+same prior on an unconstrained size-`K` vector.  As explained below,
+the variance is reduced.
+
+The sum-to-zero constraint can be implemented naively by setting the
+last element to the negative sum of the first elements, i.e., $\beta_K
+= -\sum_{k=1}^{K-1} \beta_k.$ But that leads to high correlation among
+the $\beta_k$.
+
+The transform used in Stan eliminates these correlations by
+constructing an orthogonal basis and applying it to the
+zero-sum-constraint; @seyboldt:2024 provides an explanation.  The
+*Stan Reference Manual* provides the details in the chapter on
+transforms.  Although any orthogonal basis can be used, Stan uses the
+inverse isometric log transform because it is convenient to describe
+and the transform simplifies to efficient scalar operations rather
+than more expensive matrix operations.
+
 
 #### Marginal distribution of sum-to-zero components {-}
 
@@ -575,83 +608,27 @@ model {
 }
 ```
 
-The components are not independent, as they must sum zero.  No
-Jacobian is required because summation and negation are linear
-operations (and thus have constant Jacobians).
+The scale component can be multiplied by `sigma` to produce a
+`normal(0, sigma)` prior marginally.
 
 To generate distributions with marginals other than standard normal,
 the resulting `beta` may be scaled by some factor `sigma` and
 translated to some new location `mu`.
 
 
-### QR decomposition {-}
-
-Aaron Goodman, on the Stan forums, also provided this approach, which
-calculates a QR decomposition in the transformed data block, then uses
-it to transform to a sum-to-zero parameter `x`,
-
-```stan
-transformed data{
-  matrix[K, K] A = diag_matrix(rep_vector(1, K));
-  matrix[K, K - 1] A_qr;
-  for (i in 1:K - 1) A[K, i] = -1;
-  A[K, K] = 0;
-  A_qr = qr_Q(A)[ , 1:(K - 1)];
-}
-parameters {
-  vector[K - 1] beta_raw;
-}
-transformed parameters{
-   vector[K] beta =  A_qr * beta_raw;
-}
-model {
-  beta_raw ~ normal(0, inv(sqrt(1 - inv(K))));
-}
-```
-
-This produces a marginal standard normal distribution on the values of
-`beta`, which will sum to zero by construction of the QR decomposition.
-
-
-### Translated and scaled simplex {-}
-
-An alternative approach that's less efficient, but amenable to a
-symmetric prior, is to offset and scale a simplex.
-
-```stan
-parameters {
-  simplex[K] beta_raw;
-  real beta_scale;
-  // ...
-}
-transformed parameters {
-  vector[K] beta;
-  beta = beta_scale * (beta_raw - inv(K));
-  // ...
-}
-```
-
-Here `inv(K)` is just a short way to write `1.0 / K`.  Given
-that `beta_raw` sums to 1 because it is a simplex, the
-elementwise subtraction of `inv(K)` is guaranteed to sum to zero.
-Because the magnitude of the elements of the simplex is bounded, a
-scaling factor is required to provide `beta` with $K$ degrees of
-freedom necessary to take on every possible value that sums to zero.
-
-With this parameterization, a Dirichlet prior can be placed on
-`beta_raw`, perhaps uniform, and another prior put on
-`beta_scale`, typically for "shrinkage."
-
-
 ### Soft centering {-}
 
-Adding a prior such as $\beta \sim \textsf{normal}(0,\sigma)$ will provide a kind
-of soft centering of a parameter vector $\beta$ by preferring, all
-else being equal, that $\sum_{k=1}^K \beta_k = 0$.  This approach is only
-guaranteed to roughly center  if $\beta$ and the elementwise addition $\beta + c$
-for a scalar constant $c$ produce the same likelihood (perhaps by
-another vector $\alpha$ being transformed to $\alpha - c$, as in the
-IRT models).  This is another way of achieving a symmetric prior.
+Adding a prior such as $\beta \sim \textsf{normal}(0,\epsilon)$ for a
+small $\epsilon$ will provide a kind of soft centering of a parameter
+vector $\beta$ by preferring, all else being equal, that $\sum_{k=1}^K
+\beta_k = 0$.  This approach is only guaranteed to roughly center if
+$\beta$ and the elementwise addition $\beta + c$ for a scalar constant
+$c$ produce the same likelihood (perhaps by another vector $\alpha$
+being transformed to $\alpha - c$, as in the IRT models).  This is
+another way of achieving a symmetric prior, though it requires
+choosing an $\epsilon$.  If $\epsilon$ is too large, there won't be a
+strong enough centering effect and if it is too small, it will add
+high curvature to the target density and impede sampling.
 
 
 ## Ordered logistic and probit regression {#ordered-logistic.section}

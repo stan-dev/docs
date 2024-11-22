@@ -12,16 +12,17 @@ diagnostic statistics on the sampler chains, reported in the following order:
 
 - Mean - sample mean
 - MCSE - Monte Carlo Standard Error, a measure of the amount of noise in the sample
-- StdDev - sample standard deviation
+- StdDev - sample standard deviation - the variance around the sample mean.
+- MAD - Median Absolute Deviation  - the variance around the sample median.
 - Quantiles - default 5%, 50%, 95%
-- N_eff - effective sample size - the number of independent draws in the sample
-- N_eff/S - the number of independent draws per second
+- ESS_bulk
+- ESS_tail
 - R_hat - $\hat{R}$ statistic, a measure of chain equilibrium, must be within $0.05$ of  $1.0$.
 
 When reviewing the `stansummary` output, it is important to check the final three
 output columns first - these are the diagnostic statistics on chain convergence and
 number of independent draws in the sample.
-A $\hat{R}$ statistic of greater than $1.05$ indicates that the chain has not converged and
+A $\hat{R}$ statistic of greater than $1.01$ indicates that the chain has not converged and
 therefore the sample is not drawn from the posterior, thus the estimates of the mean and
 all other summary statistics are invalid.
 
@@ -34,12 +35,16 @@ For more information, see the
 [Posterior Analysis](https://mc-stan.org/docs/reference-manual/analysis.html)
 chapter of the Stan Reference Manual which describes both the theory and practice of MCMC
 estimation techniques.
+
+The statistics - Mean, StdDev, MAD, and Quantiles - are computed directly from all draws across all chains.
+The diagnostic statistics - MCSE, ESS_bulk, ESS_tail, and R_hat are computed from the rank-normalized,
+folded chains according to the definitions in @Vehtari+etal:2021:Rhat.
 The summary statistics and the algorithms used to compute them are described in sections
 [Notation for samples](https://mc-stan.org/docs/reference-manual/analysis.html#notation-for-samples-chains-and-draws)
 and
 [Effective Sample Size](https://mc-stan.org/docs/reference-manual/analysis.html#effective-sample-size.section).
 
-## Building the stansummary command
+## Building the `stansummary` command
 
 The CmdStan makefile task `build` compiles the `stansummary` utility
 into the `bin` directory.

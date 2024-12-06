@@ -646,7 +646,7 @@ When each state $x$ takes a value over a discrete and finite set,
 say $\{1, 2, ..., K\}$, we can use Stan's suite of HMM functions to marginalize
 out $x_{1:N}$ and compute $p(y_{1:N} \mid \phi)$.
 We start by defining the conditional observation distribution, stored in a
-$K \times N$ matrix $\mega$ with
+$K \times N$ matrix $\omega$ with
 $$
 \omega_{kn} = p(y_n \mid x_n = k, \phi).
 $$
@@ -654,7 +654,7 @@ Next, we introduce the $K \times K$ transition matrix, $\Gamma$, with
 $$
 \Gamma_{ij} = p(x_n = h \mid x_{n - 1} = i, \phi).
 $$
-Finally, we define the initial state K_vectir $\rho$, with
+Finally, we define the initial state $K$-vector $\rho$, with
 $$
  \rho_k = p(x_0 = k \mid \phi).
 $$
@@ -712,13 +712,13 @@ model {
   mu ~ normal(0, 1);
   sigma ~ normal(0, 1);
 
-  // Increment target by p(y | mu, sigma, Gamma, rho)
+  // Increment target by log p(y | mu, sigma, Gamma, rho)
   target += hmm_marginal(log_omega, Gamma, rho);
 }
 ```
 
 The last function `hmm_marginal` takes in all the ingredients of the HMM,
-and computes the relevant marginal distribution.
+and computes the relevant log marginal distribution.
 Finally, we can recover samples from the posterior distribution of the
 hidden states in generated quantities.
 It is also possible to compute the posterior probbability of each hidden state.
@@ -734,4 +734,4 @@ probabilities of each state, and cannot be used to sample jointly all the
 hidden states. Instead, users should rely on `hmm_latent_rng`.
 
 For more details, since the corresponding case study:
-https://mc-stan.org/users/documentation/case-studies/hmm-example.html.
+[https://mc-stan.org/users/documentation/case-studies/hmm-example.html](https://mc-stan.org/users/documentation/case-studies/hmm-example.html).

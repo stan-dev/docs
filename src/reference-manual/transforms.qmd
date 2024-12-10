@@ -754,6 +754,72 @@ z_k
 .
 $$
 
+## Stochastic Matrix {#stochastic-matrix-transform.section}
+
+The `column_stochastic_matrix[N, M]` and `row_stochastic_matrix[N, M]` type in
+Stan represents an \(N \times M\) matrix where each column (row) is a unit simplex
+of dimension \(N\). In other words, each column (row) of the matrix is a vector
+constrained to have non-negative entries that sum to one.
+
+### Definition of a Stochastic Matrix {-}
+
+A column stochastic matrix \(X \in \mathbb{R}^{N \times M}\) is defined such
+that each column is a simplex. For column \(m\) (where \(1 \leq m \leq M\)):
+
+$$
+X_{n, m} \geq 0 \quad \text{for } 1 \leq n \leq N,
+$$
+
+and
+
+$$
+\sum_{n=1}^N X_{n, m} = 1.
+$$
+
+A row stochastic matrix is any matrix whose transpose is a column stochastic matrix
+(i.e. the rows of the matrix are simplexes)
+
+
+$$
+X_{n, m} \geq 0 \quad \text{for } 1 \leq n \leq N,
+$$
+
+and
+
+$$
+\sum_{m=1}^N X_{n, m} = 1.
+$$
+
+This definition ensures that each column (row) of the matrix \(X\) lies on the
+\(N-1\) dimensional unit simplex, similar to the `simplex[N]` type, but
+extended across multiple columns(rows).
+
+### Inverse Transform for Stochastic Matrix {-}
+
+For the column and row stochastic matrices the inverse transform is the same
+as simplex, but applied to each column (row).
+
+### Absolute Jacobian Determinant for the Inverse Transform {-}
+
+The Jacobian determinant of the inverse transform for each column \(m\) in
+the matrix is given by the product of the diagonal entries \(J_{n, m}\) of
+the lower-triangular Jacobian matrix. This determinant is calculated as:
+
+$$
+\left| \det J_m \right| = \prod_{n=1}^{N-1} \left( z_{n, m} (1 - z_{n, m}) \left( 1 - \sum_{n'=1}^{n-1} X_{n', m} \right) \right).
+$$
+
+Thus, the overall Jacobian determinant for the entire `column_stochastic_matrix` and `row_stochastic_matrix`
+is the product of the determinants for each column (row):
+
+$$
+\left| \det J \right| = \prod_{m=1}^{M} \left| \det J_m \right|.
+$$
+
+### Transform for Stochastic Matrix {-}
+
+For the column and row stochastic matrices the transform is the same
+as simplex, but applied to each column (row).
 
 ## Unit vector {#unit-vector.section}
 

@@ -5,7 +5,7 @@ pagetitle: Posterior Analysis
 # Posterior Analysis {#analysis.chapter}
 
 Stan uses Markov chain Monte Carlo (MCMC) techniques to generate
-samples from the posterior distribution for full Bayesian inference.
+draws from the posterior distribution for full Bayesian inference.
 Markov chain Monte Carlo (MCMC) methods were developed for situations
 in which it is not straightforward to make independent draws
 @Metropolis:1953.
@@ -17,7 +17,7 @@ despite the fact that it is not actually a Markov chain.
 Stan's Laplace algorithm produces a sample from a normal approximation
 centered at the mode of a distribution in the unconstrained space.
 If the mode is a maximum a posteriori (MAP) estimate,
-the samples provide an estimate of the mean and standard deviation
+the sample provides an estimate of the mean and standard deviation
 of the posterior distribution.
 If the mode is a maximum likelihood estimate (MLE),
 the sample provides an estimate of the standard error of the likelihood.
@@ -66,7 +66,7 @@ applies.  These problems are addressed in the next two sections.
 
 Stan's posterior analysis tools compute a number of summary
 statistics, estimates, and diagnostics for Markov chain Monte Carlo
-(MCMC) samples.  Stan's estimators and diagnostics are more robust in
+(MCMC) sample.  Stan's estimators and diagnostics are more robust in
 the face of non-convergence, antithetical sampling, and long-term
 Markov chain correlations than most of the other tools available.  The
 algorithms Stan uses to achieve this are described in this chapter.
@@ -74,7 +74,7 @@ algorithms Stan uses to achieve this are described in this chapter.
 
 ## Convergence
 
-By definition, a Markov chain generates samples from the target
+By definition, a Markov chain samples from the target
 distribution only after it has converged to equilibrium (i.e.,
 equilibrium is defined as being achieved when $p(\theta^{(n)})$ is the
 target density).  The following point cannot be expressed strongly
@@ -105,21 +105,23 @@ One way to monitor whether a chain has converged to the equilibrium
 distribution is to compare its behavior to other randomly initialized
 chains.  This is the motivation for the @GelmanRubin:1992 potential
 scale reduction statistic, $\hat{R}$.  The $\hat{R}$ statistic
-measures the ratio of the average variance of samples within each
-chain to the variance of the pooled samples across chains; if all
+measures the ratio of the average variance of drawss within each
+chain to the variance of the pooled draws across chains; if all
 chains are at equilibrium, these will be the same and $\hat{R}$ will
 be one.  If the chains have not converged to a common distribution,
 the $\hat{R}$ statistic will be greater than one.
 
 Gelman and Rubin's recommendation is that the independent Markov
 chains be initialized with diffuse starting values for the parameters
-and sampled until all values for $\hat{R}$ are below 1.1.  Stan
+and sampled until all values for $\hat{R}$ are below some threshold.
+@Vehtari+etal:2021:Rhat suggest in general to use a threshold $1.01$, but
+othe thresholds can be used depending on the use case. Stan
 allows users to specify initial values for parameters and it is also
 able to draw diffuse random initializations automatically satisfying
 the declared parameter constraints.
 
 The $\hat{R}$ statistic is defined for a set of $M$ Markov chains,
-$\theta_m$, each of which has $N$ samples $\theta^{(n)}_m$.  The
+$\theta_m$, each of which has $N$ draws $\theta^{(n)}_m$.  The
 *between-chain variance* estimate is
 
 $$
@@ -190,6 +192,49 @@ because the first half of each chain has not mixed with the second
 half.
 
 
+### Rank normalization helps when there are heavy tails {-}
+
+Split R-hat and the effective sample size (ESS) are well defined only if
+the marginal posteriors have finite mean and variance.
+Therefore, following @Vehtari+etal:2021:Rhat, we compute the rank normalized
+parameter values and then feed them into the formulas for split R-hat and ESS.
+
+Rank normalization proceeds as follows:
+
+* First, replace each value $\theta^{(nm)}$ by its rank $r^{(nm)}$ within the pooled
+draws from all chains. Average rank for ties are used to conserve
+the number of unique values of discrete quantities.
+
+* Second, transform ranks to normal scores using the inverse normal transformation
+and a fractional offset:
+
+$$
+z_{(nm)} = \Phi^{-1} \left( \frac{r_{(nm)} - 3/8}{S - 1/4} \right)
+$$
+
+To further improve sensitivity to chains having different scales, 
+
+rank normalized R-hat is computed also for the 
+for the corresponding *folded*
+draws $\zeta^{(mn)}$, absolute deviations from the median,
+$$
+\label{zeta}
+\zeta^{(mn)} = \left|\theta^{(nm)}-{\rm median}(\theta)\right|.
+$$
+The rank normalized split-$\widehat{R}$ measure computed on the
+ $\zeta^{(mn)}$ values  is called \emph{folded-split}-$\widehat{R}$.
+  This measures convergence in the
+tails rather than in the bulk of the distribution. 
+
+To obtain a single conservative $\widehat{R}$ estimate, we propose
+to report the maximum of rank normalized split-$\widehat{R}$ and
+rank normalized folded-split-$\widehat{R}$ for each parameter.
+
+Bulk-ESS is defined as ESS for rank normalized split chains.  Tail-ESS
+is defined as the minimum ESS for the 5% and 95% quantiles.  See
+[Effective Sample Size section](#effective-sample-size.section) for
+details on how ESS is estimated.
+
 ### Convergence is global {-}
 
 A question that often arises is whether it is acceptable to monitor
@@ -256,7 +301,7 @@ analytically.
 So what we do in practice is hope that the finite number of draws is
 large enough for the expectations to be reasonably accurate. Removing
 warmup iterations improves the accuracy of the expectations but there
-is no guarantee that removing any finite number of samples will be
+is no guarantee that removing any finite number of draws will be
 enough.
 
 
@@ -278,7 +323,7 @@ distribution for the log posterior density (`lp__`) almost
 never looks Gaussian, instead it features long tails that can lead to
 large $\hat{R}$ even in the large $N$ limit.  Tweaks to $\hat{R}$,
 such as using quantiles in place of raw values, have the flavor of
-making the samples of interest more Gaussian and hence the $\hat{R}$
+making the sample of interest more Gaussian and hence the $\hat{R}$
 statistic more accurate.
 
 
@@ -297,7 +342,7 @@ and can apply the standard tests.
 ## Effective sample size {#effective-sample-size.section}
 
 The second technical difficulty posed by MCMC methods is that the
-samples will typically be autocorrelated (or anticorrelated) within a
+draws will typically be autocorrelated (or anticorrelated) within a
 chain.  This increases (or reduces) the uncertainty of the estimation of posterior
 quantities of interest, such as means, variances, or quantiles; see
 @Geyer:2011.
@@ -352,7 +397,7 @@ $$
    \, d\theta - \frac{\mu^2}{\sigma^2}.
 $$
 
-The effective sample size of $N$ samples generated by a process with
+The effective sample size of $N$ draws generated by a process with
 autocorrelations $\rho_t$ is defined by
 $$
 N_{\mathrm{eff}}
@@ -378,7 +423,7 @@ correlation.
 In practice, the probability function in question cannot be tractably
 integrated and thus the autocorrelation cannot be calculated, nor the
 effective sample size.  Instead, these quantities must be estimated
-from the samples themselves.  The rest of this section describes a
+from the draws themselves.  The rest of this section describes a
 autocorrelations and split-$\hat{R}$ based effective sample
 size estimator, based on multiple chains. As before, each chain
 $\theta_m$ will be assumed to be of length $N$.

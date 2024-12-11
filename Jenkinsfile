@@ -44,7 +44,7 @@ pipeline {
 
                 script {
                     if (params.linkDocs) {
-                        sh "python add_old_links.py $major_version $minor_version"
+                        sh "python3 add_old_links.py $major_version $minor_version"
                     }
                 }
 

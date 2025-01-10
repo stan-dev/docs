@@ -18,50 +18,51 @@ The stanc3 compiler has the following command-line syntax:
 ```
 > stanc (options) <model_file>
 ```
-where `<model_file>` is a path to either a Stan model
-file ending in suffix `.stan` _or_ a Stan functions
-file which ends in `.stanfunctions`.
+
+where `<model_file>` is either a path to a file ending in
+`.stan` or `.stanfunctions` (which automatically sets
+`--standalone-functions`), or `'-'` to read from standard input.
 
 The stanc3 options are:
 
-- `--help` - Displays the complete list of stanc3 options, then exits.
+- `--help` / `-?` - Displays the complete list of stanc3 options, then exits.
 
 - `--version` - Display stanc version number
 
 - `--info` - Print information about the model, such
-as the type information for variables and the list of used distributions.
+  as the type information for variables and the list of used distributions.
 
 - `--name=<model_name>` - Specify the name of the class
-used for the implementation of the Stan model in the generated C++ code.
+  used for the implementation of the Stan model in the generated C++ code.
 
-- `--o=<file_name>` - Specify a path to an output file for generated C++ code
-  (default = <model_name>.hpp) or auto-formatting output (default: no file/print
-  to stdout)
-
-- `--allow-undefined` - Do not throw a parser error if there is a function in
-  the Stan program that is declared but not defined in the functions block.
-
-- `--include_paths=<dir1,...dirN>` - Takes a comma-separated list
-  of directories that may contain a file in an `#include` directive.
-
-- `--use-opencl` - If set, will use additional Stan OpenCL
-  features enabled in the Stan-to-C++ compiler.
+- `--o=<file_name>` / `-o=<filename>` / `--output=<filename>` - Specify a
+  path to an output file for generated C++ code (default = <model_name>.hpp)
+  or auto-formatting output (default: no file/print to stdout)
 
 - `--auto-format` - Pretty prints the program to the console. See [more on auto
   formatting](#stanc-pretty-printing).
 
+- `--allow-undefined` - Do not throw a parser error if there is a function in
+  the Stan program that is declared but not defined in the functions block.
+
 - `--canonicalize` - Make changes to the program before pretty-printing by
   specifying options in a comma separated list. Options are 'deprecations',
-  'parentheses', 'braces', 'includes'.
+  'parentheses', 'braces', 'includes', and 'strip-comments'.
+
+- `--include_paths=<dir1,...dirN>` - Takes a comma-separated list
+  of directories that may contain a file in an `#include` directive.
 
 - `--max-line-length=<number>` - Set the column number at which formatting with
   `--auto-format` attempts to split lines. The default value is 78, which
   results in most lines being shorter than 80 characters.
 
-- `--print-canonical` - Synonymous with `--auto-format --canonicalize=[all
-  options]`.
+- `--print-canonical` - Synonymous with
+  `--auto-format --canonicalize=deprecations,includes,parentheses,braces`.
 
 - `--print-cpp` - If set, output the generated C++ Stan model class to stdout.
+
+- `--filename-in-msg=<name>` - Sets the filename used in compiler and runtime errors.
+  If absent, the `<model_file>` argument is used.
 
 - `--standalone-functions` - If set, only generate the code for the functions
   defined in the file. This is the default behavior for `.stanfunctions` files.
@@ -74,16 +75,19 @@ used for the implementation of the Stan model in the generated C++ code.
   components are not thoroughly tested and may not improve a programs
   performance!_ Allow the compiler to apply all [optimizations](#optimization) to the Stan code.
 
-- `--O` **WARNING:** _This is currently an experimental feature whose components
-  are not thoroughly tested and may not improve a programs performance!_ Same as
-  `--Oexperimental`. Allow the compiler to apply all [optimizations](#optimization) to the Stan
-  code.
+- `--O` Synonym for `--O1` as of Stan 2.37. In earlier versions this was a synonym for
+  `--Oexperimental`.
+
+- `--use-opencl` - If set, will use additional Stan OpenCL
+  features enabled in the Stan-to-C++ compiler.
+
+- `--warn-pedantic` - Emit warnings in [Pedantic mode](#pedantic-mode)
+  which warns of potential issues in the meaning of your program.
+  Note: This may produce false positive warnings.
 
 - `--warn-uninitialized` - Emit warnings about uninitialized variables
   to stderr. Currently an experimental feature.
 
-- `--warn-pedantic` - Emit warnings in [Pedantic mode](#pedantic-mode)
-  which warns of potential issues in the meaning of your program.
 
 The compiler also provides a number of debug options which are
 primarily of interest to stanc3 developers; use the `--help`

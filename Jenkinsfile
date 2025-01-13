@@ -34,9 +34,14 @@ pipeline {
             steps{
                 checkout([$class: 'GitSCM',
                           branches: [[name: '*/master']],
-                          extensions: [
-                            submodules: [recursiveSubmodules: true]
-                          ],
+                          doGenerateSubmoduleConfigurations: false,
+                          extensions: [[$class: 'SubmoduleOption',
+                                        disableSubmodules: false,
+                                        parentCredentials: false,
+                                        recursiveSubmodules: true,
+                                        reference: '',
+                                        trackingSubmodules: false]],
+                          submoduleCfg: [],
                           userRemoteConfigs: [[url: "https://github.com/stan-dev/docs.git", credentialsId: 'a630aebc-6861-4e69-b497-fd7f496ec46b']]]
                 )
 

@@ -1,6 +1,7 @@
 FROM debian:bookworm
 
-ENV QUARTO_VERSION 1.5.53
+# synced with the one in https://github.com/stan-dev/stan-dev.github.io/blob/master/.github/workflows/build.yml
+ENV QUARTO_VERSION 1.6.39
 
 ARG PUID
 ARG PGID

@@ -8,6 +8,16 @@ Repository for the sources and published documentation set, versioned for each S
 * The CmdStan Guide - guide to the reference command-line interface.
 
 
+## Submodule `quarto-config`
+
+Both the Stan website (repository: stan-dev.github.io) and the docs use the same quarto theming from
+the repository quarto-config.   To build the docs locally, from the `src` subdirectory, clone this repo:
+
+```sh
+cd src
+git clone https://github.com/stan-dev/quarto-config
+```
+
 ## Repository directory structure
 
 * `src` : directory of source files for Stan and CmdStan guides and reference manuals, each in its own named subdirectory:

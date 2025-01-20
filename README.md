@@ -8,16 +8,6 @@ Repository for the sources and published documentation set, versioned for each S
 * The CmdStan Guide - guide to the reference command-line interface.
 
 
-## Submodule `quarto-config`
-
-Both the Stan website (repository: stan-dev.github.io) and the docs use the same quarto theming from
-the repository quarto-config.   To build the docs locally, from the `src` subdirectory, clone this repo:
-
-```sh
-cd src
-git clone https://github.com/stan-dev/quarto-config
-```
-
 ## Repository directory structure
 
 * `src` : directory of source files for Stan and CmdStan guides and reference manuals, each in its own named subdirectory:
@@ -39,11 +29,29 @@ To build the pdf version of the docs, you will need to [install LaTeX](https://w
 Quarto accepts [`.qmd`](https://quarto.org/docs/authoring/markdown-basics.html) source files
 and uses the [Pandoc](https://pandoc.org) conversion engine.
 
+Both the Stan website (repository: stan-dev.github.io) and the docs use the same quarto theming from
+the repository [quarto-config](https://github.com/stan-dev/quarto-config). 
+
 ## Scripts to build and maintain the docset
+
+### Check out submodule `quarto-config` into the `src` subdirectory
+
+To build the docs locally,  you must first clone the quarto-config repo into the `src` subdirectory.
+
+```sh
+cd src
+git clone https://github.com/stan-dev/quarto-config
+```
+
 
 **`build.py`**
 
-The program `build.py` convert the markdown files under `src` to html and pdf and populates the `docs` dir with the generated documentation.
+The program `build.py` convert the markdown files under `src` to html and pdf and populates the
+`docs` dir with the generated documentation.
+This script should be run from the top-level directory of this repository.
+
+
+
 Requires Python 3.7 or higher, due to call to `subprocess.run`, kwarg `capture_output`.
   + 2 required arguments:  <Major> <minor> Stan version, expecting 2 positive integer arguments, e.g. `2 28`
   + 2 optional arguments:  <format> <document>.  The output format is either `website` or `pdf`.  The document name corresponds to the name of the `src` subdirectory or `all`.
@@ -51,11 +59,13 @@ Requires Python 3.7 or higher, due to call to `subprocess.run`, kwarg `capture_o
 
 **Build script examples**
 
-* `python build.py 2 35` - creates directory `docs/2_42` as needed; populates it will all generated documentation.
-* `python build.py 2 35 website` - builds the docs website in `docs/2_42`.
-* `python build.py 2 35 pdf functions-reference` - builds only the pdf version of the Stan functions reference,  resulting document is `docs/2_35/functions-reference-2_35.pdf`
-* `python build.py 2 35 pdf all` - builds all pdfs from the Stan documentation set, resulting pdfs are in `docs/2_35`.
-
+```sh
+pwd  # check that you're in the top-level directory of this repository, path should end in  "/stan-dev/docs"
+python build.py 2 35  # creates directory docs/2_35 as needed; populates it will all generated documentation
+python build.py 2 35 website  # builds the docs website in docs/2_35
+python build.py 2 35 pdf functions-reference  # builds only the pdf version of the Stan functions reference,  resulting document is docs/2_35/functions-reference-2_35.pdf
+python build.py 2 35 pdf all # builds all pdfs from the Stan documentation set, resulting pdfs are in docs/2_35
+```
 
 **Additional scripts**
 

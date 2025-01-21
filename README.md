@@ -15,6 +15,7 @@ Repository for the sources and published documentation set, versioned for each S
     + `src/functions-reference` - Stan Functions Reference
     + `src/reference-manual` - Stan Reference Manual
     + `src/stan-users-guide` - Stan Users Guide
+    + `src/quarto-config` - A submodule of the [stan-dev/quarto-config](https://github.com/stan-dev/quarto-config) repository for shared files between the docs and Stan website
 
 * `docs`: the directory `docs` on branch `master` is the [publishing source](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site) for the project pages site.  Whenever a verified member of the Stan organization pushes to `docs` on branch `master`,
 GitHub (re)builds and (re)deploys the website.
@@ -34,15 +35,19 @@ the repository [quarto-config](https://github.com/stan-dev/quarto-config).
 
 ## Scripts to build and maintain the docset
 
-### Check out submodule `quarto-config` into the `src` subdirectory
+**Checking out the repository**
 
-To build the docs locally,  you must first clone the quarto-config repo into the `src` subdirectory.
+In order to ensure the `quarto-config` folder is present, when cloning the repository, use the `--recursive` flag
 
-```sh
-cd src
-git clone https://github.com/stan-dev/quarto-config
+```shell
+git clone --recursive https://github.com/stan-dev/docs.git
 ```
 
+If you already have a clone without this submodule, or if it falls out of date, you can run
+```shell
+git submodule update --init --recursive
+```
+To initialize or refresh it.
 
 **`build.py`**
 

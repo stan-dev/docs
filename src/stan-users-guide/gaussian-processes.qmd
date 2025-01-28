@@ -547,33 +547,11 @@ of $x_1$ is higher [@RasmussenWilliams:2006, page 80].
 The collection of $\rho_d$ (or $1/\rho_d$) parameters can also be
 modeled hierarchically.
 
-The implementation of automatic relevance determination in Stan is
-straightforward, though it currently requires the user to directly code the
-covariance matrix. We'll write a function to generate the Cholesky of the
-covariance matrix called `L_gp_exp_quad_cov_ARD`.
+The implementation of automatic relevance determination is a straightforward
+extension of the one-dimensional case by modifying `rho` to be an array.
 
 
 ```stan
-functions {
-  matrix L_gp_exp_quad_cov_ARD(array[] vector x,
-                            real alpha,
-                            vector rho,
-                            real delta) {
-    int N = size(x);
-    matrix[N, N] K;
-    real sq_alpha = square(alpha);
-    for (i in 1:(N-1)) {
-      K[i, i] = sq_alpha + delta;
-      for (j in (i + 1):N) {
-        K[i, j] = sq_alpha
-                      * exp(-0.5 * dot_self((x[i] - x[j]) ./ rho));
-        K[j, i] = K[i, j];
-      }
-    }
-    K[N, N] = sq_alpha + delta;
-    return cholesky_decompose(K);
-  }
-}
 data {
   int<lower=1> N;
   int<lower=1> D;
@@ -584,7 +562,7 @@ transformed data {
   real delta = 1e-9;
 }
 parameters {
-  vector<lower=0>[D] rho;
+  array[D] real<lower=0> rho;
   real<lower=0> alpha;
   real<lower=0> sigma;
   vector[N] eta;
@@ -592,7 +570,12 @@ parameters {
 model {
   vector[N] f;
   {
-    matrix[N, N] L_K = L_gp_exp_quad_cov_ARD(x, alpha, rho, delta);
+    matrix[N, N] L_K;
+    matrix[N, N] K = gp_exp_quad_cov(x, alpha, rho);
+    for (n in 1:N) {
+      K[n, n] = K[n, n] + delta;
+    }
+    L_K = cholesky_decompose(K);
     f = L_K * eta;
   }
 

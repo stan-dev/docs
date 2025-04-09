@@ -472,6 +472,27 @@ model {
 }
 ```
 
+For a container variable, the affine transform is applied to each element of that variable.
+As an example, the non-centered parameterization of Neal's Funnel in the
+[Stan User's Guide reparameterization section](https://mc-stan.org/docs/stan-users-guide/reparameterization.html),
+$$
+p(y,x) = \textsf{normal}(y \mid 0,3) \times \prod_{n=1}^9
+\textsf{normal}(x_n \mid 0,\exp(y/2)).
+$$
+can be written as:
+
+```stan
+parameters {
+  real<multiplier=3> y;
+  vector<multiplier=exp(y/2)>[9] x;
+}
+model {
+  y ~ std_normal();
+  x ~ std_normal();
+}
+```
+where the affine transform is applied to every element of vector `x`.
+
 ### Expressions as bounds and offset/multiplier {-}
 
 Bounds (and offset and multiplier)

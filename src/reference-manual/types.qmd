@@ -438,8 +438,8 @@ $1$ and multiplier $2$.
 real<offset=1, multiplier=2> x;
 ```
 
-As an example, we can give `x` a normal distribution with non-centered
-parameterization as follows.
+As an example, we can give `x` a normal distribution with non-centered parameterization.
+In this program, the affine transform is applied to every element of vector `x`.
 
 ```stan
 parameters {
@@ -450,7 +450,7 @@ model {
 }
 ```
 
-Recall that the centered parameterization is achieved with the code
+Recall the Stan code for the centered parameterization of this model.
 
 ```stan
 parameters {
@@ -461,16 +461,36 @@ model {
 }
 ```
 
-or equivalently
+Adding the offset, multiplier transform results in the equivalent non-centered parameterization.
 
 ```stan
 parameters {
-  real<offset=0, multiplier=1> x;
+  real<offset=mu, multiplier=sigma> x;
 }
 model {
   x ~ normal(mu, sigma);
 }
 ```
+
+With the affine transform, the sampling happens in different parameter space.
+The model itself doesn’t change if we make parameter transformation,
+but the geometry of the transformed space can be easier for the sampler.
+The above model is equivalent to the hand-coded non-centered parameterization.
+
+```stan
+parameters {
+  real x_raw;
+}
+transformed parameters {
+  real x = mu + x_raw * sigma;
+}
+model {
+  x_raw ~ std_normal();
+}
+```
+
+Use of the affine transform removes the overhead of declaring additional transformed parameters
+and directly expresses the hierarchical relationship between parameters.
 
 For a container variable, the affine transform is applied to each element of that variable.
 As an example, the non-centered parameterization of Neal's Funnel in the
@@ -484,11 +504,11 @@ can be written as:
 ```stan
 parameters {
   real<multiplier=3> y;
-  vector<multiplier=exp(y/2)>[9] x;
+  vector<multiplier=exp(0.5 * y)>[9] x;
 }
 model {
-  y ~ std_normal();
-  x ~ std_normal();
+  y ~ normal(0, 3); 
+  x ~ std_normal(0, 0.5 * y);
 }
 ```
 where the affine transform is applied to every element of vector `x`.

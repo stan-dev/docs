@@ -662,18 +662,21 @@ Next, we introduce the $K \times K$ transition matrix, $\Gamma$, with
 $$
 \Gamma_{ij} = p(z_n = j \mid z_{n - 1} = i, \phi).
 $$
+(This is a right-stochastic matrix.)
 Finally, we define the initial state $K$-vector $\rho$, with
 $$
  \rho_k = p(z_0 = k \mid \phi).
 $$
+It is common practice to set $\rho$ to be the stationary distribution of the HMM,
+that is $\rho$ is the first eigenvector of $\Gamma$ and solves $\Gamma \rho = \rho$.
 
-As an example, consider a three-state model, with $K = 1, 2, 3$.
-The observations are normally distributed with
+As an example, consider a three-state model with $K=3$.
+The observations are normally distributed conditional on the HMM states with
 $$
   y_n \sim \text{normal}(\mu_k, \sigma),
 $$
 where $\mu = (1, 5, 9)$ and the standard deviation $\sigma$ is the same
-across all observation.
+across all observations.
 The model is then
 
 ```stan
@@ -712,23 +715,27 @@ model {
   // prior
   mu ~ normal(0, 1);
   sigma ~ normal(0, 1);
+  
+  // no explicit prior on gamma_arr, meaning we default to a
+  // uniform prior over the simplexes.
 
   // Increment target by log p(y | mu, sigma, Gamma, rho)
   target += hmm_marginal(log_omega, gamma, rho);
 }
 ```
 
-The last function `hmm_marginal` takes in all the ingredients of the HMM,
+The last function `hmm_marginal` takes in all the ingredients of the HMM
 and computes the relevant log marginal distribution, $\log p(y \mid \phi)$.
 
-To obtain samples from the posterior distribution of $z$,
+If we desire samples from the posterior distribution of $z$,
 we use the generated quantities block and draw, for each sample $\phi$,
 a sample from $p(z \mid y, \phi)$.
 In effect, MCMC produces draws from $p(\phi \mid y)$
-and with the draw in generated quantities, we obtain draws from
+and with the draws in generated quantities, we obtain draws from
 $p(\phi \mid y) p(z \mid y, \phi) = p(z, \phi \mid y)$.
 It is also possible to compute the posterior probbability of each hidden state,
 that is $\text{Pr}(z_n = k \mid \phi, y)$.
+Averagging these probabilities over all MCMC draws, we obtain $\text{Pr}(z_n = k \mid y)$.
 
 ```stan
 generated quantities {
@@ -741,8 +748,15 @@ probabilities of each state, $\text{Pr}(z_n = k \mid \phi, y)$.
 This function cannot be used to compute the joint probability
 $\text{Pr}(z \mid \phi, y)$, because such calculation requires accounting
 for the posterior correlation between the different components of $z$.
-Therefore, `hidden_probs` should NOT be used to obtain posterior samples.
+Therefore, `hidden_probs` should *not* be used to obtain posterior samples.
 Instead, users should rely on `hmm_latent_rng`.
+
+```stan
+generated quantities {
+   array[N] int<lower=1, upper=K> z = hmm_latent_rng(...fill-in params here to match example...);
+}
+```
+
 
 The example in this section is derived from the more detailed case study
 by Ben Bales:

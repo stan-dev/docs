@@ -1,0 +1,235 @@
+---
+pagetitle: Embedded Laplace Approximation
+---
+
+# Embedded Laplace Approximation
+
+The embedded Laplace approximation can be used to approximate certain
+marginal and conditional distributions that arise in latent Gaussian models.
+A latent Gaussian model observes the following hierarchical structure:
+$$
+  \phi \sim p(\phi), \ \ \theta \sim \text{MultiNormal}(0, K(\phi)),  \ \
+  y \sim p(y \mid \theta, \phi),
+$$
+where $K(\phi)$ denotes the prior covariance matrix parameterized by $\phi$.
+To draw samples from the posterior $p(\phi, \theta \mid y)$, we can either
+use a standard method, such as Markov chain Monte Carlo, or we can follow
+a two-step procedure:
+
+1. draw samples from the *marginal likelihood* $p(\phi \mid y)$
+2. draw samples from the *conditional posterior* $p(\theta \mid y, \phi)$.
+
+In practice, neither the marginal likelihood nor the conditional posterior
+are available in close form and so they must be approximated.
+It turns out that if we have an approximation of $p(\theta \mid y, \phi)$,
+we immediately obtain an approximation of $p(\phi \mid y)$.
+The embedded Laplace approximation returns
+$\log \hat p(y \mid \phi) \approx \log p(y \mid \phi)$.
+Evaluating this log density in the `model` block, we can then sample from
+$p(\phi \mid y)$ using one of Stan's algorithms.
+
+To obtain posterior draws for $\theta$, we generate samples from the Laplace
+approximation to $p(\theta \mid y, \phi)$ in `generated quantities`.
+
+## Specifying the likelihood function
+
+The first step is to write down a function in the `functions` block which
+returns `\log p(y \mid \theta, \phi)`. There are a few constraints on this
+function:
+
+* The function return type must be `real`
+
+* The first argument must be the latent Gaussian variable $\theta$ and must
+have type `vector`.
+
+* The operations in the function must support higher-order automatic
+differentation (AD). Most functions in Stan support higher-order AD.
+The exceptions are functions with specialized calls for reverse-mode AD, and
+these are higher-order functions (algebraic solvers, differential equation
+solvers, and integrators) and the suite of hidden Markov model (HMM) functions.
+
+The signature of the function is
+```
+real ll_function(vector theta, ...)
+```
+There is no type restrictions for the variadic arguments `...` and each
+argument can be passed as data or parameter. As always, users should use
+parameter arguments only when nescessary in order to speed up differentiation.
+In general, we recommend marking data only arguments with the keyword `data`,
+for example,
+```
+real ll_function(vector theta, data vector x, ...)
+```
+
+## Specifying the covariance function
+
+We next need to specify a function that returns the prior covariance matrix
+$K$ as a function of the hyperparameters $\phi$.
+The only restriction is that this function returns a matrix with size
+$n \times n$ where $n$ is the size of $\theta$. The signature is:
+```
+matrix K_function(...)
+```
+There is no type restrictions for the variadic arguments. The variables $\phi$
+is implicitly defined as the collection of all non-data arguments passed to
+`ll_function` (excluding $\theta$) and `K_function`.
+
+
+## Approximating the log marginal likelihood $\log p(y \mid \phi)$
+
+In the `model` block, we increment `target` with `laplace_marginal`, a function
+that approximates $\log p(y \mid \phi)$. This function takes in the
+user-specified likelihood and covariance functions, as well as their arguments.
+These arguments must be passed as tuples, which can be generated on the fly
+using parenthesis. 
+We also need to pass an argument $\theta_0$ which serves as an initial guess for
+the optimization problem that underlies the Laplace approximation,
+$$
+  \underset{\theta}{\text{argmax}} \ \log p(\theta \mid y, \phi).
+$$
+The size of $\theta_0$ must be consistent with the size of the $\theta$ argument
+passed to `ll_function`.
+
+The signature of the function is:
+```
+target += laplace_marginal(function ll_function, tupple (...), vector theta_0, 
+                           function K_function, tupple (...)); 
+```
+The tuple `(...)` after `ll_function` contains the arguments that get passed
+to `ll_function` *excluding $\theta$*. Likewise, the tuple `(...)` after
+`ll_function` contains the arguments that get passed to `K_function`.
+
+It also possible to specify control parameters, which can help improve the
+optimization that underlies the Laplace approximation. Specifically:
+
+* `tol`: the tolerance $\epsilon$ of the optimizer. Specifically, the optimizer
+stops when $||\nabla \log p(\theta \mid y, \phi)|| \le \epsilon$. By default,
+the value is $\epsilon = 10^{-6}$.
+
+* `max_num_steps`: the maximum number of steps taken by the optimizer before
+it gives up (in which case the Metropolis proposal gets rejected). The default
+is 100 steps.
+
+* `hessian_block_size`: the size of the blocks, assuming the Hessian
+$\partial \log p(y \mid \theta, phi) \ \partial \theta$ is block-diagonal.
+The structure of the Hessian is determined by the dependence structure of $y$
+on $\theta$. By default, the Hessian is treated as diagonal
+(`hessian_block_size=1`). If the Hessian is not block diagonal, then set
+`hessian_block_size=n`, where `n` is the size of $\theta$.
+
+* `solver`: choice of Newton solver. The optimizer used to compute the
+Laplace approximation does one of three matrix decompositions to compute a
+Newton step. The problem determines which decomposition is numerical stable.
+By default (`solver=1`), the solver makes a Cholesky decomposition of the
+negative Hessian, $- \partial \log p(y \mid \theta, \phi) / \partial \theta$.
+If `solver=2`, the solver makes a Cholesky decomposition of the covariance
+matrix $K(\phi)$.
+If the Cholesky decomposition cannot be computed for neither the negative
+Hessian nor the covariance matrix, use `solver=3` which uses a more expensive
+but less specialized approach.
+
+* `max_steps_linesearch`: maximum number of steps in linesearch. The linesearch
+method tries to insure that the Newton step leads to a decrease in the
+objective function. If the Newton step does not improve the objective function,
+the step is repeatedly halved until the objective function decreases or the
+maximum number of steps in the linesearch is reached. By default,
+`max_steps_linesearch=0`, meaning no linesearch is performed.
+
+With these arguments at hand, we can call `laplace_marginal_tol` with the
+following signature:
+```
+target += laplace_margina_tol(function ll_function, tupple (...), vector theta_0, 
+                              function K_function, tupple (...),
+                              real tol, int max_steps, int hessian_block_size,
+                              int solver, int max_steps_linesearch);
+```
+
+## Draw approximate samples from the conditional $p(\theta \mid y, \phi)$
+
+In `generated quantities`, it is possible to draw samples from the Laplace
+approximation of $p(\theta \mid \phi, y)$ using `laplace_latent_rng`.
+The process of iteratively drawing from  $p(\phi \mid y)$ (say, with MCMC) and 
+then $p(\theta \mid y, \phi)$ produces samples from the joint posterior
+$p(\theta, \phi \mid y)$. The signature for `laplace_latent_rng` follows closely
+the signature for `laplace_marginal`:
+```
+vector theta = 
+  laplace_latent_rng(function ll_function, tupple (...), vector theta_0,
+                     function K_function, tupple (...));
+```
+Once again, it is possible to specify control parameters:
+```
+vector theta = 
+  laplace_latent_tol_rng(function ll_function, tupple (...), vector theta_0,
+                         function K_function, tupple (...),
+                         real tol, int max_steps, int hessian_block_size,
+                         int solver, int max_steps_linesearch);
+```
+
+## Built-in likelihood functions for the embedded Laplace
+
+Stan supports a narrow menu of built-in likelihood functions. These wrappers
+exist for the user's convenience but are not more computationally efficient
+than specifying log likelihoods in the `functions` block.
+
+[...]
+
+
+## Draw approximate samples for out-of-sample latent variables.
+
+In many applications, it is of interest to draw latent variables for
+in-sample and out-of-sample predictions. We respectively denote these latent
+variables $\theta$ and $\theta^*$. In a latent Gaussian model, 
+$(\theta, \theta^*)$ jointly follow a prior multivariate normal distribution:
+$$
+  \theta, \theta^* \sim \text{MultiNormal}(0, {\bf K}(\phi)),
+$$
+where $\bf K$ designates the joint covariance matrix over $\theta, \theta^*$.
+
+We can break $\bf K$ into three components,
+$$
+{\bf K} = \begin{bmatrix}
+  K & \\
+  K^* & K^{**}
+\end{bmatrix},
+$$
+where $K$ is the prior covariance matrix for $\theta$, $K^{**}$ the prior
+covariance matrix for $\theta^*$, and $K^*$ the covariance matrix between
+$\theta$ and $\theta^*$.
+
+Stan supports the case where $\theta$ is associated with an in-sample
+covariate $X$ and $\theta^*$ with an out-of-sample covariate $X^*$.
+Furthermore, the covariance function is written in such a way that
+$$
+K = f(..., X, X), \ \ K^{**} = f(..., X^*, X^*), \ \ K^* = f(..., X, X^*),
+$$
+as is typically the case in Gaussian process models.
+
+
+
+
+
+The
+function `laplace_latent_rng` produces samples from the Laplace approximation
+and admits nearly the same arguments as `laplace_marginal`. A key difference
+is that 
+```
+vector laplace_latent_rng(function ll_function, tupple (...), vector theta_0, 
+                          function K_function, tupple (...));
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

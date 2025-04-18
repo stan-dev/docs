@@ -30,12 +30,16 @@ $p(\phi \mid y)$ using one of Stan's algorithms.
 
 To obtain posterior draws for $\theta$, we generate samples from the Laplace
 approximation to $p(\theta \mid y, \phi)$ in `generated quantities`.
+The process of iteratively drawing from  $p(\phi \mid y)$ (say, with MCMC) and 
+then $p(\theta \mid y, \phi)$ produces samples from the joint posterior
+$p(\theta, \phi \mid y)$.
+
 
 ## Specifying the likelihood function
 
-The first step is to write down a function in the `functions` block which
-returns `\log p(y \mid \theta, \phi)`. There are a few constraints on this
-function:
+The first step to use the embedded Laplace approximation is to write down a 
+function in the `functions` block which returns `\log p(y \mid \theta, \phi)`. 
+There are a few constraints on this function:
 
 * The function return type must be `real`
 
@@ -148,9 +152,7 @@ target += laplace_margina_tol(function ll_function, tupple (...), vector theta_0
 
 In `generated quantities`, it is possible to draw samples from the Laplace
 approximation of $p(\theta \mid \phi, y)$ using `laplace_latent_rng`.
-The process of iteratively drawing from  $p(\phi \mid y)$ (say, with MCMC) and 
-then $p(\theta \mid y, \phi)$ produces samples from the joint posterior
-$p(\theta, \phi \mid y)$. The signature for `laplace_latent_rng` follows closely
+The signature for `laplace_latent_rng` follows closely
 the signature for `laplace_marginal`:
 ```
 vector theta = 
@@ -166,70 +168,193 @@ vector theta =
                          int solver, int max_steps_linesearch);
 ```
 
-## Built-in likelihood functions for the embedded Laplace
+## Built-in likelihood functions
 
-Stan supports a narrow menu of built-in likelihood functions. These wrappers
-exist for the user's convenience but are not more computationally efficient
-than specifying log likelihoods in the `functions` block.
+Stan supports certain built-in likelihood functions. This selection is currently
+narrow and expected to grow. The built-in functions exist for the user's
+convenience but are not more computationally efficient than specifying log
+likelihoods in the `functions` block.
 
-[...]
+### Poisson likelihood with log link
 
-
-## Draw approximate samples for out-of-sample latent variables.
-
-In many applications, it is of interest to draw latent variables for
-in-sample and out-of-sample predictions. We respectively denote these latent
-variables $\theta$ and $\theta^*$. In a latent Gaussian model, 
-$(\theta, \theta^*)$ jointly follow a prior multivariate normal distribution:
+Consider a count data, which each observed count $y_i$ associated with a group
+$g(i)$ and a corresponding latent variable $\theta_{g(i)}$. The likelihood is
 $$
-  \theta, \theta^* \sim \text{MultiNormal}(0, {\bf K}(\phi)),
+p(y \mid \theta, \phi) = \prod_i\text{Poisson} (y_i \mid \exp(\theta_{g(i)})).
 $$
-where $\bf K$ designates the joint covariance matrix over $\theta, \theta^*$.
+The arguments required to compute this likelihood are:
 
-We can break $\bf K$ into three components,
-$$
-{\bf K} = \begin{bmatrix}
-  K & \\
-  K^* & K^{**}
-\end{bmatrix},
-$$
-where $K$ is the prior covariance matrix for $\theta$, $K^{**}$ the prior
-covariance matrix for $\theta^*$, and $K^*$ the covariance matrix between
-$\theta$ and $\theta^*$.
+* `y`: an array of counts.
+* `y_index`: an array whose $i^\text{th}$ element indicates to which
+group the $i^\text{th}$ observation belongs to.
 
-Stan supports the case where $\theta$ is associated with an in-sample
-covariate $X$ and $\theta^*$ with an out-of-sample covariate $X^*$.
-Furthermore, the covariance function is written in such a way that
-$$
-K = f(..., X, X), \ \ K^{**} = f(..., X^*, X^*), \ \ K^* = f(..., X, X^*),
-$$
-as is typically the case in Gaussian process models.
-
-
-
-
-
-The
-function `laplace_latent_rng` produces samples from the Laplace approximation
-and admits nearly the same arguments as `laplace_marginal`. A key difference
-is that 
+The signatures for the embedded Laplace approximation function with a Poisson
+likelihood are
 ```
-vector laplace_latent_rng(function ll_function, tupple (...), vector theta_0, 
-                          function K_function, tupple (...));
+real laplace_marginal_poisson_log_lpmf(array[] int y | array[] int y_index,
+                                    vector theta0, function K_function, (...));
+
+real laplace_marginal_tol_poisson_log_lpmf(array[] int y | array[] int y_index,
+                               vector theta0, function K_function, (...),
+                               real tol, int max_steps, int hessian_block_size,
+                               int solver, int max_steps_linesearch);
+
+vector laplace_latent_poisson_log_rng(array[] int y, array[] int y_index,
+                               vector theta0, function K_function, (...));
+
+vector laplace_latent_tol_poisson_log_rng(array[] int y, array[] int y_index,
+                               vector theta0, function K_function, (...),
+                               real tol, int max_steps, int hessian_block_size,
+                               int solver, int max_steps_linesearch);
 ```
 
 
+A similar built-in likelihood lets users specify an offset $x_i \in \mathbb R^+$
+to the rate parameter of the Poisson. The likelihood is then,
+$$
+p(y \mid \theta, \phi) = \prod_i\text{Poisson} (y_i \mid \exp(\theta_{g(i)}) x_i).
+$$
+The signatures for this function are:
+```
+real laplace_marginal_poisson2_log_lpmf(array[] int y | array[] int y_index,
+                                    vector x, vector theta0,
+                                    function K_function, (...));
+
+real laplace_marginal_tol_poisson2_log_lpmf(array[] int y | array[] int y_index,
+                               vector x, vector theta0,
+                               function K_function, (...),
+                               real tol, int max_steps, int hessian_block_size,
+                               int solver, int max_steps_linesearch);
+
+vector laplace_latent_poisson2_log_rng(array[] int y, array[] int y_index,
+                               vector x, vector theta0, 
+                               function K_function, (...));
+
+vector laplace_latent_tol_poisson2_log_rng(array[] int y, array[] int y_index,
+                               vector x, vector theta0,
+                               function K_function, (...),
+                               real tol, int max_steps, int hessian_block_size,
+                               int solver, int max_steps_linesearch);
+```
+
+
+### Negative Binomial likelihood with log link
+
+The negative Bionomial generalizes the Poisson likelihood function by
+introducing the dispersion parameter $\eta$. The likelihood is then
+$$
+p(y \mid \theta, \phi) = \prod_i\text{NegBinomial2} (y_i \mid \exp(\theta_{g(i)}), \eta).
+$$
+Here we use the alternative paramererization implemented in Stan, meaning that
+$$
+\mathbb E(y_i) = \exp (\theta_{g(i)}), \ \ \text{Var}(y_i) = \mathbb E(y_i) + \frac{(\mathbb E(y_i))^2}{\eta}. 
+$$
+The arguments for the likelihood function are:
+
+* `y`: the observed counts
+* `y_index`: an array whose $i^\text{th}$ element indicates to which
+group the $i^\text{th}$ observation belongs to.
+* `eta`: the overdispersion parameter.
+
+The function signatures for the embedded Laplace approximation with a negative
+Binomial likelihood are
+```
+real laplace_marginal_neg_binomial_2_log_lpmf(array[] int y | 
+                  array[] int y_index, real eta, vector theta0, 
+                  function K_function, (...));
+
+real laplace_marginal_tol_neg_binomial_2_log_lpmf(array[] int y | 
+                  array[] int y_index, real eta, vector theta0, 
+                  function K_function, (...),
+                  real tol, int max_steps, int hessian_block_size,
+                  int solver, int max_steps_linesearch);
+
+vector laplace_latent_neg_binomial_2_log_rng(array[] int y, 
+                  array[] int y_index, real eta, vector theta0, 
+                  function K_function, (...));
+
+vector laplace_latent_tol_neg_binomial_2_log_rng(array[] int y, 
+                  array[] int y_index, real eta, vector theta0, 
+                  function K_function, (...),
+                  real tol, int max_steps, int hessian_block_size,
+                  int solver, int max_steps_linesearch);
+```
+
+### Bernoulli likelihood with logit link
+
+For a binary outcome $y_i \in \{0, 1\}$, the likelihood is
+$$
+p(y \mid \theta, \phi) = \prod_i\text{Bernoulli} (y_i \mid \text{logit}^{-1}(\theta_{g(i)})).
+$$
+The arguments of the likelihood function are:
+
+* `y`: the observed counts
+* `y_index`: an array whose $i^\text{th}$ element indicates to which
+group the $i^\text{th}$ observation belongs to.
+
+The function signatures for the embedded Laplace approximation with a Bernoulli likelihood are
+```
+real laplace_marginal_bernoulli_logit_lpmf(array[] int y | 
+                  array[] int y_index, real eta, vector theta0, 
+                  function K_function, (...));
+
+real laplace_marginal_tol_bernoulli_logit_lpmf(array[] int y | 
+                  array[] int y_index, real eta, vector theta0, 
+                  function K_function, (...),
+                  real tol, int max_steps, int hessian_block_size,
+                  int solver, int max_steps_linesearch);
+
+vector laplace_latent_bernoulli_logit_rng(array[] int y, 
+                  array[] int y_index, real eta, vector theta0, 
+                  function K_function, (...));
+
+vector laplace_latent_tol_bernoulli_logit_rng(array[] int y, 
+                  array[] int y_index, real eta, vector theta0, 
+                  function K_function, (...),
+                  real tol, int max_steps, int hessian_block_size,
+                  int solver, int max_steps_linesearch);
+```
+
+<!-- ## Draw approximate samples for out-of-sample latent variables. -->
+
+<!-- In many applications, it is of interest to draw latent variables for -->
+<!-- in-sample and out-of-sample predictions. We respectively denote these latent -->
+<!-- variables $\theta$ and $\theta^*$. In a latent Gaussian model,  -->
+<!-- $(\theta, \theta^*)$ jointly follow a prior multivariate normal distribution: -->
+<!-- $$ -->
+<!--   \theta, \theta^* \sim \text{MultiNormal}(0, {\bf K}(\phi)), -->
+<!-- $$ -->
+<!-- where $\bf K$ designates the joint covariance matrix over $\theta, \theta^*$. -->
+
+<!-- We can break $\bf K$ into three components, -->
+<!-- $$ -->
+<!-- {\bf K} = \begin{bmatrix} -->
+<!--   K & \\ -->
+<!--   K^* & K^{**} -->
+<!-- \end{bmatrix}, -->
+<!-- $$ -->
+<!-- where $K$ is the prior covariance matrix for $\theta$, $K^{**}$ the prior -->
+<!-- covariance matrix for $\theta^*$, and $K^*$ the covariance matrix between -->
+<!-- $\theta$ and $\theta^*$. -->
+
+<!-- Stan supports the case where $\theta$ is associated with an in-sample -->
+<!-- covariate $X$ and $\theta^*$ with an out-of-sample covariate $X^*$. -->
+<!-- Furthermore, the covariance function is written in such a way that -->
+<!-- $$ -->
+<!-- K = f(..., X, X), \ \ K^{**} = f(..., X^*, X^*), \ \ K^* = f(..., X, X^*), -->
+<!-- $$ -->
+<!-- as is typically the case in Gaussian process models. -->
 
 
 
 
 
-
-
-
-
-
-
-
-
+<!-- The -->
+<!-- function `laplace_latent_rng` produces samples from the Laplace approximation -->
+<!-- and admits nearly the same arguments as `laplace_marginal`. A key difference -->
+<!-- is that  -->
+<!-- ``` -->
+<!-- vector laplace_latent_rng(function ll_function, tupple (...), vector theta_0,  -->
+<!--                           function K_function, tupple (...)); -->
+<!-- ``` -->
 

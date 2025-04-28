@@ -8,38 +8,54 @@ The embedded Laplace approximation can be used to approximate certain
 marginal and conditional distributions that arise in latent Gaussian models.
 A latent Gaussian model observes the following hierarchical structure:
 $$
-  \phi \sim p(\phi), \ \ \theta \sim \text{MultiNormal}(0, K(\phi)),  \ \
+  \phi \sim p(\phi), \\
+  \theta \sim \text{MultiNormal}(0, K(\phi)),  \\
   y \sim p(y \mid \theta, \phi),
 $$
 where $K(\phi)$ denotes the prior covariance matrix parameterized by $\phi$.
-To draw samples from the posterior $p(\phi, \theta \mid y)$, we can either
+To sample from the joint posterior $p(\phi, \theta \mid y)$, we can either
 use a standard method, such as Markov chain Monte Carlo, or we can follow
 a two-step procedure:
 
-1. draw samples from the *marginal likelihood* $p(\phi \mid y)$
-2. draw samples from the *conditional posterior* $p(\theta \mid y, \phi)$.
+1. sample from the *marginal posterior* $p(\phi \mid y)$,
+2. sample from the *conditional posterior* $p(\theta \mid y, \phi)$.
 
-In practice, neither the marginal likelihood nor the conditional posterior
-are available in close form and so they must be approximated.
-It turns out that if we have an approximation of $p(\theta \mid y, \phi)$,
-we immediately obtain an approximation of $p(\phi \mid y)$.
-The embedded Laplace approximation returns
-$\log \hat p(y \mid \phi) \approx \log p(y \mid \phi)$.
-Evaluating this log density in the `model` block, we can then sample from
-$p(\phi \mid y)$ using one of Stan's algorithms.
+In practice, neither the marginal posterior nor the conditional posterior
+are available in closed form and so they must be approximated.
+The marginal posterior can be written as  $p(\phi \mid y) \propto p(y \mid \phi) p(\phi)$,
+where  $p(y \mid \phi) = \int p(y \mid \phi, \theta) p(\theta) d\theta$ $ 
+is called marginal likelihood.  The Laplace method approximates 
+$p(y \mid \phi, \theta) p(\theta)$ with a normal distribution and the
+resulting Gaussian integral can be evaluated analytically to obtain an
+approximation to the log marginal likelihood 
+$\log \hat p(y \mid \phi) \approx \log p(y \mid \phi)$. 
 
-To obtain posterior draws for $\theta$, we generate samples from the Laplace
+Combining this marginal likelihood with the prior in the `model`
+block, we can then sample from the marginal posterior $p(\phi \mid y)$
+using one of Stan's algorithms. The marginal posterior is lower
+dimensional and likely to have easier shape to sample leading more
+efficient inference. On the other hand each marginal likelihood
+computation is more costly, and the combined change in efficiency
+depends on the case.
+
+To obtain posterior draws for $\theta$, we sample from the normal
 approximation to $p(\theta \mid y, \phi)$ in `generated quantities`.
-The process of iteratively drawing from  $p(\phi \mid y)$ (say, with MCMC) and 
+The process of iteratively sampling from  $p(\phi \mid y)$ (say, with MCMC) and 
 then $p(\theta \mid y, \phi)$ produces samples from the joint posterior
 $p(\theta, \phi \mid y)$.
+
+The Laplace approximation is especially useful if $p(\theta)$ is
+multivariate normal and $p(y \mid \phi, \theta)$ is
+log-concave. Stan's embedded Laplace approximation is restricted to
+have multivariate normal prior $p(\theta)$ and ... likelihood 
+$p(y \mid \phi, \theta)$.
 
 
 ## Specifying the likelihood function
 
 The first step to use the embedded Laplace approximation is to write down a 
-function in the `functions` block which returns `\log p(y \mid \theta, \phi)`. 
-There are a few constraints on this function:
+function in the `functions` block which returns the log joint likelihood 
+`\log p(y \mid \theta, \phi)`. There are a few constraints on this function:
 
 * The function return type must be `real`
 
@@ -82,8 +98,9 @@ is implicitly defined as the collection of all non-data arguments passed to
 ## Approximating the log marginal likelihood $\log p(y \mid \phi)$
 
 In the `model` block, we increment `target` with `laplace_marginal`, a function
-that approximates $\log p(y \mid \phi)$. This function takes in the
-user-specified likelihood and covariance functions, as well as their arguments.
+that approximates the log marginal likelihood $\log p(y \mid \phi)$. 
+This function takes in the
+user-specified likelihood and prior covariance functions, as well as their arguments.
 These arguments must be passed as tuples, which can be generated on the fly
 using parenthesis. 
 We also need to pass an argument $\theta_0$ which serves as an initial guess for
@@ -148,9 +165,9 @@ target += laplace_margina_tol(function ll_function, tupple (...), vector theta_0
                               int solver, int max_steps_linesearch);
 ```
 
-## Draw approximate samples from the conditional $p(\theta \mid y, \phi)$
+## Sample from the approximate conditional $\hat{p}(\theta \mid y, \phi)$
 
-In `generated quantities`, it is possible to draw samples from the Laplace
+In `generated quantities`, it is possible to sample from the Laplace
 approximation of $p(\theta \mid \phi, y)$ using `laplace_latent_rng`.
 The signature for `laplace_latent_rng` follows closely
 the signature for `laplace_marginal`:
@@ -168,17 +185,19 @@ vector theta =
                          int solver, int max_steps_linesearch);
 ```
 
-## Built-in likelihood functions
+## Built-in Laplace marginal likelihood functions
 
-Stan supports certain built-in likelihood functions. This selection is currently
+Stan supports certain built-in Laplace marginal likelihood functions. 
+This selection is currently
 narrow and expected to grow. The built-in functions exist for the user's
 convenience but are not more computationally efficient than specifying log
 likelihoods in the `functions` block.
 
-### Poisson likelihood with log link
+### Poisson with log link
 
-Consider a count data, which each observed count $y_i$ associated with a group
-$g(i)$ and a corresponding latent variable $\theta_{g(i)}$. The likelihood is
+Given count data, with each observed count $y_i$ associated with a group
+$g(i)$ and a corresponding latent variable $\theta_{g(i)}$, and Poisson model, 
+the likelihood is
 $$
 p(y \mid \theta, \phi) = \prod_i\text{Poisson} (y_i \mid \exp(\theta_{g(i)})).
 $$
@@ -238,16 +257,17 @@ vector laplace_latent_tol_poisson2_log_rng(array[] int y, array[] int y_index,
 ```
 
 
-### Negative Binomial likelihood with log link
+### Negative Binomial with log link
 
-The negative Bionomial generalizes the Poisson likelihood function by
-introducing the dispersion parameter $\eta$. The likelihood is then
+The negative Bionomial distribution generalizes the Poisson distribution by
+introducing the dispersion parameter $\eta$. The corresponding likelihood is then
 $$
 p(y \mid \theta, \phi) = \prod_i\text{NegBinomial2} (y_i \mid \exp(\theta_{g(i)}), \eta).
 $$
 Here we use the alternative paramererization implemented in Stan, meaning that
 $$
-\mathbb E(y_i) = \exp (\theta_{g(i)}), \ \ \text{Var}(y_i) = \mathbb E(y_i) + \frac{(\mathbb E(y_i))^2}{\eta}. 
+\mathbb E(y_i) = \exp (\theta_{g(i)}), \\ 
+\text{Var}(y_i) = \mathbb E(y_i) + \frac{(\mathbb E(y_i))^2}{\eta}. 
 $$
 The arguments for the likelihood function are:
 
@@ -280,9 +300,9 @@ vector laplace_latent_tol_neg_binomial_2_log_rng(array[] int y,
                   int solver, int max_steps_linesearch);
 ```
 
-### Bernoulli likelihood with logit link
+### Bernoulli with logit link
 
-For a binary outcome $y_i \in \{0, 1\}$, the likelihood is
+Given binary outcome $y_i \in \{0, 1\}$ and Bernoulli model, the likelihood is
 $$
 p(y \mid \theta, \phi) = \prod_i\text{Bernoulli} (y_i \mid \text{logit}^{-1}(\theta_{g(i)})).
 $$

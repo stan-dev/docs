@@ -470,7 +470,19 @@ The positive ordered transformation is defined in the same style
 as the ordered transformation above, but with the first element being
 exponentiated to ensure positivity.
 
-## Zero sum vector
+## Zero sum transforms
+
+Stan provides built-in constraint transforms for zero-sum vectors and zero-sum matrices. The zero-sum vector is a vector of length $N$ with real values and the sum of the vector equals zero. The zero-sum matrix is an $N \times M$ matrix where both the rows and columns sum-to-zero.
+
+Stan uses an orthogonal basis as the initial point of construction. Although this may seem like an unnecessarily complicated way to construct a sum-to-zero object,the orthogonal basis construction balances the constraint across each value equally. This results in each of the constrained elements having equal variance see, e.g.,[@seyboldt:2024]. Simpler alternatives, such as setting the
+final element to the negative sum of the first elements, do not result in equal variances. The $N - 1$ unconstrained parameters are independent, however, the sum-to-zero constraint induces a negative correlation across the constrained vector values.
+
+The orthogonal basis underlying the isometric log ratio transform and the zero sum transforms in Stan is the (normalized) Helmert matrix. More details of the 
+Helmert matrix are in [@lancaster:1965], for the basic definitions of the 
+isometric log ratio transform see [@egozcue+etal:2003] and Chapter 3 
+of [@filzmoser+etal:2018] for the pivot coordinate version used here. 
+
+### Zero sum vector
 
 Vectors that are constrained to sum to zero are useful for, among
 other things, additive varying effects, such as varying slopes or
@@ -481,23 +493,9 @@ $$
 \sum_{k=1}^K x_k = 0.
 $$
 
-For the transform, Stan uses the first part of an isometric log ratio
-transform; see [@egozcue+etal:2003] for the basic definitions and
-Chapter 3 of [@filzmoser+etal:2018] for the pivot coordinate version
-used here.  Stan uses the isometric log ratio transform because it
-results in equal variances of the the constrained sum to zero
-vector see, e.g.,[@seyboldt:2024]. Simpler alternatives, such as setting the
-final element to the negative sum of the first elements, do not result in
-equal variances. The $N - 1$ unconstrained parameters are independent, however,
-the sum-to-zero constraint induces a negative correlation across the
-constrained vector values.
+### Zero sum vector transform {-}
 
-### Zero sum transform {-}
-
-The (unconstraining) transform is defined iteratively.  Given an $x \in
-\mathbb{R}^{N + 1}$ that sums to zero (i.e., $\sum_{n=1}^{N+1} x_n =
-0$), the transform proceeds as follows to produce an unconstrained $y
-\in \mathbb{R}^N$.
+The (unconstraining) transform is defined iteratively.  Given an $x \in \mathbb{R}^{N + 1}$ that sums to zero (i.e., $\sum_{n=1}^{N+1} x_n = 0$), the transform proceeds as follows to produce an unconstrained $y \in \mathbb{R}^N$. This is mathematically equivalent to pre-multiplying the unconstrained $y$ by an orthogonal standard basis, e.g. constructing orthogonal vectors from the standard basis using the Gram-Schmidt process. The single loop version below achieves low computational and memory costs as no matrices are created or multplied. 
 
 The transform is initialized by setting
 $$
@@ -519,7 +517,26 @@ $$
 y_n = (S_n - x_{n + 1}) \cdot \frac{\sqrt{n \cdot (n + 1)}}{n}.
 $$
 
-### Zero sum inverse transform {-}
+The mathematical expression above is equivalently expressed within Stan as follows. Although users will not have to implement this function themselves, it is sometimes easier to see the logic expressed in code. Note that there is no `target +=` expression because the Jacobian factor is 0.
+
+```stan
+  vector zero_sum_constrain(vector y) {
+    int N = num_elements(y);
+    vector[N + 1] z = zeros_vector(N + 1);
+    real sum_w = 0;
+    for (ii in 1:N) {
+      int i = N - ii + 1; 
+      real n = i;
+      real w = y[i] * inv_sqrt(n * (n + 1));
+      sum_w += w;
+      z[i] += sum_w;     
+      z[i + 1] -= w * n;    
+    }
+    return z;
+  }
+```
+
+### Zero sum vector inverse transform {-}
 
 The inverse (constraining) transform follows the isometric logratio tranform.
 It maps an unconstrained vector $y \in \mathbb{R}^N$ to a zero-sum vector $x \in
@@ -550,6 +567,37 @@ subtracted from $x_{n + 1}$ the number of times it shows up in earlier terms.
 The inverse transform is a linear operation, leading to a constant Jacobian
 determinant which is therefore not included.
 
+### Zero sum matrix transform {-}
+
+The matrix case is a generalization of the vector case. In fact, any N-dimensional array can be constructed into a zero-sum N-dimensional array using the zero sum vector. This is because the vector transform is a linear bijection and produces an orthogonally constructed sum to zero object by applying the one dimensional transform across each array slice. For the matrix case, there are two slices present, the rows and columns, to perform the transform over. The sum to zero vector is applied over the vectorized slice of either the row or column slice and subsequently to the other slice. 
+
+Let the unconstrained values of the matrix be given as
+$$
+\mathcal Y \in \mathbb R^{n_1 \times n_2}
+$$
+and the zero sum vector transform as
+$$
+\mathbf z = \mathcal C_n(\mathbf y)\;=\;
+\begin{bmatrix}H_n\\[2pt]-\mathbf 1_{1\times d}\end{bmatrix}\mathbf y
+\;\in\mathbb R^{n+1},
+$$
+where $H_n\in\mathbb R^{n \times n}$ is the orthogonal Helmert matrix and satisfies $\mathbf 1_{1\times d}A_d^{\!\top}=0$.
+
+By applying $C_n$ to each slice (or tensor mode) results in 
+
+$$
+\mathcal Z \;=\;
+\mathcal X
+\times_1 \bigl[\mathcal C_{n_1}\bigr]
+\times_2 \bigl[\mathcal C_{n_2}\bigr] 
+$$
+where
+$$
+\mathcal Z \in
+\mathbb R^{(n_1+1)\times\cdots\times(n_2+1)}
+$$
+
+Because each $\mathbb R^{d_1\times\cdots\times d_N}$ is invertible on the $\mathbf 1^\perp$ sub-space the composite map applied to $mathcal Z$ is a linear bijection between $\mathbb R^{n_1\times n_2}$ and the codomain $\mathbb R^{(n_1+1)\times\cdots\times(n_2+1)}$.
 
 ## Unit simplex {#simplex-transform.section}
 
@@ -589,7 +637,6 @@ $K$-simplex is fully determined by its first $K-1$ elements $x_1, x_2,
 $$
 x_K = 1 - \sum_{k=1}^{K-1} x_k.
 $$
-
 
 ### Unit simplex inverse transform {-}
 

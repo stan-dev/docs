@@ -23,12 +23,12 @@ a two-step procedure:
 In practice, neither the marginal posterior nor the conditional posterior
 are available in closed form and so they must be approximated.
 The marginal posterior can be written as  $p(\phi \mid y) \propto p(y \mid \phi) p(\phi)$,
-where  $p(y \mid \phi) = \int p(y \mid \phi, \theta) p(\theta) d\theta$ $ 
-is called marginal likelihood.  The Laplace method approximates 
+where  $p(y \mid \phi) = \int p(y \mid \phi, \theta) p(\theta) d\theta$ $
+is called marginal likelihood.  The Laplace method approximates
 $p(y \mid \phi, \theta) p(\theta)$ with a normal distribution and the
 resulting Gaussian integral can be evaluated analytically to obtain an
-approximation to the log marginal likelihood 
-$\log \hat p(y \mid \phi) \approx \log p(y \mid \phi)$. 
+approximation to the log marginal likelihood
+$\log \hat p(y \mid \phi) \approx \log p(y \mid \phi)$.
 
 Combining this marginal likelihood with the prior in the `model`
 block, we can then sample from the marginal posterior $p(\phi \mid y)$
@@ -40,21 +40,21 @@ depends on the case.
 
 To obtain posterior draws for $\theta$, we sample from the normal
 approximation to $p(\theta \mid y, \phi)$ in `generated quantities`.
-The process of iteratively sampling from  $p(\phi \mid y)$ (say, with MCMC) and 
+The process of iteratively sampling from  $p(\phi \mid y)$ (say, with MCMC) and
 then $p(\theta \mid y, \phi)$ produces samples from the joint posterior
 $p(\theta, \phi \mid y)$.
 
 The Laplace approximation is especially useful if $p(\theta)$ is
 multivariate normal and $p(y \mid \phi, \theta)$ is
 log-concave. Stan's embedded Laplace approximation is restricted to
-have multivariate normal prior $p(\theta)$ and ... likelihood 
+have multivariate normal prior $p(\theta)$ and ... likelihood
 $p(y \mid \phi, \theta)$.
 
 
 ## Specifying the likelihood function
 
-The first step to use the embedded Laplace approximation is to write down a 
-function in the `functions` block which returns the log joint likelihood 
+The first step to use the embedded Laplace approximation is to write down a
+function in the `functions` block which returns the log joint likelihood
 `\log p(y \mid \theta, \phi)`. There are a few constraints on this function:
 
 * The function return type must be `real`
@@ -63,7 +63,7 @@ function in the `functions` block which returns the log joint likelihood
 have type `vector`.
 
 * The operations in the function must support higher-order automatic
-differentation (AD). Most functions in Stan support higher-order AD.
+differentiation (AD). Most functions in Stan support higher-order AD.
 The exceptions are functions with specialized calls for reverse-mode AD, and
 these are higher-order functions (algebraic solvers, differential equation
 solvers, and integrators) and the suite of hidden Markov model (HMM) functions.
@@ -74,7 +74,7 @@ real ll_function(vector theta, ...)
 ```
 There is no type restrictions for the variadic arguments `...` and each
 argument can be passed as data or parameter. As always, users should use
-parameter arguments only when nescessary in order to speed up differentiation.
+parameter arguments only when necessary in order to speed up differentiation.
 In general, we recommend marking data only arguments with the keyword `data`,
 for example,
 ```
@@ -98,11 +98,11 @@ is implicitly defined as the collection of all non-data arguments passed to
 ## Approximating the log marginal likelihood $\log p(y \mid \phi)$
 
 In the `model` block, we increment `target` with `laplace_marginal`, a function
-that approximates the log marginal likelihood $\log p(y \mid \phi)$. 
+that approximates the log marginal likelihood $\log p(y \mid \phi)$.
 This function takes in the
 user-specified likelihood and prior covariance functions, as well as their arguments.
 These arguments must be passed as tuples, which can be generated on the fly
-using parenthesis. 
+using parenthesis.
 We also need to pass an argument $\theta_0$ which serves as an initial guess for
 the optimization problem that underlies the Laplace approximation,
 $$
@@ -113,11 +113,11 @@ passed to `ll_function`.
 
 The signature of the function is:
 ```
-target += laplace_marginal(function ll_function, tupple (...), vector theta_0, 
-                           function K_function, tupple (...)); 
+real laplace_marginal(function ll_function, tuple(...), vector theta_0,
+                           function K_function, tuple(...));
 ```
-The tuple `(...)` after `ll_function` contains the arguments that get passed
-to `ll_function` *excluding $\theta$*. Likewise, the tuple `(...)` after
+The `tuple(...)` after `ll_function` contains the arguments that get passed
+to `ll_function` *excluding $\theta$*. Likewise, the `tuple(...)` after
 `ll_function` contains the arguments that get passed to `K_function`.
 
 It also possible to specify control parameters, which can help improve the
@@ -159,8 +159,8 @@ maximum number of steps in the linesearch is reached. By default,
 With these arguments at hand, we can call `laplace_marginal_tol` with the
 following signature:
 ```
-target += laplace_margina_tol(function ll_function, tupple (...), vector theta_0, 
-                              function K_function, tupple (...),
+target += laplace_margina_tol(function ll_function, tuple(...), vector theta_0,
+                              function K_function, tuple(...),
                               real tol, int max_steps, int hessian_block_size,
                               int solver, int max_steps_linesearch);
 ```
@@ -172,22 +172,22 @@ approximation of $p(\theta \mid \phi, y)$ using `laplace_latent_rng`.
 The signature for `laplace_latent_rng` follows closely
 the signature for `laplace_marginal`:
 ```
-vector theta = 
-  laplace_latent_rng(function ll_function, tupple (...), vector theta_0,
-                     function K_function, tupple (...));
+vector theta =
+  laplace_latent_rng(function ll_function, tuple(...), vector theta_0,
+                     function K_function, tuple(...));
 ```
 Once again, it is possible to specify control parameters:
 ```
-vector theta = 
-  laplace_latent_tol_rng(function ll_function, tupple (...), vector theta_0,
-                         function K_function, tupple (...),
+vector theta =
+  laplace_latent_tol_rng(function ll_function, tuple(...), vector theta_0,
+                         function K_function, tuple(...),
                          real tol, int max_steps, int hessian_block_size,
                          int solver, int max_steps_linesearch);
 ```
 
 ## Built-in Laplace marginal likelihood functions
 
-Stan supports certain built-in Laplace marginal likelihood functions. 
+Stan supports certain built-in Laplace marginal likelihood functions.
 This selection is currently
 narrow and expected to grow. The built-in functions exist for the user's
 convenience but are not more computationally efficient than specifying log
@@ -196,7 +196,7 @@ likelihoods in the `functions` block.
 ### Poisson with log link
 
 Given count data, with each observed count $y_i$ associated with a group
-$g(i)$ and a corresponding latent variable $\theta_{g(i)}$, and Poisson model, 
+$g(i)$ and a corresponding latent variable $\theta_{g(i)}$, and Poisson model,
 the likelihood is
 $$
 p(y \mid \theta, \phi) = \prod_i\text{Poisson} (y_i \mid \exp(\theta_{g(i)})).
@@ -211,18 +211,18 @@ The signatures for the embedded Laplace approximation function with a Poisson
 likelihood are
 ```
 real laplace_marginal_poisson_log_lpmf(array[] int y | array[] int y_index,
-                                    vector theta0, function K_function, (...));
+                                    vector theta0, function K_function, tuple(...));
 
 real laplace_marginal_tol_poisson_log_lpmf(array[] int y | array[] int y_index,
-                               vector theta0, function K_function, (...),
+                               vector theta0, function K_function, tuple(...),
                                real tol, int max_steps, int hessian_block_size,
                                int solver, int max_steps_linesearch);
 
 vector laplace_latent_poisson_log_rng(array[] int y, array[] int y_index,
-                               vector theta0, function K_function, (...));
+                               vector theta0, function K_function, tuple(...));
 
 vector laplace_latent_tol_poisson_log_rng(array[] int y, array[] int y_index,
-                               vector theta0, function K_function, (...),
+                               vector theta0, function K_function, tuple(...),
                                real tol, int max_steps, int hessian_block_size,
                                int solver, int max_steps_linesearch);
 ```
@@ -237,21 +237,21 @@ The signatures for this function are:
 ```
 real laplace_marginal_poisson2_log_lpmf(array[] int y | array[] int y_index,
                                     vector x, vector theta0,
-                                    function K_function, (...));
+                                    function K_function, tuple(...));
 
 real laplace_marginal_tol_poisson2_log_lpmf(array[] int y | array[] int y_index,
                                vector x, vector theta0,
-                               function K_function, (...),
+                               function K_function, tuple(...),
                                real tol, int max_steps, int hessian_block_size,
                                int solver, int max_steps_linesearch);
 
 vector laplace_latent_poisson2_log_rng(array[] int y, array[] int y_index,
-                               vector x, vector theta0, 
-                               function K_function, (...));
+                               vector x, vector theta0,
+                               function K_function, tuple(...));
 
 vector laplace_latent_tol_poisson2_log_rng(array[] int y, array[] int y_index,
                                vector x, vector theta0,
-                               function K_function, (...),
+                               function K_function, tuple(...),
                                real tol, int max_steps, int hessian_block_size,
                                int solver, int max_steps_linesearch);
 ```
@@ -259,15 +259,15 @@ vector laplace_latent_tol_poisson2_log_rng(array[] int y, array[] int y_index,
 
 ### Negative Binomial with log link
 
-The negative Bionomial distribution generalizes the Poisson distribution by
+The negative Binomial distribution generalizes the Poisson distribution by
 introducing the dispersion parameter $\eta$. The corresponding likelihood is then
 $$
 p(y \mid \theta, \phi) = \prod_i\text{NegBinomial2} (y_i \mid \exp(\theta_{g(i)}), \eta).
 $$
-Here we use the alternative paramererization implemented in Stan, meaning that
+Here we use the alternative parameterization implemented in Stan, meaning that
 $$
-\mathbb E(y_i) = \exp (\theta_{g(i)}), \\ 
-\text{Var}(y_i) = \mathbb E(y_i) + \frac{(\mathbb E(y_i))^2}{\eta}. 
+\mathbb E(y_i) = \exp (\theta_{g(i)}), \\
+\text{Var}(y_i) = \mathbb E(y_i) + \frac{(\mathbb E(y_i))^2}{\eta}.
 $$
 The arguments for the likelihood function are:
 
@@ -279,23 +279,23 @@ group the $i^\text{th}$ observation belongs to.
 The function signatures for the embedded Laplace approximation with a negative
 Binomial likelihood are
 ```
-real laplace_marginal_neg_binomial_2_log_lpmf(array[] int y | 
-                  array[] int y_index, real eta, vector theta0, 
-                  function K_function, (...));
+real laplace_marginal_neg_binomial_2_log_lpmf(array[] int y |
+                  array[] int y_index, real eta, vector theta0,
+                  function K_function, tuple(...));
 
-real laplace_marginal_tol_neg_binomial_2_log_lpmf(array[] int y | 
-                  array[] int y_index, real eta, vector theta0, 
-                  function K_function, (...),
+real laplace_marginal_tol_neg_binomial_2_log_lpmf(array[] int y |
+                  array[] int y_index, real eta, vector theta0,
+                  function K_function, tuple(...),
                   real tol, int max_steps, int hessian_block_size,
                   int solver, int max_steps_linesearch);
 
-vector laplace_latent_neg_binomial_2_log_rng(array[] int y, 
-                  array[] int y_index, real eta, vector theta0, 
-                  function K_function, (...));
+vector laplace_latent_neg_binomial_2_log_rng(array[] int y,
+                  array[] int y_index, real eta, vector theta0,
+                  function K_function, tuple(...));
 
-vector laplace_latent_tol_neg_binomial_2_log_rng(array[] int y, 
-                  array[] int y_index, real eta, vector theta0, 
-                  function K_function, (...),
+vector laplace_latent_tol_neg_binomial_2_log_rng(array[] int y,
+                  array[] int y_index, real eta, vector theta0,
+                  function K_function, tuple(...),
                   real tol, int max_steps, int hessian_block_size,
                   int solver, int max_steps_linesearch);
 ```
@@ -314,23 +314,23 @@ group the $i^\text{th}$ observation belongs to.
 
 The function signatures for the embedded Laplace approximation with a Bernoulli likelihood are
 ```
-real laplace_marginal_bernoulli_logit_lpmf(array[] int y | 
-                  array[] int y_index, real eta, vector theta0, 
-                  function K_function, (...));
+real laplace_marginal_bernoulli_logit_lpmf(array[] int y |
+                  array[] int y_index, real eta, vector theta0,
+                  function K_function, tuple(...));
 
-real laplace_marginal_tol_bernoulli_logit_lpmf(array[] int y | 
-                  array[] int y_index, real eta, vector theta0, 
-                  function K_function, (...),
+real laplace_marginal_tol_bernoulli_logit_lpmf(array[] int y |
+                  array[] int y_index, real eta, vector theta0,
+                  function K_function, tuple(...),
                   real tol, int max_steps, int hessian_block_size,
                   int solver, int max_steps_linesearch);
 
-vector laplace_latent_bernoulli_logit_rng(array[] int y, 
-                  array[] int y_index, real eta, vector theta0, 
-                  function K_function, (...));
+vector laplace_latent_bernoulli_logit_rng(array[] int y,
+                  array[] int y_index, real eta, vector theta0,
+                  function K_function, tuple(...));
 
-vector laplace_latent_tol_bernoulli_logit_rng(array[] int y, 
-                  array[] int y_index, real eta, vector theta0, 
-                  function K_function, (...),
+vector laplace_latent_tol_bernoulli_logit_rng(array[] int y,
+                  array[] int y_index, real eta, vector theta0,
+                  function K_function, tuple(...),
                   real tol, int max_steps, int hessian_block_size,
                   int solver, int max_steps_linesearch);
 ```
@@ -374,7 +374,7 @@ vector laplace_latent_tol_bernoulli_logit_rng(array[] int y,
 <!-- and admits nearly the same arguments as `laplace_marginal`. A key difference -->
 <!-- is that  -->
 <!-- ``` -->
-<!-- vector laplace_latent_rng(function ll_function, tupple (...), vector theta_0,  -->
-<!--                           function K_function, tupple (...)); -->
+<!-- vector laplace_latent_rng(function ll_function, tuple(...), vector theta_0,  -->
+<!--                           function K_function, tuple(...)); -->
 <!-- ``` -->
 

@@ -472,12 +472,25 @@ exponentiated to ensure positivity.
 
 ## Sum-to-zero transforms
 
-Stan provides built-in constraint transforms for sum-to-zero vectors and sum-to-zero matrices. The sum-to-zero vector is a vector of length $N$ with real values and the sum of the vector equals zero. The sum-to-zero matrix is an $N \times M$ matrix where both the rows and columns sum-to-zero.
+Stan provides built-in constraint transforms for sum-to-zero vectors and
+sum-to-zero matrices. The sum-to-zero vector is a vector of length $N$ with
+real values and the sum of the vector equals zero. The sum-to-zero matrix is an
+$N \times M$ matrix where both the rows and columns sum-to-zero.
 
-Stan uses an orthogonal basis as the initial point of construction. The orthogonal basis balances the constraint across each unconstrained value. The basis is a matrix $H$ such that $H\in\mathbb R^{N\times (N-1)}$ and $H^{\mathsf T}H=I_{N-1},\;H^{\mathsf T}\mathbf 1=0$. The sum-to-zero vector lies in the subspace where the vector sums to zero. Although this seems tautological, the orthogonal basis construction allows all the marginal variances of the contrained vector to be the same, see, e.g.,[@seyboldt:2024]. Simpler alternatives, such as setting the
-final element to the negative sum of the first elements, do not result in equal variances. It is worth noting that even with marginal variances being equal each value in the sum-to-zero constrained space is negatively correlated.
+Stan uses an orthogonal basis as the initial point of construction. The orthogonal
+basis balances the constraint across each unconstrained value. The basis
+is a matrix $H$ such that $H\in\mathbb R^{N\times (N-1)}$ and
+$H^{\mathsf T}H=I_{N-1},\;H^{\mathsf T}\mathbf 1=0$. The sum-to-zero vector
+lies in the subspace where the vector sums to zero.
+Although this seems tautological, the orthogonal basis construction allows all
+the marginal variances of the contrained vector to be the same, see, e.g.,[@seyboldt:2024].
+Simpler alternatives, such as setting the final element to the negative sum of
+the first elements, do not result in equal variances.
+It is worth noting that even with marginal variances being equal each value
+in the sum-to-zero constrained space is negatively correlated.
 
-In many cases one wishes to model the sum-to-zero vector as normally distributed and the induced covariance matrix is fully known:
+In many cases one wishes to model the sum-to-zero vector as normally distributed
+and the induced covariance matrix is fully known:
 
 $$
   \sigma^2 \begin{pmatrix}
@@ -488,22 +501,31 @@ $$
   \end{pmatrix}.
 $$
 
-The marginal standard deviation no longer corresponds to $\sigma$ but is $\sigma \sqrt{1-\tfrac{1}{N}}$. The properties of the normal distribution allow multiplying the sum-to-zero vector by the reciprocal of $\sqrt{1-\tfrac{1}{N}}$ to adjust the variance to the intended $\sigma$:
+The marginal standard deviation no longer corresponds to $\sigma$ but
+is $\sigma \sqrt{1-\tfrac{1}{N}}$. The properties of the normal distribution
+allow multiplying the sum-to-zero vector by the reciprocal of
+$\sqrt{1-\tfrac{1}{N}}$ to adjust the variance to the intended $\sigma$:
 
 ```stan
 sum_to_zero_vector[N] x;
 x ~ normal(0, sqrt(N %/% (N - 1)));
 ```
 
-When $\sigma$ is a parameter there is an additional adjustment when using the centered version of the sum-to-zero constraint. If we let $y$ be the unconstrained $N - 1$ vector and $y$ is implicitly given a standard normal prior, then the sum-to-zero vector distributed as normal with a mean of zero and a standard deviation of $\sigma$ is given by
+When $\sigma$ is a parameter there is an additional adjustment when using the
+centered version of the sum-to-zero constraint. If we let $y$ be the unconstrained
+$N - 1$ vector and $y$ is implicitly given a standard normal prior, then the
+sum-to-zero vector distributed as normal with a mean of zero and a standard
+deviation of $\sigma$ is given by
 $$
 x = \underbrace{\sigma\sqrt{\frac{N}{N-1}}\;H}_{\text{ size of } N \times (N - 1)}\,y.
 $$
-This is the classic non-centered model. The crucial detail from above is that the operation of multiplying $\sigma$ to $y$ is on $N - 1$ dimensions, not $N$ dimensions. When writing the centered model using
+This is the classic non-centered model. The crucial detail from above is that the
+operation of multiplying $\sigma$ to $y$ is on $N - 1$ dimensions, not $N$
+dimensions. When writing the centered model using
 $$
 x \sim \mathcal N \bigg(0,\, \sigma\sqrt{\frac{N}{N-1}} \bigg),
 $$
-we are incrementing the log density by an additional $-\log(\sigma)$ and so must add 
+we are incrementing the log density by an additional $-\log(\sigma)$ and so must add
 
 ```stan
 target += log(sigma * sqrt(N %/% (N - 1)));
@@ -513,10 +535,10 @@ or, because `sqrt(N %/% (N - 1))` is constant
 target += log(sigma);
 ```
 
-More details of the 
-Helmert matrix are in [@lancaster:1965], for the basic definitions of the 
-isometric log ratio transform see [@egozcue+etal:2003] and Chapter 3 
-of [@filzmoser+etal:2018] for the pivot coordinate version used here. 
+More details of the
+Helmert matrix are in [@lancaster:1965], for the basic definitions of the
+isometric log ratio transform see [@egozcue+etal:2003] and Chapter 3
+of [@filzmoser+etal:2018] for the pivot coordinate version used here.
 
 ### Sum-to-zero vector
 
@@ -531,7 +553,13 @@ $$
 
 ### Sum-to-zero vector transform {-}
 
-The transform is defined iteratively.  Given an $x \in \mathbb{R}^{N + 1}$ that sums to zero (i.e., $\sum_{n=1}^{N+1} x_n = 0$), the transform proceeds as follows to produce an unconstrained $y \in \mathbb{R}^N$. This is mathematically equivalent to pre-multiplying the unconstrained $y$ by an orthogonal standard basis, e.g. constructing orthogonal vectors from the standard basis using the Gram-Schmidt process. The single loop version below achieves low computational and memory costs as no matrices are created or multplied. 
+The transform is defined iteratively.  Given an $x \in \mathbb{R}^{N + 1}$
+that sums to zero (i.e., $\sum_{n=1}^{N+1} x_n = 0$), the transform proceeds
+as follows to produce an unconstrained $y \in \mathbb{R}^N$. This is
+mathematically equivalent to pre-multiplying the unconstrained $y$ by an
+orthogonal standard basis, e.g. constructing orthogonal vectors from the
+standard basis using the Gram-Schmidt process. The single loop version below
+achieves low computational and memory costs as no matrices are created or multplied.
 
 The transform is initialized by setting
 $$
@@ -561,11 +589,11 @@ The mathematical expression above is equivalently expressed within Stan as:
     vector[N + 1] z = zeros_vector(N + 1);
     real sum_w = 0;
     for (n in 1:N) {
-      int i = N - n + 1; 
+      int i = N - n + 1;
       real w = y[i] * inv_sqrt(i * (i + 1));
       sum_w += w;
-      z[i] += sum_w;     
-      z[i + 1] -= w * i;    
+      z[i] += sum_w;
+      z[i + 1] -= w * i;
     }
     return z;
   }
@@ -574,7 +602,8 @@ The mathematical expression above is equivalently expressed within Stan as:
 ### Sum-to-zero vector inverse transform {-}
 
 The inverse transform follows the isometric logratio tranform.
-It maps an unconstrained vector $y \in \mathbb{R}^N$ to a sum-to-zero vector $x \in \mathbb{R}^{N + 1}$ such that
+It maps an unconstrained vector $y \in \mathbb{R}^N$ to a sum-to-zero vector
+ $x \in \mathbb{R}^{N + 1}$ such that
 $$
 \sum_{n=1}^{N + 1} x_n = 0.
 $$
@@ -603,7 +632,16 @@ determinant which is therefore not included.
 
 ### Sum-to-zero matrix transform {-}
 
-The matrix case of the sum-to-zero transform generalizes the vector case to ensure that every row of the matrix sums to zero and every column the matrix sums to zero. In fact, any $N$-dimensional array can be constructed into a sum-to-zero N-dimensional array using the sum-to-zero vector. This is because the vector transform is a linear bijection and produces an orthogonally constructed sum-to-zero object by applying the one dimensional transform across each array slice. For the matrix case, there are two slices present, the rows and columns, to perform the transform over. The sum-to-zero vector is applied over the vectorized slice of either the row or column slice and subsequently to the other slice. 
+The matrix case of the sum-to-zero transform generalizes the vector case to
+ensure that every row of the matrix sums to zero and every column the matrix
+sums to zero. In fact, any $N$-dimensional array can be constructed into a
+sum-to-zero N-dimensional array using the sum-to-zero vector. This is because
+the vector transform is a linear bijection and produces an orthogonally
+constructed sum-to-zero object by applying the one dimensional transform
+across each array slice. For the matrix case, there are two slices present,
+the rows and columns, to perform the transform over. The sum-to-zero vector
+is applied over the vectorized slice of either the row or column slice and
+subsequently to the other slice.
 
 Let the unconstrained matrix be
 $$
@@ -615,15 +653,16 @@ $$
 \begin{bmatrix}H_n\\[2pt]-\mathbf 1_{1\times d}\end{bmatrix}\mathbf y
 \;\in\mathbb R^{n+1},
 $$
-where $H_n\in\mathbb R^{n \times n}$ is the orthogonal Helmert matrix and satisfies $\mathbf 1_{1\times d}A_d^{\!\top}=0$.
+where $H_n\in\mathbb R^{n \times n}$ is the orthogonal Helmert matrix and
+satisfies $\mathbf 1_{1\times d}A_d^{\!\top}=0$.
 
-Applying $C_n$ to each slice results in 
+Applying $C_n$ to each slice results in
 
 $$
 \mathcal Z \;=\;
 \mathcal X
 \times_1 \bigl[\mathcal C_{n_1}\bigr]
-\times_2 \bigl[\mathcal C_{n_2}\bigr] 
+\times_2 \bigl[\mathcal C_{n_2}\bigr]
 $$
 where
 $$
@@ -631,7 +670,10 @@ $$
 \mathbb R^{(n_1+1)\times\cdots\times(n_2+1)}.
 $$
 
-Because each $\mathbb R^{d_1\times\cdots\times d_N}$ is invertible on the $\mathbf 1^\perp$ subspace the composite map applied to $mathcal Z$ is a linear bijection between $\mathbb R^{n_1\times n_2}$ and the codomain $\mathbb R^{(n_1+1)\times\cdots\times(n_2+1)}$.
+Because each $\mathbb R^{d_1\times\cdots\times d_N}$ is invertible on the
+$\mathbf 1^\perp$ subspace the composite map applied to $mathcal Z$ is a
+linear bijection between $\mathbb R^{n_1\times n_2}$ and the codomain
+$\mathbb R^{(n_1+1)\times\cdots\times(n_2+1)}$.
 
 ## Unit simplex {#simplex-transform.section}
 

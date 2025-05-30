@@ -119,25 +119,22 @@ vector<lower=-1, upper=1>[3] rho;
 There are also special data types for structured vectors and
 matrices. There are five constrained vector data types, `simplex`
 for unit simplexes, `unit_vector` for unit-length vectors,
-`sum_to_zero_vector` for vectors that sum to zero,
-`ordered` for ordered vectors of scalars, and
-`positive_ordered` for vectors of positive ordered
-scalars. There are specialized matrix data types `corr_matrix`
-and `cov_matrix` for correlation matrices (symmetric, positive
-definite, unit diagonal) and covariance matrices (symmetric, positive
-definite).  The type `cholesky_factor_cov` is for Cholesky
-factors of covariance matrices (lower triangular, positive diagonal,
-product with own transpose is a covariance matrix).  The type
-`cholesky_factor_corr` is for Cholesky factors of correlation
-matrices (lower triangular, positive diagonal, unit-length rows).
+`sum_to_zero_vector` for vectors that sum to zero, `ordered` for ordered
+vectors of scalars, and `positive_ordered` for vectors of positive ordered
+scalars. There are specialized matrix data types `corr_matrix` and `cov_matrix`
+for correlation matrices (symmetric, positive definite, unit diagonal) and
+covariance matrices (symmetric, positive definite).
+The type `cholesky_factor_cov` is for Cholesky factors of covariance matrices
+(lower triangular, positive diagonal, product with own transpose is a covariance matrix).
+The type `cholesky_factor_corr` is for Cholesky factors of correlation
+matrices (lower triangular, positive diagonal, unit-length rows). The type
+`sum_to_zero_matrix` is for matrices that sum to zero across rows and columns.
 
-Constraints provide error checking for variables defined in the
-`data`, `transformed data`, `transformed parameters`,
-and `generated quantities` blocks.  Constraints are critical for
-variables declared in the `parameters` block, where they
-determine the transformation from constrained variables (those
-satisfying the declared constraint) to unconstrained variables (those
-ranging over all of $\mathbb{R}^n$).
+Constraints provide error checking for variables defined in the `data`, `transformed data`,
+`transformed parameters`, and `generated quantities` blocks.  Constraints are critical
+for variables declared in the `parameters` block, where they determine the transformation
+from constrained variables (those satisfying the declared constraint) to unconstrained
+variables (those ranging over all of $\mathbb{R}^n$).
 
 It is worth calling out the most important aspect of constrained data
 types:
@@ -785,8 +782,8 @@ sum_to_zero_vector[5] beta;
 
 Zero sum vectors are implemented as vectors and may be assigned to other
 vectors and vice-versa.  Zero sum vector variables, like other constrained
-variables, are validated to ensure that they are indeed unit length; for
-zero sum  vectors, this is only done up to a statically specified accuracy
+variables, are validated to ensure that they are indeed sum to zero; for
+zero sum vectors, this is only done up to a statically specified accuracy
 threshold $\epsilon$ to account for errors arising from floating-point
 imprecision.
 
@@ -1008,6 +1005,25 @@ correlation matrix, the following code may be used.
 cholesky_factor_corr[K] L;
 ```
 
+### Matrices that sum to zero {-}
+
+A sum-to-zero matrix is constrained such that the
+sum of rows and the sum of the columns is always $0$. These are sometimes useful
+for resolving identifiability issues in regression models.
+While the underlying vector has only $(N - 1) \times (M - 1)$ degrees of freedom,
+zero sum matrices are declared with their full dimensionality.
+For instance, `beta` is declared to be a sum-to-zero $5 \times 4$-matrix (20 degrees of freedom) by
+
+```stan
+sum_to_zero_matrix[5, 4] beta;
+```
+
+Sum-to-zero matrices are implemented as matrices and may be assigned to other
+matrices and vice-versa. Zero sum matrix variables, like other constrained
+variables, are validated to ensure that they are indeed sum to zero; for
+zero sum matrices, this is only done up to an internally specified accuracy
+threshold $\epsilon$ to account for errors arising from floating-point
+imprecision.
 
 ### Assigning constrained variables {-}
 
@@ -1767,6 +1783,8 @@ dimensions `matrix[K, K]` types.
 |                     |                         | `column_stochastic_matrix[M, N]`             |
 +---------------------+-------------------------+----------------------------------------------+
 |                     |                         | `row_stochastic_matrix[M, N]`                |
++---------------------+-------------------------+----------------------------------------------+
+|                     |                         | `sum_to_zero_matrix[M, N]`                   |
 +---------------------+-------------------------+----------------------------------------------+
 |                     | `matrix[K, K]`          | `corr_matrix[K]`                             |
 +---------------------+-------------------------+----------------------------------------------+

@@ -593,173 +593,92 @@ $$
 
 ### Unit simplex inverse transform {-}
 
-Stan's unit simplex inverse transform may be understood using the
-following stick-breaking metaphor.^[For an alternative derivation of the same transform using hyperspherical coordinates, see [@Betancourt:2010].]
+The length-$K$ unit simplex inverse transform is given by the softmax of a sum-to-zero vector of length $K$. 
 
-1.  Take a stick of unit length (i.e., length 1).
-2.  Break a piece off and label it as $x_1$, and set it aside, keeping
-what's left.
-3.  Next, break a piece off what's left, label it $x_2$, and set it
-aside, keeping what's left.
-4.  Continue breaking off pieces of what's left, labeling them, and
-setting them aside for pieces $x_3,\ldots,x_{K-1}$.
-5.  Label what's left $x_K$.
-
-The resulting vector $x = [x_1,\ldots,x_{K}]^{\top}$ is a unit
-simplex because each piece has non-negative length and the sum of
-the stick lengths is one by construction.
-
-This full inverse mapping requires the breaks to be represented as the
-fraction in $(0,1)$ of the original stick that is broken off.  These
-break ratios are themselves derived from unconstrained values in
-$(-\infty,\infty)$ using the inverse logit transform as described
-above for unidimensional variables with lower and upper bounds.
-
-More formally, an intermediate vector $z \in \mathbb{R}^{K-1}$, whose
-coordinates $z_k$ represent the proportion of the stick broken off in
-step $k$, is defined elementwise for $1 \leq k < K$ by
-
+Let $y$ represent the unconstrained $K - 1$ values in $(-\infty, \infty)$. The intermediate sum-to-zero vector $z = \text{sum_to_zero_transform}(y)$ is length $K$. The unit simplex is then given by
 $$
-z_k = \mathrm{logit}^{-1} \left( y_k
-                             + \log \left( \frac{1}{K - k}
-                                            \right)
-                       \right).
+x_i = \text{softmax}(z) = \frac{\exp(z_i)}{\sum_{i = 1}^K \exp(z_i)}
 $$
 
-The logit term
-$\log\left(\frac{1}{K-k}\right) (i.e., \mathrm{logit}\left(\frac{1}{K-k+1}\right)$) in
-the above definition adjusts the transform so that a
-zero vector $y$ is mapped to the simplex $x = (1/K,\ldots,1/K)$.  For instance, if
-$y_1 = 0$, then $z_1 = 1/K$; if $y_2 = 0$, then $z_2 = 1/(K-1)$; and
-if $y_{K-1} = 0$, then $z_{K-1} = 1/2$.
+The sum-to-zero vector transform is described in further detail at thje [sum-to-zero vector section of the *Reference Manual*](https://mc-stan.org/docs/reference-manual/transforms.html#sum-to-zero-vector-transform). 
 
-The break proportions $z$ are applied to determine the stick sizes and
-resulting value of $x_k$ for $1 \leq k < K$ by
+::: {.callout-note}
+All versions of Stan pre-2.37 used the stick-breaking transform. 
+This is documented at [Stan 2.36 *Reference Manual: Simplex Transform*](https://mc-stan.org/docs/2_36/reference-manual/transforms.html#simplex-transform.section).
+:::
+
+#### Absolute Jacobian determinant of the unit-simplex inverse transform {-}
+
+The Jacobian $J$ of the inverse unit-simplex transform is found by restricting $J$ to the subspace spanned by the sum-to-zero vector $z$. The Jacobian is given as the $(K - 1) \times (K - 1)$ matrix $J$ where
+$$
+J_{ij} = \frac{\partial x_i}{\partial z_j} = \frac{\partial}{\partial z_i} \left( \frac{\exp(z_i)}{{\sum_{i = 1}^K \exp(z_i)}} \right)
+$$
+and $i,j \in 1, \ldots, K - 1$.
+
+The diagonal and off-diagonal derivatives are found using the derivative quotient rule and algebraic simplification
 
 $$
-x_k =
-\left( 1 - \sum_{k'=1}^{k-1} x_{k'} \right) z_k.
+J_{ij} =
+\begin{cases}
+x_i (1 - x_i), & \text{if } i = j, \\
+-x_i x_j, & \text{if } i \neq j.
+\end{cases}
 $$
 
-The summation term represents the length of the original stick left at
-stage $k$.  This is multiplied by the break proportion $z_k$ to yield
-$x_k$.  Only $K-1$ unconstrained parameters are required, with
-the last dimension's value $x_K$ set to the length of the remaining
-piece of the original stick,
+In matrix form this can be expressed as
 
 $$
-x_K = 1 - \sum_{k=1}^{K-1} x_k.
+J = \text{diag}(x) - x x^\top
 $$
 
-
-### Absolute Jacobian determinant of the unit-simplex inverse transform {-}
-
-The Jacobian $J$ of the inverse transform $f^{-1}$ is
-lower-triangular, with diagonal entries
+The determinant of this matrix can be found using the Matrix Determinant Lemma:
 
 $$
-J_{k,k}
+\det\bigl(A + u v^{\top}\bigr)
 =
-\frac{\partial x_k}{\partial y_k}
+\det(A)\,\bigl(1 + v^{\top}A^{-1}u\bigr).
+$$
+Here,
+$$
+A \;=\; \operatorname{diag}(x_{1},\ldots, x_{K-1}), 
+\quad
+u \;=\; -\bigl(x_1,\ldots, x_{K-1}\bigr)^{\!\top},
+\quad
+v \;=\; \bigl(x_{1}, \ldots, x_{K-1}\bigr)^{\!\top}.
+$$
+Therefore,
+
+$$
+\begin{align*}
+\det(J)
+&= 
+\bigg(\prod_{i=1}^{K-1} x_i \bigg)
+\bigg(1 + (x_{1},\ldots, x_{K-1})\,\mathrm{diag}\bigl(x_{1}^{-1},\ldots,x_{K-1}^{-1}\bigr)\,
+\big(-x_{1},\ldots,-x_{K-1}\big)^{\top}
+\bigg) \\
+&=
+\bigg(\prod_{i=1}^{K-1} x_{i}\bigg)
+\bigg(1 - \sum_{i=1}^{K-1} x_{i}\bigg)
 =
-\frac{\partial x_k}{\partial z_k} \,
-\frac{\partial z_k}{\partial y_k},
+\bigg(\prod_{i=1}^{K-1} x_{i}\bigg) x_{K} \\
+&=
+\prod_{i=1}^{K} x_{i}.
+\end{align*}
 $$
-
-where
-
-$$
-\frac{\partial z_k}{\partial y_k}
-= \frac{\partial}{\partial y_k}
-   \mathrm{logit}^{-1} \left(
-                       y_k + \log \left( \frac{1}{K-k}
-                                          \right)
-                    \right)
-= z_k (1 - z_k),
-$$
-
-and
-
-$$
-\frac{\partial x_k}{\partial z_k}
-=
-\left(
-  1 - \sum_{k' = 1}^{k-1} x_{k'}
-   \right)
-.
-$$
-
-This definition is recursive, defining $x_k$ in terms of
-$x_{1},\ldots,x_{k-1}$.
-
-Because the Jacobian $J$ of $f^{-1}$ is lower triangular and positive, its
-absolute determinant reduces to
-
-$$
-\left| \, \det J \, \right|
-\ = \
-\prod_{k=1}^{K-1} J_{k,k}
-\ = \
-\prod_{k=1}^{K-1}
-z_k
-\,
-(1 - z_k)
-\
-\left(
-1 - \sum_{k'=1}^{k-1} x_{k'}
-\right)
-.
-$$
-
-Thus the transformed variable $Y = f(X)$ has a density given by
-
-$$
-p_Y(y)
-= p_X(f^{-1}(y))
-\,
-\prod_{k=1}^{K-1}
-z_k
-\,
-(1 - z_k)
-\
-\left(
-1 - \sum_{k'=1}^{k-1} x_{k'}
-\right)
-.
-$$
-
-Even though it is expressed in terms of intermediate values $z_k$,
-this expression still looks more complex than it is. The exponential
-function need only be evaluated once for each unconstrained parameter
-$y_k$; everything else is just basic arithmetic that can be computed
-incrementally along with the transform.
-
 
 ### Unit simplex transform {-}
 
 The transform $Y = f(X)$ can be derived by reversing the stages of the
-inverse transform.  Working backwards, given the break proportions
-$z$, $y$ is defined elementwise by
+inverse transform,
 
 $$
 y_k
-= \mathrm{logit}(z_k)
-- \mbox{log}\left(
-   \frac{1}{K-k}
-   \right)
+= H^\top \bigg(\log(x_k)
+- \frac{1}{K}\sum_{i=1}^K\log(x_i) \bigg)
 .
 $$
 
-The break proportions $z_k$ are defined to be the ratio of $x_k$ to
-the length of stick left after the first $k-1$ pieces have been broken
-off,
-
-$$
-z_k
-= \frac{x_k}
-       {1 - \sum_{k' = 1}^{k-1} x_{k'}}
-.
-$$
+The matrix $H$ is the orthogonal basis matrix the sum-to-zero vector uses. Since the matrix is orthonormal, the transpose is the same as the inverse. 
 
 ## Stochastic Matrix {#stochastic-matrix-transform.section}
 

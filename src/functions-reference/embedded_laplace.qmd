@@ -7,12 +7,21 @@ pagetitle: Embedded Laplace Approximation
 The embedded Laplace approximation can be used to approximate certain
 marginal and conditional distributions that arise in latent Gaussian models.
 A latent Gaussian model observes the following hierarchical structure:
+
 $$
   \phi \sim p(\phi), \\
   \theta \sim \text{MultiNormal}(0, K(\phi)),  \\
   y \sim p(y \mid \theta, \phi),
 $$
-where $K(\phi)$ denotes the prior covariance matrix parameterized by $\phi$.
+
+In this formulation, $y$ represents the
+observed data, and $p(y \mid \theta, \phi)$ is the likelihood function that
+specifies how observations are generated conditional on the latent variables
+$\theta$ and hyperparameters $\phi$.
+$\phi$ denotes the set of hyperparameters governing the model
+(for example, length‐scale or amplitude parameters in a Gaussian process), and
+$p(\phi)$ is the prior distribution placed over these hyperparameters.
+$K(\phi)$ denotes the prior covariance matrix parameterized by $\phi$.
 The prior $p(\theta)$ is restricted to be a multivariate normal.
 To sample from the joint posterior $p(\phi, \theta \mid y)$, we can either
 use a standard method, such as Markov chain Monte Carlo, or we can follow
@@ -24,7 +33,7 @@ a two-step procedure:
 In practice, neither the marginal posterior nor the conditional posterior
 are available in closed form and so they must be approximated.
 The marginal posterior can be written as  $p(\phi \mid y) \propto p(y \mid \phi) p(\phi)$,
-where  $p(y \mid \phi) = \int p(y \mid \phi, \theta) p(\theta) d\theta$ $
+where  $p(y \mid \phi) = \int p(y \mid \phi, \theta) p(\theta) \mathrm{d}\theta$
 is called the marginal likelihood.  The Laplace method approximates
 $p(y \mid \phi, \theta) p(\theta)$ with a normal distribution and the
 resulting Gaussian integral can be evaluated analytically to obtain an
@@ -52,90 +61,120 @@ where the prior $p(\theta)$ is multivariate normal.
 Furthermore, the likelihood $p(y \mid \phi, \theta)$ must be computed using
 only operations which support higher-order derivatives (see the next section).
 
+## Approximating the log marginal likelihood $\log p(y \mid \phi)$
+
+In the `model` block, we increment `target` with `laplace_marginal`, a function
+that approximates the log marginal likelihood $\log p(y \mid \phi)$.
+The signature of the function is:
+
+`real` **`laplace_marginal`**`(function likelihood_function, tuple() likelihood_arguments, vector theta_init, function covariance_function, tuple() covariance_arguments)`
+
+Which returns an approximation to the log marginal likelihood $p(y \mid \phi)$.
+{{< since 2.37 >}}
+
+This function takes in the following argumeents.
+
+1. `likelihood_function` - user-specified likelihood whose first argument is the vector `theta`
+2. `likelihood_arguments` - A tuple of the likelihood arguments whose internal members will be passed to the covariance function
+3. `theta_init` - an initial guess for the optimization problem that underlies the Laplace approximation,
+4. `covariance_function` - Prior covariance function
+5. `covariance_arguments` A tuple of the arguments whose internal members will be passed to the the covariance function
+
+The argument $\theta_\text{init}$ is maximized with respect to $y$ and $\phi$
+
+$$
+  \underset{\theta}{\text{argmax}} \ \log p(\theta \mid y, \phi).
+$$
+
+The size of $\theta_\text{init}$ must be consistent with the size of the $\theta$ argument
+passed to `likelihood_function`.
+
+Below we go over each argument in more detail.
+
 ## Specifying the likelihood function
 
 The first step to use the embedded Laplace approximation is to write down a
 function in the `functions` block which returns the log joint likelihood
-`\log p(y \mid \theta, \phi)`. There are a few constraints on this function:
+`\log p(y \mid \theta, \phi)`.
 
-* The function return type must be `real`
+There are a few constraints on this function:
 
-* The first argument must be the latent Gaussian variable $\theta$ and must
+1. The function return type must be `real`
+2. The first argument must be the latent Gaussian variable $\theta$ and must
 have type `vector`.
-
-* The operations in the function must support higher-order automatic
+3. The operations in the function must support higher-order automatic
 differentiation (AD). Most functions in Stan support higher-order AD.
 The exceptions are functions with specialized calls for reverse-mode AD, and
 these are higher-order functions (algebraic solvers, differential equation
 solvers, and integrators), the marginalization function for hidden Markov
 models (HMM) function, and the embedded Laplace approximation itself.
 
-The signature of the function is
+The base signature of the function is
+
+```stan
+real likelihood_function(vector theta, ...)
 ```
-real ll_function(vector theta, ...)
+
+The `...` represents a set of optional variadic arguments. There is no type restrictions for the variadic arguments `...` and each argument can be passed as data or parameter.
+
+The tuple after `likelihood_function` contains the arguments that get passed
+to `likelihood_function` *excluding $\theta$*. For instance, if a user defined likelihood uses a real and a matrix
+the likelihood function's signature would first have a vector and then a real and matrix argument.
+
+```stan
+real likelihood_fun(vector theta, real a, matrix X)
 ```
-There is no type restrictions for the variadic arguments `...` and each
-argument can be passed as data or parameter. As always, users should use
-parameter arguments only when necessary in order to speed up differentiation.
+
+The call to the laplace marginal would start with this likelihood and tuple holding the other likelihood arguments.
+
+```stan
+real val = laplace_marginal(likelihood_fun, (a, X), ...);
+```
+
+As always, users should use parameter arguments only when necessary in order to speed up differentiation.
 In general, we recommend marking data only arguments with the keyword `data`,
 for example,
-```
-real ll_function(vector theta, data vector x, ...)
+
+```stan
+real likelihood_function(vector theta, data real a, ...)
 ```
 
 ## Specifying the covariance function
 
-We next need to specify a function that returns the prior covariance matrix
-$K$ as a function of the hyperparameters $\phi$.
-The only restriction is that this function returns a positive-definite matrix
-with size $n \times n$ where $n$ is the size of $\theta$. The signature is:
+The argument `covariance_function` returns the prior covariance matrix
+$K$. The signature for this function is the same as a standard stan function. It's return type must be a matrix of size $n \times n$ where $n$ is the size of $\theta$.
+
+```stan
+matrix covariance_function(...)
 ```
-matrix K_function(...)
+
+Like the likelihood function, the `...` represents a set of optional variadic arguments. There is no type restrictions for the variadic arguments `...` and each argument can be passed as data or parameter. The variables $\phi$ is implicitly defined as the collection of all non-data arguments passed to
+`likelihood_function` (excluding $\theta$) and `covariance_function`.
+
+The tuple after `covariance_function` contains the arguments that get passed to `covariance_function`.
+For instance, if a user defined covariance function uses two vectors.
+
+```stan
+real likelihood_fun(vector theta, real a, matrix X)
 ```
-There is no type restrictions for the variadic arguments. The variables $\phi$
-is implicitly defined as the collection of all non-data arguments passed to
-`ll_function` (excluding $\theta$) and `K_function`.
+
+The call to the laplace marginal would start with this likelihood and tuple holding the other likelihood arguments.
+
+```stan
+real val = laplace_marginal(likelihood_fun, (a, X), ...);
+```
 
 
-## Approximating the log marginal likelihood $\log p(y \mid \phi)$
-
-In the `model` block, we increment `target` with `laplace_marginal`, a function
-that approximates the log marginal likelihood $\log p(y \mid \phi)$.
-This function takes in the
-user-specified likelihood and prior covariance functions, as well as their arguments.
-These arguments must be passed as tuples, which can be generated on the fly
-using parenthesis.
-We also need to pass an argument $\theta_0$ which serves as an initial guess for
-the optimization problem that underlies the Laplace approximation,
-$$
-  \underset{\theta}{\text{argmax}} \ \log p(\theta \mid y, \phi).
-$$
-The size of $\theta_0$ must be consistent with the size of the $\theta$ argument
-passed to `ll_function`.
-
-The signature of the function is:
-
-<!-- real; laplace_marginal; (function ll_function, tuple(...), vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal }!{\tt (function ll\_function, tuple(...), vector theta0, function K\_function, tuple(...)): real}|hyperpage}
-
-`real` **`laplace_marginal`**`(function ll_function, tuple(...), vector theta0, function K_function, tuple(...))`<br>\newline
-
-Returns an approximation to the log marginal likelihood $p(y \mid \phi)$.
-{{< since 2.37 >}}
-
-
-The `tuple(...)` after `ll_function` contains the arguments that get passed
-to `ll_function` *excluding $\theta$*. Likewise, the `tuple(...)` after
-`K_function` contains the arguments that get passed to `K_function`.
+## Control Parameters
 
 It also possible to specify control parameters, which can help improve the
 optimization that underlies the Laplace approximation, using `laplace_marginal_tol`
 with the following signature:
 
-<!-- real; laplace_marginal_tol; (function ll_function, tuple(...), vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol }!{\tt (function ll\_function, tuple(...), vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
+<!-- real; laplace_marginal_tol; (function likelihood_function, tuple(...), vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_marginal\_tol }!{\tt (function ll\_function, tuple(...), vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
 
-`real` **`laplace_marginal_tol`**`(function ll_function, tuple(...), vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_tol`**`(function likelihood_function, tuple(...), vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
 and allows user to specify tolerances.
@@ -183,19 +222,19 @@ approximation of $p(\theta \mid \phi, y)$ using `laplace_latent_rng`.
 The signature for `laplace_latent_rng` follows closely
 the signature for `laplace_marginal`:
 
-<!-- vector; laplace_latent_rng; (function ll_function, tuple(...), vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_latent\_rng }!{\tt (function ll\_function, tuple(...), vector theta0, function K\_function, tuple(...)): vector}|hyperpage}
+<!-- vector; laplace_latent_rng; (function likelihood_function, tuple(...), vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_latent\_rng }!{\tt (function ll\_function, tuple(...), vector theta_init, function K\_function, tuple(...)): vector}|hyperpage}
 
-`vector` **`laplace_latent_rng`**`(function ll_function, tuple(...), vector theta0, function K_function, tuple(...))`<br>\newline
+`vector` **`laplace_latent_rng`**`(function likelihood_function, tuple(...), vector theta_init, function covariance_function, tuple(...))`<br>\newline
 
 Draws approximate samples from the conditional posterior $p(\theta \mid y, \phi)$.
 {{< since 2.37 >}}
 
 Once again, it is possible to specify control parameters:
-<!-- vector; laplace_latent_tol_rng; (function ll_function, tuple(...), vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_latent\_tol\_rng }!{\tt (function ll\_function, tuple(...), vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+<!-- vector; laplace_latent_tol_rng; (function likelihood_function, tuple(...), vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_latent\_tol\_rng }!{\tt (function ll\_function, tuple(...), vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
 
-`vector` **`laplace_latent_tol_rng`**`(function ll_function, tuple(...), vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`vector` **`laplace_latent_tol_rng`**`(function likelihood_function, tuple(...), vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
 
 Draws approximate samples from the conditional posterior $p(\theta \mid y, \phi)$.
 {{< since 2.37 >}}
@@ -225,36 +264,36 @@ group the $i^\text{th}$ observation belongs to.
 <!-- real; laplace_marginal_poisson_log ~; -->
 \index{{\tt \bfseries laplace\_marginal\_poisson\_log }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_poisson_log`**`(y_index, theta0, K_function, (...))`<br>\newline
+`y ~ ` **`laplace_marginal_poisson_log`**`(y_index, theta_init, covariance_function, (...))`<br>\newline
 
-Increment target log probability density with `laplace_marginal_poisson_log_lupmf(y | y_index, theta0, K_function, (...))`.
+Increment target log probability density with `laplace_marginal_poisson_log_lupmf(y | y_index, theta_init, covariance_function, (...))`.
 {{< since 2.37 >}}
 
 <!-- real; laplace_marginal_tol_poisson_log ~; -->
 \index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_log }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_tol_poisson_log`**`(y_index, theta0, K_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`<br>\newline
+`y ~ ` **`laplace_marginal_tol_poisson_log`**`(y_index, theta_init, covariance_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`<br>\newline
 
-Increment target log probability density with `laplace_marginal_tol_poisson_log_lupmf(y | y_index, theta0, K_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`.
+Increment target log probability density with `laplace_marginal_tol_poisson_log_lupmf(y | y_index, theta_init, covariance_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`.
 {{< since 2.37 >}}
 
 The signatures for the embedded Laplace approximation function with a Poisson
 likelihood are
 
-<!-- real; laplace_marginal_poisson_log_lpmf; (array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_poisson\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...)): real}|hyperpage}
+<!-- real; laplace_marginal_poisson_log_lpmf; (array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_marginal\_poisson\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...)): real}|hyperpage}
 
-`real` **`laplace_marginal_poisson_log_lpmf`**`(array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...))`<br>\newline
+`real` **`laplace_marginal_poisson_log_lpmf`**`(array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...))`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
 in the special case where the likelihood $p(y \mid \theta)$ is a Poisson
 distribution with a log link.
 {{< since 2.37 >}}
 
-<!-- real; laplace_marginal_tol_poisson_log_lpmf; (array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
+<!-- real; laplace_marginal_tol_poisson_log_lpmf; (array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
 
-`real` **`laplace_marginal_tol_poisson_log_lpmf`**`(array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_tol_poisson_log_lpmf`**`(array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
 in the special case where the likelihood $p(y \mid \theta)$ is a Poisson
@@ -263,34 +302,34 @@ parameters of the approximation.
 {{< since 2.37 >}}
 
 
-<!-- real; laplace_marginal_poisson_log_lupmf; (array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_poisson\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...)): real}|hyperpage}
+<!-- real; laplace_marginal_poisson_log_lupmf; (array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_marginal\_poisson\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...)): real}|hyperpage}
 
-`real` **`laplace_marginal_poisson_log_lupmf`**`(array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...))`<br>\newline
-
-TODO description.
-{{< since 2.37 >}}
-
-<!-- real; laplace_marginal_tol_poisson_log_lupmf; (array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-
-`real` **`laplace_marginal_tol_poisson_log_lupmf`**`(array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_poisson_log_lupmf`**`(array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...))`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
 
-<!-- vector; laplace_latent_poisson_log_rng; (array[] int y, array[] int y_index, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_latent\_poisson\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta0, function K\_function, tuple(...)): vector}|hyperpage}
+<!-- real; laplace_marginal_tol_poisson_log_lupmf; (array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
 
-`vector` **`laplace_latent_poisson_log_rng`**`(array[] int y, array[] int y_index, vector theta0, function K_function, tuple(...))`<br>\newline
+`real` **`laplace_marginal_tol_poisson_log_lupmf`**`(array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
 
-<!-- vector; laplace_latent_tol_poisson_log_rng; (array[] int y, array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_latent\_tol\_poisson\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+<!-- vector; laplace_latent_poisson_log_rng; (array[] int y, array[] int y_index, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_latent\_poisson\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta_init, function K\_function, tuple(...)): vector}|hyperpage}
 
-`vector` **`laplace_latent_tol_poisson_log_rng`**`(array[] int y, array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`vector` **`laplace_latent_poisson_log_rng`**`(array[] int y, array[] int y_index, vector theta_init, function covariance_function, tuple(...))`<br>\newline
+
+TODO description.
+{{< since 2.37 >}}
+
+<!-- vector; laplace_latent_tol_poisson_log_rng; (array[] int y, array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_latent\_tol\_poisson\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+
+`vector` **`laplace_latent_tol_poisson_log_rng`**`(array[] int y, array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
@@ -304,66 +343,66 @@ $$
 <!-- real; laplace_marginal_poisson_2_log ~; -->
 \index{{\tt \bfseries laplace\_marginal\_poisson\_2\_log }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_poisson_2_log`**`(y_index, x, theta0, K_function, (...))`<br>\newline
+`y ~ ` **`laplace_marginal_poisson_2_log`**`(y_index, x, theta_init, covariance_function, (...))`<br>\newline
 
-Increment target log probability density with `laplace_marginal_poisson_2_log_lupmf(y | y_index, x, theta0, K_function, (...))`.
+Increment target log probability density with `laplace_marginal_poisson_2_log_lupmf(y | y_index, x, theta_init, covariance_function, (...))`.
 {{< since 2.37 >}}
 
 <!-- real; laplace_marginal_tol_poisson_2_log ~; -->
 \index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_2\_log }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_tol_poisson_2_log`**`(y_index, x, theta0, K_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`<br>\newline
+`y ~ ` **`laplace_marginal_tol_poisson_2_log`**`(y_index, x, theta_init, covariance_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`<br>\newline
 
-Increment target log probability density with `laplace_marginal_tol_poisson_2_log_lupmf(y | y_index, x, theta0, K_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`.
+Increment target log probability density with `laplace_marginal_tol_poisson_2_log_lupmf(y | y_index, x, theta_init, covariance_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`.
 {{< since 2.37 >}}
 
 
 The signatures for this function are:
 
-<!-- real; laplace_marginal_poisson_2_log_lpmf; (array[] int y | array[] int y_index, vector x, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_poisson\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...)): real}|hyperpage}
+<!-- real; laplace_marginal_poisson_2_log_lpmf; (array[] int y | array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_marginal\_poisson\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...)): real}|hyperpage}
 
-`real` **`laplace_marginal_poisson_2_log_lpmf`**`(array[] int y | array[] int y_index, vector x, vector theta0, function K_function, tuple(...))`<br>\newline
-
-TODO description.
-{{< since 2.37 >}}
-
-<!-- real; laplace_marginal_tol_poisson_2_log_lpmf; (array[] int y | array[] int y_index, vector x, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-
-`real` **`laplace_marginal_tol_poisson_2_log_lpmf`**`(array[] int y | array[] int y_index, vector x, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_poisson_2_log_lpmf`**`(array[] int y | array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...))`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
 
-<!-- real; laplace_marginal_poisson_2_log_lupmf; (array[] int y | array[] int y_index, vector x, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_poisson\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...)): real}|hyperpage}
+<!-- real; laplace_marginal_tol_poisson_2_log_lpmf; (array[] int y | array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
 
-`real` **`laplace_marginal_poisson_2_log_lupmf`**`(array[] int y | array[] int y_index, vector x, vector theta0, function K_function, tuple(...))`<br>\newline
-
-TODO description.
-{{< since 2.37 >}}
-
-<!-- real; laplace_marginal_tol_poisson_2_log_lupmf; (array[] int y | array[] int y_index, vector x, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-
-`real` **`laplace_marginal_tol_poisson_2_log_lupmf`**`(array[] int y | array[] int y_index, vector x, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_tol_poisson_2_log_lpmf`**`(array[] int y | array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
 
-<!-- vector; laplace_latent_poisson_2_log_rng; (array[] int y, array[] int y_index, vector x, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_latent\_poisson\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta0, function K\_function, tuple(...)): vector}|hyperpage}
+<!-- real; laplace_marginal_poisson_2_log_lupmf; (array[] int y | array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_marginal\_poisson\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...)): real}|hyperpage}
 
-`vector` **`laplace_latent_poisson_2_log_rng`**`(array[] int y, array[] int y_index, vector x, vector theta0, function K_function, tuple(...))`<br>\newline
+`real` **`laplace_marginal_poisson_2_log_lupmf`**`(array[] int y | array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...))`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
 
-<!-- vector; laplace_latent_tol_poisson_2_log_rng; (array[] int y, array[] int y_index, vector x, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_latent\_tol\_poisson\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+<!-- real; laplace_marginal_tol_poisson_2_log_lupmf; (array[] int y | array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
 
-`vector` **`laplace_latent_tol_poisson_2_log_rng`**`(array[] int y, array[] int y_index, vector x, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_tol_poisson_2_log_lupmf`**`(array[] int y | array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+
+TODO description.
+{{< since 2.37 >}}
+
+<!-- vector; laplace_latent_poisson_2_log_rng; (array[] int y, array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_latent\_poisson\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta_init, function K\_function, tuple(...)): vector}|hyperpage}
+
+`vector` **`laplace_latent_poisson_2_log_rng`**`(array[] int y, array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...))`<br>\newline
+
+TODO description.
+{{< since 2.37 >}}
+
+<!-- vector; laplace_latent_tol_poisson_2_log_rng; (array[] int y, array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_latent\_tol\_poisson\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+
+`vector` **`laplace_latent_tol_poisson_2_log_rng`**`(array[] int y, array[] int y_index, vector x, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
@@ -391,67 +430,67 @@ group the $i^\text{th}$ observation belongs to.
 <!-- real; laplace_marginal_neg_binomial_2_log ~; -->
 \index{{\tt \bfseries laplace\_marginal\_neg\_binomial\_2\_log }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_neg_binomial_2_log`**`(y_index, eta, theta0, K_function, (...))`<br>\newline
+`y ~ ` **`laplace_marginal_neg_binomial_2_log`**`(y_index, eta, theta_init, covariance_function, (...))`<br>\newline
 
-Increment target log probability density with `laplace_marginal_neg_binomial_2_log_lupmf(y | y_index, eta, theta0, K_function, (...))`.
+Increment target log probability density with `laplace_marginal_neg_binomial_2_log_lupmf(y | y_index, eta, theta_init, covariance_function, (...))`.
 {{< since 2.37 >}}
 
 <!-- real; laplace_marginal_tol_neg_binomial_2_log ~; -->
 \index{{\tt \bfseries laplace\_marginal\_tol\_neg\_binomial\_2\_log }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_tol_neg_binomial_2_log`**`(y_index, eta, theta0, K_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`<br>\newline
+`y ~ ` **`laplace_marginal_tol_neg_binomial_2_log`**`(y_index, eta, theta_init, covariance_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`<br>\newline
 
-Increment target log probability density with `laplace_marginal_tol_neg_binomial_2_log_lupmf(y | y_index, eta, theta0, K_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`.
+Increment target log probability density with `laplace_marginal_tol_neg_binomial_2_log_lupmf(y | y_index, eta, theta_init, covariance_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`.
 {{< since 2.37 >}}
 
 
 The function signatures for the embedded Laplace approximation with a negative
 Binomial likelihood are
 
-<!-- real; laplace_marginal_neg_binomial_2_log_lpmf; (array[] int y | array[] int y_index, real eta, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_neg\_binomial\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...)): real}|hyperpage}
+<!-- real; laplace_marginal_neg_binomial_2_log_lpmf; (array[] int y | array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_marginal\_neg\_binomial\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...)): real}|hyperpage}
 
-`real` **`laplace_marginal_neg_binomial_2_log_lpmf`**`(array[] int y | array[] int y_index, real eta, vector theta0, function K_function, tuple(...))`<br>\newline
-
-TODO description.
-{{< since 2.37 >}}
-
-<!-- real; laplace_marginal_tol_neg_binomial_2_log_lpmf; (array[] int y | array[] int y_index, real eta, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_neg\_binomial\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-
-`real` **`laplace_marginal_tol_neg_binomial_2_log_lpmf`**`(array[] int y | array[] int y_index, real eta, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_neg_binomial_2_log_lpmf`**`(array[] int y | array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...))`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
 
-<!-- real; laplace_marginal_neg_binomial_2_log_lupmf; (array[] int y | array[] int y_index, real eta, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_neg\_binomial\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...)): real}|hyperpage}
+<!-- real; laplace_marginal_tol_neg_binomial_2_log_lpmf; (array[] int y | array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_neg\_binomial\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
 
-`real` **`laplace_marginal_neg_binomial_2_log_lupmf`**`(array[] int y | array[] int y_index, real eta, vector theta0, function K_function, tuple(...))`<br>\newline
-
-TODO description.
-{{< since 2.37 >}}
-
-<!-- real; laplace_marginal_tol_neg_binomial_2_log_lupmf; (array[] int y | array[] int y_index, real eta, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_neg\_binomial\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-
-`real` **`laplace_marginal_tol_neg_binomial_2_log_lupmf`**`(array[] int y | array[] int y_index, real eta, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_tol_neg_binomial_2_log_lpmf`**`(array[] int y | array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
 
-<!-- vector; laplace_latent_neg_binomial_2_log_rng; (array[] int y, array[] int y_index, real eta, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_latent\_neg\_binomial\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta0, function K\_function, tuple(...)): vector}|hyperpage}
+<!-- real; laplace_marginal_neg_binomial_2_log_lupmf; (array[] int y | array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_marginal\_neg\_binomial\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...)): real}|hyperpage}
 
-`vector` **`laplace_latent_neg_binomial_2_log_rng`**`(array[] int y, array[] int y_index, real eta, vector theta0, function K_function, tuple(...))`<br>\newline
+`real` **`laplace_marginal_neg_binomial_2_log_lupmf`**`(array[] int y | array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...))`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
 
-<!-- vector; laplace_latent_tol_neg_binomial_2_log_rng; (array[] int y, array[] int y_index, real eta, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_latent\_tol\_neg\_binomial\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+<!-- real; laplace_marginal_tol_neg_binomial_2_log_lupmf; (array[] int y | array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_neg\_binomial\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
 
-`vector` **`laplace_latent_tol_neg_binomial_2_log_rng`**`(array[] int y, array[] int y_index, real eta, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_tol_neg_binomial_2_log_lupmf`**`(array[] int y | array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+
+TODO description.
+{{< since 2.37 >}}
+
+<!-- vector; laplace_latent_neg_binomial_2_log_rng; (array[] int y, array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_latent\_neg\_binomial\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta_init, function K\_function, tuple(...)): vector}|hyperpage}
+
+`vector` **`laplace_latent_neg_binomial_2_log_rng`**`(array[] int y, array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...))`<br>\newline
+
+TODO description.
+{{< since 2.37 >}}
+
+<!-- vector; laplace_latent_tol_neg_binomial_2_log_rng; (array[] int y, array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_latent\_tol\_neg\_binomial\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+
+`vector` **`laplace_latent_tol_neg_binomial_2_log_rng`**`(array[] int y, array[] int y_index, real eta, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
@@ -471,67 +510,67 @@ group the $i^\text{th}$ observation belongs to.
 <!-- real; laplace_marginal_bernoulli_logit ~; -->
 \index{{\tt \bfseries laplace\_marginal\_bernoulli\_logit }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_bernoulli_logit`**`(y_index, theta0, K_function, (...))`<br>\newline
+`y ~ ` **`laplace_marginal_bernoulli_logit`**`(y_index, theta_init, covariance_function, (...))`<br>\newline
 
-Increment target log probability density with `laplace_marginal_bernoulli_logit_lupmf(y | y_index, theta0, K_function, (...))`.
+Increment target log probability density with `laplace_marginal_bernoulli_logit_lupmf(y | y_index, theta_init, covariance_function, (...))`.
 {{< since 2.37 >}}
 
 <!-- real; laplace_marginal_tol_bernoulli_logit ~; -->
 \index{{\tt \bfseries laplace\_marginal\_tol\_bernoulli\_logit }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_tol_bernoulli_logit`**`(y_index, theta0, K_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`<br>\newline
+`y ~ ` **`laplace_marginal_tol_bernoulli_logit`**`(y_index, theta_init, covariance_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`<br>\newline
 
-Increment target log probability density with `laplace_marginal_tol_bernoulli_logit_lupmf(y | y_index, theta0, K_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`.
+Increment target log probability density with `laplace_marginal_tol_bernoulli_logit_lupmf(y | y_index, theta_init, covariance_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`.
 {{< since 2.37 >}}
 
 
 The function signatures for the embedded Laplace approximation with a Bernoulli likelihood are
 
-<!-- real; laplace_marginal_bernoulli_logit_lpmf; (array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_bernoulli\_logit\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...)): real}|hyperpage}
+<!-- real; laplace_marginal_bernoulli_logit_lpmf; (array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_marginal\_bernoulli\_logit\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...)): real}|hyperpage}
 
-`real` **`laplace_marginal_bernoulli_logit_lpmf`**`(array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...))`<br>\newline
-
-TODO description.
-{{< since 2.37 >}}
-
-<!-- real; laplace_marginal_tol_bernoulli_logit_lpmf; (array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_bernoulli\_logit\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-
-`real` **`laplace_marginal_tol_bernoulli_logit_lpmf`**`(array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_bernoulli_logit_lpmf`**`(array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...))`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
 
+<!-- real; laplace_marginal_tol_bernoulli_logit_lpmf; (array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_bernoulli\_logit\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
 
-<!-- real; laplace_marginal_bernoulli_logit_lupmf; (array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_bernoulli\_logit\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...)): real}|hyperpage}
-
-`real` **`laplace_marginal_bernoulli_logit_lupmf`**`(array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...))`<br>\newline
-
-TODO description.
-{{< since 2.37 >}}
-
-<!-- real; laplace_marginal_tol_bernoulli_logit_lupmf; (array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_bernoulli\_logit\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-
-`real` **`laplace_marginal_tol_bernoulli_logit_lupmf`**`(array[] int y | array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_tol_bernoulli_logit_lpmf`**`(array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
 
-<!-- vector; laplace_latent_bernoulli_logit_rng; (array[] int y, array[] int y_index, vector theta0, function K_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_latent\_bernoulli\_logit\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta0, function K\_function, tuple(...)): vector}|hyperpage}
 
-`vector` **`laplace_latent_bernoulli_logit_rng`**`(array[] int y, array[] int y_index, vector theta0, function K_function, tuple(...))`<br>\newline
+<!-- real; laplace_marginal_bernoulli_logit_lupmf; (array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_marginal\_bernoulli\_logit\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...)): real}|hyperpage}
+
+`real` **`laplace_marginal_bernoulli_logit_lupmf`**`(array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...))`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
 
-<!-- vector; laplace_latent_tol_bernoulli_logit_rng; (array[] int y, array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_latent\_tol\_bernoulli\_logit\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta0, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+<!-- real; laplace_marginal_tol_bernoulli_logit_lupmf; (array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_bernoulli\_logit\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
 
-`vector` **`laplace_latent_tol_bernoulli_logit_rng`**`(array[] int y, array[] int y_index, vector theta0, function K_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_tol_bernoulli_logit_lupmf`**`(array[] int y | array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+
+TODO description.
+{{< since 2.37 >}}
+
+<!-- vector; laplace_latent_bernoulli_logit_rng; (array[] int y, array[] int y_index, vector theta_init, function covariance_function, tuple(...)); -->
+\index{{\tt \bfseries laplace\_latent\_bernoulli\_logit\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta_init, function K\_function, tuple(...)): vector}|hyperpage}
+
+`vector` **`laplace_latent_bernoulli_logit_rng`**`(array[] int y, array[] int y_index, vector theta_init, function covariance_function, tuple(...))`<br>\newline
+
+TODO description.
+{{< since 2.37 >}}
+
+<!-- vector; laplace_latent_tol_bernoulli_logit_rng; (array[] int y, array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
+\index{{\tt \bfseries laplace\_latent\_tol\_bernoulli\_logit\_rng }!{\tt (array[] int y, array[] int y\_index, vector theta_init, function K\_function, tuple(...), real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+
+`vector` **`laplace_latent_tol_bernoulli_logit_rng`**`(array[] int y, array[] int y_index, vector theta_init, function covariance_function, tuple(...), real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
 
 TODO description.
 {{< since 2.37 >}}
@@ -575,6 +614,6 @@ TODO description.
 <!-- and admits nearly the same arguments as `laplace_marginal`. A key difference -->
 <!-- is that  -->
 <!-- ``` -->
-<!-- vector laplace_latent_rng(function ll_function, tuple(...), vector theta_0,  -->
-<!--                           function K_function, tuple(...)); -->
+<!-- vector laplace_latent_rng(function likelihood_function, tuple(...), vector theta_0,  -->
+<!--                           function covariance_function, tuple(...)); -->
 <!-- ``` -->

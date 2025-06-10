@@ -85,8 +85,8 @@ Which returns an approximation to the log marginal likelihood $p(y \mid \phi)$.
 
 This function takes in the following argumeents.
 
-1. `likelihood_function` - user-specified likelihood whose first argument is the vector of latent Gaussian variables `theta`
-2. `likelihood_arguments` - A tuple of the likelihood arguments whose internal members will be passed to the covariance function
+1. `likelihood_function` - user-specified log likelihood whose first argument is the vector of latent Gaussian variables `theta`
+2. `likelihood_arguments` - A tuple of the log likelihood arguments whose internal members will be passed to the covariance function
 3. `theta_init` - an initial guess for the optimization problem that underlies the Laplace approximation,
 4. `covariance_function` - Prior covariance function
 5. `covariance_arguments` A tuple of the arguments whose internal members will be passed to the the covariance function
@@ -96,7 +96,7 @@ passed to `likelihood_function`.
 
 Below we go over each argument in more detail.
 
-## Specifying the likelihood function {#laplace-likelihood_spec}
+## Specifying the log likelihood function {#laplace-likelihood_spec}
 
 The first step to use the embedded Laplace approximation is to write down a
 function in the `functions` block which returns the log joint likelihood
@@ -185,13 +185,13 @@ The tuple after `covariance_function` contains the arguments that get passed
 to `covariance_function`. For instance, if a user defined covariance function
 uses two vectors
 ```stan
-real cov_fun(vector theta, real b, matrix Z)
+matrix cov_fun(real b, matrix Z)
 ```
 the call to the Laplace marginal would include the covariance function and
 a tuple holding the covariance function arguments.
 
 ```stan
-real val = laplace_marginal(likelihood_fun, (a, X), cov_fun, (b, Z), ...);
+real val = laplace_marginal(likelihood_fun, (a, X), theta_init, cov_fun, (b, Z), ...);
 ```
 
 ## Control parameters

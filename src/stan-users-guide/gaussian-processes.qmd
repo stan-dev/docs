@@ -486,8 +486,130 @@ model {
 }
 ```
 
+#### Poisson GP using an embedded Laplace approximation {-}
 
-#### Logistic Gaussian process regression {-}
+For computational reasons, we may want to integrate out the Gaussian process
+$f$, as was done in the normal output model. Unfortunately, exact 
+marginalization over $f$ is not possible when the outcome model is not normal.
+Instead, we may perform *approximate* marginalization with an *embedded
+Laplace approximation* [@Rue:2009, @Margossian:2020].
+To do so, we first use the function `laplace_marginal` to approximate the marginal
+likelihood $p(y \mid \rho, \alpha, a)$ and sample the
+hyperparameters with Hamiltonian Monte Carlo sampling. Then, we recover the
+integrated out $f$ in the `generated quantities` block using 
+`laplace_latent_rng`.
+
+The embedded Laplace approximation computes a Gaussian approximation of the
+conditional posterior,
+$$
+  \hat p_\mathcal{L}(f \mid \rho, \alpha, a, y) \approx p(f \mid \rho, \alpha, a, y),
+$$
+where $\hat p_\mathcal{L}$ is a Gaussian that matches the mode and curvature 
+of $p(f \mid \rho, \alpha, a, y)$. We then obtain an approximation of
+the marginal likelihood as follows:
+$$
+  \hat p_\mathcal{L}(y \mid \rho, \alpha, a) 
+    = \frac{p(f^* \mid \alpha, \rho) p(y \mid f^*, a)}{
+    \hat p_\mathcal{L}(f \mid \rho, \alpha, a, y)},
+$$
+where $f^*$ is the mode of $p(f \mid \rho, \alpha, a, y)$, obtained via
+numerical optimization.
+
+To use Stan's embedded Laplace approximation, we must define the prior covariance
+function and the log likelihood function in the functions block.
+```{stan}
+functions {
+  // log likelihood function
+  real ll_function(vector f, real a, array[] int y) {
+      return poisson_log_lpmf(y | a + f); 
+  }
+  
+  // covariance function
+  matrix cov_function(real rho, real alpha, array[] real x, int N, real delta) {
+    matrix[N, N] K = gp_exp_quad_cov(x, alpha, rho);
+    return add_diag(K, delta)
+  }
+
+}
+```
+
+Furthermore, we must specify an initial value $f_\text{init}$ for the
+numerical optimizer that underlies the Laplace approximation. In our experience,
+we have found setting all values to 0 to be a good default.
+
+```{stan}
+transformed data {
+  vector[N] f_init = rep_vector(0, N);
+}
+```
+
+We then increment `target` in the model block with the approximation to
+$\log p(y \mid \rho, \alpha, a)$.
+```{stan}
+model {
+  rho ~ inv_gamma(5, 5);
+  alpha ~ std_normal();
+  sigma ~ std_normal();
+  
+  target += laplace_marginal(ll_function, (a, y), f_init,
+                             cov_function, (rho, alpha, x, N, delta)); 
+}
+```
+Notice that we do not need to construct $f$ explicitly, since it is
+marginalized out. Instead, we recover the GP function in `generated quantities`:
+```{stan}
+generated quantities {
+  vector[N] f = laplace_latent_rng(ll_function, (a, y), f_init,
+                                   cov_function, (rho, alpha, x, N, delta));
+}
+```
+
+Stan also provides support for a limited menu of built-in functions, including
+the Poisson distribution with a log link and an offset $a$. When using such
+a built-in function, the user does not need to specify a likelihood in the
+`functions` block. However, the user must strictly follow the signature of the
+likelihood: in this case, $a$ must be a vector of length $N$ (to allow for
+different offsets for each observation $y_i$) and we must indicate which
+element of $f$ each component of $y$ matches using the variable $y_\text{index}$.
+In our example, there is a simple pairing $(y_i, f_i)$, however we could imagine
+a scenario where multiple observations $(y_{j1}, y_{j2}, ...)$ are observed
+for a single $f_j$.
+
+```{stan}
+transformed data {
+  // ...
+  array[n_obs] int y_index;
+  for (i in 1:n_obs) y_index[i] = i - 1;
+}
+
+// ...
+
+transformed parameter {
+  vector[N] a_vec = rep_vector(a, N);
+}
+
+model {
+  // ...
+  target += laplace_marginal_poisson_2_log_lpmf(y | y_index, a_vec, f_init,
+                                       cov_function, (rho, alpha, x, N, delta));   
+}
+
+generated quantities {
+  vector[N] f = laplace_latent_poisson_2_log_rng(y, y_index, a_vec, f_init,
+                                   cov_function, (rho, alpha, x, N, delta));  
+}
+
+```
+
+Marginalization with a Laplace approximation can lead to faster inference,
+however it also introduces an approximation error. In practice, this error
+is negligible when using a Poisson likelihood and the approximation works well
+for log concave likelihoods [@Kuss:2005, @Vanhatalo:2010, @Cseke:2011,
+@Vehtari:2016]. 
+Still, users should exercise caution, especially
+when trying unconventional likelihoods.
+
+#### Logistic GP regression {-}
 
 For binary classification problems, the observed outputs $z_n \in
 \{ 0,1 \}$ are binary.  These outputs are modeled using a Gaussian
@@ -514,9 +636,46 @@ data {
 // ...
 model {
   // ...
-  y ~ bernoulli_logit(a + f);
+  z ~ bernoulli_logit(a + f);
 }
 ```
+
+#### Logistic GP regression with an embedded Laplace approximation {-}
+
+As with the Poisson GP, we cannot marginalize the GP function exactly,
+however we can resort to an embedded Laplace approximation.
+
+```{stan}
+functions {
+  // log likelihood function
+  real ll_function(vector f, real a, array[] int z) {
+      return bernoulli_logit_lpmf(z | a + f); 
+  }
+  
+  // covariance function
+  matrix cov_function(real rho, real alpha, array[] real x, int N, real delta) {
+    matrix[N, N] K = gp_exp_quad_cov(x, alpha, rho);
+    return add_diag(K, delta)
+  }
+}
+
+// ...
+
+model {
+  target += laplace_marginal(ll_function, (a, z), f_init,
+                             cov_function, (rho, alpha, x, N, delta)); 
+}
+
+generated quantities {
+  vector[N] f = laplace_latent_rng(ll_function, (a, z), f_init,
+                                   cov_function, (rho, alpha, x, N, delta)); 
+}
+```
+
+While marginalization with a Laplace approximation can lead to faster inference,
+it also introduces an approximation error. In practice, this error may not be
+negligable with a Bernoulli likelihood; for more discussion see, e.g. 
+[@Vehtari:2016, @Margossian:2020].
 
 
 ### Automatic relevance determination {-}

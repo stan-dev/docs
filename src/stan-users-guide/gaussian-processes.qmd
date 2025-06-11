@@ -28,7 +28,7 @@ functions drawn from the process.
 
 Gaussian processes can be encoded in Stan by implementing their mean and
 covariance functions or by using the specialized covariance functions
-outlined below, and plugging the result into the Gaussian model.  
+outlined below, and plugging the result into the Gaussian model.
 This form of model is straightforward and may be used for
 simulation, model fitting, or posterior predictive inference. A more efficient
 Stan implementation for the GP with a normally distributed outcome marginalizes
@@ -489,14 +489,14 @@ model {
 #### Poisson GP using an embedded Laplace approximation {-}
 
 For computational reasons, we may want to integrate out the Gaussian process
-$f$, as was done in the normal output model. Unfortunately, exact 
+$f$, as was done in the normal output model. Unfortunately, exact
 marginalization over $f$ is not possible when the outcome model is not normal.
 Instead, we may perform *approximate* marginalization with an *embedded
 Laplace approximation* [@Rue:2009, @Margossian:2020].
 To do so, we first use the function `laplace_marginal` to approximate the marginal
 likelihood $p(y \mid \rho, \alpha, a)$ and sample the
 hyperparameters with Hamiltonian Monte Carlo sampling. Then, we recover the
-integrated out $f$ in the `generated quantities` block using 
+integrated out $f$ in the `generated quantities` block using
 `laplace_latent_rng`.
 
 The embedded Laplace approximation computes a Gaussian approximation of the
@@ -504,11 +504,11 @@ conditional posterior,
 $$
   \hat p_\mathcal{L}(f \mid \rho, \alpha, a, y) \approx p(f \mid \rho, \alpha, a, y),
 $$
-where $\hat p_\mathcal{L}$ is a Gaussian that matches the mode and curvature 
+where $\hat p_\mathcal{L}$ is a Gaussian that matches the mode and curvature
 of $p(f \mid \rho, \alpha, a, y)$. We then obtain an approximation of
 the marginal likelihood as follows:
 $$
-  \hat p_\mathcal{L}(y \mid \rho, \alpha, a) 
+  \hat p_\mathcal{L}(y \mid \rho, \alpha, a)
     = \frac{p(f^* \mid \alpha, \rho) p(y \mid f^*, a)}{
     \hat p_\mathcal{L}(f \mid \rho, \alpha, a, y)},
 $$
@@ -517,13 +517,13 @@ numerical optimization.
 
 To use Stan's embedded Laplace approximation, we must define the prior covariance
 function and the log likelihood function in the functions block.
-```{stan}
+```stan
 functions {
   // log likelihood function
   real ll_function(vector f, real a, array[] int y) {
-      return poisson_log_lpmf(y | a + f); 
+      return poisson_log_lpmf(y | a + f);
   }
-  
+
   // covariance function
   matrix cov_function(real rho, real alpha, array[] real x, int N, real delta) {
     matrix[N, N] K = gp_exp_quad_cov(x, alpha, rho);
@@ -537,7 +537,7 @@ Furthermore, we must specify an initial value $f_\text{init}$ for the
 numerical optimizer that underlies the Laplace approximation. In our experience,
 we have found setting all values to 0 to be a good default.
 
-```{stan}
+```stan
 transformed data {
   vector[N] f_init = rep_vector(0, N);
 }
@@ -545,29 +545,29 @@ transformed data {
 
 We then increment `target` in the model block with the approximation to
 $\log p(y \mid \rho, \alpha, a)$.
-```{stan}
+```stan
 model {
   rho ~ inv_gamma(5, 5);
   alpha ~ std_normal();
   sigma ~ std_normal();
-  
+
   target += laplace_marginal(ll_function, (a, y), f_init,
-                             cov_function, (rho, alpha, x, N, delta)); 
+                             cov_function, (rho, alpha, x, N, delta));
 }
 ```
 Notice that we do not need to construct $f$ explicitly, since it is
 marginalized out. Instead, we recover the GP function in `generated quantities`:
-```{stan}
+```stan
 generated quantities {
   vector[N] f = laplace_latent_rng(ll_function, (a, y), f_init,
                                    cov_function, (rho, alpha, x, N, delta));
 }
 ```
 
-Users can set the control parameters of the embedded Laplace approximation, 
-via `laplace_marginal_tol` and `laplace_latent_tol_rng`. When using these 
+Users can set the control parameters of the embedded Laplace approximation,
+via `laplace_marginal_tol` and `laplace_latent_tol_rng`. When using these
 functions, the user must set *all* the control parameters.
-```{stan}
+```stan
 transformed data {
 // ...
 
@@ -589,7 +589,7 @@ model {
   target += laplace_marginal(ll_function, (a, y), f_init,
                              cov_function, (rho, alpha, x, N, delta),
                              tol, max_num_steps, hessian_block_size,
-                             solver, max_steps_linesearch); 
+                             solver, max_steps_linesearch);
 }
 
 generated quantities {
@@ -614,7 +614,7 @@ In our example, there is a simple pairing $(y_i, f_i)$, however we could imagine
 a scenario where multiple observations $(y_{j1}, y_{j2}, ...)$ are observed
 for a single $f_j$.
 
-```{stan}
+```stan
 transformed data {
   // ...
   array[n_obs] int y_index;
@@ -630,12 +630,12 @@ transformed parameter {
 model {
   // ...
   target += laplace_marginal_poisson_2_log_lpmf(y | y_index, a_vec, f_init,
-                                       cov_function, (rho, alpha, x, N, delta));   
+                                       cov_function, (rho, alpha, x, N, delta));
 }
 
 generated quantities {
   vector[N] f = laplace_latent_poisson_2_log_rng(y, y_index, a_vec, f_init,
-                                   cov_function, (rho, alpha, x, N, delta));  
+                                   cov_function, (rho, alpha, x, N, delta));
 }
 
 ```
@@ -648,7 +648,7 @@ Marginalization with a Laplace approximation can lead to faster inference,
 however it also introduces an approximation error. In practice, this error
 is negligible when using a Poisson likelihood and the approximation works well
 for log concave likelihoods [@Kuss:2005, @Vanhatalo:2010, @Cseke:2011,
-@Vehtari:2016]. 
+@Vehtari:2016].
 Still, users should exercise caution, especially
 when trying unconventional likelihoods.
 
@@ -688,13 +688,13 @@ model {
 As with the Poisson GP, we cannot marginalize the GP function exactly,
 however we can resort to an embedded Laplace approximation.
 
-```{stan}
+```stan
 functions {
   // log likelihood function
   real ll_function(vector f, real a, array[] int z) {
-      return bernoulli_logit_lpmf(z | a + f); 
+      return bernoulli_logit_lpmf(z | a + f);
   }
-  
+
   // covariance function
   matrix cov_function(real rho, real alpha, array[] real x, int N, real delta) {
     matrix[N, N] K = gp_exp_quad_cov(x, alpha, rho);
@@ -706,18 +706,18 @@ functions {
 
 model {
   target += laplace_marginal(ll_function, (a, z), f_init,
-                             cov_function, (rho, alpha, x, N, delta)); 
+                             cov_function, (rho, alpha, x, N, delta));
 }
 
 generated quantities {
   vector[N] f = laplace_latent_rng(ll_function, (a, z), f_init,
-                                   cov_function, (rho, alpha, x, N, delta)); 
+                                   cov_function, (rho, alpha, x, N, delta));
 }
 ```
 
 While marginalization with a Laplace approximation can lead to faster inference,
 it also introduces an approximation error. In practice, this error may not be
-negligable with a Bernoulli likelihood; for more discussion see, e.g. 
+negligible with a Bernoulli likelihood; for more discussion see, e.g.
 [@Vehtari:2016, @Margossian:2020].
 
 
@@ -1001,7 +1001,7 @@ input vector `x`.  All that is left is to define the univariate
 normal distribution statement for `y`.
 
 The generated quantities block defines the quantity `y2`. We generate
-`y2` by randomly generating `N2` values from univariate normals with 
+`y2` by randomly generating `N2` values from univariate normals with
 each mean corresponding to the appropriate element in `f`.
 
 

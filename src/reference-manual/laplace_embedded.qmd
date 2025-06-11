@@ -2,9 +2,9 @@
 pagetitle: Embedded Laplace Approximation
 ---
 
-# Embdeed Laplace Approximation
+# Embedded Laplace Approximation
 
-Stan provides functions to perform an embedded Laplace 
+Stan provides functions to perform an embedded Laplace
 approximation for latent Gaussian models. Bearing a slight abuse of language,
 this is sometimes known as an integrated or nested Laplace approximation.
 Details of Stan's implementation can be found in reference
@@ -30,24 +30,24 @@ posterior $p(\phi, \theta \mid y)$. This geometry (e.g. funnels) often frustrate
 inference algorithms, including Hamiltonian Monte Carlo sampling and approximate
 methods such as variational inference. On the other hand, the marginal posterior
 $p(\phi \mid y)$ is often well-behaved and in many cases low-dimensional.
-Furthermore, the conditional posterior $p(\theta \mid \phi, y)$ can be well 
-approximated by a normal distribution, if the likelihood $p(y \mid \theta, \phi)$ 
+Furthermore, the conditional posterior $p(\theta \mid \phi, y)$ can be well
+approximated by a normal distribution, if the likelihood $p(y \mid \theta, \phi)$
 is log concave.
 
 
 ## Approximation of the conditional posterior and marginal likelihood
 
 The Laplace approximation is the normal distribution that matches the mode
-and curvatureof the conditional posterior $p(\theta \mid y, \phi)$.
+and curvature of the conditional posterior $p(\theta \mid y, \phi)$.
 The mode,
 $$
   \theta^* = \underset{\theta}{\text{argmax}} \ p(\theta \mid y, \phi),
 $$
-is estimated by a Newton solver. Since the approximation is normal, 
+is estimated by a Newton solver. Since the approximation is normal,
 the curvature is matched by setting the covariance to the negative Hessian
 of the log conditional posterior, evaluated at the mode,
 $$
-  \Sigma^* = -  \left . \frac{\partial^2}{\partial \theta^2} 
+  \Sigma^* = -  \left . \frac{\partial^2}{\partial \theta^2}
     \log p (\theta \mid \phi, y) \right |_{\theta =\theta^*}.
 $$
 The resulting Laplace approximation is then,
@@ -57,13 +57,13 @@ $$
 $$
 This approximation implies another approximation for the marginal likelihood,
 $$
-   \hat p_\mathcal{L}(y \mid \phi) := \frac{p(\theta^* \mid \phi) \ 
+   \hat p_\mathcal{L}(y \mid \phi) := \frac{p(\theta^* \mid \phi) \
    p(y \mid \theta^*, \phi) }{ \hat p_\mathcal{L} (\theta^* \mid \phi, y) }
    \approx p(y \mid \phi).
 $$
 Hence, a strategy to approximate the posterior of the latent Gaussian model
-is to first estimate the marginal posterior 
-$\hat p_\mathcal{L}(\phi \mid y) \propto p(\phi) p_\mathcal{L} (y \mid \phi)$ 
+is to first estimate the marginal posterior
+$\hat p_\mathcal{L}(\phi \mid y) \propto p(\phi) p_\mathcal{L} (y \mid \phi)$
 using any algorithm supported by Stan.
 Approximate posterior draws for the latent Gaussian variables are then
 obtained by first drawing $\phi \sim \hat p_\mathcal{L}(\phi \mid y)$ and
@@ -75,7 +75,7 @@ then $\theta \sim  hat p_\mathcal{L}(\theta \mid \phi, y)$.
 The embedded Laplace approximation presents several trade-offs with standard
 inference over the joint posterior $p(\theta, \phi \mid y)$. The main
 advantage of the embedded Laplace approximation is that it side-steps the
-intricate geometry of hierarchical models. The marginal posterior 
+intricate geometry of hierarchical models. The marginal posterior
 $p(\phi \mid y)$ can then be handled by Hamiltonian Monte Carlo sampling
 without extensive tuning or reparameterization, and the mixing time is faster,
 meaning we can run shorter chains to achieve a desired precision. In some cases,
@@ -86,7 +86,7 @@ posterior $p(\phi \mid y)$.
 On the other hand, the embedded Laplace approximation presents certain
 disadvantages. First, we need to perform a Laplace approximation each time
 the log marginal likelihood is evaluated, meaning each iteration
-can be expensive. Secondly, the approximation can introduce non-negligable
+can be expensive. Secondly, the approximation can introduce non-negligible
 error, especially with non-conventional likelihoods (note the prior
 is always multivariate normal). How these trade-offs are resolved depends on the application; see [@Margossian:2020] for some examples.
 
@@ -104,7 +104,7 @@ $$
 and convergence is declared if the change in the objective is sufficiently
 small between two iterations
 $$
-| \Psi (\theta^{(i + 1)}) - \Psi (\theta^{(i)}) | \le \Delta, 
+| \Psi (\theta^{(i + 1)}) - \Psi (\theta^{(i)}) | \le \Delta,
 $$
 for some *tolerance* $\Delta$. The solver also stops after reaching a
 pre-specified *maximum number of steps*: in that case, Stan throws an exception
@@ -121,16 +121,16 @@ This can indicate that the Newton step is too large and that we skipped a region
 where the objective function decreases. In that case, we can reduce the step
 length by a factor of 2, using
 $$
-  \theta^{(i + 1)} \leftarrow \frac{\theta^{(i + 1)} + \theta^{(i)}}{2}. 
+  \theta^{(i + 1)} \leftarrow \frac{\theta^{(i + 1)} + \theta^{(i)}}{2}.
 $$
-We repeat this halving of steps until 
+We repeat this halving of steps until
 $\Psi (\theta^{(i + 1)}) \ge \Psi (\theta^{(i)})$, or until a maximum number
-of linesearch steps is reached. By defaut, this maximum is set to 0, which
+of linesearch steps is reached. By default, this maximum is set to 0, which
 means the Newton solver performs no linesearch. For certain problems, adding
-a linsearch can make the optmization more stable.
+a linsearch can make the optimization more stable.
 
 
-The embedded Laplace approximation uses a custom Newton solver,specialized 
+The embedded Laplace approximation uses a custom Newton solver,specialized
 to find the mode of $p(\theta \mid \phi, y)$.
 A keystep for efficient optimization is to insure all matrix inversions are
 numerically stable. This can be done using the Woodburry-Sherman-Morrison

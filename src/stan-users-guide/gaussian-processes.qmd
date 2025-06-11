@@ -564,8 +564,47 @@ generated quantities {
 }
 ```
 
+Users can set the control parameters of the embedded Laplace approximation, 
+via `laplace_marginal_tol` and `laplace_latent_tol_rng`. When using these 
+functions, the user must set *all* the control parameters.
+```{stan}
+transformed data {
+// ...
+
+  real tol = 1e-6;             // optimizer's tolerance for Laplace approx.
+  int max_num_steps = 1e3;     // maximum number of steps for optimizer.
+  int hessian_block_size = 1;  // when hessian of log likelihood is block
+                               // diagonal, size of block (here 1).
+  int solver = 1;              // which Newton optimizer to use; default is 1,
+                               // use 2 and 3 only for special cases.
+  max_steps_linesearch = 0;    // if >= 1, optimizer does a lineseach with
+                               // specified number of steps.
+}
+
+// ...
+
+model {
+// ...
+
+  target += laplace_marginal(ll_function, (a, y), f_init,
+                             cov_function, (rho, alpha, x, N, delta),
+                             tol, max_num_steps, hessian_block_size,
+                             solver, max_steps_linesearch); 
+}
+
+generated quantities {
+  vector[N] f = laplace_latent_rng(ll_function, (a, y), f_init,
+                                   cov_function, (rho, alpha, x, N, delta),
+                                   tol, max_num_steps, hessian_block_size,
+                                   solver, max_steps_linesearch);
+}
+
+```
+For details about the control parameters, see  [@Margossian:2022]
+
+
 Stan also provides support for a limited menu of built-in functions, including
-the Poisson distribution with a log link and an offset $a$. When using such
+the Poisson distribution with a log link and and prior mean $a$. When using such
 a built-in function, the user does not need to specify a likelihood in the
 `functions` block. However, the user must strictly follow the signature of the
 likelihood: in this case, $a$ must be a vector of length $N$ (to allow for
@@ -600,6 +639,10 @@ generated quantities {
 }
 
 ```
+
+As before, we could specify the control parameters for the embedded Laplace
+approximation using `laplace_marginal_tol_poisson_2_log_lpmf` and
+`laplace_latent_tol_poisson_2_log_nrg`.
 
 Marginalization with a Laplace approximation can lead to faster inference,
 however it also introduces an approximation error. In practice, this error

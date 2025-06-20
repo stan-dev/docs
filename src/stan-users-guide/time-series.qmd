@@ -319,7 +319,7 @@ model {
 
 The error terms $\epsilon_t$ are defined as transformed parameters in
 terms of the observations and parameters.  The definition of the
-distribution statement (which also defines the likelihood) follows the 
+distribution statement (which also defines the likelihood) follows the
 definition,
 which can only be applied to $y_n$ for $n > Q$.  In this example, the
 parameters are all given Cauchy (half-Cauchy for $\sigma$) priors,
@@ -634,334 +634,130 @@ time of the original iterations.
 
 ## Hidden Markov models {#hmms.section}
 
-A hidden Markov model (HMM) generates a sequence of $T$ output
-variables $y_t$ conditioned on a parallel sequence of latent
-categorical state variables $z_t \in \{1,\ldots, K\}$.  These
-"hidden" state variables are assumed to form a Markov chain so that
-$z_t$ is conditionally independent of other variables given $z_{t-1}$.
-This Markov chain is parameterized by a transition matrix $\theta$
-where $\theta_k$ is a $K$-simplex for $k \in \{ 1, \dotsc, K \}$.  The
-probability of transitioning to state $z_t$ from state $z_{t-1}$ is
+A Hidden Markov model is a probabilistic
+model over $N$ observations $y_{1:N}$ and $N$ hidden states $z_{1:N}$.
+This models is defined by the conditional distributions $p(y_n \mid z_n, \phi)$
+and $p(z_n \mid z_{n-1}, \phi)$.
+Here we make the dependency on additional model parameters $\phi$ explicit.
+($\phi$ may be a vector of parameters.)
+The complete data likelihood is then
 $$
-z_t \sim \textsf{categorical}(\theta_{z[t-1]}).
+p(y, z \mid \phi) = \prod_n p(y_n \mid z_n, \phi) p(z_n \mid z_{n - 1}, \phi)
 $$
-The output $y_t$ at time $t$ is generated conditionally independently
-based on the latent state $z_t$.
+When $z_{1:N}$ is continuous, the user can explicitly encode these distributions
+in Stan and use Markov chain Monte Carlo to integrate $z$ out.
 
-This section describes HMMs with a simple categorical model for
-outputs $y_t \in \{ 1, \dotsc, V \}$.  The categorical distribution for
-latent state $k$ is parameterized by a $V$-simplex $\phi_k$.  The
-observed output $y_t$ at time $t$ is generated based on the hidden
-state indicator $z_t$ at time $t$,
+When each state $z$ takes a value over a discrete and finite set,
+say $\{1, 2, ..., K\}$, we can use Stan's suite of HMM functions to marginalize
+out $z_{1:N}$ and compute
 $$
-y_t \sim \textsf{categorical}(\phi_{z[t]}).
+p(y_{1:N} \mid \phi) = \int_{\mathcal Z} p(y, z \mid \phi) \text d z.
 $$
-In short, HMMs form a discrete mixture model where the mixture
-component indicators form a latent Markov chain.
+We start by defining the conditional observation distribution, stored in a
+$K \times N$ matrix $\omega$ with
+$$
+\omega_{kn} = p(y_n \mid z_n = k, \phi).
+$$
+Next, we introduce the $K \times K$ transition matrix, $\Gamma$, with
+$$
+\Gamma_{ij} = p(z_n = j \mid z_{n - 1} = i, \phi).
+$$
+(This is a right-stochastic matrix.)
+Finally, we define the initial state $K$-vector $\rho$, with
+$$
+ \rho_k = p(z_0 = k \mid \phi).
+$$
+It is common practice to set $\rho$ to be the stationary distribution of the HMM,
+that is $\rho$ is the first eigenvector of $\Gamma$ and solves $\Gamma \rho = \rho$.
 
-
-
-### Supervised parameter estimation {-}
-
-In the situation where the hidden states are known, the following
-naive model can be used to fit the parameters $\theta$ and $\phi$.
+As an example, consider a three-state model with $K=3$.
+The observations are normally distributed conditional on the HMM states with
+$$
+  y_n \sim \text{normal}(\mu_k, \sigma),
+$$
+where $\mu = (1, 5, 9)$ and the standard deviation $\sigma$ is the same
+across all observations.
+The model is then
 
 ```stan
 data {
-  int<lower=1> K;             // num categories
-  int<lower=1> V;             // num words
-  int<lower=0> T;             // num instances
-  array[T] int<lower=1, upper=V> w;  // words
-  array[T] int<lower=1, upper=K> z;  // categories
-  vector<lower=0>[K] alpha;   // transit prior
-  vector<lower=0>[V] beta;    // emit prior
+  int N;  // Number of observations
+  array[N] real y;
 }
+
 parameters {
-  array[K] simplex[K] theta;        // transit probs
-  array[K] simplex[V] phi;          // emit probs
+  // Rows of the transition matrix
+  array[3] simplex[3] gamma_arr;
+
+  // Initial state
+  simplex[3] rho;
+
+  // Parameters of measurement model
+  vector[3] mu;
+  real<lower = 0.0> sigma;
 }
-model {
-  for (k in 1:K) {
-    theta[k] ~ dirichlet(alpha);
-  }
-  for (k in 1:K) {
-    phi[k] ~ dirichlet(beta);
-  }
-  for (t in 1:T) {
-    w[t] ~ categorical(phi[z[t]]);
-  }
-  for (t in 2:T) {
-    z[t] ~ categorical(theta[z[t - 1]]);
-  }
-}
-```
 
-Explicit Dirichlet priors have been provided for $\theta_k$ and
-$\phi_k$; dropping these two statements would implicitly take the
-prior to be uniform over all valid simplexes.
+transformed parameters {
+  // Build transition matrix
+  matrix[3, 3] gamma;
+  for (k in 1:3) gamma[k, ] = to_row_vector(gamma_arr[k]);
 
-### Start-state and end-state probabilities {-}
-
-Although workable, the above description of HMMs is incomplete because
-the start state $z_1$ is not modeled (the index runs from 2 to $T$).
-If the data are conceived as a subsequence of a long-running process,
-the probability of $z_1$ should be set to the stationary state
-probabilities in the Markov chain.  In this case, there is no distinct
-end to the data, so there is no need to model the probability that the
-sequence ends at $z_T$.
-
-An alternative conception of HMMs is as models of finite-length
-sequences.  For example, human language sentences have distinct
-starting distributions (usually a capital letter) and ending
-distributions (usually some kind of punctuation).  The simplest way to
-model the sequence boundaries is to add a new latent state $K+1$,
-generate the first state from a categorical distribution with
-parameter vector $\theta_{K+1}$, and restrict the transitions so that
-a transition to state $K+1$ is forced to occur at the end of the
-sentence and is prohibited elsewhere.
-
-### Calculating sufficient statistics {-}
-
-The naive HMM estimation model presented above can be sped up
-dramatically by replacing the loops over categorical distributions
-with a single multinomial distribution.
-
-The data are declared as before.  The transformed data block
-computes the sufficient statistics for estimating the transition and
-emission matrices.
-
-```stan
-transformed data {
-  array[K, K] int<lower=0> trans;
-  array[K, V] int<lower=0> emit;
-  for (k1 in 1:K) {
-    for (k2 in 1:K) {
-      trans[k1, k2] = 0;
+  // Compute the log likelihoods in each possible state
+  matrix[3, N] log_omega;
+  for (n in 1:N) {
+    for (i in 1:3) {
+      log_omega[i, n] = normal_lpdf(y[n] | mu[i], sigma);
     }
   }
-  for (t in 2:T) {
-    trans[z[t - 1], z[t]] += 1;
-  }
-  for (k in 1:K) {
-    for (v in 1:V) {
-      emit[k, v] = 0;
-    }
-  }
-  for (t in 1:T) {
-    emit[z[t], w[t]] += 1;
-  }
 }
-```
 
-The data model component based on looping over the input
-is replaced with multinomials as follows.
-
-```stan
 model {
-  // ...
-  for (k in 1:K) {
-    trans[k] ~ multinomial(theta[k]);
-  }
-  for (k in 1:K) {
-    emit[k] ~ multinomial(phi[k]);
-  }
+  // prior
+  mu ~ normal(0, 1);
+  sigma ~ normal(0, 1);
+  
+  // no explicit prior on gamma_arr, meaning we default to a
+  // uniform prior over the simplexes.
+
+  // Increment target by log p(y | mu, sigma, Gamma, rho)
+  target += hmm_marginal(log_omega, gamma, rho);
 }
 ```
 
-In a continuous HMM with normal emission probabilities could be sped
-up in the same way by computing sufficient statistics.
+The last function `hmm_marginal` takes in all the ingredients of the HMM
+and computes the relevant log marginal distribution, $\log p(y \mid \phi)$.
 
-### Analytic posterior {-}
-
-With the Dirichlet-multinomial HMM, the posterior can be computed analytically because the Dirichlet is the conjugate prior to the multinomial.  The following example illustrates how a Stan model can define the posterior analytically.  This is possible in the Stan language because the model only needs to define the conditional probability of the parameters given the data up to a proportion, which can be done by defining the (unnormalized) joint probability or the (unnormalized) conditional posterior, or anything in between.
-
-The model has the same data and parameters as the previous models, but
-now computes the posterior Dirichlet parameters in the transformed
-data block.
-
-```stan
-transformed data {
-  vector<lower=0>[K] alpha_post[K];
-  vector<lower=0>[V] beta_post[K];
-  for (k in 1:K) {
-    alpha_post[k] = alpha;
-  }
-  for (t in 2:T) {
-    alpha_post[z[t - 1], z[t]] += 1;
-  }
-  for (k in 1:K) {
-    beta_post[k] = beta;
-  }
-  for (t in 1:T) {
-    beta_post[z[t], w[t]] += 1;
-  }
-}
-```
-
-The posterior can now be written analytically as follows.
-
-```stan
-model {
-  for (k in 1:K) {
-    theta[k] ~ dirichlet(alpha_post[k]);
-  }
-  for (k in 1:K) {
-    phi[k] ~ dirichlet(beta_post[k]);
-  }
-}
-```
-
-
-### Semisupervised estimation {-}
-
-HMMs can be estimated in a fully unsupervised fashion without any data
-for which latent states are known.  The resulting posteriors are
-typically extremely multimodal.  An intermediate solution is to use
-semisupervised estimation, which is based on a combination of
-supervised and unsupervised data.  Implementing this estimation
-strategy in Stan requires calculating the probability of an output
-sequence with an unknown state sequence.  This is a marginalization
-problem, and for HMMs, it is computed with the so-called forward
-algorithm.
-
-In Stan, the forward algorithm is coded as follows.  First, two additional data variable are declared for the unsupervised data.
-
-```stan
-data {
-  // ...
-  int<lower=1> T_unsup;             // num unsupervised items
-  array[T_unsup] int<lower=1, upper=V> u;  // unsup words
-  // ...
-}
-```
-
-The model for the supervised data does not change; the unsupervised
-data are handled with the following Stan implementation of the forward
-algorithm.
-
-```stan
-model {
-  // ...
-  array[K] real acc;
-  array[T_unsup, K] real gamma;
-  for (k in 1:K) {
-    gamma[1, k] = log(phi[k, u[1]]);
-  }
-  for (t in 2:T_unsup) {
-    for (k in 1:K) {
-      for (j in 1:K) {
-        acc[j] = gamma[t - 1, j] + log(theta[j, k])
-                 + log(phi[k, u[t]]);
-      }
-      gamma[t, k] = log_sum_exp(acc);
-    }
-  }
-  target += log_sum_exp(gamma[T_unsup]);
-}
-```
-
-The forward values `gamma[t, k]` are defined to be the log
-marginal probability of the inputs `u[1],...,u[t]` up to time
-`t` and the latent state being equal to `k` at time
-`t`; the previous latent states are marginalized out.  The first
-row of `gamma` is initialized by setting `gamma[1, k]` equal
-to the log probability of latent state `k` generating the first
-output `u[1]`; as before, the probability of the first latent
-state is not itself modeled.  For each subsequent time `t` and
-output `j`, the value `acc[j]` is set to the probability of
-the latent state at time `t-1` being `j`, plus the log
-transition probability from state `j` at time `t-1` to state
-`k` at time `t`, plus the log probability of the output
-`u[t]` being generated by state `k`.  The
-`log_sum_exp` operation just multiplies the probabilities for
-each prior state `j` on the log scale in an arithmetically stable
-way.
-
-The brackets provide the scope for the local variables `acc` and
-`gamma`; these could have been declared earlier, but it is
-clearer to keep their declaration near their use.
-
-
-### Predictive inference {-}
-
-Given the transition and emission parameters, $\theta_{k, k'}$ and
-$\phi_{k,v}$ and an observation sequence $u_1, \dotsc, u_T \in \{
-1, \dotsc, V \}$, the Viterbi (dynamic programming) algorithm
-computes the state sequence which is most likely to have generated the
-observed output $u$.
-
-The Viterbi algorithm can be coded in Stan in the generated quantities
-block as follows.  The predictions here is the most likely state
-sequence `y_star[1], ..., y_star[T_unsup]` underlying the
-array of observations `u[1], ..., u[T_unsup]`.  Because this
-sequence is determined from the transition probabilities
-`theta` and emission probabilities `phi`, it may be
-different from sample to sample in the posterior.
+If we desire samples from the posterior distribution of $z$,
+we use the generated quantities block and draw, for each sample $\phi$,
+a sample from $p(z \mid y, \phi)$.
+In effect, MCMC produces draws from $p(\phi \mid y)$
+and with the draws in generated quantities, we obtain draws from
+$p(\phi \mid y) p(z \mid y, \phi) = p(z, \phi \mid y)$.
+It is also possible to compute the posterior probbability of each hidden state,
+that is $\text{Pr}(z_n = k \mid \phi, y)$.
+Averagging these probabilities over all MCMC draws, we obtain $\text{Pr}(z_n = k \mid y)$.
 
 ```stan
 generated quantities {
-  array[T_unsup] int<lower=1, upper=K> y_star;
-  real log_p_y_star;
-  {
-    array[T_unsup, K] int back_ptr;
-    array[T_unsup, K] real best_logp;
-    real best_total_logp;
-    for (k in 1:K) {
-      best_logp[1, k] = log(phi[k, u[1]]);
-    }
-    for (t in 2:T_unsup) {
-      for (k in 1:K) {
-        best_logp[t, k] = negative_infinity();
-        for (j in 1:K) {
-          real logp;
-          logp = best_logp[t - 1, j]
-                  + log(theta[j, k]) + log(phi[k, u[t]]);
-          if (logp > best_logp[t, k]) {
-            back_ptr[t, k] = j;
-            best_logp[t, k] = logp;
-          }
-        }
-      }
-    }
-    log_p_y_star = max(best_logp[T_unsup]);
-    for (k in 1:K) {
-      if (best_logp[T_unsup, k] == log_p_y_star) {
-        y_star[T_unsup] = k;
-      }
-    }
-    for (t in 1:(T_unsup - 1)) {
-      y_star[T_unsup - t] = back_ptr[T_unsup - t + 1,
-                                      y_star[T_unsup - t + 1]];
-    }
-  }
+  array[N] int latent_states = hmm_latent_rng(log_omega, gamma, rho);
+  matrix[3, N] hidden_probs = hmm_hidden_state_prob(log_omega, gamma, rho);
+}
+```
+`hmm_hidden_state_prob` returns the marginal
+probabilities of each state, $\text{Pr}(z_n = k \mid \phi, y)$.
+This function cannot be used to compute the joint probability
+$\text{Pr}(z \mid \phi, y)$, because such calculation requires accounting
+for the posterior correlation between the different components of $z$.
+Therefore, `hidden_probs` should *not* be used to obtain posterior samples.
+Instead, users should rely on `hmm_latent_rng`.
+
+```stan
+generated quantities {
+   array[N] int<lower=1, upper=K> z = hmm_latent_rng(...fill-in params here to match example...);
 }
 ```
 
-The bracketed block is used to make the three variables
-`back_ptr`, `best_logp`, and `best_total_logp`
-local so they will not be output.  The variable `y_star` will
-hold the label sequence with the highest probability given the input
-sequence `u`.  Unlike the forward algorithm, where the
-intermediate quantities were total probability, here they consist of
-the maximum probability `best_logp[t, k]` for the sequence up to
-time `t` with final output category `k` for time `t`,
-along with a backpointer to the source of the link.  Following the
-backpointers from the best final log probability for the final time
-`t` yields the optimal state sequence.
 
-This inference can be run for the same unsupervised outputs `u`
-as are used to fit the semisupervised model.  The above code can be
-found in the same model file as the unsupervised fit.  This is the
-Bayesian approach to inference, where the data being reasoned about is
-used in a semisupervised way to train the model.  It is not
-"cheating" because the underlying states for `u` are never
-observed --- they are just estimated along with all of the other
-parameters.
-
-If the outputs `u` are not used for semisupervised estimation but
-simply as the basis for prediction, the result is equivalent to what
-is represented in the BUGS modeling language via the cut operation.
-That is, the model is fit independently of `u`, then those
-parameters used to find the most likely state to have generated
-`u`.
-
+The example in this section is derived from the more detailed case study
+by Ben Bales:
+[https://mc-stan.org/users/documentation/case-studies/hmm-example.html](https://mc-stan.org/users/documentation/case-studies/hmm-example.html).

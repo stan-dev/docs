@@ -492,7 +492,7 @@ For computational reasons, we may want to integrate out the Gaussian process
 $f$, as was done in the normal output model. Unfortunately, exact
 marginalization over $f$ is not possible when the outcome model is not normal.
 Instead, we may perform *approximate* marginalization with an *embedded
-Laplace approximation* [@Rue:2009; @Margossian:2020].
+Laplace approximation* [@RasmussenWilliams:2006; @Rue:2009; @Margossian:2020].
 To do so, we first use the function `laplace_marginal` to approximate the marginal
 likelihood $p(y \mid \rho, \alpha, a)$ and sample the
 hyperparameters with Hamiltonian Monte Carlo sampling. Then, we recover the
@@ -533,16 +533,6 @@ functions {
 }
 ```
 
-Furthermore, we must specify an initial value $f_\text{init}$ for the
-numerical optimizer that underlies the Laplace approximation. In our experience,
-we have found setting all values to 0 to be a good default.
-
-```stan
-transformed data {
-  vector[N] f_init = rep_vector(0, N);
-}
-```
-
 We then increment `target` in the model block with the approximation to
 $\log p(y \mid \rho, \alpha, a)$.
 ```stan
@@ -551,7 +541,7 @@ model {
   alpha ~ std_normal();
   sigma ~ std_normal();
 
-  target += laplace_marginal(ll_function, (a, y), f_init,
+  target += laplace_marginal(ll_function, (a, y),
                              cov_function, (rho, alpha, x, N, delta));
 }
 ```
@@ -559,7 +549,7 @@ Notice that we do not need to construct $f$ explicitly, since it is
 marginalized out. Instead, we recover the GP function in `generated quantities`:
 ```stan
 generated quantities {
-  vector[N] f = laplace_latent_rng(ll_function, (a, y), f_init,
+  vector[N] f = laplace_latent_rng(ll_function, (a, y),
                                    cov_function, (rho, alpha, x, N, delta));
 }
 ```
@@ -571,6 +561,7 @@ functions, the user must set *all* the control parameters.
 transformed data {
 // ...
 
+  vector[N] f_init = rep_vector(0, N);  // starting point for optimizer.
   real tol = 1e-6;             // optimizer's tolerance for Laplace approx.
   int max_num_steps = 1e3;     // maximum number of steps for optimizer.
   int hessian_block_size = 1;  // when hessian of log likelihood is block
@@ -586,17 +577,18 @@ transformed data {
 model {
 // ...
 
-  target += laplace_marginal(ll_function, (a, y), f_init,
+  target += laplace_marginal(ll_function, (a, y),
                              cov_function, (rho, alpha, x, N, delta),
-                             tol, max_num_steps, hessian_block_size,
+                             f_init, tol, max_num_steps, hessian_block_size,
                              solver, max_steps_linesearch);
 }
 
 generated quantities {
-  vector[N] f = laplace_latent_rng(ll_function, (a, y), f_init,
+  vector[N] f = laplace_latent_rng(ll_function, (a, y),
                                    cov_function, (rho, alpha, x, N, delta),
-                                   tol, max_num_steps, hessian_block_size,
-                                   solver, max_steps_linesearch);
+                                   f_init, tol, max_num_steps,
+                                   hessian_block_size, solver,
+                                   max_steps_linesearch);
 }
 
 ```
@@ -604,10 +596,10 @@ For details about the control parameters, see @Margossian:2023.
 
 
 Stan also provides support for a limited menu of built-in functions, including
-the Poisson distribution with a log link and and prior mean $a$. When using such
+the Poisson distribution with a log link and and prior mean $m$. When using such
 a built-in function, the user does not need to specify a likelihood in the
 `functions` block. However, the user must strictly follow the signature of the
-likelihood: in this case, $a$ must be a vector of length $N$ (to allow for
+likelihood: in this case, $m$ must be a vector of length $N$ (to allow for
 different offsets for each observation $y_i$) and we must indicate which
 element of $f$ each component of $y$ matches using the variable $y_\text{index}$.
 In our example, there is a simple pairing $(y_i, f_i)$, however we could imagine
@@ -624,25 +616,25 @@ transformed data {
 // ...
 
 transformed parameter {
-  vector[N] a_vec = rep_vector(a, N);
+  vector[N] m = rep_vector(a, N);
 }
 
 model {
   // ...
-  target += laplace_marginal_poisson_2_log_lpmf(y | y_index, a_vec, f_init,
+  target += laplace_marginal_poisson_log_lpmf(y | y_index, m,
                                        cov_function, (rho, alpha, x, N, delta));
 }
 
 generated quantities {
-  vector[N] f = laplace_latent_poisson_2_log_rng(y, y_index, a_vec, f_init,
+  vector[N] f = laplace_latent_poisson_log_rng(y, y_index, m,
                                    cov_function, (rho, alpha, x, N, delta));
 }
 
 ```
 
 As before, we could specify the control parameters for the embedded Laplace
-approximation using `laplace_marginal_tol_poisson_2_log_lpmf` and
-`laplace_latent_tol_poisson_2_log_nrg`.
+approximation using `laplace_marginal_tol_poisson_log_lpmf` and
+`laplace_latent_tol_poisson_log_nrg`.
 
 Marginalization with a Laplace approximation can lead to faster inference,
 however it also introduces an approximation error. In practice, this error
@@ -705,12 +697,12 @@ functions {
 // ...
 
 model {
-  target += laplace_marginal(ll_function, (a, z), f_init,
+  target += laplace_marginal(ll_function, (a, z),
                              cov_function, (rho, alpha, x, N, delta));
 }
 
 generated quantities {
-  vector[N] f = laplace_latent_rng(ll_function, (a, z), f_init,
+  vector[N] f = laplace_latent_rng(ll_function, (a, z),
                                    cov_function, (rho, alpha, x, N, delta));
 }
 ```

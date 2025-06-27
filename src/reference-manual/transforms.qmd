@@ -494,17 +494,18 @@ the operation of multiplying $\sigma$ to $y$ is on $N - 1$ dimensions, not $N$
 dimensions. When writing the centered model using $$
 x \sim \mathcal N \bigg(0,\, \sigma\sqrt{\frac{N}{N-1}} \bigg),
 $$ we are incrementing the log density by an additional $-\log(\sigma)$ and so
-must add
+must increment the log density by
 
 ``` stan
-target += log(sigma * sqrt(N %/% (N - 1)));
-```
+target += log(sigma * sqrt(N * inv(N - 1)));
 
-or, because `sqrt(N %/% (N - 1))` is constant
+// or
+// because `sqrt(N * inv(N - 1))` is constant
 
-``` stan
 target += log(sigma);
 ```
+
+which correctly adjusts for the $N - 1$ free variables.
 
 More details of the Helmert matrix are in [@lancaster:1965], for the basic
 definitions of the isometric log ratio transform see [@egozcue+etal:2003] and
@@ -533,13 +534,13 @@ and memory costs as no matrices are created or multplied.
 The transform is initialized by setting $$
 S_N = 0
 $$ and $$
-y_N = -x_{N + 1} \cdot \sqrt{1 + \frac{1}{N}}.
+y_N = -x_{N + 1} \sqrt{1 + \frac{1}{N}}.
 $$ The for each $n$ from $N - 1$ down to $1$, let $$
-w_{n + 1} = \frac{y_{n + 1}}{\sqrt{(n + 1) \cdot (n + 2)}},
+w_{n + 1} = \frac{y_{n + 1}}{\sqrt{(n + 1)(n + 2)}},
 $$ $$
 S_n = S_{n + 1} + w_{n + 1},
 $$ and $$
-y_n = (S_n - x_{n + 1}) \cdot \frac{\sqrt{n \cdot (n + 1)}}{n}.
+y_n = (S_n - x_{n + 1}) \frac{\sqrt{n (n + 1)}}{n}.
 $$
 
 The mathematical expression above is equivalently expressed within Stan as:
@@ -568,10 +569,10 @@ unconstrained vector $y \in \mathbb{R}^N$ to a sum-to-zero vector
 $x \in \mathbb{R}^{N + 1}$ such that $$
 \sum_{n=1}^{N + 1} x_n = 0.
 $$ The values are defined inductively, starting with $$
-x_1 = \sum_{n=1}^N \frac{y_n}{\sqrt{n \cdot (n + 1)}}
+x_1 = \sum_{n=1}^N \frac{y_n}{\sqrt{n (n + 1)}}
 $$ and then setting $$
-x_{n + 1} = \sum_{i = n + 1}^N \frac{y_i}{\sqrt{i \cdot (i + 1)}}
-- n \cdot \frac{y_n}{\sqrt{n \cdot (n + 1)}}.
+x_{n + 1} = \sum_{i = n + 1}^N \frac{y_i}{\sqrt{i (i + 1)}}
+- n \cdot \frac{y_n}{\sqrt{n (n + 1)}}.
 $$ for $n \in 1{:}N$.
 
 The definition is such that $$
@@ -619,7 +620,7 @@ $$ where $$
 $$
 
 Because each $\mathbb R^{d_1\times\cdots\times d_N}$ is invertible on the
-$\mathbf 1^\perp$ subspace the composite map applied to $mathcal Z$ is a linear
+$\mathbf 1^\perp$ subspace the composite map applied to $\mathcal Z$ is a linear
 bijection between $\mathbb R^{n_1\times n_2}$ and the codomain
 $\mathbb R^{(n_1+1)\times\cdots\times(n_2+1)}$.
 

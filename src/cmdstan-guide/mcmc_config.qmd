@@ -505,8 +505,42 @@ This will run multiple chains of MCMC from the same executable, which can save
 on memory usage due to only needing one copy of the model and data. Depending on whether the
 model was compiled with `STAN_THREADS=true`, these will either run in parallel or one after the other.
 
-The `num_chains` argument changes the meanings of several other arguments when
-it is greater than `1` (the default). Many arguments are now interpreted as a
+
+When `num_chains` is greather than `1` (the default), arguments related to filenames
+(e.g. `output file=`, `init=`) can accept a comma separated list of values, one per each chain.
+
+For example, `sample ` will specify
+the names of the three chain's output files.
+
+```
+./bernoulli sample num_chains=3 data file=bernoulli.data.json output file=output_1.csv,output_2.csv,output_3.csv
+```
+This will produce samples in `output_1.csv`, `output_2.csv`, `output_3.csv`.
+
+If the model was not compiled with `STAN_THREADS=true`, the above command will run 3 chains sequentially.
+
+If the model was compiled with `STAN_THREADS=true`, the chains can run in parallel, with the `num_threads` argument
+defining the maximum number of threads used to run the chains. If the model uses no within-chain parallelization
+(`map_rect` or `reduce_sum` calls), the below command will run 3 chains in parallel, provided there are cores
+available:
+```
+./bernoulli sample num_chains=4 data file=bernoulli.data.json num_threads=4
+```
+
+If the model uses within-chain parallelization (`map_rect` or `reduce_sum` calls), the threads are automatically
+scheduled to run the parallel parts of a single chain or run the sequential parts of another chains. The below
+call starts 4 chains that can use 16 threads. At a given moment a single chain may use all 16 threads,
+1 thread, anything in between, or can wait for a thread to be available. The scheduling is left to the [Threading
+Building Blocks scheduler](https://www.intel.com/content/www/us/en/docs/onetbb/developer-guide-api-reference/2021-11/how-task-scheduler-works.html).
+
+```
+./bernoulli_par sample num_chains=4 data file=bernoulli.data.json num_threads=16
+```
+
+#### Legacy filename behavior
+
+If a comma separated list is not used, the `num_chains` argument changes the normal meanings
+of filename arguments when it is greater than `1` (the default). They are now interpreted as a
 "template" which is used for each chain.
 
 For example, when `num_chains=2`, the argument `output file=foo.csv` _no longer
@@ -524,34 +558,14 @@ for each chain. The numbers in these filenames are also based on the `id`
 argument, which defaults to `1`.
 
 
-For example, this will run 4 chains:
-```
-./bernoulli sample num_chains=4 data file=bernoulli.data.json output file=output.csv
-```
-This will produce samples in `output_1.csv`, `output_2.csv`, `output_3.csv`, `output_4.csv`.
-A suffix with the chain id
-is appended to the provided output filename (`output.csv` in the above command).
-
-
-If the model was not compiled with `STAN_THREADS=true`, the above command will run 4 chains sequentially.
-
-If the model was compiled with `STAN_THREADS=true`, the chains can run in parallel, with the `num_threads` argument
-defining the maximum number of threads used to run the chains. If the model uses no within-chain parallelization
-(`map_rect` or `reduce_sum` calls), the below command will run 4 chains in parallel, provided there are cores
-available:
-```
-./bernoulli sample num_chains=4 data file=bernoulli.data.json output file=output.csv num_threads=4
-```
-
-If the model uses within-chain parallelization (`map_rect` or `reduce_sum` calls), the threads are automatically
-scheduled to run the parallel parts of a single chain or run the sequential parts of another chains. The below
-call starts 4 chains that can use 16 threads. At a given moment a single chain may use all 16 threads,
-1 thread, anything in between, or can wait for a thread to be available. The scheduling is left to the [Threading
-Building Blocks scheduler](https://www.intel.com/content/www/us/en/docs/onetbb/developer-guide-api-reference/2021-11/how-task-scheduler-works.html).
+For example, this shorthand is equivalent to the example given above:
 
 ```
-./bernoulli_par sample num_chains=4 data file=bernoulli.data.json output file=output.csv num_threads=16
+./bernoulli sample num_chains=3 data file=bernoulli.data.json output file=output.csv
 ```
+
+A suffix with the chain id is appended to the provided output filename (`output.csv` in the above command),
+so this will also produce files `output_1.csv`, `output_2.csv`, `output_3.csv`.
 
 
 ## Summarizing sampler output(s) with `stansummary`

@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.39">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Variable Transformation Functions</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../functions-reference/deprecated_functions.html" rel="next">
+<link href="../functions-reference/higher-order_functions.html" rel="prev">
+<link href="../img/logo_tm.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-05fe91a66cf75bbbb8c9664867fe5124.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-59fdbf2653e1aaac23acf64cc15a0d7d.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-db2dae95e8ea74a46baf8a914d3354e1.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-70bf165c02e87ebf13e8abcdd820736d.min.css" rel="prefetch" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../quarto-config/quarto_styles.css">
+<meta property="og:title" content="Variable Transformation Functions">
+<meta property="og:description" content="">
+<meta property="og:image" content="img/logo_tm.png">
+<meta property="og:site_name" content="Stan Docs">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="https://mc-stan.org/" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Documentation</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../stan-users-guide/index.html"> 
+<span class="menu-text">Stan Users Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../reference-manual/index.html"> 
+<span class="menu-text">Reference Manual</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../functions-reference/index.html" aria-current="page"> 
+<span class="menu-text">Functions Reference</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-interfaces" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Interfaces</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-interfaces">    
+        <li>
+    <a class="dropdown-item" href="../cmdstan-guide/index.html">
+ <span class="dropdown-text">CmdStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy" target="_blank">
+ <span class="dropdown-text">CmdStanPy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr" target="_blank">
+ <span class="dropdown-text">CmdStanR</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://pystan.readthedocs.io/en/latest/" target="_blank">
+ <span class="dropdown-text">PyStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstan" target="_blank">
+ <span class="dropdown-text">RStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/" target="_blank">
+ <span class="dropdown-text">Stan.jl</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-other-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Other Packages</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/" target="_blank">
+ <span class="dropdown-text">bayesplot</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/" target="_blank">
+ <span class="dropdown-text">BridgeStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/" target="_blank">
+ <span class="dropdown-text">brms</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/loo/" target="_blank">
+ <span class="dropdown-text">loo</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/posterior" target="_blank">
+ <span class="dropdown-text">posterior</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/projpred" target="_blank">
+ <span class="dropdown-text">projpred</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm" target="_blank">
+ <span class="dropdown-text">rstanarm</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstantools" target="_blank">
+ <span class="dropdown-text">rstantools</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/shinystan" target="_blank">
+ <span class="dropdown-text">shinystan</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools tools-wide">
+    <a href="https://github.com/stan-dev" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-github"></i></a>
+    <a href="https://discourse.mc-stan.org" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-chat-text-fill"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../functions-reference/void_functions.html">Built-in Functions</a></li><li class="breadcrumb-item"><a href="../functions-reference/transform_functions.html">Variable Transformation Functions</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Stan Functions Reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <span class="sidebar-item-text sidebar-link text-start">
+ <span class="menu-text">Version 2.37</span></span>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Built-in Functions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/void_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Void Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/integer-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Integer-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/real-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Real-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/complex-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Complex-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/array_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Array Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/complex_matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Complex Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/sparse_matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sparse Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/mixed_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mixed Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/compound_arithmetic_and_assignment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Compound Arithmetic and Assignment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/higher-order_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Higher-Order Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/transform_functions.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Variable Transformation Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/deprecated_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Deprecated Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/removed_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Removed Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/conventions_for_probability_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Conventions for Probability Functions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Discrete Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/binary_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Binary Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/bounded_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Bounded Discrete Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/unbounded_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Unbounded Discrete Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/multivariate_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Multivariate Discrete Distributions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Continuous Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/unbounded_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Unbounded Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/positive_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Positive Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/positive_lower-bounded_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Positive Lower-Bounded Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/continuous_distributions_on_0_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Continuous Distributions on [0, 1]</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/circular_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Circular Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/bounded_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Bounded Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/distributions_over_unbounded_vectors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Distributions over Unbounded Vectors</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/simplex_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Simplex Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/correlation_matrix_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Correlation Matrix Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/covariance_matrix_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Covariance Matrix Distributions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Additional Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/hidden_markov_models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Hidden Markov Models</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendix</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/mathematical_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mathematical Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/functions_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Alphabetical Index</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#variable-transformation-functions" id="toc-variable-transformation-functions" class="nav-link active" data-scroll-target="#variable-transformation-functions">Variable Transformation Functions</a>
+  <ul class="collapse">
+  <li><a href="#transforms-for-scalars" id="toc-transforms-for-scalars" class="nav-link" data-scroll-target="#transforms-for-scalars">Transforms for scalars</a>
+  <ul class="collapse">
+  <li><a href="#lower-bounds" id="toc-lower-bounds" class="nav-link" data-scroll-target="#lower-bounds">Lower bounds</a></li>
+  <li><a href="#upper-bounds" id="toc-upper-bounds" class="nav-link" data-scroll-target="#upper-bounds">Upper bounds</a></li>
+  <li><a href="#upper-and-lower-bounds" id="toc-upper-and-lower-bounds" class="nav-link" data-scroll-target="#upper-and-lower-bounds">Upper and lower bounds</a></li>
+  <li><a href="#affine-transforms" id="toc-affine-transforms" class="nav-link" data-scroll-target="#affine-transforms">Affine transforms</a></li>
+  </ul></li>
+  <li><a href="#transforms-for-constrained-vectors" id="toc-transforms-for-constrained-vectors" class="nav-link" data-scroll-target="#transforms-for-constrained-vectors">Transforms for constrained vectors</a>
+  <ul class="collapse">
+  <li><a href="#ordered-vectors" id="toc-ordered-vectors" class="nav-link" data-scroll-target="#ordered-vectors">Ordered vectors</a></li>
+  <li><a href="#positive-order-vectors" id="toc-positive-order-vectors" class="nav-link" data-scroll-target="#positive-order-vectors">Positive order vectors</a></li>
+  <li><a href="#simplexes" id="toc-simplexes" class="nav-link" data-scroll-target="#simplexes">Simplexes</a></li>
+  <li><a href="#sum-to-zero-vectors" id="toc-sum-to-zero-vectors" class="nav-link" data-scroll-target="#sum-to-zero-vectors">Sum-to-zero vectors</a></li>
+  <li><a href="#unit-vectors" id="toc-unit-vectors" class="nav-link" data-scroll-target="#unit-vectors">Unit vectors</a></li>
+  </ul></li>
+  <li><a href="#transforms-for-constrained-matrices" id="toc-transforms-for-constrained-matrices" class="nav-link" data-scroll-target="#transforms-for-constrained-matrices">Transforms for constrained matrices</a>
+  <ul class="collapse">
+  <li><a href="#cholesky-factors-of-correlation-matrices" id="toc-cholesky-factors-of-correlation-matrices" class="nav-link" data-scroll-target="#cholesky-factors-of-correlation-matrices">Cholesky factors of correlation matrices</a></li>
+  <li><a href="#cholesky-factors-of-covariance-matrices" id="toc-cholesky-factors-of-covariance-matrices" class="nav-link" data-scroll-target="#cholesky-factors-of-covariance-matrices">Cholesky factors of covariance matrices</a></li>
+  <li><a href="#correlation-matrices" id="toc-correlation-matrices" class="nav-link" data-scroll-target="#correlation-matrices">Correlation matrices</a></li>
+  <li><a href="#covariance-matrices" id="toc-covariance-matrices" class="nav-link" data-scroll-target="#covariance-matrices">Covariance matrices</a></li>
+  <li><a href="#column-stochastic-matrices" id="toc-column-stochastic-matrices" class="nav-link" data-scroll-target="#column-stochastic-matrices">Column-stochastic matrices</a></li>
+  <li><a href="#row-stochastic-matrices" id="toc-row-stochastic-matrices" class="nav-link" data-scroll-target="#row-stochastic-matrices">Row-stochastic matrices</a></li>
+  <li><a href="#sum-to-zero-matrices" id="toc-sum-to-zero-matrices" class="nav-link" data-scroll-target="#sum-to-zero-matrices">Sum-to-zero matrices</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/functions-reference/transform_functions.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../functions-reference/void_functions.html">Built-in Functions</a></li><li class="breadcrumb-item"><a href="../functions-reference/transform_functions.html">Variable Transformation Functions</a></li></ol></nav></header>
+
+
+
+
+<section id="variable-transformation-functions" class="level1">
+<h1>Variable Transformation Functions</h1>
+<p>Variable transformation functions provide implementations of the built-in constraining and unconstraining transforms defined in <a href="https://mc-stan.org/docs/reference-manual/transforms.html">Stan Reference Manual</a>.</p>
+<p>For each of the built-in variable transforms there are three functions named after the transform with differing suffixes. A <code>_unconstrain</code> function that maps from the constrained space back to free variables (the “transform”), A <code>_constrain</code> function that maps from free variables to constrained variables (the “inverse transform”), and a <a href="https://mc-stan.org/docs/reference-manual/statements.html#increment-log-density-with-a-change-of-variables-adjustment"><code>_jacobian</code> function</a>, which computes the same value as the <code>_constrain</code> function while also incrementing the Jacobian accumulator with the log Jacobian determinant.</p>
+<p>For this page, variables named <code>y</code> are unconstrained, while variables named <code>x</code> are in the constrained space. The unconstraining functions will reject if their input does not satisfy the declared constraint.</p>
+<section id="transforms-for-scalars" class="level2">
+<h2 class="anchored" data-anchor-id="transforms-for-scalars">Transforms for scalars</h2>
+<p>These transformations take unconstrained values on the real number line and either constrain the, to a subset of the real line with a lower bound, upper bound, or both, or provide an affine map that does not constrain values but can help with shifting and scaling them so they are more standardized.</p>
+<p>The functions are all overloaded to apply to containers elementwise. If the <code>y</code> argument is a container, the others must be either scalars or containers of exactly the same size.</p>
+<section id="lower-bounds" class="level3">
+<h3 class="anchored" data-anchor-id="lower-bounds">Lower bounds</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#lower-bound-transform.section">Lower Bounded Scalar section</a>.</p>
+<a id="index-entry-e152c4494a196c9bd932faad21a3555c712d102c" class="index-entry"></a> <!-- reals; lower_bound_constrain; (reals y, reals lb); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#lower_bound_constrain" class="unlink" title="Jump to index entry"><code>lower_bound_constrain</code></a></strong><code>(reals y, reals lb)</code><br> Takes a value <code>y</code> and lower bound <code>lb</code> and returns the corresponding value which is greater than <code>lb</code> (except for the possibility of rounding due to numeric precision issues, in which case it will be equal to the bound).</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-dda4a6ffc09ae6ffec4218c092003fea973c174e" class="index-entry"></a> <!-- reals; lower_bound_jacobian; (reals y, reals lb); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#lower_bound_jacobian" class="unlink" title="Jump to index entry"><code>lower_bound_jacobian</code></a></strong><code>(reals y, reals lb)</code><br> Takes a value <code>y</code> and lower bound <code>lb</code> and returns the corresponding value which is greater than <code>lb</code> (except for the possibility of rounding due to numeric precision issues, in which case it will be equal to the bound).</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-d178c95f782831ea0616fdc58b25d16826f98164" class="index-entry"></a> <!-- reals; lower_bound_unconstrain; (reals x, reals lb); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#lower_bound_unconstrain" class="unlink" title="Jump to index entry"><code>lower_bound_unconstrain</code></a></strong><code>(reals x, reals lb)</code><br> Takes a value <code>x</code> which is greater than <code>lb</code> and returns the corresponding unconstrained value.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="upper-bounds" class="level3">
+<h3 class="anchored" data-anchor-id="upper-bounds">Upper bounds</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#upper-bounded-scalar">Upper Bounded Scalar section</a>.</p>
+<a id="index-entry-762c88752de52b0a7df91820157122b1ddd4e9f1" class="index-entry"></a> <!-- reals; upper_bound_constrain; (reals y, reals ub); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#upper_bound_constrain" class="unlink" title="Jump to index entry"><code>upper_bound_constrain</code></a></strong><code>(reals y, reals ub)</code><br> Takes a value <code>y</code> and upper bound <code>ub</code> and returns the corresponding value which is less than <code>ub</code> (except for the possibility of rounding due to numeric precision issues, in which case it will be equal to the bound).</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-f2ff19db2443c6d37b95266808e87959db60e3cd" class="index-entry"></a> <!-- reals; upper_bound_jacobian; (reals x, reals ub); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#upper_bound_jacobian" class="unlink" title="Jump to index entry"><code>upper_bound_jacobian</code></a></strong><code>(reals x, reals ub)</code><br> Takes a value <code>y</code> and upper bound <code>ub</code> and returns the corresponding value which is less than <code>ub</code> (except for the possibility of rounding due to numeric precision issues, in which case it will be equal to the bound).</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-2addb4ba29c3510e0935adaeb229c3bb34d49798" class="index-entry"></a> <!-- reals; upper_bound_unconstrain; (reals x, reals ub); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#upper_bound_unconstrain" class="unlink" title="Jump to index entry"><code>upper_bound_unconstrain</code></a></strong><code>(reals x, reals ub)</code><br> Takes a value <code>x</code> which is less than <code>ub</code> and returns the corresponding unconstrained value.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="upper-and-lower-bounds" class="level3">
+<h3 class="anchored" data-anchor-id="upper-and-lower-bounds">Upper and lower bounds</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#logit-transform-jacobian.section">Lower and Upper Bounded Scalar section</a>.</p>
+<a id="index-entry-d44d27ade0aed4fc8aa29d480aa1cbd767281f72" class="index-entry"></a> <!-- reals; lower_upper_bound_constrain; (reals y, reals lb, reals ub); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#lower_upper_bound_constrain" class="unlink" title="Jump to index entry"><code>lower_upper_bound_constrain</code></a></strong><code>(reals y, reals lb, reals ub)</code><br> Takes a value <code>y</code>, lower bound <code>lb</code>, and upper bound <code>ub</code> and returns the corresponding value which is bounded between <code>lb</code> and <code>ub</code> (except for the possibility of rounding due to numeric precision issues, in which case it will be equal to the bound).</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-fa7585cac2eb147a254907e9aacffb346393c41e" class="index-entry"></a> <!-- reals; lower_upper_bound_jacobian; (reals y, reals lb, reals ub); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#lower_upper_bound_jacobian" class="unlink" title="Jump to index entry"><code>lower_upper_bound_jacobian</code></a></strong><code>(reals y, reals lb, reals ub)</code><br> Takes a value <code>y</code>, lower bound <code>lb</code>, and upper bound <code>ub</code> and returns the corresponding value which is bounded between <code>lb</code> and <code>ub</code> (except for the possibility of rounding due to numeric precision issues, in which case it will be equal to the bound).</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-da54a8c2ddfb181210e40b0e47d122f16713af86" class="index-entry"></a> <!-- reals; lower_upper_bound_unconstrain; (reals x, reals lb, reals ub); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#lower_upper_bound_unconstrain" class="unlink" title="Jump to index entry"><code>lower_upper_bound_unconstrain</code></a></strong><code>(reals x, reals lb, reals ub)</code><br> Takes a value <code>x</code> which is bounded between <code>lb</code> and <code>ub</code> and returns returns the corresponding unconstrained value.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="affine-transforms" class="level3">
+<h3 class="anchored" data-anchor-id="affine-transforms">Affine transforms</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#affinely-transformed-scalar">Affinely Transformed Scalar section</a>.</p>
+<a id="index-entry-c55eb604debca345fb51ad9d71cb36b6f20bb60e" class="index-entry"></a> <!-- reals; offset_multiplier_constrain; (reals y, reals offset, reals mult); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#offset_multiplier_constrain" class="unlink" title="Jump to index entry"><code>offset_multiplier_constrain</code></a></strong><code>(reals y, reals offset, reals mult)</code><br> Takes a value <code>y</code>, shift <code>offset</code>, and scale <code>mult</code> and returns a rescaled and shifted value.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-2448386d5029a2ea68a25d2eac851459f98eb968" class="index-entry"></a> <!-- reals; offset_multiplier_jacobian; (reals y, reals offset, reals mult); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#offset_multiplier_jacobian" class="unlink" title="Jump to index entry"><code>offset_multiplier_jacobian</code></a></strong><code>(reals y, reals offset, reals mult)</code><br> Takes a value <code>y</code>, shift <code>offset</code>, and scale <code>mult</code> and returns a rescaled and shifted value.</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-6ed536361121ffb486071705925b0107a779e401" class="index-entry"></a> <!-- reals; offset_multiplier_unconstrain; (reals x, reals offset, reals mult); -->
+<p></p>
+<p><code>reals</code> <strong><a href="../functions-reference/functions_index.html#offset_multiplier_unconstrain" class="unlink" title="Jump to index entry"><code>offset_multiplier_unconstrain</code></a></strong><code>(reals x, reals offset, reals mult)</code><br> Takes a value <code>x</code>, shift <code>offset</code>, and scale <code>mult</code> and a value which has been un-scaled and un-shifted.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+</section>
+<section id="transforms-for-constrained-vectors" class="level2">
+<h2 class="anchored" data-anchor-id="transforms-for-constrained-vectors">Transforms for constrained vectors</h2>
+<p>These functions constrain entire vectors hollistically. Some transforms also change the length of the vector, as noted in the documentation.</p>
+<p>Where <code>vectors</code> is used, this indicates that either a <code>vector</code> or a (possibly multidimensional) array of <code>vector</code>s may be provided. The array will be processed element by element.</p>
+<section id="ordered-vectors" class="level3">
+<h3 class="anchored" data-anchor-id="ordered-vectors">Ordered vectors</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#ordered-vector">Ordered Vector section</a>.</p>
+<a id="index-entry-ef08c8144bb3789c27d35f7a7c30cd57f8a9a573" class="index-entry"></a> <!-- vectors; ordered_constrain; (vectors y); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#ordered_constrain" class="unlink" title="Jump to index entry"><code>ordered_constrain</code></a></strong><code>(vectors y)</code><br> Takes a free vector <code>y</code> and returns a vector with elements in ascending order.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-6372fc8ee07f534b79aa45d152097a421af0a938" class="index-entry"></a> <!-- vectors; ordered_jacobian; (vectors y); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#ordered_jacobian" class="unlink" title="Jump to index entry"><code>ordered_jacobian</code></a></strong><code>(vectors y)</code><br> Takes a free vector <code>y</code> and returns a vector with elements in ascending order.</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-66bebbbf4a16907781a03d7910e05157b57546ae" class="index-entry"></a> <!-- vectors; ordered_unconstrain; (vectors x); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#ordered_unconstrain" class="unlink" title="Jump to index entry"><code>ordered_unconstrain</code></a></strong><code>(vectors x)</code><br> Takes an ordered vector <code>x</code> and returns the corresponding free vector.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="positive-order-vectors" class="level3">
+<h3 class="anchored" data-anchor-id="positive-order-vectors">Positive order vectors</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#positive-ordered-vector">Positive Ordered Vector section</a>.</p>
+<a id="index-entry-a5bd3aeff6187e7710c5c9aede0aa53b0bf05605" class="index-entry"></a> <!-- vectors; positive_ordered_constrain; (vectors y); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#positive_ordered_constrain" class="unlink" title="Jump to index entry"><code>positive_ordered_constrain</code></a></strong><code>(vectors y)</code><br> Takes a free vector <code>y</code> and returns a vector with positive elements in ascending order.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-72ae38a185968521d676ce568e4dd9dfb0ec3211" class="index-entry"></a> <!-- vectors; positive_ordered_jacobian; (vectors y); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#positive_ordered_jacobian" class="unlink" title="Jump to index entry"><code>positive_ordered_jacobian</code></a></strong><code>(vectors y)</code><br> Takes a free vector <code>y</code> and returns a vector with positive elements in ascending order.</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-ea0b4a03eff5caa57b2d154df97f2c8a63b820e5" class="index-entry"></a> <!-- vectors; positive_ordered_unconstrain; (vectors x); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#positive_ordered_unconstrain" class="unlink" title="Jump to index entry"><code>positive_ordered_unconstrain</code></a></strong><code>(vectors x)</code><br> Takes an ordered vector <code>x</code> with positive entries and returns the corresponding free vector.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="simplexes" class="level3">
+<h3 class="anchored" data-anchor-id="simplexes">Simplexes</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#simplex-transform.section">Unit Simplex section</a>.</p>
+<a id="index-entry-055048ff4bc60482699857e7993258efc99d45f0" class="index-entry"></a> <!-- vectors; simplex_constrain; (vectors y); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#simplex_constrain" class="unlink" title="Jump to index entry"><code>simplex_constrain</code></a></strong><code>(vectors y)</code><br> Takes a free vector <code>y</code> and returns a simplex (a vector such that each element is between <code>0</code> and <code>1</code>, and the sum of the elements is <code>1</code>, up to rounding errors).</p>
+<p>This returned vector will have one extra element compared to the input <code>y</code>.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-446c0a0a855c1f82fe5f0df51dddf43419abd15f" class="index-entry"></a> <!-- vectors; simplex_jacobian; (vectors y); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#simplex_jacobian" class="unlink" title="Jump to index entry"><code>simplex_jacobian</code></a></strong><code>(vectors y)</code><br> Takes a free vector <code>y</code> and returns a simplex (a vector such that each element is between <code>0</code> and <code>1</code>, and the sum of the elements is <code>1</code>, up to rounding errors).</p>
+<p>This returned vector will have one extra element compared to the input <code>y</code>.</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-ffa2ad29148676e3139f6d81a3fba15199481f30" class="index-entry"></a> <!-- vectors; simplex_unconstrain; (vectors x); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#simplex_unconstrain" class="unlink" title="Jump to index entry"><code>simplex_unconstrain</code></a></strong><code>(vectors x)</code><br> Takes a simplex <code>x</code> and returns the corresponding free vector.</p>
+<p>This returned vector will have one fewer elements compared to the input <code>x</code>.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="sum-to-zero-vectors" class="level3">
+<h3 class="anchored" data-anchor-id="sum-to-zero-vectors">Sum-to-zero vectors</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#sum-to-zero-vector">Zero Sum Vector section</a>.</p>
+<a id="index-entry-6c0d205ee6463bcaa0673c8d9607d2ca20bf2860" class="index-entry"></a> <!-- vectors; sum_to_zero_constrain; (vectors y); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#sum_to_zero_constrain" class="unlink" title="Jump to index entry"><code>sum_to_zero_constrain</code></a></strong><code>(vectors y)</code><br> Takes a free vector <code>y</code> and returns a vector such that the elements sum to <code>0</code>.</p>
+<p>This returned vector will have one extra element compared to the input <code>y</code>.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-aeaf42b6a6102bf306ab44b353d64e75c52f5867" class="index-entry"></a> <!-- vectors; sum_to_zero_jacobian; (vectors y); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#sum_to_zero_jacobian" class="unlink" title="Jump to index entry"><code>sum_to_zero_jacobian</code></a></strong><code>(vectors y)</code><br> Takes a free vector <code>y</code> and returns a vector such that the elements sum to <code>0</code>.</p>
+<p>The returned vector will have one extra element compared to the input <code>y</code>.</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-43bd9130545904d1b8cea836c9621a69cd06f361" class="index-entry"></a> <!-- vectors; sum_to_zero_unconstrain; (vectors x); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#sum_to_zero_unconstrain" class="unlink" title="Jump to index entry"><code>sum_to_zero_unconstrain</code></a></strong><code>(vectors x)</code><br> Takes a vector <code>x</code> with elements that sum to <code>0</code> and returns the corresponding free vector.</p>
+<p>This returned vector will have one fewer elements compared to the input <code>x</code>.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="unit-vectors" class="level3">
+<h3 class="anchored" data-anchor-id="unit-vectors">Unit vectors</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#unit-vector.section">Unit Vector section</a>.</p>
+<a id="index-entry-3e7ebedc4498436d0a2336970080bf855c52eaa7" class="index-entry"></a> <!-- vectors; unit_vectors_constrain; (vectors y); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#unit_vectors_constrain" class="unlink" title="Jump to index entry"><code>unit_vectors_constrain</code></a></strong><code>(vectors y)</code><br> Takes a free vector <code>y</code> and returns a vector with unit length, i.e., <code>norm2(unit_vectors_constrain(y)) == 1</code> for any <code>y</code> that has a positive and finite norm itself (if <code>y</code> does not, the function rejects). Note that, in particular, this implies the function rejects if given a vector of all zeros.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-dad75a5d7cfa2f707b43c61f4208876d4f1ff189" class="index-entry"></a> <!-- vectors; unit_vectors_jacobian; (vectors y); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#unit_vectors_jacobian" class="unlink" title="Jump to index entry"><code>unit_vectors_jacobian</code></a></strong><code>(vectors y)</code><br> Takes a free vector <code>y</code> and returns a vector with unit length. This function rejects if given a vector of all zeros.</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-8030393eb30e7d856eced92680f3c9e8454c19d2" class="index-entry"></a> <!-- vectors; unit_vectors_unconstrain; (vectors x); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#unit_vectors_unconstrain" class="unlink" title="Jump to index entry"><code>unit_vectors_unconstrain</code></a></strong><code>(vectors x)</code><br> Takes a vector <code>x</code> of unit length and returns the corresponding free vector.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+</section>
+<section id="transforms-for-constrained-matrices" class="level2">
+<h2 class="anchored" data-anchor-id="transforms-for-constrained-matrices">Transforms for constrained matrices</h2>
+<p>Similarly to the above, <code>vectors</code> means a <code>vector</code> or array thereof, and <code>matrices</code> means a <code>matrix</code> or array thereof.</p>
+<section id="cholesky-factors-of-correlation-matrices" class="level3">
+<h3 class="anchored" data-anchor-id="cholesky-factors-of-correlation-matrices">Cholesky factors of correlation matrices</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#cholesky-factors-of-correlation-matrices">Cholesky Factors of Correlation Matrices section</a>.</p>
+<a id="index-entry-13178bf49e47f4d98c973800329f95f8fd49bfa1" class="index-entry"></a> <!-- matrices; cholesky_factor_corr_constrain; (vectors y, int K); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#cholesky_factor_corr_constrain" class="unlink" title="Jump to index entry"><code>cholesky_factor_corr_constrain</code></a></strong><code>(vectors y, int K)</code><br> Takes a vector <code>y</code> and integer <code>K</code>, where <code>length(y) == choose(K, 2)</code>, and returns a <code>K</code> by <code>K</code> Cholesky factor of a correlation matrix. This matrix is a Cholesky factor of a covariance matrix (i.e., a lower triangular matrix with a strictly positive diagonal), but with the additional constraint that each row is of unit length.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-1e720292cb09512b6fdca84e4cc39a087f43ec0a" class="index-entry"></a> <!-- matrices; cholesky_factor_corr_jacobian; (vectors y, int K); -->
+<p> Takes a vector <code>y</code> and integer <code>K</code>, where <code>length(y) == choose(K, 2)</code>, and returns a <code>K</code> by <code>K</code> Cholesky factor of a correlation matrix.</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment. <code>matrices</code> <strong><a href="../functions-reference/functions_index.html#cholesky_factor_corr_jacobian" class="unlink" title="Jump to index entry"><code>cholesky_factor_corr_jacobian</code></a></strong><code>(vectors y, int K)</code><br></p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-98b8008a7ecf84ed0131fe5e84c2a239b3739d30" class="index-entry"></a> <!-- vectors; cholesky_factor_corr_unconstrain; (matrices x); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#cholesky_factor_corr_unconstrain" class="unlink" title="Jump to index entry"><code>cholesky_factor_corr_unconstrain</code></a></strong><code>(matrices x)</code><br> Takes <code>x</code>, a (<span class="math inline">\(K \times K\)</span>) matrix which is the Cholesky factor of a correlation matrix (a lower triangular matrix with a strictly positive diagonal and each row having unit length), and returns the corresponding free vector of length $ imes $.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="cholesky-factors-of-covariance-matrices" class="level3">
+<h3 class="anchored" data-anchor-id="cholesky-factors-of-covariance-matrices">Cholesky factors of covariance matrices</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#cholesky-factors-of-covariance-matrices">Cholesky Factors of Covariance Matrices section</a>.</p>
+<a id="index-entry-0cddde7e0aa5cc9213f393acebb3b13b68b7bfa8" class="index-entry"></a> <!-- matrices; cholesky_factor_cov_constrain; (vectors y, int M, int N); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#cholesky_factor_cov_constrain" class="unlink" title="Jump to index entry"><code>cholesky_factor_cov_constrain</code></a></strong><code>(vectors y, int M, int N)</code><br> Takes a free vector <code>y</code> and integers <code>M</code> and <code>N</code> and returns the <code>M</code> by <code>N</code> Cholesky factor of a covariance matrix. This matrix is a lower triangular matrix <span class="math inline">\(L\)</span>, with a strictly positive diagonal, such that <span class="math inline">\(L^T L\)</span> is positive definite.</p>
+<p>Note that <code>y</code> must have length <code>N + choose(N, 2) + (M - N) * N</code>, and <code>M</code> must be greater than or equal to <code>N</code>.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-fd1e2249d8d133c4bf9d8e6b44f67c9c69314da3" class="index-entry"></a> <!-- matrices; cholesky_factor_cov_jacobian; (vectors y, int M, int N); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#cholesky_factor_cov_jacobian" class="unlink" title="Jump to index entry"><code>cholesky_factor_cov_jacobian</code></a></strong><code>(vectors y, int M, int N)</code><br> Takes a free vector <code>y</code> and integers <code>M</code> and <code>N</code> and returns the <code>M</code> by <code>N</code> Cholesky factor of a covariance matrix. This matrix is a lower triangular matrix <span class="math inline">\(L\)</span>, with a strictly positive diagonal, such that <span class="math inline">\(L^T L\)</span> is positive definite.</p>
+<p>Note that <code>y</code> must have length <code>N + choose(N, 2) + (M - N) * N</code>, and <code>M</code> must be greater than or equal to <code>N</code>.</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-74c3b28f5b00bf51f6299872cce7f2b1a18bf3ac" class="index-entry"></a> <!-- vectors; cholesky_factor_cov_unconstrain; (matrices x); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#cholesky_factor_cov_unconstrain" class="unlink" title="Jump to index entry"><code>cholesky_factor_cov_unconstrain</code></a></strong><code>(matrices x)</code><br> Takes a <span class="math inline">\(M \times N\)</span> matrix <code>x</code> which is a Cholesky factor of a covariance matrix (a matrix <span class="math inline">\(L\)</span> such that <span class="math inline">\(L^T L\)</span> is positive definite) and returns the corresponding free vector of length <span class="math inline">\(N + \binom{N}{2} + (M - N)N\)</span>.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="correlation-matrices" class="level3">
+<h3 class="anchored" data-anchor-id="correlation-matrices">Correlation matrices</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#correlation-matrix-transform.section">Correlation Matrices section</a>.</p>
+<a id="index-entry-594161bab69b742477ec84f4a399816cc0d939a1" class="index-entry"></a> <!-- matrices; corr_matrix_constrain; (vectors y, int K); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#corr_matrix_constrain" class="unlink" title="Jump to index entry"><code>corr_matrix_constrain</code></a></strong><code>(vectors y, int K)</code><br> Takes a vector <code>y</code> and integer <code>K</code>, where <code>length(y) == choose(K, 2)</code>, and returns a <code>K</code> by <code>K</code> correlation matrix (a positive definite matrix with a unit diagonal).</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-a3ce311c60e3c6821b434df3f73f83c5e037a03b" class="index-entry"></a> <!-- matrices; corr_matrix_jacobian; (vectors y, int K); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#corr_matrix_jacobian" class="unlink" title="Jump to index entry"><code>corr_matrix_jacobian</code></a></strong><code>(vectors y, int K)</code><br> Takes a vector <code>y</code> and integer <code>K</code>, where <code>length(y) == choose(K, 2)</code>, and returns a <code>K</code> by <code>K</code> correlation matrix (a positive definite matrix with a unit diagonal).</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-0fcba057e29e1ae091121cb62708675880f50c39" class="index-entry"></a> <!-- vectors; corr_matrix_unconstrain; (matrices x); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#corr_matrix_unconstrain" class="unlink" title="Jump to index entry"><code>corr_matrix_unconstrain</code></a></strong><code>(matrices x)</code><br> Takes a <span class="math inline">\(K \times K\)</span> matrix <code>x</code> which is a correlation matrix (a positive definite matrix with a unit diagonal) and returns the corresponding free vector of size <span class="math inline">\(\binom{K}{2}\)</span>.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="covariance-matrices" class="level3">
+<h3 class="anchored" data-anchor-id="covariance-matrices">Covariance matrices</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#covariance-matrices">Covariance Matrices section</a>.</p>
+<a id="index-entry-6dc98b07eda2e6dfde0020cf98dae68b590aad28" class="index-entry"></a> <!-- matrices; cov_matrix_constrain; (vectors y, int K); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#cov_matrix_constrain" class="unlink" title="Jump to index entry"><code>cov_matrix_constrain</code></a></strong><code>(vectors y, int K)</code><br> Takes a vector <code>y</code> and integer <code>K</code>, where <code>length(y) == K + choose(K, 2)</code>, and returns a <code>K</code> by <code>K</code> covariance matrix (a positive definite matrix).</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-cad2be5fc2ee16a8419b70db0422629b843de6c3" class="index-entry"></a> <!-- matrices; cov_matrix_jacobian; (vectors y, int K); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#cov_matrix_jacobian" class="unlink" title="Jump to index entry"><code>cov_matrix_jacobian</code></a></strong><code>(vectors y, int K)</code><br> Takes a vector <code>y</code> and integer <code>K</code>, where <code>length(y) == K + choose(K, 2)</code>, and returns a <code>K</code> by <code>K</code> covariance matrix (a positive definite matrix).</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-00d19b2a52626d58b6b07f2d27fdd2dbad3c12c0" class="index-entry"></a> <!-- vectors; cov_matrix_unconstrain; (matrices x); -->
+<p></p>
+<p><code>vectors</code> <strong><a href="../functions-reference/functions_index.html#cov_matrix_unconstrain" class="unlink" title="Jump to index entry"><code>cov_matrix_unconstrain</code></a></strong><code>(matrices x)</code><br> Takes a <span class="math inline">\(K \times K\)</span> positive definite matrix <code>x</code> and returns the corresponding free vector of size <span class="math inline">\(K + \binom{K}{2}\)</span>.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="column-stochastic-matrices" class="level3">
+<h3 class="anchored" data-anchor-id="column-stochastic-matrices">Column-stochastic matrices</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#stochastic-matrix-transform.section">Stochastic Matrix section</a> for column (left) stochastic matrices.</p>
+<a id="index-entry-4dbd1cdc02cc83f417b72d0ce15257683589e66c" class="index-entry"></a> <!-- matrices; stochastic_column_constrain; (matrices y); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#stochastic_column_constrain" class="unlink" title="Jump to index entry"><code>stochastic_column_constrain</code></a></strong><code>(matrices y)</code><br> Takes a free matrix <code>y</code> of size <span class="math inline">\(N \times M\)</span> and returns a left stochastic matrix (a matrix where each column is a simplex) of size <span class="math inline">\(N+1 \times M\)</span>.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-a21e88d79c0bb4cc8424754bfac7f0bfada0be42" class="index-entry"></a> <!-- matrices; stochastic_column_jacobian; (matrices y); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#stochastic_column_jacobian" class="unlink" title="Jump to index entry"><code>stochastic_column_jacobian</code></a></strong><code>(matrices y)</code><br> Takes a free matrix <code>y</code> of size <span class="math inline">\(N \times M\)</span> and returns a left stochastic matrix (a matrix where each column is a simplex) of size <span class="math inline">\(N+1 \times M\)</span>.</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-a04a2804c70fb0fe2219a7d11244837772f7d404" class="index-entry"></a> <!-- matrices; stochastic_column_unconstrain; (matrices x); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#stochastic_column_unconstrain" class="unlink" title="Jump to index entry"><code>stochastic_column_unconstrain</code></a></strong><code>(matrices x)</code><br> Takes a left stochastic matrix <code>x</code> of size <span class="math inline">\(N+1 \times M\)</span> and returns the corresponding free matrix of size <span class="math inline">\(N \times M\)</span>.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="row-stochastic-matrices" class="level3">
+<h3 class="anchored" data-anchor-id="row-stochastic-matrices">Row-stochastic matrices</h3>
+<p>These functions perform the transform and inverse transform described in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#stochastic-matrix-transform.section">Stochastic Matrix section</a> for row (right) stochastic matrices.</p>
+<a id="index-entry-e2ce12f9782fbeb39c70aa822e3b8a5d4ef4baf8" class="index-entry"></a> <!-- matrices; stochastic_row_constrain; (matrices y); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#stochastic_row_constrain" class="unlink" title="Jump to index entry"><code>stochastic_row_constrain</code></a></strong><code>(matrices y)</code><br> Takes a free matrix <code>y</code> of size <span class="math inline">\(N \times M\)</span> and returns a right stochastic matrix (a matrix where each row is a simplex) of size <span class="math inline">\(N \times M+1\)</span>.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-b4c7ad92b82702ad1209da8fa540ff52110b0bf0" class="index-entry"></a> <!-- matrices; stochastic_row_jacobian; (matrices y); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#stochastic_row_jacobian" class="unlink" title="Jump to index entry"><code>stochastic_row_jacobian</code></a></strong><code>(matrices y)</code><br> Takes a free matrix <code>y</code> of size <span class="math inline">\(N \times M\)</span> and returns a right stochastic matrix (a matrix where each row is a simplex) of size <span class="math inline">\(N \times M+1\)</span>.</p>
+<p>This function also increments the Jacobian accumulator with the corresponding change of variables adjustment.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-4bf40767700b7e2fc07e1045d565df3dc93422ee" class="index-entry"></a> <!-- matrices; stochastic_row_unconstrain; (matrices x); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#stochastic_row_unconstrain" class="unlink" title="Jump to index entry"><code>stochastic_row_unconstrain</code></a></strong><code>(matrices x)</code><br> Takes a right stochastic matrix <code>x</code> of size <span class="math inline">\(N \times M+1\)</span> and returns the corresponding free matrix of size <span class="math inline">\(N \times M\)</span>.</p>
+<small><i>Available since 2.37</i></small>
+</section>
+<section id="sum-to-zero-matrices" class="level3">
+<h3 class="anchored" data-anchor-id="sum-to-zero-matrices">Sum-to-zero matrices</h3>
+<p>The sum-to-zero matrix transforms map between unconstrained values and matrices whose rows and columns sum to zero; full definitions of the function and Jacobian can be found in the <a href="https://mc-stan.org/docs/reference-manual/transforms.html#sum-to-zero-matrix-transform">sum-to-zero matrix section of the <em>Reference Manual</em></a>.</p>
+<a id="index-entry-1c9a600c3c9e18bf8b358b6e0e1a196de3adb95d" class="index-entry"></a> <!-- matrices; sum_to_zero_constrain; (matrices y); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#sum_to_zero_constrain" class="unlink" title="Jump to index entry"><code>sum_to_zero_constrain</code></a></strong><code>(matrices y)</code><br> The constraining function maps an unconstrained <code>N x M</code> matrix to an <code>(N + 1) x (M + 1)</code> matrix for which the rows and columns all sum to zero. This function covers the incrementation of the log Jacobian because the incrementation is zero.</p>
+<p>This returned matrix will have one extra row and column compared to the input <code>y</code>.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-5fbdab6082a06ae172bb0aa3d1c27d00d6acce40" class="index-entry"></a> <!-- matrices; sum_to_zero_jacobian; (matrices y); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#sum_to_zero_jacobian" class="unlink" title="Jump to index entry"><code>sum_to_zero_jacobian</code></a></strong><code>(matrices y)</code><br> The constraining function maps an unconstrained <code>N x M</code> matrix to an <code>(N + 1) x (M + 1)</code> matrix for which the rows and columns all sum to zero. Because the log Jacobian incrementation is zero, this is identical to <code>sum_to_zero_constrain</code>.</p>
+<p>This returned matrix will have one extra row and column compared to the input <code>y</code>.</p>
+<small><i>Available since 2.37</i></small>
+<a id="index-entry-05440d06c001dcf3039cebf913897b51b2ee23e5" class="index-entry"></a> <!-- matrices; sum_to_zero_unconstrain; (matrices x); -->
+<p></p>
+<p><code>matrices</code> <strong><a href="../functions-reference/functions_index.html#sum_to_zero_unconstrain" class="unlink" title="Jump to index entry"><code>sum_to_zero_unconstrain</code></a></strong><code>(matrices x)</code><br> This function maps a matrix with rows that sum to zero and columns that sum to zero to an unconstrained matrix with one fewer row and and one fewer column.</p>
+<small><i>Available since 2.37</i></small>
+
+
+</section>
+</section>
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../functions-reference/higher-order_functions.html" class="pagination-link" aria-label="Higher-Order Functions">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Higher-Order Functions</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../functions-reference/deprecated_functions.html" class="pagination-link" aria-label="Deprecated Functions">
+        <span class="nav-page-text">Deprecated Functions</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/functions-reference/transform_functions.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

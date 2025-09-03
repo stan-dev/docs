@@ -9,8 +9,6 @@ pipeline {
         string(defaultValue: '', name: 'major_version', description: "Major version of the docs to be built")
         string(defaultValue: '', name: 'minor_version', description: "Minor version of the docs to be built")
         string(defaultValue: '', name: 'last_docs_version_dir', description: "Last docs version found in /docs. Example: 2_21")
-        booleanParam(defaultValue: true, description: 'Build docs and create a PR ?', name: 'buildDocs')
-        booleanParam(defaultValue: true, description: 'Change docs version for stan-dev.github.io ?', name: 'docsStanDev')
         booleanParam(defaultValue: true, description: 'Link docs to latest?', name: 'linkDocs')
     }
     environment {
@@ -25,11 +23,6 @@ pipeline {
                     label 'linux && triqs'
                     additionalBuildArgs  '--build-arg PUID=\$(id -u) --build-arg PGID=\$(id -g)'
                 }
-            }
-            when {
-              expression {
-                params.buildDocs
-              }
             }
             steps{
                 checkout([$class: 'GitSCM',

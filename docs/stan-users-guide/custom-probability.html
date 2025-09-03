@@ -592,40 +592,48 @@ window.Quarto = {
 <h2 class="anchored" data-anchor-id="examples">Examples</h2>
 <section id="triangle-distribution" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="triangle-distribution">Triangle distribution</h3>
-<p>A simple example is the triangle distribution, whose density is shaped like an isosceles triangle with corners at specified bounds and height determined by the constraint that a density integrate to 1. If <span class="math inline">\(\alpha \in \mathbb{R}\)</span> and <span class="math inline">\(\beta \in \mathbb{R}\)</span> are the bounds, with <span class="math inline">\(\alpha &lt; \beta\)</span>, then <span class="math inline">\(y \in (\alpha,\beta)\)</span> has a density defined as follows. <span class="math display">\[
+<p>A simple example is the symmetric triangle distribution, whose density is shaped like an isosceles triangle with corners at specified bounds and height determined by the constraint that a density integrate to 1. If <span class="math inline">\(\alpha \in \mathbb{R}\)</span> and <span class="math inline">\(\beta \in \mathbb{R}\)</span> are the bounds, with <span class="math inline">\(\alpha &lt; \beta\)</span>, then <span class="math inline">\(y \in (\alpha,\beta)\)</span> has a density defined as <span class="math display">\[
 \textsf{triangle}(y \mid \alpha,\beta)
 =
-\frac{2}{\beta - \alpha}
-\
-\left(
-1 -
-\left|
-y - \frac{\alpha + \beta}{\beta - \alpha}
-\right|
-\right)
+\frac{1}{(\beta - \alpha)^2}
+\cdot
+\textrm{min}(y - \alpha, \beta - y).
 \]</span></p>
-<p>If <span class="math inline">\(\alpha = -1\)</span>, <span class="math inline">\(\beta = 1\)</span>, and <span class="math inline">\(y \in (-1,1)\)</span>, this reduces to <span class="math display">\[
-\textsf{triangle}(y \mid -1,1) = 1 - |y|.
+<p>The general form of triangle can be coded in Stan as follows.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> alpha;</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=alpha&gt; beta;</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=alpha, <span class="kw">upper</span>=beta&gt; y;</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">target +=</span> -<span class="dv">2</span> * log(beta - alpha)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    + log(fmin(y - alpha, beta - y));</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Because the bounds are specified as data here, the term <code>-2 * log(beta - alpha)</code> could be dropped from the log density. If either of the bounds depends on a parameter, then this term must be included.</p>
+<p>If <span class="math inline">\(\alpha = -1\)</span>, <span class="math inline">\(\beta = 1\)</span>, and <span class="math inline">\(y \in (-1,1)\)</span>, then <code>fmin(y - alpha, beta - y)</code> is <code>fmin(y + 1, -1 - y)</code>, which is <code>fmin(y + 1, -(y + 1))</code>, which reduces to <code>1 - abs(y)</code>. Therfore, the density, dropping constants, reduces to <span class="math display">\[
+\textsf{triangle}(y \mid -1, 1) \propto 1 - |y|.
 \]</span> Consider the following Stan implementation of <span class="math inline">\(\textsf{triangle}(-1,1)\)</span> for sampling.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=-<span class="dv">1</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; y;</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">target +=</span> log1m(abs(y));</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>The single scalar parameter <code>y</code> is declared as lying in the interval <code>(-1,1)</code>. The total log probability is incremented with the joint log probability of all parameters, i.e., <span class="math inline">\(\log \mathsf{Triangle}(y \mid -1,1)\)</span>. This value is coded in Stan as <code>log1m(abs(y))</code>. The function <code>log1m</code> is defined so that <code>log1m(x)</code> has the same value as <span class="math inline">\(\log(1-x)\)</span>, but the computation is faster, more accurate, and more stable.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=-<span class="dv">1</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; y;</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">target +=</span> log1m(abs(y));</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The single scalar parameter <code>y</code> is declared as lying in the interval <code>(-1, 1)</code>. The total log probability is incremented with the joint log probability of all parameters, i.e., <span class="math inline">\(\log \mathsf{Triangle}(y \mid -1, 1)\)</span>. This value is coded in Stan as <code>log1m(abs(y))</code>. The function <code>log1m</code> is defined so that <code>log1m(x)</code> has the same value as <span class="math inline">\(\log(1 - x)\)</span>, but the computation is faster, more accurate, and more stable.</p>
 <p>The constrained type <code>real&lt;lower=-1, upper=1&gt;</code> declared for <code>y</code> is critical for correct sampling behavior. If the constraint on <code>y</code> is removed from the program, say by declaring <code>y</code> as having the unconstrained scalar type <code>real</code>, the program would compile, but it would produce arithmetic exceptions at run time when the sampler explored values of <code>y</code> outside of <span class="math inline">\((-1,1)\)</span>.</p>
-<p>Now suppose the log probability function were extended to all of <span class="math inline">\(\mathbb{R}\)</span> as follows by defining the probability to be <code>log(0.0)</code>, i.e., <span class="math inline">\(-\infty\)</span>, for values outside of <span class="math inline">\((-1,1)\)</span>.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">target +=</span> log(fmax(<span class="fl">0.0</span>,<span class="dv">1</span> - abs(y)));</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now suppose the log probability function were extended to all of <span class="math inline">\(\mathbb{R}\)</span> as follows by defining the probability to be <code>log(0.0)</code>, i.e., <span class="math inline">\(-\infty\)</span>, for values outside of <span class="math inline">\((-1, 1)\)</span>.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">target +=</span> log(fmax(<span class="fl">0.0</span>,<span class="dv">1</span> - abs(y)));</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>With the constraint on <code>y</code> in place, this is just a less efficient, slower, and less arithmetically stable version of the original program. But if the constraint on <code>y</code> is removed, the model will compile and run without arithmetic errors, but will not sample properly.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
 </section>
 <section id="exponential-distribution" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="exponential-distribution">Exponential distribution</h3>
 <p>If Stan didn’t happen to include the exponential distribution, it could be coded directly using the following assignment statement, where <code>lambda</code> is the inverse scale and <code>y</code> the sampled variate.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">target +=</span> log(lambda) - y * lambda;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">target +=</span> log(lambda) - y * lambda;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>This encoding will work for any <code>lambda</code> and <code>y</code>; they can be parameters, data, or one of each, or even local variables.</p>
 <p>The assignment statement in the previous paragraph generates C++ code that is similar to that generated by the following distribution statement.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>y ~ exponential(lambda);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>y ~ exponential(lambda);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>There are two notable differences. First, the distribution statement will check the inputs to make sure both <code>lambda</code> is positive and <code>y</code> is non-negative (which includes checking that neither is the special not-a-number value).</p>
 <p>The second difference is that if <code>lambda</code> is not a parameter, transformed parameter, or local model variable, the distribution statement is clever enough to drop the <code>log(lambda)</code> term. This results in the same posterior because Stan only needs the log probability up to an additive constant. If <code>lambda</code> and <code>y</code> are both constants, the distribution statement will drop both terms (but still check for out-of-domain errors on the inputs).</p>
 </section>
@@ -647,19 +655,19 @@ Z \sim \textsf{multivariate normal}\left(
 \right).
 \]</span></p>
 <p>The following Stan program implements this function,</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> binormal_cdf(<span class="dt">real</span> z1, <span class="dt">real</span> z2, <span class="dt">real</span> rho) {</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (z1 != <span class="dv">0</span> || z2 != <span class="dv">0</span>) {</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> denom = abs(rho) &lt; <span class="fl">1.0</span> ? sqrt((<span class="dv">1</span> + rho) * (<span class="dv">1</span> - rho))</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                                 : not_a_number();</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> a1 = (z2 / z1 - rho) / denom;</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> a2 = (z1 / z2 - rho) / denom;</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> product = z1 * z2;</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> delta = product &lt; <span class="dv">0</span> || (product == <span class="dv">0</span> &amp;&amp; (z1 + z2) &lt; <span class="dv">0</span>);</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="fl">0.5</span> * (Phi(z1) + Phi(z2) - delta)</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>                 - owens_t(z1, a1) - owens_t(z2, a2);</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="fl">0.25</span> + asin(rho) / (<span class="dv">2</span> * pi());</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span> binormal_cdf(<span class="dt">real</span> z1, <span class="dt">real</span> z2, <span class="dt">real</span> rho) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (z1 != <span class="dv">0</span> || z2 != <span class="dv">0</span>) {</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> denom = abs(rho) &lt; <span class="fl">1.0</span> ? sqrt((<span class="dv">1</span> + rho) * (<span class="dv">1</span> - rho))</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                                 : not_a_number();</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> a1 = (z2 / z1 - rho) / denom;</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> a2 = (z1 / z2 - rho) / denom;</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> product = z1 * z2;</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> delta = product &lt; <span class="dv">0</span> || (product == <span class="dv">0</span> &amp;&amp; (z1 + z2) &lt; <span class="dv">0</span>);</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="fl">0.5</span> * (Phi(z1) + Phi(z2) - delta)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                 - owens_t(z1, a1) - owens_t(z2, a2);</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="fl">0.25</span> + asin(rho) / (<span class="dv">2</span> * pi());</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 
 </section>

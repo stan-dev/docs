@@ -1,0 +1,196 @@
+---
+pagetitle: Copulas
+---
+
+# Copulas {#copulas.chapter}
+
+Copulas provide a flexible way to model multivariate distributions by separating the marginal cumulative distribution functions from the dependence structure. This chapter introduces copulas in Stan, focusing on implementation techniques and practical examples.
+
+## What Are Copulas?
+
+According to Sklar's theorem [@sklar1959], any multivariate distribution can be expressed in terms of its marginals and a copula that captures the dependence structure. Copulas are functions that join univariate marginal cumulative distribution functions to form multivariate distributions.
+
+For a multivariate random variable $\mathbf{X} = [X_1 \cdots X_D]^\top$ with marginal cumulative distribution functions $F_i$, the joint cumulative distribution function can be written as:
+
+$$
+F_{\mathbf{X}}(\mathbf{x}) = C(F_1(x_1), \ldots, F_D(x_D)) = \Pr[X_1 \leq x_1, \ldots, X_D \leq x_D]
+$$
+
+where $C$ is the copula function, $F_{\mathbf{X}}$ is the joint cumulative distribution function, and $F_i$ are the marginal cumulative distribution functions. The copula function $C$ must be a joint cumulative distribution function over the unit hypercube $[0, 1]^D$.
+
+## General Structure of Copula Models in Stan
+
+This section describes the general structure of copula models in Stan. The next sections will provide specific examples of copula implementations, but first, let's understand the general pattern that separates the marginal distributions from the dependence structure. 
+
+The log density of a multivariate distribution using a copula can be written as:
+
+$$
+\log h(\mathbf{x}) = \log c\left(u_1, \dots, u_D \vert \boldsymbol{\alpha}\right) + \sum_{i=1}^D \log f_i(x_i \vert \boldsymbol{\beta}_i)
+$$
+
+where:
+
+- $u_i = F_i(x_i \vert \boldsymbol{\beta}_i)$ are the probability integral transforms of the data
+- $\log c\left(u_1, \dots, u_D \vert \boldsymbol{\alpha}\right)$ is the log density of the copula
+- $\sum_{i=1}^D \log f_i(x_i \vert \boldsymbol{\beta}_i)$ is the sum of the log densities of the marginals
+- $\boldsymbol{\alpha}$ represents the parameters describing the parametric form of the copula
+- $\boldsymbol{\beta}_i$ represents the parameters describing the parametric form of the $i$-th marginal distribution
+
+The implementation of copulas in Stan has two key requirements:
+
+1. Both the probability density functions and cumulative distribution functions of the marginal distributions must be available
+2. A function that computes the log density of the copula for the transformed data must be implemented
+
+Most copula implementations in Stan follow a three-step process:
+
+1. **Accumulate marginal log likelihoods**: Calculate and add the log density of each marginal distribution to the target log density
+2. **Transform to uniform variables**: Apply the marginal CDFs to transform the data to uniform variables on the unit interval
+3. **Calculate copula density**: Compute the log density of the copula based on these uniform variables and add it to the target log density
+
+This process is reflected in the general form of the log density shown above, where the first term represents the copula density and the second term represents the sum of marginal log densities.
+
+In a way, we are always modeling with copulas, as the independence assumption can be viewed as a special case using the independence copula, where $\log c(\mathbf{u}) = 0$, resulting in the familiar sum of marginal log densities. This perspective highlights that traditional independent modeling is just a specific case within the broader copula framework. 
+
+Most parametric copula families include independence as a special case, either as a subset of their parameter space (e.g., when correlation parameters are zero) or as a limit when parameters approach specific values (e.g., when the dependence parameter approaches zero in Archimedean copulas).
+
+## Gaussian Copula Example
+
+The Gaussian copula is constructed using the multivariate normal distribution. For a $D$-dimensional random vector $\mathbf{X}$ with marginals $F_i$, the log Gaussian copula density is given by:
+
+$$
+\begin{aligned}
+\log c(\mathbf{u}) &= 
+-\frac{1}{2} \log |\boldsymbol{\Omega}| -\frac{1}{2} \mathbf{z}^\top (\boldsymbol{\Omega}^{-1} - \mathbf{I}) \mathbf{z} \\
+& = 
+-\frac{1}{2} \log |\boldsymbol{\Omega}| -\frac{1}{2} \mathbf{z}^\top \boldsymbol{\Omega}^{-1} \mathbf{z} + \frac{1}{2} \mathbf{z}^\top \mathbf{z} \\
+&= \log \mathcal{N}(\mathbf{z} \mid \mathbf{0}, \boldsymbol{\Omega}) - \log \mathcal{N}(\mathbf{z} \mid \mathbf{0}, \mathbf{I})
+\end{aligned}
+$$
+
+where $\mathbf{z} = [\Phi^{-1}(u_1), \ldots, \Phi^{-1}(u_D)]^\top$ are the inverse normal CDF transforms of the uniform marginals, $\boldsymbol{\Omega}$ is the correlation matrix, and $\mathbf{I}$ is the identity matrix. The joint log density is then:
+
+$$
+\log h(\mathbf{x}) = \log c(F_1(x_1), \ldots, F_D(x_D)) + \sum_{i=1}^D \log f_i(x_i)
+$$
+
+Following the three-step process for implementing copulas in Stan:
+
+1. **Accumulate marginal log likelihoods**: The exponential log densities are added to the target in the line `target += exponential_lpdf(y[n] | lambda)`
+2. **Transform to uniform variables**: The exponential CDF transforms the data to uniform variables: `exponential_cdf(y[n, d] | lambda[d])`
+3. **Calculate copula density**: The transformed variables are converted to normal scale using `inv_Phi` and the multivariate normal log density is computed: `z ~ multi_normal_cholesky(zeros, L_Omega)`
+
+The following example demonstrates a Gaussian copula with exponential marginal distributions. Note that while the copula is Gaussian, the marginals are exponential.
+
+```stan
+data {
+  int<lower=0> N;  // number of observations
+  int<lower=0> D;  // number of dimensions
+  vector<lower=0>[D] y[N];  // data
+}
+
+transformed data {
+  vector[D] zeros = rep_vector(0, D);
+}
+
+parameters {
+  // Parameters for exponential marginal distributions
+  vector<lower=0>[D] lambda;  // rate parameters
+  
+  // Correlation matrix for Gaussian copula
+  cholesky_factor_corr[D] L_Omega;
+}
+
+model {
+  // Priors
+  lambda ~ gamma(2, 1);  // prior for rate parameters
+  L_Omega ~ lkj_corr_cholesky(2);
+  
+  // Likelihood using Gaussian copula with exponential marginals
+  for (n in 1:N) {
+    // Add exponential log density to target
+    target += exponential_lpdf(y[n] | lambda);
+    
+    vector[D] z;
+    for (d in 1:D) {
+      // Transform to uniform using exponential CDF
+      real u_d = exponential_cdf(y[n, d] | lambda[d]);
+      
+      // Transform to standard normal
+      z[d] = inv_Phi(u_d);
+    }
+    // Multivariate normal log density with correlation matrix
+    z ~ multi_normal_cholesky(zeros, L_Omega);
+  }
+}
+
+generated quantities {
+  // Optional: Recover correlation matrix from Cholesky factor
+  matrix[D, D] Omega = multiply_lower_tri_self_transpose(L_Omega);
+}
+```
+
+## Advantages of Copulas
+
+Copulas offer several advantages in statistical modeling:
+
+1. **Flexibility**: They allow combining any marginal distributions with various dependence structures. For example:
+   - Modeling financial returns with heavy-tailed marginals and complex dependence structures
+   - Combining different types of distributions (e.g., normal and gamma) in a single model
+   - Capturing asymmetric dependencies between variables, such as in financial markets where joint negative returns are more common than joint positive returns due to macro-events affecting multiple stocks simultaneously, while positive returns tend to be more idiosyncratic
+   - Modeling different types of tail dependence in different parts of the distribution
+
+2. **Factorability**: The marginal distributions and dependence structure can be modeled separately, allowing for different prior knowledge about each component. This is similar to the common practice of factoring scale and correlation in multivariate normal priors. 
+
+    For example, when modeling the survival times of two components in a system, we can separately specify exponential or gamma marginal distributions based on historical failure data for each component, and a Gaussian copula (or asymmetrical Archimedean copula) capturing how the failure of one component affects the other, making it easier to incorporate prior knowledge about each aspect independently.
+
+3. **Tail dependence**: Different copulas can capture different types of tail dependence, which is crucial in applications like risk management and extreme value analysis where joint extreme scenarios need to be quantified.
+
+4. **Universal Framework**: In a way, we are always modeling with copulas, as the independence assumption can be viewed as a special case using the independence copula. This perspective highlights that traditional independent modeling is just a specific case within the broader copula framework.
+
+## Common Pitfalls and Considerations
+
+When implementing copulas in Stan, several considerations should be kept in mind:
+
+1. **Computational efficiency**: The probability integral transform and inverse transform steps can be computationally intensive, especially for complex marginal distributions.
+
+2. **Parameter identifiability**: Care must be taken to ensure that the parameters of the marginal distributions and the copula are identifiable.
+
+3. **Model selection**: The choice of copula family should be guided by the specific dependence structure of the data. For example:
+   - The Gaussian copula may underestimate the probability of joint extreme events in financial data
+   - The Student-t copula, while offering tail dependence, maintains symmetric tail behavior that may not match all applications
+   - Archimedean copulas can model asymmetric tail dependence but may be less flexible and harder to estimate in high dimensions
+
+4. **Numerical stability**: The transformations between different scales (original, uniform, and normal/Student-t/calculations using Archimedian copulas) require careful implementation to maintain numerical stability.
+
+5. **Symmetry considerations**: Many copula families exhibit strong symmetries that may not match the data:
+   - **Radial symmetry**: Some copulas (like Gaussian and Student-t) treat positive and negative extremes equally, which may not match financial data where joint negative returns are more common than joint positive returns
+   - **Exchangeability**: Some copulas are invariant under permutations of their arguments, which can lead to unintuitive results when combined with inhomogeneous marginals. For example, when modeling time-to-event scenarios with different marginal distributions (e.g., exponential distributions with different parameters), perfect dependence in the copula does not imply simultaneous events. Instead, one event triggers the other at a later time corresponding to the same quantile, which can lead to incorrect modeling of joint events.
+
+6. **Tail dependence**: Understanding and choosing appropriate tail dependence is crucial:
+   - The upper (lower) tail dependence coefficient $\lambda_U (\lambda_L)$ is the probability that one variable is extremely large (small) given that another is extremely large (small).
+   - Different copula families exhibit different tail dependence properties:
+     - Some copulas (like Gaussian) have zero tail dependence
+     - Others can model symmetric tail dependence ($\lambda_U = \lambda_L$)
+     - Some can capture asymmetric tail dependence ($\lambda_U \neq \lambda_L$)
+     - Certain copulas allow for tail dependence even with zero correlation
+   - The choice of copula should be guided by the expected tail behavior in the application:
+     - Financial data often requires modeling joint lower extreme events
+     - Risk management applications may need asymmetric tail dependence
+     - Some applications may require different tail behavior in different parts of the distribution
+
+7. **High-dimensional modeling**: As dimensionality increases:
+   - The number of dependence parameters grows
+   - Some copula families become less flexible
+   - Vine copulas or factor copulas may be more appropriate
+
+## Common Copula Families
+
+Several copula families are available for modeling different dependence structures in the correlation component:
+
+- **Gaussian copula**: Based on the multivariate normal distribution, offering symmetric dependence
+- **Student-t copula**: Based on the multivariate Student-t distribution, providing more flexibility in tail dependence than the Gaussian copula
+- **Archimedean copulas**: A class of copulas defined through generator functions, including:
+  - Clayton copula: Stronger lower tail dependence
+  - Gumbel copula: Stronger upper tail dependence
+  - Frank copula: Symmetric dependence
+- **Vine copulas**: A flexible approach for modeling high-dimensional dependencies by decomposing the joint distribution into a series of bivariate copulas

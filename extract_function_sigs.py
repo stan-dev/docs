@@ -12,10 +12,6 @@ import contextlib
 import subprocess
 
 
-if "functions-reference" not in os.getenv("QUARTO_PROJECT_INPUT_FILES", "").replace("functions-reference/functions_index.qmd", ""):
-    print("Functions reference didn't change, skipping index update")
-    exit(0)
-
 @contextlib.contextmanager
 def pushd(new_dir):
     previous_dir = os.getcwd()

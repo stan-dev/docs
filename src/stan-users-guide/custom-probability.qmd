@@ -155,18 +155,41 @@ $$
 The following Stan program implements this function,
 
 ```stan
-real binormal_cdf(real z1, real z2, real rho) {
-  if (z1 != 0 || z2 != 0) {
-    real denom = abs(rho) < 1.0 ? sqrt((1 + rho) * (1 - rho))
-                                 : not_a_number();
-    real a1 = (z2 / z1 - rho) / denom;
-    real a2 = (z1 / z2 - rho) / denom;
-    real product = z1 * z2;
-    real delta = product < 0 || (product == 0 && (z1 + z2) < 0);
-    return 0.5 * (Phi(z1) + Phi(z2) - delta)
-                 - owens_t(z1, a1) - owens_t(z2, a2);
+real binormal_cdf(tuple(real, real) z, real rho) {
+  real z1 = z.1;
+  real z2 = z.2;
+  if (z1 == 0 && z2 == 0) {
+    return 0.25 + asin(rho) / (2 * pi());
   }
-  return 0.25 + asin(rho) / (2 * pi());
+  real denom = sqrt((1 + rho) * (1 - rho));
+  real term1 = z1 == 0
+    ? (z2 > 0 ? 0.25 : -0.25)
+    :  owens_t(z1, (z2 / z1 - rho) / denom);
+  real term2 = z2 == 0
+    ? (z1 > 0 ? 0.25 : -0.25)
+    : owens_t(z2, (z1 / z2 - rho) / denom);
+  real z1z2 = z1 * z2;
+  real delta = z1z2 < 0 || (z1z2 == 0 && (z1 + z2) < 0);
+  return 0.5 * (Phi(z1) + Phi(z2) - delta) - term1 - term2;
 }
 ```
+
+It is written using a tuple argument so that it may be called as `binormal_cdf((z1, z2) | rho)`.  
+
+One way to test a user-defined function is to have it operate on transformed data.  That way, when it's run, the output of the functions is printed before sampling begins.
+
+```stan
+transformed data {
+  for (zzr in {[0, 0, 0.5],
+	[0, 1, 0.5],
+	[1, 0, -0.2],
+	[1, 3, 0.9]}) {
+    real z1  = zzr[1];
+    real z2 = zzr[2];
+    real rho = zzr[3];
+    print("binomial_cdf((",  z1, ", ", z2, "), ", rho, ")=", binormal_cdf((z1, z2) | rho));
+  }
+```
+
+In this case, we verified that the results match those of the `rbivnorm` package in R.
 

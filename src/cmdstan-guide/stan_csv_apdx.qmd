@@ -1,0 +1,343 @@
+---
+pagetitle: Stan CSV File Format
+---
+
+# Stan CSV File Format {#stan_csv}
+
+The output from all CmdStan methods is in [CSV format](https://en.wikipedia.org/wiki/Comma-separated_values).
+A Stan CSV file is a data table where the columns are the method and model parameters and quantities of interest.
+Each row contains one record's worth of data in plain-text format using the comma character (',')
+as the field delimiter (hence the name).
+
+For the Stan CSV files, data is strictly numerical,
+however, possible values include both positive and negative
+infinity and "Not-a-Number" which are represented as
+the strings `NaN`, `inf`, `+inf`, `-inf`.
+All other values are written in decimal notation by default with
+at most 8 digits of precision. The number of significant digits
+written can be controlled with argument `sig_figs=<int>`. See more
+in [Output control arguments section](command_line_options.qmd#output-control.section).
+
+Stan CSV files have a header row containing the column names.
+They also make extensive use of CSV comments,
+i.e., lines which begin with the `#` character.
+In addition to initial and final comment rows,
+some methods also put comment rows in the middle of the data table,
+which makes it difficult to use many of the commonly used CSV parser packages.
+
+## CSV column names and order
+
+The data table is laid out with zero or more method-specific columns followed by
+the Stan program variables declared in the parameter block,
+then the variables in the transformed parameters block, finally variables
+declared in the generated quantities, in declaration order.
+
+Stan provides three types of container objects: arrays, vectors, and matrices.
+In order to output all elements of a container object, it is necessary to choose
+an indexing notation and a serialization order.
+The Stan CSV file indexing notation is
+
+- The column name consists of the variable name followed by the element indices.
+- Indices are delimited by periods ('.').
+- Indexing is 1-based, i.e., given a dimension of size $N$, the first
+element index is $1$ and the last element index is $N$.
+- Tuples are laid out element-by-element, with each tuple slot being delimited
+  by a colon (':').
+
+Container variables are serialized in
+[column major order](https://eli.thegreenplace.net/2015/memory-layout-of-multi-dimensional-arrays),
+a.k.a. "Fortran" order.
+In column major-order for a 2-D container, all elements of column 1 are listed in ascending order,
+followed by all elements of column 2, thus the
+column index changes the slowest and the row index changes the fastest. For higher dimensions,
+this generalizes to the last index changing the slowest and first index changing the fastest.
+
+To see how this works, consider a 3-dimensional variable with dimension sizes 2, 3, and 4,
+e.g., an array of matrices, a 2-D array of vectors or row_vectors, or a 3-D array of scalars.
+Given a Stan program with model parameter variable:
+```
+ array[2, 3, 4] real foo;
+```
+The Stan CSV file will require 24 columns to output the elements of `foo`.
+The first 6 columns will be labeled:
+```
+foo.1.1.1,foo.2.1.1,foo.1.2.1,foo.2.2.1,foo.1.3.1,foo.2.3.1
+```
+The final 6 columns will be labeled:
+```
+foo.1.1.4,foo.2.1.4,foo.1.2.4,foo.2.2.4,foo.1.3.4,foo.2.3.4
+```
+
+To see how a tuple would be laid out, consider the following variable:
+```
+tuple(real, array[3] real) bar;
+```
+This will correspond to 4 columns in the CSV file, which are labeled
+```
+bar:1,bar:2.1,bar:2.2,bar:2.3
+```
+
+## MCMC sampler CSV output
+
+The sample method produces both a Stan CSV output file and a
+[diagnostic file](mcmc_config.qmd#sampler-diag-file)
+which contains the sampler parameters together with the gradients on the unconstrained scale and
+log probabilities for all parameters in the model.
+
+
+To see how this works, we show snippets of the output file resulting from the following command:
+
+```
+./bernoulli sample save_warmup=1 num_warmup=200 num_samples=100 \
+            data file=bernoulli.data.json \
+            output file=bernoulli_samples.csv
+```
+
+### Sampler Stan CSV output file
+
+The sampler output file contains the following:
+
+- Initial comment rows listing full CmdStan argument configuration.
+- Header row
+- Data rows containing warmup draws, if run with option `save_warmup=1`
+- Comment rows for adaptation listing step size and metric used for sampling
+- Sampling draws
+- Comment rows giving timing information
+
+**Initial comments rows: argument configuration**
+
+All configuration arguments are listed, one per line, indented according to
+CmdStan's hierarchy of arguments and sub-arguments.
+Arguments not overtly specified on the command line are annotated as `(Default)`.
+
+In the above example the `num_samples`, `num_warmup`, and `save_warmup` arguments
+were specified, whereas subargument `thin` is left at its default value,
+as seen in the initial comment rows:
+
+```
+# stan_version_major = 2
+# stan_version_minor = 24
+# stan_version_patch = 0
+# model = bernoulli_model
+# method = sample (Default)
+#   sample
+#     num_samples = 100
+#     num_warmup = 200
+#     save_warmup = 1
+#     thin = 1 (Default)
+#     adapt
+#       engaged = 1 (Default)
+#       gamma = 0.050000000000000003 (Default)
+#       delta = 0.80000000000000004 (Default)
+#       kappa = 0.75 (Default)
+#       t0 = 10 (Default)
+#       init_buffer = 75 (Default)
+#       term_buffer = 50 (Default)
+#       window = 25 (Default)
+#     algorithm = hmc (Default)
+#       hmc
+#         engine = nuts (Default)
+#           nuts
+#             max_depth = 10 (Default)
+#         metric = diag_e (Default)
+#         metric_file =  (Default)
+#         stepsize = 1 (Default)
+#         stepsize_jitter = 0 (Default)
+# id = 0 (Default)
+# data
+#   file = bernoulli.data.json
+# init = 2 (Default)
+# random
+#   seed = 2991989946 (Default)
+# output
+#   file = bernoulli_samples.csv
+#   diagnostic_file = bernoulli_diagnostics.csv
+#   refresh = 100 (Default)
+```
+
+Note that when running multi-threaded programs which use `reduce_sum`
+for [high-level parallelization](parallelization.qmd), the number of threads used
+will also be included in this initial comment header.
+
+
+**Column headers**
+
+The CSV header row lists all sampler parameters, model parameters, transformed parameters, and quantities of interest.
+The sampler parameters are described in detail in the [output file](mcmc_config.qmd#mcmc_output_csv) section of the chapter on MCMC Sampling.
+The example model `bernoulli.stan` only contains one parameter `theta`, therefore the CSV file data table
+consists of 7 sampler parameter columns and one column for the model parameter:
+```
+lp__,accept_stat__,stepsize__,treedepth__,n_leapfrog__,divergent__,energy__,theta
+```
+
+As a second example, we show the output of the `eight_schools.stan` model on run on example dataset.
+This model has 3 parameters:  `mu`, `theta` a vector whose length is dependent on the input data,
+here `N = 8`, and `tau`.
+The initial columns are for the 7 sampler parameters, as before.
+The column headers for the model parameters are:
+```
+mu,theta.1,theta.2,theta.3,theta.4,theta.5,theta.6,theta.7,theta.8,tau
+```
+
+**Data rows containing warmup draws**
+
+When run with option `save_warmup=1`,
+the thinned warmup draws are written to the CSV output file
+directly after the CSV header line.
+Since the default option is `save_warmup=0`, this section is
+usually not present in the output file.
+
+Here we specified `num_warmup=200` and left `thin` at the default value $1$,
+therefore the next 200 lines are data rows containing
+the sampler and model parameter values for each warmup draw.
+```
+-6.74827,1,1,1,1,0,6.75348,0.247195
+-6.74827,4.1311e-103,14.3855,1,1,0,6.95087,0.247195
+-6.74827,1.74545e-21,2.43117,1,1,0,7.67546,0.247195
+-6.77655,0.99873,0.239791,2,7,0,6.81982,0.280619
+-6.7552,0.999392,0.323158,1,3,0,6.79175,0.26517
+```
+
+**Comment rows for adaptation**
+
+During warmup, the sampler adjusts the stepsize and the metric.
+At the end warmup, the sampler outputs this information as comments.
+
+```
+# Adaptation terminated
+# Step size = 0.813694
+# Diagonal elements of inverse mass matrix:
+# 0.592879
+```
+
+As the example bernoulli model only contains a single parameter,
+and as the default metric is `diag_e`, the inverse mass matrix is a $1 \times 1$ matrix,
+and the length of the diagonal vector is also $1$.
+
+In contrast, if we run the eight schools example model with metric `dense_e`, the adaptation
+comments section lists both the stepsize and the full $10 \times 10$ inverse mass matrix:
+```
+# Adaptation terminated
+# Step size = 0.211252
+# Elements of inverse mass matrix:
+# 25.6389, 17.3379, 13.9455, 15.9036, 15.1953, 8.73729, 16.9486, 14.4231, 17.4969, 0.518757
+# 17.3379, 79.8719, 12.2989, -1.28006, 9.92895, -3.51622, 10.073, 22.0196, 19.8151, 4.71028
+# 13.9455, 12.2989, 36.1572, 12.8734, 11.9446, 9.09582, 9.74519, 10.9539, 12.1204, 0.211353
+# 15.9036, -1.28006, 12.8734, 59.9998, 10.245, 8.03461, 16.9754, 3.13443, 9.68292, -1.36097
+# 15.1953, 9.92895, 11.9446, 10.245, 43.548, 15.3403, 13.0537, 7.69818, 10.1093, 0.155245
+# 8.73729, -3.51622, 9.09582, 8.03461, 15.3403, 39.981, 12.7695, 1.16248, 6.13749, -2.08507
+# 16.9486, 10.073, 9.74519, 16.9754, 13.0537, 12.7695, 45.8884, 11.6074, 8.96413, -1.15946
+# 14.4231, 22.0196, 10.9539, 3.13443, 7.69818, 1.16248, 11.6074, 49.4083, 18.9169, 3.15661
+# 17.4969, 19.8151, 12.1204, 9.68292, 10.1093, 6.13749, 8.96413, 18.9169, 68.0228, 1.74104
+# 0.518757, 4.71028, 0.211353, -1.36097, 0.155245, -2.08507, -1.15946, 3.15661, 1.74104, 1.50433
+```
+
+_Note that when  the sampler is run with arguments `algorithm=fixed_param`,
+this section will be missing._
+
+
+**Data rows containing sampling draws**
+
+The output file contains the values for the thinned set draws during sampling.
+Here we specified `num_sampling=100` and left `thin` at the default value $1$,
+therefore the next 100 lines are data rows containing
+the sampler and model parameter values for each sampling iteration.
+```
+-8.76921,0.796814,0.813694,1,1,0,9.75854,0.535093
+-6.79143,0.979604,0.813694,1,3,0,9.13092,0.214431
+-6.79451,0.955359,0.813694,2,3,0,7.19149,0.289341
+```
+
+**Timing information**
+
+Upon successful completion, the sampler writes timing
+information to the output CSV file as a series of final comment lines:
+```
+#
+#  Elapsed Time: 0.005 seconds (Warm-up)
+#                0.002 seconds (Sampling)
+#                0.007 seconds (Total)
+#
+```
+
+
+### Diagnostic CSV output file
+
+The diagnostic file contains the following:
+
+- Initial comment rows listing full CmdStan argument configuration.
+- Header row
+- Data rows containing warmup draws, if run with option `save_warmup=1`
+- Sampling draws
+- Comment rows giving timing information
+
+The columns in this file contain, in order:
+
+- all sampler parameters
+- all model parameter estimates (on the unconstrained scale)
+- the latent Hamiltonian for each parameter
+- the gradient for each parameters
+
+The labels for the latent Hamiltonian columns are the parameter column label with prefix `p_` and the labels for the gradient columns are the parameter column label with prefix `g_`.
+
+These are the column labels from the file `bernoulli_diagnostic.csv`:
+```
+lp__,accept_stat__,stepsize__,treedepth__,n_leapfrog__,divergent__,energy__,theta,p_theta,g_theta
+```
+
+### Profiling CSV output file
+
+The profiling information is stored in a plain CSV format with no meta
+information in the comments.
+
+Each row represents timing information collected in a `profile` statement
+for a given thread. It is possible that some `profile` statements have only
+one entry (if they were only executed by one thread) and others have
+multiple entries (if they were executed by multiple threads).
+
+The columns are as follows:
+
+- `name`, The name of the `profile` statement that is being timed
+- `thread_id`, The thread that executed the `profile` statement
+- `total_time`, The combined time spent executing statements inside the
+`profile` which includes calculation with and without automatic
+differentiation
+- `forward_time`, The time spent in the `profile` statement during the
+forward pass of a reverse mode automatic differentiation calculation or during
+a calculation without automatic differentiation
+- `reverse_time`, The time spent in the `profile` statement during the reverse
+(backward) pass of reverse mode automatic differentiation
+- `chain_stack`, The number of objects allocated on the chaining automatic
+differentiation stack. There is a function call for each of these objects in
+the reverse pass
+- `no_chain_stack`, The number of objects allocated on the non-chaining
+automatic differentiation stack
+- `autodiff_calls`, The total number of times the `profile` statement was
+executed with automatic differentiation
+- `no_autodiff_calls` - The total number of times the `profile` statement was
+executed without automatic differentiation
+
+## Optimization output
+
+- Config as comments
+- Header row
+- Penalized maximum likelihood estimate
+
+## Variational inference output
+
+
+- Config as comments
+- Header row
+- Adaptation as comments
+- Variational estimate
+- Sample draws from estimate of the posterior
+
+## Generate quantities outputs
+
+- Header row
+- Quantities of interest
+
+## Diagnose method outputs
+
+- Header row
+- Gradients

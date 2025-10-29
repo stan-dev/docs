@@ -1,0 +1,120 @@
+---
+pagetitle: Laplace sampling
+---
+
+# Laplace sampling
+
+The `laplace` method produces a sample from a normal approximation
+centered at the [mode](optimize_config.qmd) of a distribution in the unconstrained space.
+If the mode is a maximum a posteriori (MAP) estimate,
+the sample provides an estimate of the mean and standard deviation
+of the posterior distribution.
+If the mode is a maximum likelihood estimate (MLE),
+the sample provides an estimate of the standard error of the likelihood.
+In general,  the posterior mode in the unconstrained space doesn't correspond
+to the mean (nor mode) in the constrained space, and thus the sample is needed
+to infer the mean as well as the standard deviation.
+(See [this case study](https://avehtari.github.io/casestudies/Jacobian/jacobian.html)
+for a visual illustration.)
+
+This is computationally inexpensive compared to exact Bayesian inference with MCMC.
+The goodness of this estimate depends on both the estimate of the mode
+and how much the true posterior in the unconstrained space resembles a Gaussian.
+
+
+## Configuration
+
+This method takes several arguments:
+
+- `mode` - Input file of parameters values on the constrained scale.
+When Stan's `optimize` method is used to estimate the modal values,
+the value of boolean argument `jacobian` should be `false` if `optimize` was
+run with default settings, i.e., the input is the MLE estimate;
+if `optimize` was run with argument `jacobian=true`, then the `laplace`
+method default setting, `jacobian=true`, should be used.
+
+- `jacobian` - Whether or not the
+[Jacobian adjustment](https://mc-stan.org/docs/stan-users-guide/reparameterization.html)
+should be included in the gradient. The default value is `true` (include adjustment).
+(Note: in optimization, the default value is `false`, for historical reasons.)
+
+- `draws` - How many total draws to return. The default is $1000$.
+
+- `calculate_lp` - Whether to calculate the log probability of the model at
+each draw. If this is `false`, the `log_p__` column of the output will be
+entirely `nan`. The default value is `true`.
+
+
+## CSV output
+
+The output file consists of the following pieces of information:
+
+- The full set of configuration options available for the `laplace` method is
+  reported at the beginning of the output file as CSV comments.
+
+- Output columns `log_p__` and `log_q__`, the unnormalized log density and the
+unnormalized density of the Laplace approximation, respectively.
+These can be used for diagnostics and importance sampling.
+
+- Output columns for all model parameters on the constrained scale.
+
+## Diagnostic file outputs
+
+If requested with `output diagnostic_file=`, a JSON file will be
+created which contains the log density, the gradient, and the Hessian
+of the log density evaluated at the mode.
+
+## Example
+
+To get an approximate estimate of the mode and standard deviation of the
+example Bernoulli model given the example dataset:
+
+- find the MAP estimate by running optimization with argument `jacobian=true`
+
+- run the Laplace estimator using the MAP estimate as the `mode` argument.
+
+Because the default output file name from all methods is `output.csv`,
+a more informative name is used for the output of optimization.
+We run the commands from the CmdStan home directory.
+This results in a sample with mean 2.7 and standard deviation 0.12.
+In comparison, running the NUTS-HMC sampler results in mean 2.6 and standard deviation 0.12.
+
+
+```
+./examples/bernoulli/bernoulli optimize jacobian=1 \
+  data file=examples/bernoulli/bernoulli.data.json \
+  output file=bernoulli_optimize_lbfgs.csv random seed=1234
+
+
+./examples/bernoulli/bernoulli laplace mode=bernoulli_optimize_lbfgs.csv \
+ data file=examples/bernoulli/bernoulli.data.json random seed=1234
+```
+
+The header and first few data rows of the output sample are shown below.
+
+```
+# method = laplace
+#   laplace
+#     mode = bernoulli_lbfgs.csv
+#     jacobian = true (Default)
+#     draws = 1000 (Default)
+#     calculate_lp = true (default)
+# id = 1 (Default)
+# data
+#   file = examples/bernoulli/bernoulli.data.json
+# init = 2 (Default)
+# random
+#   seed = 875960551 (Default)
+# output
+#   file = output.csv (Default)
+#   diagnostic_file =  (Default)
+#   refresh = 100 (Default)
+#   sig_figs = 8 (Default)
+#   profile_file = profile.csv (Default)
+# num_threads = 1 (Default)
+log_p__,log_q__,theta
+-9.4562,-2.33997,0.0498545
+-6.9144,-0.0117349,0.182898
+-7.18171,-0.746034,0.376428
+...
+```

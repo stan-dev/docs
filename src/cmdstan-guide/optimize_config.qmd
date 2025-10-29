@@ -1,0 +1,249 @@
+---
+pagetitle: Optimization
+---
+
+# Optimization
+
+The CmdStan executable can run Stan’s optimization algorithms,
+which provide a deterministic method to find the posterior mode.
+If the posterior is not convex, there is no guarantee Stan
+will be able to find the global optimum as opposed to a local optimum
+of log probability.
+
+
+The full set of configuration options available for the `optimize` method
+is available by using the `optimize help-all` subcommand. The arguments
+with their requested values or defaults are also reported at the beginning
+of the optimizer console output and in the output CSV file's comments.
+
+The executable does not need to be recompiled in order to switch from
+sampling to optimization, and the data input format is the same. The
+following is a minimal call to Stan's optimizer using defaults for
+everything but the location of the data file.
+
+```
+> ./bernoulli optimize data file=bernoulli.data.json
+```
+
+Executing this command prints both output to the console and
+to a CSV file.
+
+The first part of the console output reports on the configuration used.
+The above command uses all default configurations, therefore the optimizer
+used is the L-BFGS optimizer and its default initial stepsize and
+tolerances for monitoring convergence:
+```
+ ./bernoulli optimize data file=bernoulli.data.json
+method = optimize
+  optimize
+    algorithm = lbfgs (Default)
+      lbfgs
+        init_alpha = 0.001 (Default)
+        tol_obj = 1e-12 (Default)
+        tol_rel_obj = 10000 (Default)
+        tol_grad = 1e-08 (Default)
+        tol_rel_grad = 1e+07 (Default)
+        tol_param = 1e-08 (Default)
+        history_size = 5 (Default)
+    jacobian = false (Default)
+    iter = 2000 (Default)
+    save_iterations = false (Default)
+id = 1 (Default)
+data
+  file = bernoulli.data.json
+init = 2 (Default)
+random
+  seed = 87122538 (Default)
+output
+  file = output.csv (Default)
+  diagnostic_file =  (Default)
+  refresh = 100 (Default)
+  sig_figs = 8 (Default)
+  profile_file = profile.csv (Default)
+  save_cmdstan_config = false (Default)
+num_threads = 1 (Default)
+```
+
+The second part of the
+output indicates how well the algorithm fared, here converging and
+terminating normally. The numbers reported indicate that it took 5
+iterations and 8 gradient evaluations.
+This is, not surprisingly, far fewer iterations than required
+for sampling; even fewer iterations would be used with less stringent
+user-specified convergence tolerances.
+The `alpha` value is for step size used.
+In the final state the change in parameters was roughly $0.002$
+and the length of the gradient roughly 3e-05 ($0.00003$).
+
+```
+Initial log joint probability = -6.85653
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes
+       5      -5.00402    0.00184936   3.35074e-05           1           1        8
+Optimization terminated normally:
+  Convergence detected: relative gradient magnitude is below tolerance
+```
+
+The output from optimization is written into the file
+`output.csv` by default. The output follows the [same pattern](stan_csv_apdx.qmd)
+as the output for sampling, first dumping the entire set of parameters
+used as comment lines:
+
+```
+# stan_version_major = 2
+# stan_version_minor = 23
+# stan_version_patch = 0
+# model = bernoulli_model
+# method = optimize
+#   optimize
+#     algorithm = lbfgs (Default)
+#       lbfgs
+#         init_alpha = 0.001 (Default)
+#         tol_obj = 1e-12 (Default)
+#         tol_rel_obj = 10000 (Default)
+#         tol_grad = 1e-08 (Default)
+#         tol_rel_grad = 1e+07 (Default)
+#         tol_param = 1e-08 (Default)
+#         history_size = 5 (Default)
+#     jacobian = false (Default)
+#     iter = 2000 (Default)
+#     save_iterations = false (Default)
+```
+
+Following the config information are two lines of output,
+the CSV headers and the recorded values:
+
+```
+lp__,theta
+-5.00402,0.200003
+```
+
+Note that everything is a comment other than a line for the header,
+and a line for the values. Here, the header indicates the unnormalized
+log probability with `lp__` and the model parameter
+`theta`. The maximum log probability is -5.0 and the posterior
+mode for `theta` is 0.20. The mode exactly matches what we would
+expect from the data.
+Because the prior was uniform, the result 0.20 represents the maximum
+likelihood estimate (MLE) for the very simple Bernoulli model. Note
+that no uncertainty is reported.
+
+All of the optimizers stream per-iteration intermediate approximations to the command line console.
+The sub-argument `save_iterations` specifies whether or not to save
+the intermediate iterations to the output file.
+Allowed values are `true` or `false`.
+The default value is `false`, i.e., intermediate iterations are not saved to the output file.
+Running the optimizer with `save_iterations=true` writes both
+the initial log joint probability and values for all iterations to the output CSV file.
+
+Running the example model with option `save_iterations=true`, i.e., the command
+```
+> ./bernoulli optimize save_iterations=1 data file=bernoulli.data.json
+```
+produces CSV file output rows:
+```
+lp__,theta
+-6.85653,0.493689
+-6.10128,0.420936
+-5.02953,0.22956
+-5.00517,0.206107
+-5.00403,0.200299
+-5.00402,0.200003
+```
+
+
+## Jacobian adjustments
+
+If there are constrained parameters, Stan makes [a transformation to an
+unconstrained space](https://mc-stan.org/docs/reference-manual/transforms.html) and runs the optimization algorithm in the unconstrained space.
+
+The `jacobian` argument specifies whether or not the call to the model's
+log probability function should include
+the log absolute Jacobian determinant of
+[inverse parameter transforms](https://mc-stan.org/docs/reference-manual/transforms.html).
+
+If the Jacobian adjustment is not included (the default), the
+optimization returns parameter values that correspond to a mode of the
+target in the constrained space (if such mode exists). Thus this
+option is useful for any optimization where we want to find the mode
+in the original constrained parameter space.
+
+If the Jacobian adjustment is included, the optimization returns
+parameter values that correspond to a mode in the unconstrained
+space. This is useful, for example, if we want to make a
+distributional approximation of the posterior at the mode (see,
+[Laplace sampling](laplace_sample_config.qmd), as then Jacobian
+adjustment needs to be included for correct results.
+
+## Optimization algorithms
+
+The `algorithm` argument specifies the optimization algorithm.
+This argument takes one of the following three values:
+
+- `lbfgs` A quasi-Newton optimizer.  This is the default optimizer
+and also much faster than the other optimizers.
+
+- `bfgs` A quasi-Newton optimizer.
+
+- `newton` A Newton optimizer.  This is the least efficient optimization algorithm,
+but has the advantage of setting its own stepsize.
+
+See the Stan Reference Manual's
+[Optimization chapter](https://mc-stan.org/docs/reference-manual/optimization.html)
+for a description of these algorithms.
+
+All of the optimizers stream per-iteration intermediate approximations to the command line console.
+The sub-argument `save_iterations` specifies whether or not to save
+the intermediate iterations to the output file.
+Allowed values are `true` or `false.
+The default value is `false`, i.e., intermediate iterations are not saved to the output file.
+
+## The quasi-Newton optimizers
+
+For both BFGS and L-BFGS optimizers,
+convergence monitoring is controlled by a number of tolerance values,
+any one of which being satisfied causes the algorithm to terminate with a solution.
+See the
+[BFGS and L-BFGS configuration section](https://mc-stan.org/docs/reference-manual/optimization.html#bfgs-and-l-bfgs-configuration)
+for details on the convergence tests.
+
+Both BFGS and L-BFGS have the following configuration arguments:
+
+- `init_alpha` - The initial step size parameter.
+Must be a positive real number. Default value is $0.001$
+
+- `tol_obj` - Convergence tolerance on changes in objective function value.
+Must be a positive real number. Default value is $1^{-12}$.
+
+- `tol_rel_obj` - Convergence tolerance on relative changes in objective function value.
+Must be a positive real number. Default value is $1^{4}$.
+
+- `tol_grad` - Convergence tolerance on the norm of the gradient.
+Must be a positive real number. Default value is $1^{-8}$.
+
+- `tol_rel_grad` - Convergence tolerance on the relative norm of the gradient.
+Must be a positive real number. Default value is $1^{7}$.
+
+- `tol_param` - Convergence tolerance on changes in parameter value.
+Must be a positive real number. Default value is $1^{-8}$.
+
+The `init_alpha` argument specifies the first step size to try on the initial iteration.
+If the first iteration takes a long time (and requires a lot of function evaluations),
+set `init_alpha` to be the roughly equal to the alpha used in that first iteration.
+The default value is very small, which is reasonable for many problems but might be too large
+or too small depending on the objective function and initialization.
+Being too big or too small just means that the first iteration will take longer
+(i.e., require more gradient evaluations) before the line search finds a good step length.
+
+In addition to the above, the L-BFGS algorithm has argument `history_size`
+which controls the size of the history it uses to approximate the Hessian.
+The value should be less than the dimensionality of the parameter space and,
+in general, relatively small values ($5$-$10$) are sufficient; the default value is $5$.
+
+If L-BFGS performs poorly but BFGS performs well, consider increasing the history size.
+Increasing history size will increase the memory usage,
+although this is unlikely to be an issue for typical Stan models.
+
+## The Newton optimizer
+
+There are no configuration parameters for the Newton optimizer.
+It is not recommended because of the slow Hessian calculation involving finite differences.

@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.39">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>RDump Format for CmdStan</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../cmdstan-guide/external_code.html" rel="next">
+<link href="../cmdstan-guide/json_apdx.html" rel="prev">
+<link href="../img/logo_tm.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-05fe91a66cf75bbbb8c9664867fe5124.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-59fdbf2653e1aaac23acf64cc15a0d7d.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-db2dae95e8ea74a46baf8a914d3354e1.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-70bf165c02e87ebf13e8abcdd820736d.min.css" rel="prefetch" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../quarto-config/quarto_styles.css">
+<meta property="og:title" content="RDump Format for CmdStan">
+<meta property="og:description" content="">
+<meta property="og:image" content="img/logo_tm.png">
+<meta property="og:site_name" content="Stan Docs">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="https://mc-stan.org/" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Documentation</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../stan-users-guide/index.html"> 
+<span class="menu-text">Stan Users Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../reference-manual/index.html"> 
+<span class="menu-text">Reference Manual</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../functions-reference/index.html"> 
+<span class="menu-text">Functions Reference</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-interfaces" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Interfaces</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-interfaces">    
+        <li>
+    <a class="dropdown-item" href="../cmdstan-guide/index.html">
+ <span class="dropdown-text">CmdStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy" target="_blank">
+ <span class="dropdown-text">CmdStanPy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr" target="_blank">
+ <span class="dropdown-text">CmdStanR</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://pystan.readthedocs.io/en/latest/" target="_blank">
+ <span class="dropdown-text">PyStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstan" target="_blank">
+ <span class="dropdown-text">RStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/" target="_blank">
+ <span class="dropdown-text">Stan.jl</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-other-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Other Packages</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/" target="_blank">
+ <span class="dropdown-text">bayesplot</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/" target="_blank">
+ <span class="dropdown-text">BridgeStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/" target="_blank">
+ <span class="dropdown-text">brms</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/loo/" target="_blank">
+ <span class="dropdown-text">loo</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/posterior" target="_blank">
+ <span class="dropdown-text">posterior</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/projpred" target="_blank">
+ <span class="dropdown-text">projpred</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm" target="_blank">
+ <span class="dropdown-text">rstanarm</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstantools" target="_blank">
+ <span class="dropdown-text">rstantools</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/shinystan" target="_blank">
+ <span class="dropdown-text">shinystan</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools tools-wide">
+    <a href="https://github.com/stan-dev" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-github"></i></a>
+    <a href="https://discourse.mc-stan.org" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-chat-text-fill"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../cmdstan-guide/stan_csv_apdx.html">Appendices</a></li><li class="breadcrumb-item"><a href="../cmdstan-guide/rdump_apdx.html">RDump Format for CmdStan</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CmdStan User’s Guide</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <span class="sidebar-item-text sidebar-link text-start">
+ <span class="menu-text">Version 2.37</span></span>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Getting Started</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/installation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CmdStan Installation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/example_model_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Example Model and Data</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/compiling_stan_programs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Compiling a Stan Program</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/parallelization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Parallelization</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Running CmdStan</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/command_line_options.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Command-Line Interface Overview</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/mcmc_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MCMC Sampling using Hamiltonian Monte Carlo</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/optimize_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Optimization</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/pathfinder_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Pathfinder Method for Approximate Bayesian Inference</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/variational_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Variational Inference using ADVI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/generate_quantities_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generating Quantities of Interest from a Fitted Model</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/laplace_sample_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Laplace sampling</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/log_prob_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Extracting log probabilities and gradients for diagnostics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/diagnose_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Diagnosing HMC by Comparison of Gradients</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Tools and Utilities</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/stanc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>stanc</code>: Translating Stan to C++</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/stansummary.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>stansummary</code>: MCMC Output Analysis</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/diagnose_utility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>diagnose</code>: Diagnosing Biased Hamiltonian Monte Carlo Inferences</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/print.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>print</code> (deprecated): MCMC Output Analysis</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/stan_csv_apdx.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Stan CSV File Format</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/json_apdx.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">JSON Format for CmdStan</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/rdump_apdx.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">RDump Format for CmdStan</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/external_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Using external C++ code</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#rdump" id="toc-rdump" class="nav-link active" data-scroll-target="#rdump">RDump Format for CmdStan</a>
+  <ul class="collapse">
+  <li><a href="#creating-dump-files" id="toc-creating-dump-files" class="nav-link" data-scroll-target="#creating-dump-files">Creating dump files</a></li>
+  <li><a href="#scalar-variables" id="toc-scalar-variables" class="nav-link" data-scroll-target="#scalar-variables">Scalar variables</a></li>
+  <li><a href="#sequence-variables" id="toc-sequence-variables" class="nav-link" data-scroll-target="#sequence-variables">Sequence variables</a></li>
+  <li><a href="#array-variables" id="toc-array-variables" class="nav-link" data-scroll-target="#array-variables">Array variables</a></li>
+  <li><a href="#matrix--and-vector-valued-variables" id="toc-matrix--and-vector-valued-variables" class="nav-link" data-scroll-target="#matrix--and-vector-valued-variables">Matrix- and vector-valued variables</a>
+  <ul class="collapse">
+  <li><a href="#vector-dump-format" id="toc-vector-dump-format" class="nav-link" data-scroll-target="#vector-dump-format">Vector dump format</a></li>
+  <li><a href="#matrix-dump-format" id="toc-matrix-dump-format" class="nav-link" data-scroll-target="#matrix-dump-format">Matrix dump format</a></li>
+  <li><a href="#arrays-of-vectors-and-matrices" id="toc-arrays-of-vectors-and-matrices" class="nav-link" data-scroll-target="#arrays-of-vectors-and-matrices">Arrays of vectors and matrices</a></li>
+  </ul></li>
+  <li><a href="#complex-valued-variables" id="toc-complex-valued-variables" class="nav-link" data-scroll-target="#complex-valued-variables">Complex-valued variables</a></li>
+  <li><a href="#integer--and-real-valued-variables" id="toc-integer--and-real-valued-variables" class="nav-link" data-scroll-target="#integer--and-real-valued-variables">Integer- and real-valued variables</a>
+  <ul class="collapse">
+  <li><a href="#scientific-notation" id="toc-scientific-notation" class="nav-link" data-scroll-target="#scientific-notation">Scientific notation</a></li>
+  <li><a href="#infinite-and-not-a-number-values" id="toc-infinite-and-not-a-number-values" class="nav-link" data-scroll-target="#infinite-and-not-a-number-values">Infinite and not-a-number values</a></li>
+  </ul></li>
+  <li><a href="#quoted-variable-names" id="toc-quoted-variable-names" class="nav-link" data-scroll-target="#quoted-variable-names">Quoted variable names</a></li>
+  <li><a href="#line-breaks" id="toc-line-breaks" class="nav-link" data-scroll-target="#line-breaks">Line breaks</a></li>
+  <li><a href="#bnf-grammar-for-dump-data" id="toc-bnf-grammar-for-dump-data" class="nav-link" data-scroll-target="#bnf-grammar-for-dump-data">BNF grammar for dump data</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/cmdstan-guide/rdump_apdx.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../cmdstan-guide/stan_csv_apdx.html">Appendices</a></li><li class="breadcrumb-item"><a href="../cmdstan-guide/rdump_apdx.html">RDump Format for CmdStan</a></li></ol></nav></header>
+
+
+
+
+<section id="rdump" class="level1">
+<h1>RDump Format for CmdStan</h1>
+<p><strong>NOTE:</strong> Although the RDump format is still supported, I/O with JSON is faster and recommended. See the <a href="../cmdstan-guide/json_apdx.html">chapter on JSON</a> for more details.</p>
+<p>RDump format can be used to represent values for Stan variables. This format was introduced in SPLUS and is used in R, JAGS, and in BUGS (but with a different ordering).</p>
+<p>A dump file is structured as a sequence of variable definitions. Each variable is defined in terms of its dimensionality and its values. There are three kinds of variable declarations: - scalars - sequences - general arrays</p>
+<section id="creating-dump-files" class="level2">
+<h2 class="anchored" data-anchor-id="creating-dump-files">Creating dump files</h2>
+<p>Dump files can be created from R using RStan, via the <code>rstan</code> package function <code>stan_rdump</code>. Stan RDump files must be created via <code>stan_rdump</code> and not by R’s native <code>dump</code> function because R’s <code>dump</code> function uses a richer syntax than is supported by the underlying Stan i/o libraries.</p>
+</section>
+<section id="scalar-variables" class="level2">
+<h2 class="anchored" data-anchor-id="scalar-variables">Scalar variables</h2>
+<p>A simple scalar value can be thought of as having an empty list of dimensions. Its declaration in the dump format follows the SPLUS assignment syntax. For example, the following would constitute a valid dump file defining a single scalar variable <code>y</code> with value <span class="math inline">\(17.2\)</span>:</p>
+<pre><code>y &lt;- 17.2</code></pre>
+</section>
+<section id="sequence-variables" class="level2">
+<h2 class="anchored" data-anchor-id="sequence-variables">Sequence variables</h2>
+<p>One-dimensional arrays may be specified directly using the SPLUS sequence notation. The following example defines an integer-value and a real-valued sequence.</p>
+<pre><code>n &lt;- c(1,2,3) y &lt;- c(2.0,3.0,9.7)</code></pre>
+<p>Arrays are provided without a declaration of dimensionality because the reader just counts the number of entries to determine the size of the array.</p>
+<p>Sequence variables may alternatively be represented with R’s colon-based notation. For instance, the first example above could equivalently be written as</p>
+<pre><code>n &lt;- 1:3</code></pre>
+<p>The sequence denoted by <code>1:3</code> is of length <span class="math inline">\(3\)</span>, running from <span class="math inline">\(1\)</span> to <span class="math inline">\(3\)</span> inclusive. The colon notation allows sequences going from high to low. The following are equivalent:</p>
+<pre><code>n &lt;- 2:-2
+n &lt;- c(2,1,0,-1,-2)</code></pre>
+<p>As a special case, a sequence of zeros can also be represented in the dump format by <code>integer(x)</code> and <code>double(x)</code>, for type int and double, respectively. Here <code>x</code> is a non-negative integer to specify the length. If <code>x</code> is <span class="math inline">\(0\)</span>, it can be omitted. The following are some examples.</p>
+<pre><code>x1 &lt;- integer()
+x2 &lt;- integer(0)
+x3 &lt;- integer(2)
+y1 &lt;- double()
+y2 &lt;- double(0)
+y3 &lt;- double(2)</code></pre>
+</section>
+<section id="array-variables" class="level2">
+<h2 class="anchored" data-anchor-id="array-variables">Array variables</h2>
+<p>For more than one dimension, the dump format uses a dimensionality specification. For example, the following defines a <span class="math inline">\(2 \times 3\)</span> array:</p>
+<pre><code>y &lt;- structure(c(1,2,3,4,5,6), .Dim = c(2,3))</code></pre>
+<p>Data is stored column-major, thus the values for <code>y</code> will be:</p>
+<pre><code>y[1, 1] = 1
+y[1, 2] = 3
+y[1, 3] = 5
+y[2, 1] = 2
+y[2, 2] = 4
+y[2, 3] = 6</code></pre>
+<p>The <code>structure</code> keyword just wraps a sequence of values and a dimensionality declaration, which is itself just a sequence of non-negative integer values. The product of the dimensions must equal the length of the array.</p>
+<p>If the values happen to form a contiguous sequence of integers, they may be written with colon notation. Thus the example above is equivalent to the following.</p>
+<pre><code>y &lt;- structure(1:6, .Dim = c(2,3))</code></pre>
+<p>Sequence notation can be used within any call to the generic <code>c()</code> function in R. In the above example, c(2,3) could be written as <code>c(2:3)</code>.</p>
+<p>The generalization of column-major indexing is last-index major indexing. Arrays of more than two dimensions are written in a last-index major form. For example,</p>
+<pre><code>z &lt;- structure(1:24, .Dim = c(2,3,4))</code></pre>
+<p>produces a three-dimensional <code>int</code> (assignable to <code>real</code>) array <code>z</code> with values:</p>
+<pre><code>z[1, 1, 1] = 1
+z[2, 1, 1] = 2
+z[1, 2, 1] = 3
+z[2, 2, 1] = 4
+z[1, 3, 1] = 5
+z[2, 3, 1] = 6
+z[1, 1, 2] = 7
+z[2, 1, 2] = 8
+z[1, 2, 2] = 9
+z[2, 2, 2] = 10
+z[1, 3, 2] = 11
+z[2, 3, 2] = 12
+z[1, 1, 3] = 13
+z[2, 1, 3] = 14
+z[1, 2, 3] = 15
+z[2, 2, 3] = 16
+z[1, 3, 3] = 17
+z[2, 3, 3] = 18
+z[1, 1, 4] = 19
+z[2, 1, 4] = 20
+z[1, 2, 4] = 21
+z[2, 2, 4] = 22
+z[1, 3, 4] = 23
+z[2, 3, 4] = 24</code></pre>
+<p>If the underlying 3-D array is stored as a 1-D array in last-index major format, the innermost array elements will be contiguous.</p>
+<p>The sequence of values inside <code>structure</code> can also be <code>integer(x)</code> or <code>double(x)</code>. In particular, if one or more dimensions is zero, <code>integer()</code> can be put inside <code>structure</code>. For instance, the following example is supported by the dump format.</p>
+<pre><code>y &lt;- structure(integer(), .Dim = c(2,0))</code></pre>
+</section>
+<section id="matrix--and-vector-valued-variables" class="level2">
+<h2 class="anchored" data-anchor-id="matrix--and-vector-valued-variables">Matrix- and vector-valued variables</h2>
+<p>The dump format for matrices and vectors, including arrays of matrices and vectors, is the same as that for arrays of the same shape.</p>
+<section id="vector-dump-format" class="level3">
+<h3 class="anchored" data-anchor-id="vector-dump-format">Vector dump format</h3>
+<p>The following three declarations have the same dump format for their data.</p>
+<pre><code>array[K] real a;
+vector[K] b;
+row_vector[K] c;</code></pre>
+</section>
+<section id="matrix-dump-format" class="level3">
+<h3 class="anchored" data-anchor-id="matrix-dump-format">Matrix dump format</h3>
+<p>The following declarations have the same dump format.</p>
+<pre><code>array[M, N] real a;
+matrix[M, N] b;</code></pre>
+</section>
+<section id="arrays-of-vectors-and-matrices" class="level3">
+<h3 class="anchored" data-anchor-id="arrays-of-vectors-and-matrices">Arrays of vectors and matrices</h3>
+<p>The key to understanding arrays is that the array indexing comes before any of the container indexing. That is, an array of vectors is just that: each array element is a vector. See the chapter on array and matrix types in the user’s guide section of the language manual for more information.</p>
+<p>For the dump data format, the following declarations have the same arrangement.</p>
+<pre><code>array[M, N] real a;
+matrix[M, N] b;
+array[M] vector[N] c;
+array[M] row_vector[N] d;</code></pre>
+<p>Similarly, the following also have the same dump format.</p>
+<pre><code>array[P, M, N] real a;
+array[P] matrix[M, N] b;
+array[P, M] vector[N] c;
+array[P, M] row_vector[N] d;</code></pre>
+</section>
+</section>
+<section id="complex-valued-variables" class="level2">
+<h2 class="anchored" data-anchor-id="complex-valued-variables">Complex-valued variables</h2>
+<p>At this time, there is no support for complex number input through the R dump format. As an alternative, the JSON input format supports complex numbers.</p>
+</section>
+<section id="integer--and-real-valued-variables" class="level2">
+<h2 class="anchored" data-anchor-id="integer--and-real-valued-variables">Integer- and real-valued variables</h2>
+<p>There is no declaration in a dump file that distinguishes integer versus continuous values. If a value in a dump file’s definition of a variable contains a decimal point (e.g., <span class="math inline">\(132.3\)</span>) or uses scientific notation (e.g., <span class="math inline">\(1.323e2\)</span>), Stan assumes that the values are real.</p>
+<p>For a single value, if there is no decimal point, it may be assigned to an <code>int</code> or <code>real</code> variable in Stan. An array value may only be assigned to an <code>int</code> array if there is no decimal point or scientific notation in any of the values. This convention is compatible with the way R writes data.</p>
+<p>The following dump file declares an integer value for <code>y</code>.</p>
+<pre><code>y &lt;- 2</code></pre>
+<p>This definition can be used for a Stan variable <code>y</code> declared as <code>real</code> or as <code>int</code>. Assigning an integer value to a real variable automatically promotes the integer value to a real value.</p>
+<p>Integer values may optionally be followed by <code>L</code> or <code>l</code>, denoting long integer values. The following example, where the type is explicit, is equivalent to the above.</p>
+<pre><code>y &lt;- 2L</code></pre>
+<p>The following dump file provides a real value for <code>y</code>.</p>
+<pre><code>y &lt;- 2.0</code></pre>
+<p>Even though this is a round value, the occurrence of the decimal point in the value, <span class="math inline">\(2.0\)</span>, causes Stan to infer that <code>y</code> is real valued. This dump file may only be used for variables <code>y</code> declared as real in Stan.</p>
+<section id="scientific-notation" class="level3">
+<h3 class="anchored" data-anchor-id="scientific-notation">Scientific notation</h3>
+<p>Numbers written in scientific notation may only be used for real values in Stan. R will write out the integer one million as <span class="math inline">\(1e+06\)</span>.</p>
+</section>
+<section id="infinite-and-not-a-number-values" class="level3">
+<h3 class="anchored" data-anchor-id="infinite-and-not-a-number-values">Infinite and not-a-number values</h3>
+<p>Stan’s reader supports infinite and not-a-number values for scalar quantities (see the section of the reference manual section of the language manual for more information on Stan’s numerical data types). Both infinite and not-a-number values are supported by Stan’s dump-format readers.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;">Value</th>
+<th style="text-align: left;">Preferred Form</th>
+<th style="text-align: left;">Alternative Forms</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">positive infinity</td>
+<td style="text-align: left;">Inf</td>
+<td style="text-align: left;">Infinity, infinity</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">negative infinity</td>
+<td style="text-align: left;">-Inf</td>
+<td style="text-align: left;">-Infinity, -infinity</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">not a number</td>
+<td style="text-align: left;">NaN</td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
+<p>These strings are not case sensitive, so <code>inf</code> may also be used for positive infinity, or <code>NAN</code> for not-a-number.</p>
+</section>
+</section>
+<section id="quoted-variable-names" class="level2">
+<h2 class="anchored" data-anchor-id="quoted-variable-names">Quoted variable names</h2>
+<p>In order to support JAGS data files, variables may be double quoted. For instance, the following definition is legal in a dump file.</p>
+<pre><code>"y" &lt;- c(1,2,3) \end{Verbatim}</code></pre>
+</section>
+<section id="line-breaks" class="level2">
+<h2 class="anchored" data-anchor-id="line-breaks">Line breaks</h2>
+<p>The line breaks in a dump file are required to be consistent with the way R reads in data. Both of the following declarations are legal.</p>
+<pre><code>y &lt;- 2
+y &lt;-
+3</code></pre>
+<p>Also following R, breaking before the assignment arrow are not allowed, so the following is invalid.</p>
+<pre><code>y
+&lt;- 2 # Syntax Error</code></pre>
+<p>Lines may also be broken in the middle of sequences declared using the <code>c(...)</code> notation., as well as between the comma following a sequence definition and the dimensionality declaration. For example, the following declaration of a <span class="math inline">\(2 \times 2 \times 3\)</span> array is valid.</p>
+<pre><code>y &lt;-
+structure(c(1,2,3,
+4,5,6,7,8,9,10,11,
+12), .Dim = c(2,2,
+3))</code></pre>
+<p>Because there are no decimal points in the values, the resulting dump file may be used for three-dimensional array variables declared as <code>int</code> or <code>real</code>.</p>
+</section>
+<section id="bnf-grammar-for-dump-data" class="level2">
+<h2 class="anchored" data-anchor-id="bnf-grammar-for-dump-data">BNF grammar for dump data</h2>
+<p>A more precise definition of the dump data format is provided by the following (mildly templated) Backus-Naur form grammar.</p>
+<pre><code>definition ::= name &lt;- value optional_semicolon
+
+name ::= char*     | ''' char* '''     | '"' char* '"'
+
+value ::= value&lt;int&gt; | value&lt;double&gt;
+
+value&lt;T&gt; ::= T       | seq&lt;T&gt;       | zero_array&lt;T&gt;       |
+'structure' '(' seq&lt;T&gt; ',' ".Dim" '=' seq&lt;int&gt; ')'       | 'structure'
+'(' zero_array&lt;T&gt; ',' ".Dim" '=' seq&lt;int&gt; ')'
+
+seq&lt;int&gt; ::= int ':' int       | cseq&lt;int&gt;
+
+zero_array&lt;int&gt; ::= "integer" '(' &lt;non-negative int&gt;? ')'
+
+zero_array&lt;real&gt; ::= "double" '(' &lt;non-negative int&gt;? ')'
+
+seq&lt;real&gt; ::= cseq&lt;real&gt;
+
+cseq&lt;T&gt; ::= 'c' '(' vseq&lt;T&gt; ')'
+
+vseq&lt;T&gt; ::= T      | T ',' vseq&lt;T&gt;</code></pre>
+<p>The template parameters <code>T</code> will be set to either <code>int</code> or <code>real</code>. Because Stan allows promotion of integer values to real values, an integer sequence specification in the dump data format may be assigned to either an integer- or real-based variable in Stan.</p>
+
+
+</section>
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../cmdstan-guide/json_apdx.html" class="pagination-link" aria-label="JSON Format for CmdStan">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">JSON Format for CmdStan</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../cmdstan-guide/external_code.html" class="pagination-link" aria-label="Using external C++ code">
+        <span class="nav-page-text">Using external C++ code</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/cmdstan-guide/rdump_apdx.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

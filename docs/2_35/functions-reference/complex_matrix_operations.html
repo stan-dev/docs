@@ -1,0 +1,2070 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+<link rel="canonical" href="https://mc-stan.org/docs/functions-reference/complex_matrix_operations.html" />
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.53">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Complex Matrix Operations</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../functions-reference/sparse_matrix_operations.html" rel="next">
+<link href="../functions-reference/matrix_operations.html" rel="prev">
+<link href="../img/logo_tm.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 200,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../theming/quarto_styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../stan-users-guide/index.html"> 
+<span class="menu-text">Stan Users Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../reference-manual/index.html"> 
+<span class="menu-text">Reference Manual</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../functions-reference/index.html" aria-current="page"> 
+<span class="menu-text">Functions Reference</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-interfaces" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Interfaces</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-interfaces">    
+        <li>
+    <a class="dropdown-item" href="../cmdstan-guide/index.html">
+ <span class="dropdown-text">CmdStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy">
+ <span class="dropdown-text">CmdStanPy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr">
+ <span class="dropdown-text">CmdStanR</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/users/interfaces/pystan.html">
+ <span class="dropdown-text">PyStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstan">
+ <span class="dropdown-text">RStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/">
+ <span class="dropdown-text">Stan.jl</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-other-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Other Packages</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/">
+ <span class="dropdown-text">bayesplot</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/">
+ <span class="dropdown-text">BridgeStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/">
+ <span class="dropdown-text">brms</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/loo/">
+ <span class="dropdown-text">loo</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/posterior">
+ <span class="dropdown-text">posterior</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/projpred">
+ <span class="dropdown-text">projpred</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm">
+ <span class="dropdown-text">rstanarm</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstantools">
+ <span class="dropdown-text">rstantools</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/shinystan">
+ <span class="dropdown-text">shinystan</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools tools-wide">
+    <a href="https://github.com/stan-dev" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-github"></i></a>
+    <a href="https://discourse.mc-stan.org" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-chat-text-fill"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../functions-reference/void_functions.html">Built-in Functions</a></li><li class="breadcrumb-item"><a href="../functions-reference/complex_matrix_operations.html">Complex Matrix Operations</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Stan Functions Reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <span class="sidebar-item-text sidebar-link text-start">
+ <span class="menu-text">Version 2.35</span></span>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Built-in Functions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/void_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Void Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/integer-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Integer-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/real-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Real-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/complex-valued_basic_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Complex-Valued Basic Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/array_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Array Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/complex_matrix_operations.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Complex Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/sparse_matrix_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sparse Matrix Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/mixed_operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mixed Operations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/compound_arithmetic_and_assignment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Compound Arithmetic and Assignment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/higher-order_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Higher-Order Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/deprecated_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Deprecated Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/removed_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Removed Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/conventions_for_probability_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Conventions for Probability Functions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Discrete Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/binary_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Binary Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/bounded_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Bounded Discrete Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/unbounded_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Unbounded Discrete Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/multivariate_discrete_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Multivariate Discrete Distributions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Continuous Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/unbounded_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Unbounded Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/positive_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Positive Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/positive_lower-bounded_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Positive Lower-Bounded Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/continuous_distributions_on_0_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Continuous Distributions on [0, 1]</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/circular_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Circular Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/bounded_continuous_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Bounded Continuous Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/distributions_over_unbounded_vectors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Distributions over Unbounded Vectors</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/simplex_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Simplex Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/correlation_matrix_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Correlation Matrix Distributions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/covariance_matrix_distributions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Covariance Matrix Distributions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Additional Distributions</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/hidden_markov_models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Hidden Markov Models</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendix</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/mathematical_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mathematical Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../functions-reference/functions_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Alphabetical Index</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#complex_matrix-operations" id="toc-complex_matrix-operations" class="nav-link active" data-scroll-target="#complex_matrix-operations">Complex Matrix Operations</a>
+  <ul class="collapse">
+  <li><a href="#complex-promotion" id="toc-complex-promotion" class="nav-link" data-scroll-target="#complex-promotion">Complex promotion</a>
+  <ul class="collapse">
+  <li><a href="#promotion-of-complex-arguments" id="toc-promotion-of-complex-arguments" class="nav-link" data-scroll-target="#promotion-of-complex-arguments">Promotion of complex arguments</a></li>
+  <li><a href="#signature-selection" id="toc-signature-selection" class="nav-link" data-scroll-target="#signature-selection">Signature selection</a></li>
+  <li><a href="#signatures-for-complex-functions" id="toc-signatures-for-complex-functions" class="nav-link" data-scroll-target="#signatures-for-complex-functions">Signatures for complex functions</a></li>
+  <li><a href="#generic-functions-work-for-complex-containers" id="toc-generic-functions-work-for-complex-containers" class="nav-link" data-scroll-target="#generic-functions-work-for-complex-containers">Generic functions work for complex containers</a></li>
+  </ul></li>
+  <li><a href="#integer-valued-complex-matrix-size-functions" id="toc-integer-valued-complex-matrix-size-functions" class="nav-link" data-scroll-target="#integer-valued-complex-matrix-size-functions">Integer-valued complex matrix size functions</a></li>
+  <li><a href="#complex-matrix-arithmetic-operators" id="toc-complex-matrix-arithmetic-operators" class="nav-link" data-scroll-target="#complex-matrix-arithmetic-operators">Complex matrix arithmetic operators</a>
+  <ul class="collapse">
+  <li><a href="#negation-prefix-operators" id="toc-negation-prefix-operators" class="nav-link" data-scroll-target="#negation-prefix-operators">Negation prefix operators</a></li>
+  <li><a href="#infix-complex_matrix-operators" id="toc-infix-complex_matrix-operators" class="nav-link" data-scroll-target="#infix-complex_matrix-operators">Infix complex_matrix operators</a></li>
+  <li><a href="#broadcast-infix-operators" id="toc-broadcast-infix-operators" class="nav-link" data-scroll-target="#broadcast-infix-operators">Broadcast infix operators</a></li>
+  </ul></li>
+  <li><a href="#complex-transposition-operator" id="toc-complex-transposition-operator" class="nav-link" data-scroll-target="#complex-transposition-operator">Complex Transposition Operator</a></li>
+  <li><a href="#complex-elementwise-functions" id="toc-complex-elementwise-functions" class="nav-link" data-scroll-target="#complex-elementwise-functions">Complex elementwise functions</a></li>
+  <li><a href="#dot-products-and-specialized-products-for-complex-matrices" id="toc-dot-products-and-specialized-products-for-complex-matrices" class="nav-link" data-scroll-target="#dot-products-and-specialized-products-for-complex-matrices">Dot products and specialized products for complex matrices</a>
+  <ul class="collapse">
+  <li><a href="#specialized-products" id="toc-specialized-products" class="nav-link" data-scroll-target="#specialized-products">Specialized products</a></li>
+  </ul></li>
+  <li><a href="#complex-reductions" id="toc-complex-reductions" class="nav-link" data-scroll-target="#complex-reductions">Complex reductions</a>
+  <ul class="collapse">
+  <li><a href="#sums-and-products" id="toc-sums-and-products" class="nav-link" data-scroll-target="#sums-and-products">Sums and products</a></li>
+  </ul></li>
+  <li><a href="#vectorized-accessor-functions" id="toc-vectorized-accessor-functions" class="nav-link" data-scroll-target="#vectorized-accessor-functions">Vectorized accessor functions</a>
+  <ul class="collapse">
+  <li><a href="#type-demotion" id="toc-type-demotion" class="nav-link" data-scroll-target="#type-demotion">Type “demotion”</a></li>
+  <li><a href="#real-and-imaginary-component-accessor-functions" id="toc-real-and-imaginary-component-accessor-functions" class="nav-link" data-scroll-target="#real-and-imaginary-component-accessor-functions">Real and imaginary component accessor functions</a></li>
+  </ul></li>
+  <li><a href="#complex-broadcast-functions" id="toc-complex-broadcast-functions" class="nav-link" data-scroll-target="#complex-broadcast-functions">Complex broadcast functions</a>
+  <ul class="collapse">
+  <li><a href="#symmetrization" id="toc-symmetrization" class="nav-link" data-scroll-target="#symmetrization">Symmetrization</a></li>
+  </ul></li>
+  <li><a href="#diagonal-complex-matrix-functions" id="toc-diagonal-complex-matrix-functions" class="nav-link" data-scroll-target="#diagonal-complex-matrix-functions">Diagonal complex matrix functions</a></li>
+  <li><a href="#slicing-and-blocking-functions-for-complex-matrices" id="toc-slicing-and-blocking-functions-for-complex-matrices" class="nav-link" data-scroll-target="#slicing-and-blocking-functions-for-complex-matrices">Slicing and blocking functions for complex matrices</a>
+  <ul class="collapse">
+  <li><a href="#columns-and-rows" id="toc-columns-and-rows" class="nav-link" data-scroll-target="#columns-and-rows">Columns and rows</a></li>
+  <li><a href="#block-operations" id="toc-block-operations" class="nav-link" data-scroll-target="#block-operations">Block operations</a></li>
+  </ul></li>
+  <li><a href="#complex-matrix-concatenation" id="toc-complex-matrix-concatenation" class="nav-link" data-scroll-target="#complex-matrix-concatenation">Complex matrix concatenation</a>
+  <ul class="collapse">
+  <li><a href="#horizontal-concatenation" id="toc-horizontal-concatenation" class="nav-link" data-scroll-target="#horizontal-concatenation">Horizontal concatenation</a></li>
+  <li><a href="#vertical-concatenation" id="toc-vertical-concatenation" class="nav-link" data-scroll-target="#vertical-concatenation">Vertical concatenation</a></li>
+  </ul></li>
+  <li><a href="#complex-special-matrix-functions" id="toc-complex-special-matrix-functions" class="nav-link" data-scroll-target="#complex-special-matrix-functions">Complex special matrix functions</a>
+  <ul class="collapse">
+  <li><a href="#fast-fourier-transforms" id="toc-fast-fourier-transforms" class="nav-link" data-scroll-target="#fast-fourier-transforms">Fast Fourier transforms</a></li>
+  <li><a href="#cumulative-sums" id="toc-cumulative-sums" class="nav-link" data-scroll-target="#cumulative-sums">Cumulative sums</a></li>
+  </ul></li>
+  <li><a href="#complex-linear-algebra-functions" id="toc-complex-linear-algebra-functions" class="nav-link" data-scroll-target="#complex-linear-algebra-functions">Complex linear algebra functions</a>
+  <ul class="collapse">
+  <li><a href="#complex-matrix-division-operators-and-functions" id="toc-complex-matrix-division-operators-and-functions" class="nav-link" data-scroll-target="#complex-matrix-division-operators-and-functions">Complex matrix division operators and functions</a></li>
+  <li><a href="#linear-algebra-functions" id="toc-linear-algebra-functions" class="nav-link" data-scroll-target="#linear-algebra-functions">Linear algebra functions</a></li>
+  </ul></li>
+  <li><a href="#reverse-functions-for-complex-matrices" id="toc-reverse-functions-for-complex-matrices" class="nav-link" data-scroll-target="#reverse-functions-for-complex-matrices">Reverse functions for complex matrices</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/functions-reference/complex_matrix_operations.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<div>
+This is an old version, <a href="https://mc-stan.org/docs/functions-reference/complex_matrix_operations.html">view current version</a>.
+</div>
+
+
+
+
+<section id="complex_matrix-operations" class="level1">
+<h1>Complex Matrix Operations</h1>
+<section id="complex-promotion" class="level2">
+<h2 class="anchored" data-anchor-id="complex-promotion">Complex promotion</h2>
+<p>This chapter provides the details of functions that operate over complex matrices, vectors, and row vectors. These mirror the operations over real complex_matrix types and are defined in the usual way for complex numbers.</p>
+<section id="promotion-of-complex-arguments" class="level3">
+<h3 class="anchored" data-anchor-id="promotion-of-complex-arguments">Promotion of complex arguments</h3>
+<p>If an expression <code>e</code> can be assigned to a variable of type <code>T</code>, then it can be used as an argument to a function that is specified to take arguments of type <code>T</code>. For instance, <code>sqrt(real)</code> is specified to take a <code>real</code> argument, but an integer expression such as <code>2 + 2</code> of type <code>int</code> can be passed to <code>sqrt</code>, so that <code>sqrt(2 + 2)</code> is well defined. This works by promoting the integer expression <code>2 + 2</code> to be of <code>real</code> type.</p>
+<p>The rules for promotion in Stan are simple:</p>
+<ul>
+<li><code>int</code> may be promoted to <code>real</code>,</li>
+<li><code>real</code> may be promoted to <code>complex</code>,</li>
+<li><code>vector</code> can be promoted to <code>complex_vector</code>,</li>
+<li><code>row_vector</code> can be promoted to <code>complex_row_vector</code>,</li>
+<li><code>matrix</code> can be promoted to <code>complex_matrix</code>,</li>
+<li>if <code>T</code> can be promoted to <code>U</code> and <code>U</code> can be promoted to <code>V</code>, then <code>T</code> can be promoted to <code>V</code> (transitive), and</li>
+<li>if <code>T</code> can be promoted to <code>U</code>, then <code>T[]</code> can be promoted to <code>U[]</code> (covariant).</li>
+</ul>
+</section>
+<section id="signature-selection" class="level3">
+<h3 class="anchored" data-anchor-id="signature-selection">Signature selection</h3>
+<p>When a function is called, the definition requiring the fewest number of promotions is used. For example, when calling <code>vector + vector</code>, the real-valued signature is used. When calling any of <code>complex_vector + vector</code>, <code>vector + complex_vector</code>, or <code>complex_vector + complex_vector</code>, the complex signature is used. If more than one signature matches with a the minimal number of promotions, the call is ambiguous, and an error will be raised by the compiler. Promotion ambiguity leading to ill-defined calls should never happen with Stan built-in functions.</p>
+</section>
+<section id="signatures-for-complex-functions" class="level3">
+<h3 class="anchored" data-anchor-id="signatures-for-complex-functions">Signatures for complex functions</h3>
+<p>Complex function signatures will only list the fully complex type. For example, with complex vector addition, we will list a single signature, <code>complex operator+(complex_vector, complex_vector)</code>. Through promotion, <code>operator+</code> may be called with one complex vector and one real vector as well, but the documentation elides the implied signatures <code>operator+(complex_vector, vector)</code> and <code>operator+(vector, complex_vector)</code>.</p>
+</section>
+<section id="generic-functions-work-for-complex-containers" class="level3">
+<h3 class="anchored" data-anchor-id="generic-functions-work-for-complex-containers">Generic functions work for complex containers</h3>
+<p>Generic functions work for arrays containing complex, complex matrix, complex vector, or complex row vector types. This includes the functions <code>append_array</code>, <code>dims</code>, <code>head</code>, <code>num_elements</code>, <code>rep_array</code>, <code>reverse</code>, <code>segment</code>, <code>size</code>, and <code>tail</code>.</p>
+</section>
+</section>
+<section id="integer-valued-complex-matrix-size-functions" class="level2">
+<h2 class="anchored" data-anchor-id="integer-valued-complex-matrix-size-functions">Integer-valued complex matrix size functions</h2>
+<a id="index-entry-5f67a5c5dc6caa692838121eb1be3a0294ad191f" class="index-entry"></a> <!-- int; num_elements; (complex_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>num_elements</code></strong><code>(complex_vector x)</code><br> The total number of elements in the vector x (same as function <code>rows</code>)</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-18b5a5e8da0b97e5db61bc2558be5861bb0e60c9" class="index-entry"></a> <!-- int; num_elements; (complex_row_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>num_elements</code></strong><code>(complex_row_vector x)</code><br> The total number of elements in the vector x (same as function <code>cols</code>)</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-ea9bb96c32abb986ac353999ee38effe98c2999e" class="index-entry"></a> <!-- int; num_elements; (complex_matrix x); -->
+<p></p>
+<p><code>int</code> <strong><code>num_elements</code></strong><code>(complex_matrix x)</code><br> The total number of elements in the matrix x. For example, if <code>x</code> is a <span class="math inline">\(5 \times 3\)</span> matrix, then <code>num_elements(x)</code> is 15</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-8005f2c9cb8700f40b7a2aa479a6d62cc1ab309d" class="index-entry"></a> <!-- int; rows; (complex_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>rows</code></strong><code>(complex_vector x)</code><br> The number of rows in the vector x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-e14fb4048c19b782910ef083ea77519d2136be69" class="index-entry"></a> <!-- int; rows; (complex_row_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>rows</code></strong><code>(complex_row_vector x)</code><br> The number of rows in the row vector x, namely 1</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-9ebbc38c2cab2bb85fc80a2aace93188ecfcf794" class="index-entry"></a> <!-- int; rows; (complex_matrix x); -->
+<p></p>
+<p><code>int</code> <strong><code>rows</code></strong><code>(complex_matrix x)</code><br> The number of rows in the matrix x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-2926894bc112a2f76fc88ec0d1b66ca72f6907ab" class="index-entry"></a> <!-- int; cols; (complex_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>cols</code></strong><code>(complex_vector x)</code><br> The number of columns in the vector x, namely 1</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-a3afb9b9b85c96fcbb2ceccffe8220cdf6930ee0" class="index-entry"></a> <!-- int; cols; (complex_row_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>cols</code></strong><code>(complex_row_vector x)</code><br> The number of columns in the row vector x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-22eb74ccaa0e3cbd1875a10b1d25e448aaca1078" class="index-entry"></a> <!-- int; cols; (complex_matrix x); -->
+<p></p>
+<p><code>int</code> <strong><code>cols</code></strong><code>(complex_matrix x)</code><br> The number of columns in the matrix x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-4a14d6b215559d7664aabfafde37e9153206b209" class="index-entry"></a> <!-- int; size; (complex_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>size</code></strong><code>(complex_vector x)</code><br> The size of <code>x</code>, i.e., the number of elements</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-dd6512340d46b06fe64606e36622bf23ed255eab" class="index-entry"></a> <!-- int; size; (complex_row_vector x); -->
+<p></p>
+<p><code>int</code> <strong><code>size</code></strong><code>(complex_row_vector x)</code><br> The size of <code>x</code>, i.e., the number of elements</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-69098855a034f282c0294e1c6c21cded79ec8a3c" class="index-entry"></a> <!-- int; size; (matrix x); -->
+<p></p>
+<p><code>int</code> <strong><code>size</code></strong><code>(matrix x)</code><br> The size of the matrix <code>x</code>. For example, if <code>x</code> is a <span class="math inline">\(5 \times 3\)</span> matrix, then <code>size(x)</code> is 15.</p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="complex-matrix-arithmetic-operators" class="level2">
+<h2 class="anchored" data-anchor-id="complex-matrix-arithmetic-operators">Complex matrix arithmetic operators</h2>
+<p>Stan supports all basic complex arithmetic operators using infix, prefix and postfix operations. This section lists the operations supported by Stan along with their argument and result types.</p>
+<section id="negation-prefix-operators" class="level3">
+<h3 class="anchored" data-anchor-id="negation-prefix-operators">Negation prefix operators</h3>
+<a id="index-entry-e5e977ad448b9356d9822a744773c212eb665b80" class="index-entry"></a> <!-- complex_vector; operator-; (complex_vector x); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator-</code></strong><code>(complex_vector x)</code><br> The negation of the vector x.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-4849f1558fb4d3addc5296dec7dc076fc33e2ac8" class="index-entry"></a> <!-- complex_row_vector; operator-; (complex_row_vector x); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator-</code></strong><code>(complex_row_vector x)</code><br> The negation of the row vector x.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-c67e9b27b61ec87f6671f881e99e0215abca731a" class="index-entry"></a> <!-- complex_matrix; operator-; (complex_matrix x); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator-</code></strong><code>(complex_matrix x)</code><br> The negation of the matrix x.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-12e466dce5df3d58d3ad7f47d7637bc66c0c3b0f" class="index-entry"></a> <!-- T; operator-; (T x); -->
+<p></p>
+<p><code>T</code> <strong><code>operator-</code></strong><code>(T x)</code><br> Vectorized version of <code>operator-</code>. If <code>T x</code> is a (possibly nested) array of matrix types, <code>-x</code> is the same shape array where each individual value is negated.</p>
+<small><i>Available since 2.31</i></small>
+</section>
+<section id="infix-complex_matrix-operators" class="level3">
+<h3 class="anchored" data-anchor-id="infix-complex_matrix-operators">Infix complex_matrix operators</h3>
+<a id="index-entry-c4da2f5e129a64de4d83c12e2a8d2d79d7cd1619" class="index-entry"></a> <!-- complex_vector; operator+; (complex_vector x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator+</code></strong><code>(complex_vector x, complex_vector y)</code><br> The sum of the vectors x and y.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-e4a7e3cd9cefa9964eb063b241f963f7b27007e7" class="index-entry"></a> <!-- complex_row_vector; operator+; (complex_row_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator+</code></strong><code>(complex_row_vector x, complex_row_vector y)</code><br> The sum of the row vectors x and y.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-1c6e89ffde910406a3f594d11872988647733d8f" class="index-entry"></a> <!-- complex_matrix; operator+; (complex_matrix x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator+</code></strong><code>(complex_matrix x, complex_matrix y)</code><br> The sum of the matrices x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-2b25bbe909c531da7ca053dec04d2a0d66767407" class="index-entry"></a> <!-- complex_vector; operator-; (complex_vector x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator-</code></strong><code>(complex_vector x, complex_vector y)</code><br> The difference between the vectors x and y.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-c159327226df72cad0b808e6e72271542904ae9b" class="index-entry"></a> <!-- complex_row_vector; operator-; (complex_row_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator-</code></strong><code>(complex_row_vector x, complex_row_vector y)</code><br> The difference between the row vectors x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-4b7f3f2a15c41213894ee287a6fd4532d8ca59fb" class="index-entry"></a> <!-- complex_matrix; operator-; (complex_matrix x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator-</code></strong><code>(complex_matrix x, complex_matrix y)</code><br> The difference between the matrices x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-a79cd86a9e357f4daa3c2a357da7fe74a1591449" class="index-entry"></a> <!-- complex_vector; operator*; (complex x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator*</code></strong><code>(complex x, complex_vector y)</code><br> The product of the scalar x and vector y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-96bd6d9926f3cf86d4abdf08767a6078cd45be14" class="index-entry"></a> <!-- complex_row_vector; operator*; (complex x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator*</code></strong><code>(complex x, complex_row_vector y)</code><br> The product of the scalar x and the row vector y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-a69bac506948c37d27beb39e793ff1339a67bf85" class="index-entry"></a> <!-- complex_matrix; operator*; (complex x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator*</code></strong><code>(complex x, complex_matrix y)</code><br> The product of the scalar x and the matrix y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-23a93f16e6035cc32b84ecf97c32845e9008702c" class="index-entry"></a> <!-- complex_vector; operator*; (complex_vector x, complex y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator*</code></strong><code>(complex_vector x, complex y)</code><br> The product of the scalar y and vector x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-6036495abafc183b219e271873881cec3f6e46a3" class="index-entry"></a> <!-- complex_matrix; operator*; (complex_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator*</code></strong><code>(complex_vector x, complex_row_vector y)</code><br> The product of the vector x and row vector y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-989f9db43310c8b2278983062fe9699e275f0f4b" class="index-entry"></a> <!-- complex_row_vector; operator*; (complex_row_vector x, complex y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator*</code></strong><code>(complex_row_vector x, complex y)</code><br> The product of the scalar y and row vector x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-6a24a75ba519ef262ca78b4f7e1077124ff4e67b" class="index-entry"></a> <!-- complex; operator*; (complex_row_vector x, complex_vector y); -->
+<p></p>
+<p><code>complex</code> <strong><code>operator*</code></strong><code>(complex_row_vector x, complex_vector y)</code><br> The product of the row vector x and vector y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-eb9d524d09ed2def387f6d32e50434f1d04bb45a" class="index-entry"></a> <!-- complex_row_vector; operator*; (complex_row_vector x, complex_matrix y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator*</code></strong><code>(complex_row_vector x, complex_matrix y)</code><br> The product of the row vector x and matrix y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-ec01c1a12f2dee572064680e87666ff43581e98e" class="index-entry"></a> <!-- complex_matrix; operator*; (complex_matrix x, complex y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator*</code></strong><code>(complex_matrix x, complex y)</code><br> The product of the scalar y and matrix x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-7e59bb7495322cfae3a60e7cd858c8ea8ad00be4" class="index-entry"></a> <!-- complex_vector; operator*; (complex_matrix x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator*</code></strong><code>(complex_matrix x, complex_vector y)</code><br> The product of the matrix x and vector y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-e6c145519223a7e32befa818a711dd8470e7264d" class="index-entry"></a> <!-- complex_matrix; operator*; (complex_matrix x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator*</code></strong><code>(complex_matrix x, complex_matrix y)</code><br> The product of the matrices x and y</p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="broadcast-infix-operators" class="level3">
+<h3 class="anchored" data-anchor-id="broadcast-infix-operators">Broadcast infix operators</h3>
+<a id="index-entry-e2a4a5c6172fcff3b822f22f17e4012616aa798b" class="index-entry"></a> <!-- complex_vector; operator+; (complex_vector x, complex y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator+</code></strong><code>(complex_vector x, complex y)</code><br> The result of adding y to every entry in the vector x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-5a80c22fc9ab785c199e3ea9ba3903429f3308f9" class="index-entry"></a> <!-- complex_vector; operator+; (complex x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator+</code></strong><code>(complex x, complex_vector y)</code><br> The result of adding x to every entry in the vector y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-83570c79a3f99ef98736dec5190a738977bf1986" class="index-entry"></a> <!-- complex_row_vector; operator+; (complex_row_vector x, complex y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator+</code></strong><code>(complex_row_vector x, complex y)</code><br> The result of adding y to every entry in the row vector x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-cf423b623dd5296c4bed0996e11793cfff99b12b" class="index-entry"></a> <!-- complex_row_vector; operator+; (complex x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator+</code></strong><code>(complex x, complex_row_vector y)</code><br> The result of adding x to every entry in the row vector y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-0b1ee3eff7624a28d75d9cbdf065d8cb936c401a" class="index-entry"></a> <!-- complex_matrix; operator+; (complex_matrix x, complex y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator+</code></strong><code>(complex_matrix x, complex y)</code><br> The result of adding y to every entry in the matrix x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-3cbf469cad59cf318ccf139f90a016fc4bfe3db1" class="index-entry"></a> <!-- complex_matrix; operator+; (complex x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator+</code></strong><code>(complex x, complex_matrix y)</code><br> The result of adding x to every entry in the matrix y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-750993752e1971b5caa4b40e151244295537237d" class="index-entry"></a> <!-- complex_vector; operator-; (complex_vector x, complex y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator-</code></strong><code>(complex_vector x, complex y)</code><br> The result of subtracting y from every entry in the vector x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-149f85a65fcb71890f2740b37f3d8e99d171c293" class="index-entry"></a> <!-- complex_vector; operator-; (complex x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator-</code></strong><code>(complex x, complex_vector y)</code><br> The result of adding x to every entry in the negation of the vector y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-23a25b349111e68acc8ccbf019f247a0857b9f9a" class="index-entry"></a> <!-- complex_row_vector; operator-; (complex_row_vector x, complex y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator-</code></strong><code>(complex_row_vector x, complex y)</code><br> The result of subtracting y from every entry in the row vector x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-be634502437e0887fcb531772138f252af5cd41b" class="index-entry"></a> <!-- complex_row_vector; operator-; (complex x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator-</code></strong><code>(complex x, complex_row_vector y)</code><br> The result of adding x to every entry in the negation of the row vector y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-19c0fa6f4a31be826fff56b079a14d03456e94c6" class="index-entry"></a> <!-- complex_matrix; operator-; (complex_matrix x, complex y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator-</code></strong><code>(complex_matrix x, complex y)</code><br> The result of subtracting y from every entry in the matrix x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-a49311f2dd1b5d25aa68b099771fc781e15783c3" class="index-entry"></a> <!-- complex_matrix; operator-; (complex x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator-</code></strong><code>(complex x, complex_matrix y)</code><br> The result of adding x to every entry in negation of the matrix y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-0042e2fa5c0ff5c4695b13b4a482a8b37f1ab450" class="index-entry"></a> <!-- complex_vector; operator/; (complex_vector x, complex y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator/</code></strong><code>(complex_vector x, complex y)</code><br> The result of dividing each entry in the vector x by y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-05c2018d6b4d3473de214d967f936575bbe2ce9e" class="index-entry"></a> <!-- complex_row_vector; operator/; (complex_row_vector x, complex y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator/</code></strong><code>(complex_row_vector x, complex y)</code><br> The result of dividing each entry in the row vector x by y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-0e4a06f38977dd429031b5e8cbd2c34d97c11b6d" class="index-entry"></a> <!-- complex_matrix; operator/; (complex_matrix x, complex y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator/</code></strong><code>(complex_matrix x, complex y)</code><br> The result of dividing each entry in the matrix x by y</p>
+<small><i>Available since 2.30</i></small>
+</section>
+</section>
+<section id="complex-transposition-operator" class="level2">
+<h2 class="anchored" data-anchor-id="complex-transposition-operator">Complex Transposition Operator</h2>
+<p>Complex complex_matrix transposition is represented using a postfix operator.</p>
+<a id="index-entry-091a4926b279f9df738ff9dcd356e2436c3f9485" class="index-entry"></a> <!-- complex_matrix; operator'; (complex_matrix x); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator'</code></strong><code>(complex_matrix x)</code><br> The transpose of the matrix <code>x</code>, written as <code>x'</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-7b294083ea64b206b4b02446640de44855355156" class="index-entry"></a> <!-- complex_row_vector; operator'; (complex_vector x); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator'</code></strong><code>(complex_vector x)</code><br> The transpose of the vector <code>x</code>, written as <code>x'</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-ef45f4afc752618674b3095733d0dad1150a39fd" class="index-entry"></a> <!-- complex_vector; operator'; (complex_row_vector x); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator'</code></strong><code>(complex_row_vector x)</code><br> The transpose of the row vector <code>x</code>, written as <code>x'</code></p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="complex-elementwise-functions" class="level2">
+<h2 class="anchored" data-anchor-id="complex-elementwise-functions">Complex elementwise functions</h2>
+<p>As in the real case, elementwise complex functions apply a function to each element of a vector or matrix, returning a result of the same shape as the argument.</p>
+<a id="index-entry-955eb57e60395b2be45f5af21989a3aff5f5db70" class="index-entry"></a> <!-- complex_vector; operator.*; (complex_vector x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator.*</code></strong><code>(complex_vector x, complex_vector y)</code><br> The elementwise product of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-8225aa3a59b24f94b5efa4533b49050ef65e64ca" class="index-entry"></a> <!-- complex_row_vector; operator.*; (complex_row_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator.*</code></strong><code>(complex_row_vector x, complex_row_vector y)</code><br> The elementwise product of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-8eb7c34b5da648cda9b6f992d4218d023c05d1da" class="index-entry"></a> <!-- complex_matrix; operator.*; (complex_matrix x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator.*</code></strong><code>(complex_matrix x, complex_matrix y)</code><br> The elementwise product of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-0f3d53dc1ff728a9ee7518e0ad5992c1fedcb7ff" class="index-entry"></a> <!-- complex_vector; operator./; (complex_vector x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator./</code></strong><code>(complex_vector x, complex_vector y)</code><br> The elementwise quotient of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-97bb359024d4f5bab6603c1d02519ed1e7641737" class="index-entry"></a> <!-- complex_vector; operator./; (complex x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator./</code></strong><code>(complex x, complex_vector y)</code><br> The elementwise quotient of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-17e7fc9ed1291f3c3a332e54b65762dcac73f699" class="index-entry"></a> <!-- complex_vector; operator./; (complex_vector x, complex y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>operator./</code></strong><code>(complex_vector x, complex y)</code><br> The elementwise quotient of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-d6ea602ecffe4e62bb465b28956200dec419c158" class="index-entry"></a> <!-- complex_row_vector; operator./; (complex_row_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator./</code></strong><code>(complex_row_vector x, complex_row_vector y)</code><br> The elementwise quotient of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-5380455bf8d01c0d94b7994157ecd464dff285ab" class="index-entry"></a> <!-- complex_row_vector; operator./; (complex x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator./</code></strong><code>(complex x, complex_row_vector y)</code><br> The elementwise quotient of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-f83946686d65ec544820b3c6401ce2e3000cc1a9" class="index-entry"></a> <!-- complex_row_vector; operator./; (complex_row_vector x, complex y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator./</code></strong><code>(complex_row_vector x, complex y)</code><br> The elementwise quotient of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-a68b100764978dc37adb03c4ac341b3369fa83af" class="index-entry"></a> <!-- complex_matrix; operator./; (complex_matrix x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator./</code></strong><code>(complex_matrix x, complex_matrix y)</code><br> The elementwise quotient of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-55e666acb9e555e6085cb69b1bf90e25b210d14b" class="index-entry"></a> <!-- complex_matrix; operator./; (complex x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator./</code></strong><code>(complex x, complex_matrix y)</code><br> The elementwise quotient of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-f5684bfa80a80f64afb4be43b829a06f2d3201fa" class="index-entry"></a> <!-- complex_matrix; operator./; (complex_matrix x, complex y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator./</code></strong><code>(complex_matrix x, complex y)</code><br> The elementwise quotient of <code>x</code> and <code>y</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-4d24b6cb15adf28b25dc40a155bf4c76980d37d0" class="index-entry"></a> <!-- complex_vector; operator.^; (complex_vector x, complex_vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator.^</code></strong><code>(complex_vector x, complex_vector y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-a7f9b0419a421d43341556c8b8823bb6737fa14c" class="index-entry"></a> <!-- complex_vector; operator.^; (complex_vector x, complex y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator.^</code></strong><code>(complex_vector x, complex y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-af111e3482f1da8bfba4fa5bae01a0084ebebca3" class="index-entry"></a> <!-- complex_vector; operator.^; (complex x, complex_vector y); -->
+<p></p>
+<p><code>vector</code> <strong><code>operator.^</code></strong><code>(complex x, complex_vector y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-ba84dc5cb8e20d287fb783ebc26ecf24df38f043" class="index-entry"></a> <!-- complex_row_vector; operator.^; (complex_row_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator.^</code></strong><code>(complex_row_vector x, complex_row_vector y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-875148aa0d5deecb6b31fecb24608a167d02fa95" class="index-entry"></a> <!-- complex_row_vector; operator.^; (complex_row_vector x, complex y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator.^</code></strong><code>(complex_row_vector x, complex y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-fa71ce75b9e1f602439d979ae6e9a6161effce6d" class="index-entry"></a> <!-- complex_row_vector; operator.^; (complex x, complex_row_vector y); -->
+<p></p>
+<p><code>row_vector</code> <strong><code>operator.^</code></strong><code>(complex x, complex_row_vector y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-091231072e09466bffb7f4aad16c86348a965b44" class="index-entry"></a> <!-- complex_matrix; operator.^; ( complex_matrix x, complex_matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator.^</code></strong><code>( complex_matrix x, complex_matrix y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-1e6130ad7edcc189ada93ab46995b79b280ada4d" class="index-entry"></a> <!-- complex_matrix; operator.^; ( complex_matrix x, complex y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator.^</code></strong><code>( complex_matrix x, complex y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-fd8c739930b5a8f56920738e91cec159c5e50783" class="index-entry"></a> <!-- complex_matrix; operator.^; (complex x, complex_matrix y); -->
+<p></p>
+<p><code>matrix</code> <strong><code>operator.^</code></strong><code>(complex x, complex_matrix y)</code><br> The elementwise power of y and x</p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="dot-products-and-specialized-products-for-complex-matrices" class="level2">
+<h2 class="anchored" data-anchor-id="dot-products-and-specialized-products-for-complex-matrices">Dot products and specialized products for complex matrices</h2>
+<a id="index-entry-bc037b34a4fdc977a944e39e9277f8e6c700bd5b" class="index-entry"></a> <!-- complex; dot_product; (complex_vector x, complex_vector y); -->
+<p></p>
+<p><code>complex</code> <strong><code>dot_product</code></strong><code>(complex_vector x, complex_vector y)</code><br> The dot product of x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-dd62ebed52c5e3210bb8a0155e1d5dfa70497439" class="index-entry"></a> <!-- complex; dot_product; (complex_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>complex</code> <strong><code>dot_product</code></strong><code>(complex_vector x, complex_row_vector y)</code><br> The dot product of x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-d932a1eed6d525ce1077543b39b6834836923949" class="index-entry"></a> <!-- complex; dot_product; (complex_row_vector x, complex_vector y); -->
+<p></p>
+<p><code>complex</code> <strong><code>dot_product</code></strong><code>(complex_row_vector x, complex_vector y)</code><br> The dot product of x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-13cdb97ea7e259e98791362de8a261d17dab4e1c" class="index-entry"></a> <!-- complex; dot_product; (complex_row_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>complex</code> <strong><code>dot_product</code></strong><code>(complex_row_vector x, complex_row_vector y)</code><br> The dot product of x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-73c167059a6fb3ee21b48776d84d7c14cd6b6b9a" class="index-entry"></a> <!-- complex_row_vector; columns_dot_product; (complex_vector x, complex_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>columns_dot_product</code></strong><code>(complex_vector x, complex_vector y)</code><br> The dot product of the columns of x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-aee28160ebf0573187fba8d1b9917b490dfd47cd" class="index-entry"></a> <!-- complex_row_vector; columns_dot_product; (complex_row_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>columns_dot_product</code></strong><code>(complex_row_vector x, complex_row_vector y)</code><br> The dot product of the columns of x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-c0a3895052c73d4b7553b42dfbcf4ceee17d6ebd" class="index-entry"></a> <!-- complex_row_vector; columns_dot_product; (complex_matrix x, complex_matrix y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>columns_dot_product</code></strong><code>(complex_matrix x, complex_matrix y)</code><br> The dot product of the columns of x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-9869bbad286feb6e3252d28a43fac51f950044c7" class="index-entry"></a> <!-- complex_vector; rows_dot_product; (complex_vector x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>rows_dot_product</code></strong><code>(complex_vector x, complex_vector y)</code><br> The dot product of the rows of x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-734a199664218183d672f594e0ba3c472067cf38" class="index-entry"></a> <!-- complex_vector; rows_dot_product; (complex_row_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>rows_dot_product</code></strong><code>(complex_row_vector x, complex_row_vector y)</code><br> The dot product of the rows of x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-74d6233826ba207dc78ce8fa7c02a1177299542d" class="index-entry"></a> <!-- complex_vector; rows_dot_product; (complex_matrix x, complex_matrix y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>rows_dot_product</code></strong><code>(complex_matrix x, complex_matrix y)</code><br> The dot product of the rows of x and y</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-1ae5feb968f94e219b01c1a6943eb1532161e16f" class="index-entry"></a> <!-- complex; dot_self; (complex_vector x); -->
+<p></p>
+<p><code>complex</code> <strong><code>dot_self</code></strong><code>(complex_vector x)</code><br> The dot product of the vector x with itself</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-d0945f42b843344d7b22f5d088d229c5f5ba64bf" class="index-entry"></a> <!-- complex; dot_self; (complex_row_vector x); -->
+<p></p>
+<p><code>complex</code> <strong><code>dot_self</code></strong><code>(complex_row_vector x)</code><br> The dot product of the row vector x with itself</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-25320510319f7efaed97fc7327bcb3481a1fd055" class="index-entry"></a> <!-- complex_row_vector; columns_dot_self; (complex_vector x); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>columns_dot_self</code></strong><code>(complex_vector x)</code><br> The dot product of the columns of x with themselves</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-5a3c0ca6ac56df87695d6d53c5ed41bd076db1bf" class="index-entry"></a> <!-- complex_row_vector; columns_dot_self; (complex_row_vector x); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>columns_dot_self</code></strong><code>(complex_row_vector x)</code><br> The dot product of the columns of x with themselves</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-499a93465efa4feea0949bffdec099ac446865be" class="index-entry"></a> <!-- complex_row_vector; columns_dot_self; (complex_matrix x); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>columns_dot_self</code></strong><code>(complex_matrix x)</code><br> The dot product of the columns of x with themselves</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-9089a74ceffaf17dbabc8404c8575d1f4d6f92a9" class="index-entry"></a> <!-- complex_vector; rows_dot_self; (complex_vector x); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>rows_dot_self</code></strong><code>(complex_vector x)</code><br> The dot product of the rows of x with themselves</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-f485e7669d290a4148d1373c4705206fdef737e3" class="index-entry"></a> <!-- complex_vector; rows_dot_self; (complex_row_vector x); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>rows_dot_self</code></strong><code>(complex_row_vector x)</code><br> The dot product of the rows of x with themselves</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-771452c2e576061539abb7bece2cec0051b51eb7" class="index-entry"></a> <!-- complex_vector; rows_dot_self; (complex_matrix x); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>rows_dot_self</code></strong><code>(complex_matrix x)</code><br> The dot product of the rows of x with themselves</p>
+<small><i>Available since 2.30</i></small>
+<section id="specialized-products" class="level3">
+<h3 class="anchored" data-anchor-id="specialized-products">Specialized products</h3>
+<a id="index-entry-7907eb3baed066d578933e3832fe8366c02116eb" class="index-entry"></a> <!-- complex_matrix; diag_pre_multiply; (complex_vector v, complex_matrix m); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>diag_pre_multiply</code></strong><code>(complex_vector v, complex_matrix m)</code><br> Return the product of the diagonal matrix formed from the vector v and the matrix m, i.e., <code>diag_matrix(v) * m</code>.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-29b61ea8d42d42252259e35dbe0c427c485ad9e8" class="index-entry"></a> <!-- complex_matrix; diag_pre_multiply; (complex_row_vector v, complex_matrix m); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>diag_pre_multiply</code></strong><code>(complex_row_vector v, complex_matrix m)</code><br> Return the product of the diagonal matrix formed from the vector rv and the matrix m, i.e., <code>diag_matrix(rv) * m</code>.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-b8e527d5b7adcfe81f12d70984ba81d895332835" class="index-entry"></a> <!-- complex_matrix; diag_post_multiply; (complex_matrix m, complex_vector v); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>diag_post_multiply</code></strong><code>(complex_matrix m, complex_vector v)</code><br> Return the product of the matrix m and the diagonal matrix formed from the vector v, i.e., <code>m * diag_matrix(v)</code>.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-82629e9f9045325a28b4c0610df36226bc6c4562" class="index-entry"></a> <!-- complex_matrix; diag_post_multiply; (complex_matrix m, complex_row_vector v); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>diag_post_multiply</code></strong><code>(complex_matrix m, complex_row_vector v)</code><br> Return the product of the matrix <code>m</code> and the diagonal matrix formed from the the row vector <code>rv</code>, i.e., <code>m * diag_matrix(rv)</code>.</p>
+<small><i>Available since 2.30</i></small>
+</section>
+</section>
+<section id="complex-reductions" class="level2">
+<h2 class="anchored" data-anchor-id="complex-reductions">Complex reductions</h2>
+<section id="sums-and-products" class="level3">
+<h3 class="anchored" data-anchor-id="sums-and-products">Sums and products</h3>
+<a id="index-entry-3cf6379c6f6f87df7a312af029238c24af388e45" class="index-entry"></a> <!-- complex; sum; (complex_vector x); -->
+<p></p>
+<p><code>complex</code> <strong><code>sum</code></strong><code>(complex_vector x)</code><br> The sum of the values in x, or 0 if x is empty</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-bbcdf1952ec801328e03cb3637166b7a9f2f3cff" class="index-entry"></a> <!-- complex; sum; (complex_row_vector x); -->
+<p></p>
+<p><code>complex</code> <strong><code>sum</code></strong><code>(complex_row_vector x)</code><br> The sum of the values in x, or 0 if x is empty</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-3cba7a8e0e6f9daf41a8ac994c85688f887c228b" class="index-entry"></a> <!-- complex; sum; (complex_matrix x); -->
+<p></p>
+<p><code>complex</code> <strong><code>sum</code></strong><code>(complex_matrix x)</code><br> The sum of the values in x, or 0 if x is empty</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-12d6f5e8068b2b8308d32394e6debc2fa118e082" class="index-entry"></a> <!-- complex; prod; (complex_vector x); -->
+<p></p>
+<p><code>complex</code> <strong><code>prod</code></strong><code>(complex_vector x)</code><br> The product of the values in x, or 1 if x is empty</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-5353a09f94f67878ef023d0c25bdf91d78c1cfaa" class="index-entry"></a> <!-- complex; prod; (complex_row_vector x); -->
+<p></p>
+<p><code>complex</code> <strong><code>prod</code></strong><code>(complex_row_vector x)</code><br> The product of the values in x, or 1 if x is empty</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-2c4545b2f6cd6bbf4e42a4d446d210160e082d42" class="index-entry"></a> <!-- complex; prod; (complex_matrix x); -->
+<p></p>
+<p><code>complex</code> <strong><code>prod</code></strong><code>(complex_matrix x)</code><br> The product of the values in x, or 1 if x is empty</p>
+<small><i>Available since 2.30</i></small>
+</section>
+</section>
+<section id="vectorized-accessor-functions" class="level2">
+<h2 class="anchored" data-anchor-id="vectorized-accessor-functions">Vectorized accessor functions</h2>
+<p>Much like with complex scalars, two functions are defined to get the real and imaginary components of complex-valued objects.</p>
+<section id="type-demotion" class="level3">
+<h3 class="anchored" data-anchor-id="type-demotion">Type “demotion”</h3>
+<p>These functions return the same shape (e.g., matrix, vector, row vector, or array) object as their input, but demoted to a <code>real</code> type. For example, <code>get_real(complex_matrix M)</code> yields a <code>matrix</code> containing the real component of each value in <code>M</code>.</p>
+<p>The following table contains examples of what this notation can mean:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Type <code>T</code></th>
+<th style="text-align: left;">Type <code>T_demoted</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>complex</code></td>
+<td style="text-align: left;"><code>real</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>complex_vector</code></td>
+<td style="text-align: left;"><code>vector</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>complex_row_vector</code></td>
+<td style="text-align: left;"><code>row_vector</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>complex_matrix</code></td>
+<td style="text-align: left;"><code>matrix</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>array[] complex</code></td>
+<td style="text-align: left;"><code>array[] real</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>array[,,] complex</code></td>
+<td style="text-align: left;"><code>array[,,] real</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="real-and-imaginary-component-accessor-functions" class="level3">
+<h3 class="anchored" data-anchor-id="real-and-imaginary-component-accessor-functions">Real and imaginary component accessor functions</h3>
+<a id="index-entry-2562277862b92c4536cb33d80bfed98e8a586d81" class="index-entry"></a> <!-- T; get_real; (T x); -->
+<p></p>
+<p><code>T_demoted</code> <strong><code>get_real</code></strong><code>(T x)</code><br> Given an object of complex type <code>T</code>, return the same shape object but of type <code>real</code> by getting the real component of each element of <code>x</code>.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-48dc2caf35c9102abf142e71d6755de12af13e0c" class="index-entry"></a> <!-- T; get_imag; (T x); -->
+<p></p>
+<p><code>T_demoted</code> <strong><code>get_imag</code></strong><code>(T x)</code><br> Given an object of complex type <code>T</code>, return the same shape object but of type <code>real</code> by getting the imaginary component of each element of <code>x</code>.</p>
+<small><i>Available since 2.30</i></small>
+<p>For example, given the Stan declaration</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>  <span class="dt">complex_vector</span>[<span class="dv">2</span>] z = [<span class="dv">3</span>+<span class="fl">4i</span>, <span class="dv">5</span>+<span class="fl">6i</span>]';</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A call <code>get_real(z)</code> will yield the vector <code>[3, 5]'</code>, and a call <code>get_imag(z)</code> will yield the vector <code>[4, 6]'</code>.</p>
+</section>
+</section>
+<section id="complex-broadcast-functions" class="level2">
+<h2 class="anchored" data-anchor-id="complex-broadcast-functions">Complex broadcast functions</h2>
+<p>The following broadcast functions allow vectors, row vectors and matrices to be created by copying a single element into all of their cells. Matrices may also be created by stacking copies of row vectors vertically or stacking copies of column vectors horizontally.</p>
+<a id="index-entry-d9c905ecc938069ed009528bdab94da0534015b1" class="index-entry"></a> <!-- complex_vector; rep_vector; (complex z, int m); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>rep_vector</code></strong><code>(complex z, int m)</code><br> Return the size m (column) vector consisting of copies of z.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-5bf4e064db435eff0410b72666643037d22a395c" class="index-entry"></a> <!-- complex_row_vector; rep_row_vector; (complex z, int n); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>rep_row_vector</code></strong><code>(complex z, int n)</code><br> Return the size n row vector consisting of copies of z.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-24c948121a2ee087e060ad1257d8719e1b9aa2c3" class="index-entry"></a> <!-- complex_matrix; rep_matrix; (complex z, int m, int n); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>rep_matrix</code></strong><code>(complex z, int m, int n)</code><br> Return the m by n matrix consisting of copies of z.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-680d23b80116edb9e6752b03801cf43a42571d6a" class="index-entry"></a> <!-- complex_matrix; rep_matrix; (complex_vector v, int n); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>rep_matrix</code></strong><code>(complex_vector v, int n)</code><br> Return the m by n matrix consisting of n copies of the (column) vector v of size m.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-e106eee17c0bdf0c73908ed222c19f595e566330" class="index-entry"></a> <!-- complex_matrix; rep_matrix; (complex_row_vector rv, int m); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>rep_matrix</code></strong><code>(complex_row_vector rv, int m)</code><br> Return the m by n matrix consisting of m copies of the row vector rv of size n.</p>
+<small><i>Available since 2.30</i></small>
+<section id="symmetrization" class="level3">
+<h3 class="anchored" data-anchor-id="symmetrization">Symmetrization</h3>
+<a id="index-entry-99c3b184331464981edec14b1ad54d7ed2f94251" class="index-entry"></a> <!-- complex_matrix; symmetrize_from_lower_tri; (complex_matrix A); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>symmetrize_from_lower_tri</code></strong><code>(complex_matrix A)</code><br> Construct a symmetric matrix from the lower triangle of A.</p>
+<small><i>Available since 2.30</i></small>
+</section>
+</section>
+<section id="diagonal-complex-matrix-functions" class="level2">
+<h2 class="anchored" data-anchor-id="diagonal-complex-matrix-functions">Diagonal complex matrix functions</h2>
+<a id="index-entry-ebc82f3647c3357e9ff2d0c3de2f5996ac435a22" class="index-entry"></a> <!-- complex_matrix; add_diag; (complex_matrix m, complex_row_vector d); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>add_diag</code></strong><code>(complex_matrix m, complex_row_vector d)</code><br> Add row_vector <code>d</code> to the diagonal of matrix <code>m</code>.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-c75a27fd3abf5459a2683dc6261be6c0045b71d6" class="index-entry"></a> <!-- complex_matrix; add_diag; (complex_matrix m, complex_vector d); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>add_diag</code></strong><code>(complex_matrix m, complex_vector d)</code><br> Add vector <code>d</code> to the diagonal of matrix <code>m</code>.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-1bd31f2687a12296c53d88aedd4fe7b91be42e6b" class="index-entry"></a> <!-- complex_matrix; add_diag; (complex_matrix m, complex_real d); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>add_diag</code></strong><code>(complex_matrix m, complex d)</code><br> Add scalar <code>d</code> to every diagonal element of matrix <code>m</code>.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-5d28ae699b02999166db3502cec1f2c9b74d1c34" class="index-entry"></a> <!-- complex_vector; diagonal; (complex_matrix x); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>diagonal</code></strong><code>(complex_matrix x)</code><br> The diagonal of the matrix x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-06edc5538b52d1a11f2a6f45be9ca1e0683bbb1e" class="index-entry"></a> <!-- complex_matrix; diag_matrix; (complex_vector x); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>diag_matrix</code></strong><code>(complex_vector x)</code><br> The diagonal matrix with diagonal x</p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="slicing-and-blocking-functions-for-complex-matrices" class="level2">
+<h2 class="anchored" data-anchor-id="slicing-and-blocking-functions-for-complex-matrices">Slicing and blocking functions for complex matrices</h2>
+<p>Stan provides several functions for generating slices or blocks or diagonal entries for matrices.</p>
+<section id="columns-and-rows" class="level3">
+<h3 class="anchored" data-anchor-id="columns-and-rows">Columns and rows</h3>
+<a id="index-entry-3a0cf3be0b3793d63afbee36001fbeed1f83f08f" class="index-entry"></a> <!-- complex_vector; col; (complex_matrix x, int n); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>col</code></strong><code>(complex_matrix x, int n)</code><br> The n-th column of matrix x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-f8cb43eb2a385abfd8880fb1c741f30d7c691414" class="index-entry"></a> <!-- complex_row_vector; row; (complex_matrix x, int m); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>row</code></strong><code>(complex_matrix x, int m)</code><br> The m-th row of matrix x</p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="block-operations" class="level3">
+<h3 class="anchored" data-anchor-id="block-operations">Block operations</h3>
+<section id="matrix-slicing-operations" class="level4">
+<h4 class="anchored" data-anchor-id="matrix-slicing-operations">Matrix slicing operations</h4>
+<a id="index-entry-2d1266e93b2287bbb26f4015769ebc779ef29f81" class="index-entry"></a> <!-- complex_matrix; block; (complex_matrix x, int i, int j, int n_rows, int n_cols); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>block</code></strong><code>(complex_matrix x, int i, int j, int n_rows, int n_cols)</code><br> Return the submatrix of x that starts at row i and column j and extends n_rows rows and n_cols columns.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-177f046c456c0586f89f6731e2de2124009c4498" class="index-entry"></a> <!-- complex_vector; sub_col; (complex_matrix x, int i, int j, int n_rows); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>sub_col</code></strong><code>(complex_matrix x, int i, int j, int n_rows)</code><br> Return the sub-column of x that starts at row i and column j and extends n_rows rows and 1 column.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-07fb8f1cd8ba380cf781e1871c50fba8f8c31164" class="index-entry"></a> <!-- complex_row_vector; sub_row; (complex_matrix x, int i, int j, int n_cols); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>sub_row</code></strong><code>(complex_matrix x, int i, int j, int n_cols)</code><br> Return the sub-row of x that starts at row i and column j and extends 1 row and n_cols columns.</p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="vector-slicing-operations." class="level4">
+<h4 class="anchored" data-anchor-id="vector-slicing-operations.">Vector slicing operations.</h4>
+<a id="index-entry-98d4004db4f7912b486209fbaa83ee186a0b4a0f" class="index-entry"></a> <!-- complex_vector; head; (complex_vector v, int n); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>head</code></strong><code>(complex_vector v, int n)</code><br> Return the vector consisting of the first n elements of v.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-9b30a21ff61d6bb263aeae6fe0f8eeaad19b6091" class="index-entry"></a> <!-- complex_row_vector; head; (complex_row_vector rv, int n); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>head</code></strong><code>(complex_row_vector rv, int n)</code><br> Return the row vector consisting of the first n elements of rv.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-5072d264c287300a4f02919b52048769218f5864" class="index-entry"></a> <!-- complex_vector; tail; (complex_vector v, int n); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>tail</code></strong><code>(complex_vector v, int n)</code><br> Return the vector consisting of the last n elements of v.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-104f1db13950e7c221c9ce66c329f9ebb415fbe2" class="index-entry"></a> <!-- complex_row_vector; tail; (complex_row_vector rv, int n); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>tail</code></strong><code>(complex_row_vector rv, int n)</code><br> Return the row vector consisting of the last n elements of rv.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-96d8e2e13f7a5c50b4fef83a87ac1dcd395ab08f" class="index-entry"></a> <!-- complex_vector; segment; (complex_vector v, int i, int n); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>segment</code></strong><code>(complex_vector v, int i, int n)</code><br> Return the vector consisting of the n elements of v starting at i; i.e., elements i through through i + n - 1.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-b59ddb42d7b01c4f637d83f1654f9b63e6f1d9cd" class="index-entry"></a> <!-- complex_row_vector; segment; (complex_row_vector rv, int i, int n); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>segment</code></strong><code>(complex_row_vector rv, int i, int n)</code><br> Return the row vector consisting of the n elements of rv starting at i; i.e., elements i through through i + n - 1.</p>
+<small><i>Available since 2.30</i></small>
+</section>
+</section>
+</section>
+<section id="complex-matrix-concatenation" class="level2">
+<h2 class="anchored" data-anchor-id="complex-matrix-concatenation">Complex matrix concatenation</h2>
+<section id="horizontal-concatenation" class="level3">
+<h3 class="anchored" data-anchor-id="horizontal-concatenation">Horizontal concatenation</h3>
+<a id="index-entry-ffc1159a99f60f1f9ed57275f62abef2a8565af2" class="index-entry"></a> <!-- complex_matrix; append_col; (complex_matrix x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>append_col</code></strong><code>(complex_matrix x, complex_matrix y)</code><br> Combine matrices x and y by column. The matrices must have the same number of rows.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-3cdea5abd8dcc4f4aa3a63ec4b57e3beb1e548d1" class="index-entry"></a> <!-- complex_matrix; append_col; (complex_matrix x, complex_vector y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>append_col</code></strong><code>(complex_matrix x, complex_vector y)</code><br> Combine matrix x and vector y by column. The matrix and the vector must have the same number of rows.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-925808fc8edc656698d2fa5a95c71e4392b64386" class="index-entry"></a> <!-- complex_matrix; append_col; (complex_vector x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>append_col</code></strong><code>(complex_vector x, complex_matrix y)</code><br> Combine vector x and matrix y by column. The vector and the matrix must have the same number of rows.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-a7e682a73b7b4c9c5e762266afcff98336e95763" class="index-entry"></a> <!-- complex_matrix; append_col; (complex_vector x, complex_vector y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>append_col</code></strong><code>(complex_vector x, complex_vector y)</code><br> Combine vectors x and y by column. The vectors must have the same number of rows.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-e38bc5278f6ed1cde644188c8eb17161f960454d" class="index-entry"></a> <!-- complex_row_vector; append_col; (complex_row_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>append_col</code></strong><code>(complex_row_vector x, complex_row_vector y)</code><br> Combine row vectors x and y (of any size) into another row vector by appending y to the end of x.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-6d9a3c740a41d03e1694a8957fc0686db16578c7" class="index-entry"></a> <!-- complex_row_vector; append_col; (complex x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>append_col</code></strong><code>(complex x, complex_row_vector y)</code><br> Append x to the front of y, returning another row vector.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-435f75dc018a8af24be3ee5ac716757fc6ed0919" class="index-entry"></a> <!-- complex_row_vector; append_col; (complex_row_vector x, complex y); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>append_col</code></strong><code>(complex_row_vector x, complex y)</code><br> Append y to the end of x, returning another row vector.</p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="vertical-concatenation" class="level3">
+<h3 class="anchored" data-anchor-id="vertical-concatenation">Vertical concatenation</h3>
+<a id="index-entry-ca4bcfd187ccd1d2f4f0816dfc7f2b31f95ff4b2" class="index-entry"></a> <!-- complex_matrix; append_row; (complex_matrix x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>append_row</code></strong><code>(complex_matrix x, complex_matrix y)</code><br> Combine matrices x and y by row. The matrices must have the same number of columns.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-a0c350c64c953d5aa3a9de44bc62448e1b90233d" class="index-entry"></a> <!-- complex_matrix; append_row; (complex_matrix x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>append_row</code></strong><code>(complex_matrix x, complex_row_vector y)</code><br> Combine matrix x and row vector y by row. The matrix and the row vector must have the same number of columns.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-cbbd35ff37b9d41a2c66dbb60739e4b40a3b2c92" class="index-entry"></a> <!-- complex_matrix; append_row; (complex_row_vector x, complex_matrix y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>append_row</code></strong><code>(complex_row_vector x, complex_matrix y)</code><br> Combine row vector x and matrix y by row. The row vector and the matrix must have the same number of columns.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-d3f8a5fb9c0e574f1b8fc41e58b9ff4d768b1316" class="index-entry"></a> <!-- complex_matrix; append_row; (complex_row_vector x, complex_row_vector y); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>append_row</code></strong><code>(complex_row_vector x, complex_row_vector y)</code><br> Combine row vectors x and y by row. The row vectors must have the same number of columns.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-101152cf279176e6d126b58acb513a382b3076db" class="index-entry"></a> <!-- complex_vector; append_row; (complex_vector x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>append_row</code></strong><code>(complex_vector x, complex_vector y)</code><br> Concatenate vectors x and y of any size into another vector.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-a9fd96b44e573f1bb61f0cf8266f4bdc7a805dd3" class="index-entry"></a> <!-- complex_vector; append_row; (complex x, complex_vector y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>append_row</code></strong><code>(complex x, complex_vector y)</code><br> Append x to the top of y, returning another vector.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-8140228bb8f902ae61c5e8eba43e81e6d32de7bd" class="index-entry"></a> <!-- complex_vector; append_row; (complex_vector x, complex y); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>append_row</code></strong><code>(complex_vector x, complex y)</code><br> Append y to the bottom of x, returning another vector.</p>
+<small><i>Available since 2.30</i></small>
+</section>
+</section>
+<section id="complex-special-matrix-functions" class="level2">
+<h2 class="anchored" data-anchor-id="complex-special-matrix-functions">Complex special matrix functions</h2>
+<section id="fast-fourier-transforms" class="level3">
+<h3 class="anchored" data-anchor-id="fast-fourier-transforms">Fast Fourier transforms</h3>
+<p>Stan’s fast Fourier transform functions take the standard definition of the discrete Fourier transform (see the definitions below for specifics) and scale the inverse transform by one over dimensionality so that the following identities hold for complex vectors <code>u</code> and <code>v</code>,</p>
+<pre><code>    fft(inv_fft(u)) == u        inv_fft(fft(v)) == v</code></pre>
+<p>and in the 2-dimensional case for complex matrices <code>A</code> and <code>B</code>,</p>
+<pre><code>    fft2(inv_fft2(A)) == A      inv_fft2(fft2(B)) == B</code></pre>
+<p>Although the FFT functions only accept complex inputs, real vectors and matrices will be promoted to their complex counterparts before applying the FFT functions.</p>
+<a id="index-entry-109377c74fb51b412a7ba92432ed83655dc5cca8" class="index-entry"></a> <!-- complex_vector; fft; (complex_vector v); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>fft</code></strong><code>(complex_vector v)</code><br> Return the discrete Fourier transform of the specified complex vector <code>v</code>. If <span class="math inline">\(v \in \mathbb{C}^N\)</span> is a complex vector with <span class="math inline">\(N\)</span> elements and <span class="math inline">\(u =
+\textrm{fft}(v)\)</span>, then <span class="math display">\[\begin{equation*}
+u_n = \sum_{m &lt; n}
+v_m \cdot
+\exp\left(\frac{-n \cdot m \cdot 2 \cdot \pi \cdot \sqrt{-1}}{N}\right).
+\end{equation*}\]</span></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-37fccc5b3423b32e66112f0b9f406c043fa4d0e2" class="index-entry"></a> <!-- complex_matrix; fft2; (complex_matrix m); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>fft2</code></strong><code>(complex_matrix m)</code><br> Return the 2D discrete Fourier transform of the specified complex matrix <code>m</code>. The 2D FFT is defined as the result of applying the FFT to each row and then to each column.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-27a0956f66e4b8b0fc804abec9e5245baa2706aa" class="index-entry"></a> <!-- complex_vector; inv_fft; (complex_vector u); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>inv_fft</code></strong><code>(complex_vector u)</code><br> Return the inverse of the discrete Fourier transform of the specified complex vector <code>u</code>. The inverse FFT (this function) is scaled so that <code>fft(inv_fft(u)) == u</code>. If <span class="math inline">\(u \in \mathbb{C}^N\)</span> is a complex vector with <span class="math inline">\(N\)</span> elements and <span class="math inline">\(v = \textrm{fft}^{-1}(u)\)</span>, then <span class="math display">\[\begin{equation*}
+v_n =  \frac{1}{N} \sum_{m &lt; n}
+u_m \cdot
+\exp\left(\frac{n \cdot m \cdot 2 \cdot \pi \cdot \sqrt{-1}}{N}\right).
+\end{equation*}\]</span> This only differs from the FFT by the sign inside the exponential and the scaling. The <span class="math inline">\(\frac{1}{N}\)</span> scaling ensures that <code>fft(inv_fft(u)) == u</code> and <code>inv_fft(fft(v)) == v</code> for complex vectors <code>u</code> and <code>v</code>.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-81586d35e7a520465df734fc44af4a3ad069f695" class="index-entry"></a> <!-- complex_matrix; inv_fft2; (complex_matrix m); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>inv_fft2</code></strong><code>(complex_matrix m)</code><br> Return the inverse of the 2D discrete Fourier transform of the specified complex matrix <code>m</code>. The 2D inverse FFT is defined as the result of applying the inverse FFT to each row and then to each column. The invertible scaling of the inverse FFT ensures <code>fft2(inv_fft2(A)) == A</code> and <code>inv_fft2(fft2(B)) == B</code>.</p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="cumulative-sums" class="level3">
+<h3 class="anchored" data-anchor-id="cumulative-sums">Cumulative sums</h3>
+<p>The cumulative sum of a sequence <span class="math inline">\(x_1,\ldots,x_N\)</span> is the sequence <span class="math inline">\(y_1,\ldots,y_N\)</span>, where <span class="math display">\[\begin{equation*} y_n = \sum_{m = 1}^{n} x_m. \end{equation*}\]</span></p>
+<a id="index-entry-d6b4157abb8f1f7140f20c5b9182ad2f7d69fe37" class="index-entry"></a> <!-- array[] complex; cumulative_sum; (array[] complex x); -->
+<p></p>
+<p><code>array[] complex</code> <strong><code>cumulative_sum</code></strong><code>(array[] complex x)</code><br> The cumulative sum of x</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-45545f14726c28e6b63c8ec09e06e53b33e4ca02" class="index-entry"></a> <!-- complex_vector; cumulative_sum; (complex_vector v); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>cumulative_sum</code></strong><code>(complex_vector v)</code><br> The cumulative sum of v</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-c104f0e3e10596f559a8a023c84f92f1b919bc0f" class="index-entry"></a> <!-- complex_row_vector; cumulative_sum; (complex_row_vector rv); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>cumulative_sum</code></strong><code>(complex_row_vector rv)</code><br> The cumulative sum of rv</p>
+<small><i>Available since 2.30</i></small>
+</section>
+</section>
+<section id="complex-linear-algebra-functions" class="level2">
+<h2 class="anchored" data-anchor-id="complex-linear-algebra-functions">Complex linear algebra functions</h2>
+<section id="complex-matrix-division-operators-and-functions" class="level3">
+<h3 class="anchored" data-anchor-id="complex-matrix-division-operators-and-functions">Complex matrix division operators and functions</h3>
+<p>In general, it is much more efficient and also more arithmetically stable to use matrix division than to multiply by an inverse.</p>
+<section id="complex-matrix-division-operators" class="level4">
+<h4 class="anchored" data-anchor-id="complex-matrix-division-operators">Complex matrix division operators</h4>
+<a id="index-entry-f47bdbfb8220a45ba54119c3805497e1d4596752" class="index-entry"></a> <!-- complex_row_vector; operator/; (complex_row_vector b, complex_matrix A); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>operator/</code></strong><code>(complex_row_vector b, complex_matrix A)</code><br> The right division of b by A; equivalently <code>b * inverse(A)</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-469c065cfa735cf1880ee348a7459ff469411426" class="index-entry"></a> <!-- complex_matrix; operator/; (complex_matrix B, complex_matrix A); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>operator/</code></strong><code>(complex_matrix B, complex_matrix A)</code><br> The right division of B by A; equivalently <code>B * inverse(A)</code></p>
+<small><i>Available since 2.30</i></small>
+</section>
+</section>
+<section id="linear-algebra-functions" class="level3">
+<h3 class="anchored" data-anchor-id="linear-algebra-functions">Linear algebra functions</h3>
+<section id="trace" class="level4">
+<h4 class="anchored" data-anchor-id="trace">Trace</h4>
+<a id="index-entry-c811524b370c422ec42cb96ee9cedc298094e51a" class="index-entry"></a> <!-- complex; trace; (complex_matrix A); -->
+<p></p>
+<p><code>complex</code> <strong><code>trace</code></strong><code>(complex_matrix A)</code><br> The trace of A, or 0 if A is empty; A is not required to be diagonal</p>
+<small><i>Available since 2.30</i></small>
+</section>
+<section id="eigendecomposition" class="level4">
+<h4 class="anchored" data-anchor-id="eigendecomposition">Eigendecomposition</h4>
+<a id="index-entry-a3edb93c2a79b350e0e1ca880e3ada6deb6a30de" class="index-entry"></a> <!-- complex_vector; eigenvalues; (complex_matrix A); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>eigenvalues</code></strong><code>(complex_matrix A)</code><br> The complex-valued vector of eigenvalues of the matrix <code>A</code>. The eigenvalues are repeated according to their algebraic multiplicity, so there are as many eigenvalues as rows in the matrix. The eigenvalues are not sorted in any particular order.</p>
+<small><i>Available since 2.32</i></small>
+<a id="index-entry-bc7b059733d8c7e8becdef5196cfe34a63233de0" class="index-entry"></a> <!-- complex_matrix; eigenvectors; (complex_matrix A); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>eigenvectors</code></strong><code>(complex_matrix A)</code><br> The matrix with the complex-valued (column) eigenvectors of the matrix <code>A</code> in the same order as returned by the function <code>eigenvalues</code></p>
+<small><i>Available since 2.32</i></small>
+<a id="index-entry-cfb26916a57582e2e9ee4f68ed99c821756d3789" class="index-entry"></a> <!-- tuple(complex_matrix, complex_vector); eigendecompose; (complex_matrix A); -->
+<p></p>
+<p><code>tuple(complex_matrix, complex_vector)</code> <strong><code>eigendecompose</code></strong><code>(complex_matrix A)</code><br> Return the matrix of (column) eigenvectors and vector of eigenvalues of the matrix <code>A</code>. This function is equivalent to <code>(eigenvectors(A), eigenvalues(A))</code> but with a lower computational cost due to the shared work between the two results.</p>
+<small><i>Available since 2.33</i></small>
+<a id="index-entry-e271860ae502125255d5f4092244d884f2ce9692" class="index-entry"></a> <!-- complex_vector; eigenvalues_sym; (complex_matrix A); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>eigenvalues_sym</code></strong><code>(complex_matrix A)</code><br> The vector of eigenvalues of a symmetric matrix <code>A</code> in ascending order</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-67a04481d07493cc21dae09ba3cfde2b4e974951" class="index-entry"></a> <!-- complex_matrix; eigenvectors_sym; (complex_matrix A); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>eigenvectors_sym</code></strong><code>(complex_matrix A)</code><br> The matrix with the (column) eigenvectors of symmetric matrix <code>A</code> in the same order as returned by the function <code>eigenvalues_sym</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-2e32adea8a000a491b0d0d5e736075c377a776b6" class="index-entry"></a> <!-- tuple(complex_matrix, complex_vector); eigendecompose_sym; (complex_matrix A); -->
+<p></p>
+<p><code>tuple(complex_matrix, complex_vector)</code> <strong><code>eigendecompose_sym</code></strong><code>(complex_matrix A)</code><br> Return the matrix of (column) eigenvectors and vector of eigenvalues of the symmetric matrix <code>A</code>. This function is equivalent to <code>(eigenvectors_sym(A), eigenvalues_sym(A))</code> but with a lower computational cost due to the shared work between the two results.</p>
+<small><i>Available since 2.33</i></small>
+<p>Because multiplying an eigenvector by <span class="math inline">\(-1\)</span> results in an eigenvector, eigenvectors returned by a decomposition are only identified up to a sign change. In order to compare the eigenvectors produced by Stan’s eigendecomposition to others, signs may need to be normalized in some way, such as by fixing the sign of a component, or doing comparisons allowing a multiplication by <span class="math inline">\(-1\)</span>.</p>
+<p>The condition number of a symmetric matrix is defined to be the ratio of the largest eigenvalue to the smallest eigenvalue. Large condition numbers lead to difficulty in numerical algorithms such as computing inverses, and thus known as “ill conditioned.” The ratio can even be infinite in the case of singular matrices (i.e., those with eigenvalues of 0).</p>
+</section>
+<section id="singular-value-decomposition" class="level4">
+<h4 class="anchored" data-anchor-id="singular-value-decomposition">Singular value decomposition</h4>
+<p>The matrix A can be decomposed into a diagonal matrix of singular values, D, and matrices of its left and right singular vectors, U and V, <span class="math display">\[\begin{equation*} A = U D V^T. \end{equation*}\]</span> The matrices of singular vectors here are thin. That is for an <span class="math inline">\(N\)</span> by <span class="math inline">\(P\)</span> input A, <span class="math inline">\(M = min(N, P)\)</span>, U is size <span class="math inline">\(N\)</span> by <span class="math inline">\(M\)</span> and V is size <span class="math inline">\(P\)</span> by <span class="math inline">\(M\)</span>.</p>
+<a id="index-entry-491e5da4f54a933c48db0826ddc9f9bff1b864f2" class="index-entry"></a> <!-- vector; singular_values; (complex_matrix A); -->
+<p></p>
+<p><code>vector</code> <strong><code>singular_values</code></strong><code>(complex_matrix A)</code><br> The singular values of <code>A</code> in descending order</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-66a9fbf01c3972f54a4e86c8766100b5aa78a187" class="index-entry"></a> <!-- complex_matrix; svd_U; (complex_matrix A); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>svd_U</code></strong><code>(complex_matrix A)</code><br> The left-singular vectors of <code>A</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-ae2d55818ccca5b294b06be1082ae607075dba37" class="index-entry"></a> <!-- complex_matrix; svd_V; (complex_matrix A); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>svd_V</code></strong><code>(complex_matrix A)</code><br> The right-singular vectors of <code>A</code></p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-250461905ab5c8f3351131c12e8ea6f1b3e68795" class="index-entry"></a> <!-- tuple(complex_matrix, vector, complex_matrix); svd; (complex_matrix A); -->
+<p></p>
+<p><code>tuple(complex_matrix, vector, complex_matrix)</code> <strong><code>svd</code></strong><code>(complex_matrix A)</code><br> Returns a tuple containing the left-singular vectors of <code>A</code>, the singular values of <code>A</code> in descending order, and the right-singular values of <code>A</code>. This function is equivalent to <code>(svd_U(A), singular_values(A), svd_V(A))</code> but with a lower computational cost due to the shared work between the different components.</p>
+<small><i>Available since 2.33</i></small>
+</section>
+<section id="complex-schur-decomposition" class="level4">
+<h4 class="anchored" data-anchor-id="complex-schur-decomposition">Complex Schur Decomposition</h4>
+<p>The complex Schur decomposition of a square matrix <span class="math inline">\(A\)</span> produces a complex unitary matrix <span class="math inline">\(U\)</span> and a complex upper-triangular Schur form matrix <span class="math inline">\(T\)</span> such that <span class="math display">\[A = U \cdot T \cdot U^{-1}\]</span></p>
+<p>Since <span class="math inline">\(U\)</span> is unitary, its inverse is also its conjugate transpose, <span class="math inline">\(U^{-1} = U^*\)</span>, <span class="math inline">\(U^*(i, j) = \mathrm{conj}(U(j, i))\)</span></p>
+<a id="index-entry-f43e2c8a9893e96b7c09a618d7b6f69350bfc460" class="index-entry"></a> <!-- complex_matrix; complex_schur_decompose_t; (matrix A); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>complex_schur_decompose_t</code></strong><code>(matrix A)</code><br> Compute the upper-triangular Schur form matrix of the complex Schur decomposition of <code>A</code>.</p>
+<small><i>Available since 2.31</i></small>
+<a id="index-entry-1728988d586fc721b7a1d7d21d1aa3252bb03f94" class="index-entry"></a> <!-- complex_matrix; complex_schur_decompose_t; (complex_matrix A); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>complex_schur_decompose_t</code></strong><code>(complex_matrix A)</code><br> Compute the upper-triangular Schur form matrix of the complex Schur decomposition of <code>A</code>.</p>
+<small><i>Available since 2.31</i></small>
+<a id="index-entry-b169076e82ada507c5c30f36fe4a5bda58af9e0a" class="index-entry"></a> <!-- complex_matrix; complex_schur_decompose_u; (matrix A); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>complex_schur_decompose_u</code></strong><code>(matrix A)</code><br> Compute the unitary matrix of the complex Schur decomposition of <code>A</code>.</p>
+<small><i>Available since 2.31</i></small>
+<a id="index-entry-fdc477180371e8366e3a46dc88f3875f088907c8" class="index-entry"></a> <!-- complex_matrix; complex_schur_decompose_u; (complex_matrix A); -->
+<p></p>
+<p><code>complex_matrix</code> <strong><code>complex_schur_decompose_u</code></strong><code>(complex_matrix A)</code><br> Compute the unitary matrix of the complex Schur decomposition of <code>A</code>.</p>
+<small><i>Available since 2.31</i></small>
+<a id="index-entry-9c45b8917b1de6f500415512b1d06896cd5f7b5c" class="index-entry"></a> <!-- tuple(complex_matrix, complex_matrix); complex_schur_decompose; (matrix A); -->
+<p></p>
+<p><code>tuple(complex_matrix, complex_matrix)</code> <strong><code>complex_schur_decompose</code></strong><code>(matrix A)</code><br> Returns the unitary matrix and the upper-triangular Schur form matrix of the complex Schur decomposition of <code>A</code>. This function is equivalent to <code>(complex_schur_decompose_u(A), complex_schur_decompose_t(A))</code> but with a lower computational cost due to the shared work between the two results. This overload is equivalent to <code>complex_schur_decompose(to_complex(A,0))</code> but is more efficient.</p>
+<small><i>Available since 2.33</i></small>
+<a id="index-entry-400ef877200b32483b4f5a7223c3231666d153b7" class="index-entry"></a> <!-- tuple(complex_matrix, complex_matrix); complex_schur_decompose; (complex_matrix A); -->
+<p></p>
+<p><code>tuple(complex_matrix, complex_matrix)</code> <strong><code>complex_schur_decompose</code></strong><code>(complex_matrix A)</code><br> Returns the unitary matrix and the upper-triangular Schur form matrix of the complex Schur decomposition of <code>A</code>. This function is equivalent to <code>(complex_schur_decompose_u(A), complex_schur_decompose_t(A))</code> but with a lower computational cost due to the shared work between the two results.</p>
+<small><i>Available since 2.33</i></small>
+</section>
+</section>
+</section>
+<section id="reverse-functions-for-complex-matrices" class="level2">
+<h2 class="anchored" data-anchor-id="reverse-functions-for-complex-matrices">Reverse functions for complex matrices</h2>
+<a id="index-entry-4967c86d60f1814cc9c1b26860a5b0a2d875cfa6" class="index-entry"></a> <!-- complex_vector; reverse; (complex_vector v); -->
+<p></p>
+<p><code>complex_vector</code> <strong><code>reverse</code></strong><code>(complex_vector v)</code><br> Return a new vector containing the elements of the argument in reverse order.</p>
+<small><i>Available since 2.30</i></small>
+<a id="index-entry-6518a921f55ed48810b7eddb6fdeebc850a60c27" class="index-entry"></a> <!-- complex_row_vector; reverse; (complex_row_vector v); -->
+<p></p>
+<p><code>complex_row_vector</code> <strong><code>reverse</code></strong><code>(complex_row_vector v)</code><br> Return a new row vector containing the elements of the argument in reverse order.</p>
+<small><i>Available since 2.30</i></small>
+
+
+</section>
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../functions-reference/matrix_operations.html" class="pagination-link" aria-label="Matrix Operations">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Matrix Operations</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../functions-reference/sparse_matrix_operations.html" class="pagination-link" aria-label="Sparse Matrix Operations">
+        <span class="nav-page-text">Sparse Matrix Operations</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/functions-reference/complex_matrix_operations.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

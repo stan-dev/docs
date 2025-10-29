@@ -1,0 +1,281 @@
+---
+pagetitle: Pathfinder Method for Approximate Bayesian Inference
+---
+
+# Pathfinder Method for Approximate Bayesian Inference {#pathfinder-config}
+
+The CmdStan method `pathfinder` uses the Pathfinder algorithm of
+@zhang_pathfinder:2022, which is further described in the
+[Stan Reference Manual](https://mc-stan.org/docs/reference-manual/pathfinder.html).
+
+A single run of the Pathfinder algorithm generates a set of
+approximate draws.  Inference is improved by running multiple
+Pathfinder instances and using Pareto-smoothed importance resampling
+(PSIS) of the resulting sets of draws.  This better matches non-normal
+target densities and also eliminates minor modes.
+
+The `pathfinder` method runs multi-path Pathfinder by default,
+which returns a PSIS sample over the draws from several individual ("single-path") Pathfinder runs.
+Argument `num_paths` specifies the number of single-path Pathfinders, the default is $4$.
+If `num_paths` is set to 1, then only one individual Pathfinder is run without the PSIS reweighting of the sample.
+
+The full set of configuration options available for the `pathfinder` method
+is available by using the `pathfinder help-all` subcommand. The arguments
+with their requested values or defaults are also reported at the beginning
+of the algorithm's console output and in the output CSV file's comments.
+
+The following is a minimal call the Pathfinder algorithm using
+defaults for everything but the location of the data file.
+
+```
+> ./bernoulli pathfinder data file=bernoulli.data.R
+```
+
+Executing this command prints both output to the console and csv files.
+
+The first part of the console output reports on the configuration used.
+```
+method = pathfinder
+  pathfinder
+    init_alpha = 0.001 (Default)
+    tol_obj = 1e-12 (Default)
+    tol_rel_obj = 10000 (Default)
+    tol_grad = 1e-08 (Default)
+    tol_rel_grad = 1e+07 (Default)
+    tol_param = 1e-08 (Default)
+    history_size = 5 (Default)
+    num_psis_draws = 1000 (Default)
+    num_paths = 4 (Default)
+    save_single_paths = false (Default)
+    psis_resample = true (Default)
+    calculate_lp = true (Default)
+    max_lbfgs_iters = 1000 (Default)
+    num_draws = 1000 (Default)
+    num_elbo_draws = 25 (Default)
+id = 1 (Default)
+data
+  file = bernoulli.data.json
+init = 2 (Default)
+random
+  seed = 2790476610 (Default)
+output
+  file = output.csv (Default)
+  diagnostic_file =  (Default)
+  refresh = 100 (Default)
+  sig_figs = 8 (Default)
+  profile_file = profile.csv (Default)
+  save_cmdstan_config = false (Default)
+num_threads = 1 (Default)
+```
+The rest of the output describes the progression of the algorithm.
+
+By default, the Pathfinder algorithm runs 4 single-path Pathfinders in
+parallel, then uses importance resampling on the set of returned draws
+to produce the specified number of draws.
+```
+Path [1] :Initial log joint density = -11.543343
+Path [1] : Iter      log prob        ||dx||      ||grad||     alpha      alpha0      # evals       ELBO    Best ELBO        Notes
+              5      -6.748e+00      1.070e-03   1.707e-05    1.000e+00  1.000e+00       126 -6.220e+00 -6.220e+00
+Path [1] :Best Iter: [5] ELBO (-6.219833) evaluations: (126)
+Path [2] :Initial log joint density = -7.443345
+Path [2] : Iter      log prob        ||dx||      ||grad||     alpha      alpha0      # evals       ELBO    Best ELBO        Notes
+              5      -6.748e+00      9.936e-05   3.738e-07    1.000e+00  1.000e+00       126 -6.164e+00 -6.164e+00
+Path [2] :Best Iter: [5] ELBO (-6.164015) evaluations: (126)
+Path [3] :Initial log joint density = -18.986308
+Path [3] : Iter      log prob        ||dx||      ||grad||     alpha      alpha0      # evals       ELBO    Best ELBO        Notes
+              5      -6.748e+00      2.996e-04   4.018e-06    1.000e+00  1.000e+00       126 -6.201e+00 -6.201e+00
+Path [3] :Best Iter: [5] ELBO (-6.200559) evaluations: (126)
+Path [4] :Initial log joint density = -8.304453
+Path [4] : Iter      log prob        ||dx||      ||grad||     alpha      alpha0      # evals       ELBO    Best ELBO        Notes
+              5      -6.748e+00      2.814e-04   2.034e-06    1.000e+00  1.000e+00       126 -6.221e+00 -6.221e+00
+Path [4] :Best Iter: [3] ELBO (-6.161276) evaluations: (126)
+Total log probability function evaluations:8404
+```
+
+
+## Pathfinder Configuration
+
+- `num_psis_draws` - Final number of draws from multi-path pathfinder.
+Must be a positive integer.  Default value is $1000$.
+
+- `num_paths` - Number of single pathfinders.
+Must be a positive integer.  Default value is $4$.
+
+- `save_single_paths` - When `true`, save outputs from single pathfinders.
+Valid values: `[true, false]`. Default is `false`.
+
+- `max_lbfgs_iters` - Maximum number of L-BFGS iterations.
+Must be a positive integer.  Default value is $1000$.
+
+- `num_draws` - Number of approximate posterior draws for each single pathfinder.
+Must be a positive integer.  Default value is $1000$.
+Can differ from `num_psis_draws`.
+
+- `num_elbo_draws` - Number of Monte Carlo draws to evaluate ELBO.
+Must be a positive integer.  Default value is $25$.
+
+- `psis_resample` - If `true`, perform PSIS resampling on draws returned
+from individual pathfinders. If `false`, returns all `num_paths * num_draws` draws
+from the individual pathfinders.
+Valid values: `[true, false]`. Default is `true`.
+
+- `calculate_lp` - If `true`, log probabilities of the approximate draws
+are calculated and returned with the output. If `false`, each pathfinder
+will only  calculate the lp values needed for the ELBO calculation.
+If False, PSIS resampling cannot be performed and the algorithm returns
+`num_paths * num_draws samples`. The output will still contain any lp values
+used when calculating ELBO scores within L-BFGS iterations.
+Valid values: `[true, false]`. Default is `true`.
+
+
+## L-BFGS Configuration
+
+Arguments `init_alpha` through `history_size` are the full set of arguments to the L-BFGS optimizer
+and have the same defaults for [optimization](optimize_config.qmd#the-quasi-newton-optimizers).
+
+
+## Multi-path Pathfinder CSV files{#pathfinder_csv}
+
+By default, the `pathfinder` method uses 4 independent Pathfinder runs,
+each of which produces 1000 approximate draws, which are then
+importance resampled down to 1000 final draws.
+The importance resampled draws are output as a [StanCSV file](stan_csv_apdx.qmd).
+
+The CSV files have the following structure:
+
+The initial CSV comment rows contain the complete set of CmdStan
+configuration options.
+
+```
+...
+# method = pathfinder
+#   pathfinder
+#     init_alpha = 0.001 (Default)
+#     tol_obj = 9.9999999999999998e-13 (Default)
+#     tol_rel_obj = 10000 (Default)
+#     tol_grad = 1e-08 (Default)
+#     tol_rel_grad = 10000000 (Default)
+#     tol_param = 1e-08 (Default)
+#     history_size = 5 (Default)
+#     num_psis_draws = 1000 (Default)
+#     num_paths = 4 (Default)
+#     psis_resample = 1 (Default)
+#     calculate_lp = 1 (Default)
+#     save_single_paths = 0 (Default)
+#     max_lbfgs_iters = 1000 (Default)
+#     num_draws = 1000 (Default)
+#     num_elbo_draws = 25 (Default)
+...
+```
+
+Next is the column header line, followed the
+set of approximate draws.  The Pathfinder algorithm first outputs
+`lp_approx__`, the log density in the approximating distribution, and
+`lp__`, the log density in the target distribution, followed by
+estimates of the model parameters, transformed parameters, and
+generated quantities.
+```
+lp_approx__,lp__,theta
+-2.4973, -8.2951, 0.0811852
+-0.87445, -7.06526, 0.160207
+-0.812285, -7.07124, 0.35819
+...
+```
+
+The final lines are comment lines which give timing information.
+```
+# Elapsed Time: 0.016000 seconds (Pathfinders)
+#               0.003000 seconds (PSIS)
+#               0.019000 seconds (Total)
+```
+
+Pathfinder provides option `save_single_paths` which will save output
+from the single-path Pathfinder runs.
+
+## Single-path Pathfinder Outputs.
+
+The boolean option `save_single_paths` is used to save both the draws and the ELBO iterations from the individual Pathfinder runs.
+When `save_single_paths` is `true`, the draws from each are saved to
+StanCSV files with the same format as the PSIS sample and the
+ELBO evaluations along the L-BFGS trajectory for each are saved as JSON.
+Given an output file name, CmdStan adds suffixes to the base filename to distinguish between the output files.
+For the default output file name `output.csv` and default number of runs (4), the resulting CSV files are
+```
+output.csv
+output_path_1.csv
+output_path_1.json
+output_path_2.csv
+output_path_2.json
+output_path_3.csv
+output_path_3.json
+output_path_4.csv
+output_path_4.json
+```
+
+The individual sample CSV files have the same structure as the PSIS sample CSV file.
+The JSON files contain information from each ELBO iteration.
+
+To see how this works, we run Pathfinder on the centered-parameterization of the `eight-schools` model,
+where the posterior distribution has a funnel shape:
+
+```
+> ./eight_schools pathfinder save_single_paths=true data file=eight_schools.data.json
+```
+
+Each JSON file records the approximations to the target density
+at each point along the trajectory of the L-BFGS optimization algorithms.
+
+```
+{
+  "0": {
+    "iter": 0,
+    "unconstrained_parameters": [1.00595, -0.503687, 1.79367, 0.99083, 0.498077, -0.65816, 1.49176, -1.22647, 1.62911, 0.767445],
+    "grads": [-0.868919, 0.45198, -0.107675, -0.0123304, 0.163172, 0.354362, -0.108746, 0.673306, -0.102268, -4.51445]
+  },
+  "1": {
+    "iter": 1,
+    "unconstrained_parameters": [1.00595, -0.503687, 1.79367, 0.99083, 0.498077, -0.65816, 1.49176, -1.22647, 1.62911, 0.767445],
+    "grads": [-0.868919, 0.45198, -0.107675, -0.0123304, 0.163172, 0.354362, -0.108746, 0.673306, -0.102268, -4.51445],
+    "history_size": 1,
+    "lbfgs_success": true,
+    "pathfinder_success": true,
+    "x_center": [0.126047, -0.065048, 1.55708, 0.958509, 0.628075, -0.217041, 1.32032, -0.561338, 1.42988, 1.23213],
+    "logDetCholHk": -2.6839,
+    "L_approx": [[-0.0630456, -0.0187959], [0, 1.08328]],
+    "Qk": [[-0.361073, 0.5624], [0.183922, -0.279474], [-0.0708175, 0.15715], [-0.00917823, 0.0215802], [0.0606019, -0.0814513], [0.164071, -0.285769], [-0.057723, 0.112428], [0.276376, -0.424348], [-0.0620524, 0.131786], [-0.846488, -0.531094]],
+    "alpha": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    "full": false,
+    "lbfgs_note": ""
+  },
+  ...,
+  "171": {
+    "iter": 171,
+    "unconstrained_parameters": [1.60479, 1.60479, 1.60479, 1.60479, 1.60479, 1.60479, 1.60479, 1.60479, 1.60479, -35.7821],
+    "grads": [2.66927e+15, -0.117312, -0.0639521, -2.66927e+15, -0.0445885, 0.0321579, 0.00499827, -0.163952, -0.032084, 6.4073],
+    "history_size": 5,
+    "lbfgs_success": true,
+    "pathfinder_success": true,
+    "x_center": [5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, 5.58876e+15, -2.02979e+17],
+    "logDetCholHk": 299.023,
+    "L_approx": [[4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, 4.6852e+06, -1.70162e+08], [0, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 0, 2.19511e+13, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 0, 0, 2.19511e+13, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 0, 0, 0, 2.19511e+13, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 0, 0, 0, 0, 2.19511e+13, -7.97244e+14], [0, 0, 0, 0, 0, 0, 0, 0, 0, 2.89552e+16]],
+    "Qk": [],
+    "alpha": [1.11027e-12, 2.24669e-12, 2.05603e-12, 3.71177e-12, 5.7855e-12, 1.80169e-12, 3.40291e-12, 2.29699e-12, 3.43423e-12, 1.25815e-08],
+    "full": true,
+    "lbfgs_note": ""
+  },
+  "172": {
+    "iter": 172,
+    "unconstrained_parameters": [1.60531, 1.60531, 1.60531, 1.60531, 1.60531, 1.60531, 1.60531, 1.60531, 1.60531, -35.801],
+    "grads": [-0, -0.11731, -0.0639469, 0.0179895, -0.0445842, 0.0321643, 0.00500256, -0.163947, -0.0320824, 7],
+    "history_size": 5,
+    "lbfgs_success": false,
+    "pathfinder_success": false,
+    "lbfgs_note": ""
+  }
+}
+```
+
+Option `num_paths=1` runs one single-path Pathfinder and output CSV file contains the draws from that run without PSIS reweighting.
+The combination of arguments `num_paths=1 save_single_paths=true` creates just two output files,
+the CSV sample and the set of ELBO iterations.
+In this case, the default output file name is "output.csv" and the default diagnostic file name is "output.json".

@@ -24,16 +24,13 @@
 
 <identifier> ::= IDENTIFIER
                | TRUNCATE
-               | <future_keyword>
-
-<future_keyword> ::= OFFSET
-                   | MULTIPLIER
-                   | LOWER
-                   | UPPER
-                   | ARRAY
+               | JACOBIAN
 
 <decl_identifier> ::= <identifier>
                     | <reserved_word>
+
+<decl_identifier_after_comma> ::= <identifier>
+                                | <reserved_word>
 
 <reserved_word> ::= FUNCTIONBLOCK
                   | DATABLOCK
@@ -61,15 +58,25 @@
                   | POSITIVEORDERED
                   | SIMPLEX
                   | UNITVECTOR
+                  | SUMTOZERO
+                  | SUMTOZEROMATRIX
                   | CHOLESKYFACTORCORR
                   | CHOLESKYFACTORCOV
                   | CORRMATRIX
                   | COVMATRIX
+                  | STOCHASTICCOLUMNMATRIX
+                  | STOCHASTICROWMATRIX
                   | PRINT
                   | REJECT
+                  | FATAL_ERROR
                   | TARGET
-                  | GETLP
                   | PROFILE
+                  | TUPLE
+                  | OFFSET
+                  | MULTIPLIER
+                  | LOWER
+                  | UPPER
+                  | ARRAY
 
 <function_def> ::= <return_type> <decl_identifier> LPAREN [<arg_decl> (COMMA
                    <arg_decl>)*] RPAREN <statement>
@@ -80,7 +87,13 @@
 <arg_decl> ::= [DATABLOCK] <unsized_type> <decl_identifier>
 
 <unsized_type> ::= ARRAY <unsized_dims> <basic_type>
-                 | <basic_type> [<unsized_dims>]
+                 | ARRAY <unsized_dims> <unsized_tuple_type>
+                 | <basic_type> <unsized_dims>
+                 | <basic_type>
+                 | <unsized_tuple_type>
+
+<unsized_tuple_type> ::= TUPLE LPAREN <unsized_type> COMMA <unsized_type>
+                         (COMMA <unsized_type>)* RPAREN
 
 <basic_type> ::= INT
                | REAL
@@ -98,14 +111,30 @@
 
 <optional_assignment(rhs)> ::= [ASSIGN rhs]
 
-<id_and_optional_assignment(rhs)> ::= <decl_identifier>
-                                      <optional_assignment(rhs)>
+<id_and_optional_assignment(rhs, decl)> ::= <decl> <optional_assignment(rhs)>
 
-<decl(type_rule, rhs)> ::= type_rule <decl_identifier> <dims>
-                           <optional_assignment(rhs)> SEMICOLON
-                         | [<arr_dims>] type_rule
-                           <id_and_optional_assignment(rhs)> (COMMA
-                           <id_and_optional_assignment(rhs)>)* SEMICOLON
+<remaining_declarations(rhs)> ::= COMMA <id_and_optional_assignment(rhs,
+                                  <decl_identifier_after_comma>)> (COMMA
+                                  <id_and_optional_assignment(rhs,
+                                  <decl_identifier_after_comma>)>)*
+
+<decl(type_rule, rhs)> ::= type_rule <decl_identifier> LBRACK <expression>
+                           (COMMA <expression>)* RBRACK
+                         | <higher_type(type_rule)>
+                           <id_and_optional_assignment(rhs,
+                           <decl_identifier>)>
+                           [<remaining_declarations(rhs)>] SEMICOLON
+
+<higher_type(type_rule)> ::= <array_type(type_rule)>
+                           | <tuple_type(type_rule)>
+                           | type_rule
+
+<array_type(type_rule)> ::= <arr_dims> type_rule
+                          | <arr_dims> <tuple_type(type_rule)>
+
+<tuple_type(type_rule)> ::= TUPLE LPAREN <higher_type(type_rule)> COMMA
+                            <higher_type(type_rule)> (COMMA
+                            <higher_type(type_rule)>)* RPAREN
 
 <var_decl> ::= <decl(<sized_basic_type>, <expression>)>
 
@@ -141,11 +170,17 @@
                  | POSITIVEORDERED LBRACK <expression> RBRACK
                  | SIMPLEX LBRACK <expression> RBRACK
                  | UNITVECTOR LBRACK <expression> RBRACK
+                 | SUMTOZERO LBRACK <expression> RBRACK
+                 | SUMTOZEROMATRIX LBRACK <expression> COMMA <expression> RBRACK
                  | CHOLESKYFACTORCORR LBRACK <expression> RBRACK
                  | CHOLESKYFACTORCOV LBRACK <expression> [COMMA <expression>]
                    RBRACK
                  | CORRMATRIX LBRACK <expression> RBRACK
                  | COVMATRIX LBRACK <expression> RBRACK
+                 | STOCHASTICCOLUMNMATRIX LBRACK <expression> COMMA
+                   <expression> RBRACK
+                 | STOCHASTICROWMATRIX LBRACK <expression> COMMA <expression>
+                   RBRACK
 
 <type_constraint> ::= [LABRACK <range> RABRACK]
                     | LABRACK <offset_mult> RABRACK
@@ -166,37 +201,34 @@
 
 <arr_dims> ::= ARRAY LBRACK <expression> (COMMA <expression>)* RBRACK
 
-<dims> ::= LBRACK <expression> (COMMA <expression>)* RBRACK
-
-<expression> ::= <lhs>
-               | <non_lhs>
-
-<non_lhs> ::= <expression> QMARK <expression> COLON <expression>
-            | <expression> <infixOp> <expression>
-            | <prefixOp> <expression>
-            | <expression> <postfixOp>
-            | <non_lhs> LBRACK <indexes> RBRACK
-            | <common_expression>
+<expression> ::= <expression> QMARK <expression> COLON <expression>
+               | <expression> <infixOp> <expression>
+               | <prefixOp> <expression>
+               | <expression> <postfixOp>
+               | <common_expression>
 
 <constr_expression> ::= <constr_expression> <arithmeticBinOp>
                         <constr_expression>
                       | <prefixOp> <constr_expression>
                       | <constr_expression> <postfixOp>
-                      | <constr_expression> LBRACK <indexes> RBRACK
                       | <common_expression>
-                      | <identifier>
 
-<common_expression> ::= INTNUMERAL
+<common_expression> ::= <identifier>
+                      | INTNUMERAL
                       | REALNUMERAL
+                      | DOTNUMERAL
                       | IMAGNUMERAL
                       | LBRACE <expression> (COMMA <expression>)* RBRACE
                       | LBRACK [<expression> (COMMA <expression>)*] RBRACK
                       | <identifier> LPAREN [<expression> (COMMA
                         <expression>)*] RPAREN
                       | TARGET LPAREN RPAREN
-                      | GETLP LPAREN RPAREN
                       | <identifier> LPAREN <expression> BAR [<expression>
                         (COMMA <expression>)*] RPAREN
+                      | LPAREN <expression> COMMA <expression> (COMMA
+                        <expression>)* RPAREN
+                      | <common_expression> DOTNUMERAL
+                      | <common_expression> LBRACK <indexes> RBRACK
                       | LPAREN <expression> RPAREN
 
 <prefixOp> ::= BANG
@@ -241,29 +273,27 @@
                | <string_literal>
                | <printables> COMMA <printables>
 
-<lhs> ::= <identifier>
-        | <lhs> LBRACK <indexes> RBRACK
-
 <statement> ::= <atomic_statement>
               | <nested_statement>
 
-<atomic_statement> ::= <lhs> <assignment_op> <expression> SEMICOLON
+<atomic_statement> ::= <common_expression> <assignment_op> <expression>
+                       SEMICOLON
                      | <identifier> LPAREN [<expression> (COMMA
                        <expression>)*] RPAREN SEMICOLON
-                     | INCREMENTLOGPROB LPAREN <expression> RPAREN SEMICOLON
                      | <expression> TILDE <identifier> LPAREN [<expression>
                        (COMMA <expression>)*] RPAREN [<truncation>] SEMICOLON
                      | TARGET PLUSASSIGN <expression> SEMICOLON
+                     | JACOBIAN PLUSASSIGN <expression> SEMICOLON
                      | BREAK SEMICOLON
                      | CONTINUE SEMICOLON
                      | PRINT LPAREN <printables> RPAREN SEMICOLON
                      | REJECT LPAREN <printables> RPAREN SEMICOLON
+                     | FATAL_ERROR LPAREN <printables> RPAREN SEMICOLON
                      | RETURN <expression> SEMICOLON
                      | RETURN SEMICOLON
                      | SEMICOLON
 
 <assignment_op> ::= ASSIGN
-                  | ARROWASSIGN
                   | PLUSASSIGN
                   | MINUSASSIGN
                   | TIMESASSIGN
@@ -275,14 +305,15 @@
 
 <truncation> ::= TRUNCATE LBRACK [<expression>] COMMA [<expression>] RBRACK
 
-<nested_statement> ::= IF LPAREN <expression> RPAREN <statement> ELSE
-                       <statement>
-                     | IF LPAREN <expression> RPAREN <statement>
-                     | WHILE LPAREN <expression> RPAREN <statement>
+<nested_statement> ::= IF LPAREN <expression> RPAREN <vardecl_or_statement>
+                       ELSE <vardecl_or_statement>
+                     | IF LPAREN <expression> RPAREN <vardecl_or_statement>
+                     | WHILE LPAREN <expression> RPAREN
+                       <vardecl_or_statement>
                      | FOR LPAREN <identifier> IN <expression> COLON
-                       <expression> RPAREN <statement>
+                       <expression> RPAREN <vardecl_or_statement>
                      | FOR LPAREN <identifier> IN <expression> RPAREN
-                       <statement>
+                       <vardecl_or_statement>
                      | PROFILE LPAREN <string_literal> RPAREN LBRACE
                        <vardecl_or_statement>* RBRACE
                      | LBRACE <vardecl_or_statement>* RBRACE
@@ -292,3 +323,5 @@
 
 <top_vardecl_or_statement> ::= <statement>
                              | <top_var_decl>
+
+

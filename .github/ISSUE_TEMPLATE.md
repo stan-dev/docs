@@ -8,6 +8,3 @@ Describe the issue as clearly as possible.
 
 #### Additional Information:
 Provide any additional information here.
-
-#### Current Version:
-v2.18.0

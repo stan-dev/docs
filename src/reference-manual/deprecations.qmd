@@ -1,0 +1,77 @@
+---
+pagetitle: Deprecated Features
+---
+
+# Deprecated Features
+
+This appendix lists currently deprecated functionality along with how
+to replace it.
+
+Starting with Stan 2.29, minor (syntax-level) deprecations can be removed 3
+versions after release; e.g., syntax deprecated in Stan 2.20 will be removed in
+Stan 2.23 and placed in [Removed Features](removals.qmd). The Stan compiler can
+[automatically update](https://mc-stan.org/docs/stan-users-guide/using-stanc.html#stanc-pretty-printing)
+many of these on the behalf of the user for at least one version after they are
+removed.
+
+Any feature which changes semantic meaning (such as the upgraded ODE solver
+interface) will not be removed until a major version change (e.g., Stan 3.0).
+
+
+## `lkj_cov` distribution
+
+*Deprecated*:The distribution `lkj_cov` is deprecated.
+
+*Replacement*: Replace `lkj_cov_lpdf(...)` with an `lkj_corr`
+  distribution on the correlation matrix and independent lognormal
+  distributions on the scales.  That is, replace
+
+```stan
+cov_matrix[K] Sigma;
+// ...
+Sigma ~ lkj_cov(mu, tau, eta);
+```
+
+with
+
+```stan
+corr_matrix[K] Omega;
+vector<lower=0>[K] sigma;
+// ...
+Omega ~ lkj_corr(eta);
+sigma ~ lognormal(mu, tau);
+// ...
+cov_matrix[K] Sigma;
+Sigma <- quad_form_diag(Omega, sigma);
+```
+
+The variable `Sigma` may be defined as a local variable in the model
+block or as a transformed parameter.  An even more efficient transform
+would use Cholesky factors rather than full correlation matrix types.
+
+
+*Scheduled Removal*: Stan 3.0 or later.
+
+## Use of `_lp` functions in `transformed parameters`
+
+*Deprecated*: Using [functions that end in `_lp`](user-functions.qmd#log-probability-access-in-functions)
+in the `transformed parameters` block.
+
+*Replacement*: Use `_jacobian` functions and the `jacobian +=` statement instead. These allow for change-of-variable
+adjustments which can be conditionally enabled by Stan's algorithms.
+
+## New Keywords
+
+*Deprecated*: The following identifiers will become reserved in the language in the specified version.
+
+*Replacement*: Rename any variables or functions with these names.
+
+| Identifier | Version |
+|------------|---------|
+| jacobian   | 2.38    |
+
+## Deprecated Functions
+
+Several built-in Stan functions have been deprecated. Consult the
+[functions reference](https://mc-stan.org/docs/functions-reference/deprecated-functions.html)
+for more information.

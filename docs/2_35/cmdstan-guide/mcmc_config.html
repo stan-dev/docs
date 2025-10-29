@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+<link rel="canonical" href="https://mc-stan.org/docs/cmdstan-guide/mcmc_config.html" />
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.53">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>MCMC Sampling</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../cmdstan-guide/optimize_config.html" rel="next">
+<link href="../cmdstan-guide/command_line_options.html" rel="prev">
+<link href="../img/logo_tm.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 200,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../theming/quarto_styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../stan-users-guide/index.html"> 
+<span class="menu-text">Stan Users Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../reference-manual/index.html"> 
+<span class="menu-text">Reference Manual</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../functions-reference/index.html"> 
+<span class="menu-text">Functions Reference</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-interfaces" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Interfaces</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-interfaces">    
+        <li>
+    <a class="dropdown-item" href="../cmdstan-guide/index.html">
+ <span class="dropdown-text">CmdStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy">
+ <span class="dropdown-text">CmdStanPy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr">
+ <span class="dropdown-text">CmdStanR</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/users/interfaces/pystan.html">
+ <span class="dropdown-text">PyStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstan">
+ <span class="dropdown-text">RStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/">
+ <span class="dropdown-text">Stan.jl</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-other-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Other Packages</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/">
+ <span class="dropdown-text">bayesplot</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/">
+ <span class="dropdown-text">BridgeStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/">
+ <span class="dropdown-text">brms</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/loo/">
+ <span class="dropdown-text">loo</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/posterior">
+ <span class="dropdown-text">posterior</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/projpred">
+ <span class="dropdown-text">projpred</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm">
+ <span class="dropdown-text">rstanarm</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstantools">
+ <span class="dropdown-text">rstantools</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/shinystan">
+ <span class="dropdown-text">shinystan</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools tools-wide">
+    <a href="https://github.com/stan-dev" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-github"></i></a>
+    <a href="https://discourse.mc-stan.org" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-chat-text-fill"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../cmdstan-guide/command_line_options.html">Running CmdStan</a></li><li class="breadcrumb-item"><a href="../cmdstan-guide/mcmc_config.html">MCMC Sampling using Hamiltonian Monte Carlo</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CmdStan User’s Guide</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <span class="sidebar-item-text sidebar-link text-start">
+ <span class="menu-text">Version 2.35</span></span>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Getting Started</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/installation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CmdStan Installation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/example_model_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Example Model and Data</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/compiling_stan_programs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Compiling a Stan Program</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/parallelization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Parallelization</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Running CmdStan</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/command_line_options.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Command-Line Interface Overview</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/mcmc_config.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">MCMC Sampling using Hamiltonian Monte Carlo</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/optimize_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Optimization</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/pathfinder_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Pathfinder Method for Approximate Bayesian Inference</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/variational_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Variational Inference using ADVI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/generate_quantities_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generating Quantities of Interest from a Fitted Model</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/laplace_sample_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Laplace sampling</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/log_prob_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Extracting log probabilities and gradients for diagnostics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/diagnose_config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Diagnosing HMC by Comparison of Gradients</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Tools and Utilities</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/stanc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>stanc</code>: Translating Stan to C++</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/stansummary.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>stansummary</code>: MCMC Output Analysis</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/diagnose_utility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>diagnose</code>: Diagnosing Biased Hamiltonian Monte Carlo Inferences</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/print.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>print</code> (deprecated): MCMC Output Analysis</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/stan_csv_apdx.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Stan CSV File Format</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/json_apdx.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">JSON Format for CmdStan</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/rdump_apdx.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">RDump Format for CmdStan</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../cmdstan-guide/external_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Using external C++ code</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#mcmc-config" id="toc-mcmc-config" class="nav-link active" data-scroll-target="#mcmc-config">MCMC Sampling using Hamiltonian Monte Carlo</a>
+  <ul class="collapse">
+  <li><a href="#running-the-sampler" id="toc-running-the-sampler" class="nav-link" data-scroll-target="#running-the-sampler">Running the sampler</a></li>
+  <li><a href="#mcmc_output_csv" id="toc-mcmc_output_csv" class="nav-link" data-scroll-target="#mcmc_output_csv">Stan CSV output file</a></li>
+  <li><a href="#iterations" id="toc-iterations" class="nav-link" data-scroll-target="#iterations">Iterations</a></li>
+  <li><a href="#adaptation" id="toc-adaptation" class="nav-link" data-scroll-target="#adaptation">Adaptation</a>
+  <ul class="collapse">
+  <li><a href="#step-size-optimization-configuration" id="toc-step-size-optimization-configuration" class="nav-link" data-scroll-target="#step-size-optimization-configuration">Step size optimization configuration</a></li>
+  <li><a href="#warmup-schedule-configuration" id="toc-warmup-schedule-configuration" class="nav-link" data-scroll-target="#warmup-schedule-configuration">Warmup schedule configuration</a></li>
+  </ul></li>
+  <li><a href="#algorithm" id="toc-algorithm" class="nav-link" data-scroll-target="#algorithm">Algorithm</a>
+  <ul class="collapse">
+  <li><a href="#samples-from-a-set-of-fixed-parameters" id="toc-samples-from-a-set-of-fixed-parameters" class="nav-link" data-scroll-target="#samples-from-a-set-of-fixed-parameters">Samples from a set of fixed parameters</a></li>
+  <li><a href="#hmc-samplers" id="toc-hmc-samplers" class="nav-link" data-scroll-target="#hmc-samplers">HMC samplers</a></li>
+  </ul></li>
+  <li><a href="#sampler-diag-file" id="toc-sampler-diag-file" class="nav-link" data-scroll-target="#sampler-diag-file">Sampler diagnostic file</a></li>
+  <li><a href="#multi-chain-sampling" id="toc-multi-chain-sampling" class="nav-link" data-scroll-target="#multi-chain-sampling">Running multiple chains</a>
+  <ul class="collapse">
+  <li><a href="#sampler-num-chains" id="toc-sampler-num-chains" class="nav-link" data-scroll-target="#sampler-num-chains">Using the num_chains argument to run multiple chains</a></li>
+  </ul></li>
+  <li><a href="#summarizing-sampler-outputs-with-stansummary" id="toc-summarizing-sampler-outputs-with-stansummary" class="nav-link" data-scroll-target="#summarizing-sampler-outputs-with-stansummary">Summarizing sampler output(s) with <code>stansummary</code></a></li>
+  <li><a href="#old-multichain" id="toc-old-multichain" class="nav-link" data-scroll-target="#old-multichain">Examples - older parallelism</a>
+  <ul class="collapse">
+  <li><a href="#running-multiple-chains-with-a-specified-rng-seed" id="toc-running-multiple-chains-with-a-specified-rng-seed" class="nav-link" data-scroll-target="#running-multiple-chains-with-a-specified-rng-seed">Running multiple chains with a specified RNG seed</a></li>
+  <li><a href="#changing-the-default-warmup-and-sampling-iterations" id="toc-changing-the-default-warmup-and-sampling-iterations" class="nav-link" data-scroll-target="#changing-the-default-warmup-and-sampling-iterations">Changing the default warmup and sampling iterations</a></li>
+  <li><a href="#saving-warmup-draws" id="toc-saving-warmup-draws" class="nav-link" data-scroll-target="#saving-warmup-draws">Saving warmup draws</a></li>
+  <li><a href="#initializing-parameters" id="toc-initializing-parameters" class="nav-link" data-scroll-target="#initializing-parameters">Initializing parameters</a></li>
+  <li><a href="#specifying-the-metric-and-stepsize" id="toc-specifying-the-metric-and-stepsize" class="nav-link" data-scroll-target="#specifying-the-metric-and-stepsize">Specifying the metric and stepsize</a></li>
+  <li><a href="#changing-the-nuts-hmc-adaptation-parameters" id="toc-changing-the-nuts-hmc-adaptation-parameters" class="nav-link" data-scroll-target="#changing-the-nuts-hmc-adaptation-parameters">Changing the NUTS-HMC adaptation parameters</a></li>
+  <li><a href="#increasing-the-tree-depth" id="toc-increasing-the-tree-depth" class="nav-link" data-scroll-target="#increasing-the-tree-depth">Increasing the tree-depth</a></li>
+  <li><a href="#capturing-hamiltonian-diagnostics-and-gradients" id="toc-capturing-hamiltonian-diagnostics-and-gradients" class="nav-link" data-scroll-target="#capturing-hamiltonian-diagnostics-and-gradients">Capturing Hamiltonian diagnostics and gradients</a></li>
+  <li><a href="#suppressing-progress-updates-to-the-console" id="toc-suppressing-progress-updates-to-the-console" class="nav-link" data-scroll-target="#suppressing-progress-updates-to-the-console">Suppressing progress updates to the console</a></li>
+  <li><a href="#everything-example" id="toc-everything-example" class="nav-link" data-scroll-target="#everything-example">Everything example</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/cmdstan-guide/mcmc_config.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<div>
+This is an old version, <a href="https://mc-stan.org/docs/cmdstan-guide/mcmc_config.html">view current version</a>.
+</div>
+
+
+
+
+<section id="mcmc-config" class="level1">
+<h1>MCMC Sampling using Hamiltonian Monte Carlo</h1>
+<p>The <code>sample</code> method provides Bayesian inference over the model conditioned on data using Hamiltonian Monte Carlo (HMC) sampling. By default, the inference engine used is the No-U-Turn sampler (NUTS), an adaptive form of Hamiltonian Monte Carlo sampling. For details on HMC and NUTS, see the Stan Reference Manual chapter on <a href="https://mc-stan.org/docs/reference-manual/mcmc.html">MCMC Sampling</a>.</p>
+<section id="running-the-sampler" class="level2">
+<h2 class="anchored" data-anchor-id="running-the-sampler">Running the sampler</h2>
+<p>To generate a sample from the posterior distribution of the model conditioned on the data, we run the executable program with the argument <code>sample</code> or <code>method=sample</code> together with the input data. The executable can be run from any directory.</p>
+<p>The full set of configuration options available for the <code>sample</code> method is available by using the <code>sample help-all</code> subcommand. The arguments with their requested values or defaults are also reported at the beginning of the sampler console output and in the output CSV file’s comments.</p>
+<p>Here, we run it in the directory which contains the Stan program and input data, <code>&lt;cmdstan-home&gt;/examples/bernoulli</code>:</p>
+<pre><code>&gt; cd examples/bernoulli
+&gt; ls
+  bernoulli  bernoulli.data.json  bernoulli.data.R  bernoulli.stan</code></pre>
+<p>To execute sampling of the model under Linux or Mac, use:</p>
+<pre><code>&gt; ./bernoulli sample data file=bernoulli.data.json</code></pre>
+<p>In Windows, the <code>./</code> prefix is not needed:</p>
+<pre><code>&gt; bernoulli.exe sample data file=bernoulli.data.json</code></pre>
+<p>The output is the same across all supported platforms. First, the configuration of the program is echoed to the standard output:</p>
+<pre><code>method = sample (Default)
+  sample
+    num_samples = 1000 (Default)
+    num_warmup = 1000 (Default)
+    save_warmup = false (Default)
+    thin = 1 (Default)
+    adapt
+      engaged = true (Default)
+      gamma = 0.050000000000000003 (Default)
+      delta = 0.80000000000000004 (Default)
+      kappa = 0.75 (Default)
+      t0 = 10 (Default)
+      init_buffer = 75 (Default)
+      term_buffer = 50 (Default)
+      window = 25 (Default)
+      save_metric = false (Default)
+    algorithm = hmc (Default)
+      hmc
+        engine = nuts (Default)
+          nuts
+            max_depth = 10 (Default)
+        metric = diag_e (Default)
+        metric_file =  (Default)
+        stepsize = 1 (Default)
+        stepsize_jitter = 0 (Default)
+    num_chains = 1 (Default)
+id = 0 (Default)
+data
+  file = bernoulli.data.json
+init = 2 (Default)
+random
+  seed = 3252652196 (Default)
+output
+  file = output.csv (Default)
+  diagnostic_file =  (Default)
+  refresh = 100 (Default)</code></pre>
+<p>After the configuration has been displayed, a short timing message is given.</p>
+<pre><code>Gradient evaluation took 1.2e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
+Adjust your expectations accordingly!</code></pre>
+<p>Next, the sampler reports the iteration number, reporting the percentage complete.</p>
+<pre><code>Iteration:    1 / 2000 [  0%]  (Warmup)
+...
+Iteration: 2000 / 2000 [100%]  (Sampling)</code></pre>
+<p>Finally, the sampler reports timing information:</p>
+<pre><code> Elapsed Time: 0.007 seconds (Warm-up)
+               0.017 seconds (Sampling)
+               0.024 seconds (Total)</code></pre>
+</section>
+<section id="mcmc_output_csv" class="level2">
+<h2 class="anchored" data-anchor-id="mcmc_output_csv">Stan CSV output file</h2>
+<p>Each execution of the model results in draws from a single Markov chain being written to a file in <a href="../cmdstan-guide/stan_csv_apdx.html">comma-separated value (CSV) format</a>. The default name of the output file is <code>output.csv</code>.</p>
+<p>The first part of the output file records the version of the underlying Stan library and the configuration as comments (i.e., lines beginning with the pound sign (<code>#</code>)).</p>
+<p>When the example model <code>bernoulli.stan</code> is run via the command line with all default arguments, the following configuration is displayed:</p>
+<pre><code># stan_version_major = 2
+# stan_version_minor = 23
+# stan_version_patch = 0
+# model = bernoulli_model
+# method = sample (Default)
+#   sample
+#     num_samples = 1000 (Default)
+#     num_warmup = 1000 (Default)
+#     save_warmup = false (Default)
+#     thin = 1 (Default)
+#     adapt
+#       engaged = 1 (Default)
+#       gamma = 0.050000 (Default)
+#       delta = 0.800000 (Default)
+#       kappa = 0.750000 (Default)
+#       t0 = 10.000000 (Default)
+#       init_buffer = 75 (Default)
+#       term_buffer = 50 (Default)
+#       window = 25 (Default)
+#       save_metric = false (Default)
+#     algorithm = hmc (Default)
+#       hmc
+#         engine = nuts (Default)
+#           nuts
+#             max_depth = 10 (Default)
+#         metric = diag_e (Default)
+#         metric_file =  (Default)
+#         stepsize = 1.000000 (Default)
+#         stepsize_jitter = 0.000000 (Default)
+#     num_chains = 1 (Default)
+# output
+#   file = output.csv (Default)
+#   diagnostic_file =  (Default)
+#   refresh = 100 (Default)</code></pre>
+<p>This is followed by a CSV header indicating the names of the values sampled.</p>
+<pre><code>lp__,accept_stat__,stepsize__,treedepth__,n_leapfrog__,divergent__,energy__,theta</code></pre>
+<p>The first output columns report the HMC sampler information:</p>
+<ul>
+<li><code>lp__</code> - the total log probability density (up to an additive constant) at each sample</li>
+<li><code>accept_stat__</code> - the average Metropolis acceptance probability over each simulated Hamiltonian trajectory</li>
+<li><code>stepsize__</code> - integrator step size</li>
+<li><code>treedepth__</code> - depth of tree used by NUTS (NUTS sampler)</li>
+<li><code>n_leapfrog__</code> - number of leapfrog calculations (NUTS sampler)</li>
+<li><code>divergent__</code> - has value <code>1</code> if trajectory diverged, otherwise <code>0</code>. (NUTS sampler)</li>
+<li><code>energy__</code> - value of the Hamiltonian</li>
+<li><code>int_time__</code> - total integration time (static HMC sampler)</li>
+</ul>
+<p>Because the above header is from the NUTS sampler, it has columns <code>treedepth__</code>, <code>n_leapfrog__</code>, and <code>divergent__</code> and doesn’t have column <code>int_time__</code>. The remaining columns correspond to model parameters. For the Bernoulli model, it is just the final column, <code>theta</code>.</p>
+<p>The header line is written to the output file before warmup begins. If option <code>save_warmup</code> is set to <code>true</code>, the warmup draws are output directly after the header. The total number of warmup draws saved is <code>num_warmup</code> divided by <code>thin</code>, rounded up (i.e., <code>ceiling</code>).</p>
+<p>Following the warmup draws (if any), are comments which record the results of adaptation: the stepsize, and inverse mass metric used during sampling:</p>
+<pre><code># Adaptation terminated
+# Step size = 0.884484
+# Diagonal elements of inverse mass matrix:
+# 0.535006</code></pre>
+<p>The default sampler is NUTS with an adapted step size and a diagonal inverse mass matrix. For this example, the step size is 0.884484, and the inverse mass contains the single entry 0.535006 corresponding to the parameter <code>theta</code>.</p>
+<p>Draws from the posterior distribution are printed out next, each line containing a single draw with the columns corresponding to the header.</p>
+<pre><code>-6.84097,0.974135,0.884484,1,3,0,6.89299,0.198853
+-6.91767,0.985167,0.884484,1,1,0,6.92236,0.182295
+-7.04879,0.976609,0.884484,1,1,0,7.05641,0.162299
+-6.88712,1,0.884484,1,1,0,7.02101,0.188229
+-7.22917,0.899446,0.884484,1,3,0,7.73663,0.383596
+...</code></pre>
+<p>The output ends with timing details:</p>
+<pre><code>#  Elapsed Time: 0.007 seconds (Warm-up)
+#                0.017 seconds (Sampling)
+#                0.024 seconds (Total)</code></pre>
+</section>
+<section id="iterations" class="level2">
+<h2 class="anchored" data-anchor-id="iterations">Iterations</h2>
+<p>At every sampler iteration, the sampler returns a set of estimates for all parameters and quantities of interest in the model. During warmup, the NUTS algorithm adjusts the HMC algorithm parameters <code>metric</code> and <code>stepsize</code> in order to efficiently sample from <em>typical set</em>, the neighborhood substantial posterior probability mass through which the Markov chain will travel in equilibrium. After warmup, the fixed metric and stepsize are used to produce a set of draws.</p>
+<p>The following keyword-value arguments control the total number of iterations:</p>
+<ul>
+<li><code>num_samples</code></li>
+<li><code>num_warmup</code></li>
+<li><code>save_warmup</code></li>
+<li><code>thin</code></li>
+</ul>
+<p>The values for arguments <code>num_samples</code> and <code>num_warmup</code> must be a non-negative integer. The default value for both is <span class="math inline">\(1000\)</span>.</p>
+<p>For well-specified models and data, the sampler may converge faster and this many warmup iterations may be overkill. Conversely, complex models which have difficult posterior geometries may require more warmup iterations in order to arrive at good values for the step size and metric.</p>
+<p>The number of sampling iterations to runs depends on the effective sample size (EFF) reported for each parameter and the desired precision of your estimates. An EFF of at least 100 is required to make a viable estimate. The precision of your estimate is <span class="math inline">\(\sqrt{N}\)</span>; therefore every additional decimal place of accuracy increases this by a factor of 10.</p>
+<p>Argument <code>save_warmup</code> takes values <code>false</code> or <code>true</code>. The default value is <code>false</code>, i.e., warmup draws are not saved to the output file. When the value is <code>true</code>, the warmup draws are written to the CSV output file directly after the CSV header line.</p>
+<p>Argument <code>thin</code> controls the number of draws from the posterior written to the output file. Some users familiar with older approaches to MCMC sampling might be used to thinning to eliminate an expected autocorrelation in the samples. HMC is not nearly as susceptible to this autocorrelation problem and thus thinning is generally not required nor advised, as HMC can produce <em>anticorrelated</em> draws, which increase the effective sample size beyond the number of draws from the posterior. Thinning should only be used in circumstances where storage of the samples is limited and/or RAM for later processing the samples is limited.</p>
+<p>The value of argument <code>thin</code> must be a positive integer. When thin is set to value <span class="math inline">\(N\)</span>, every <span class="math inline">\(N^{th}\)</span> iteration is written to the output file. Should the value of <code>thin</code> exceed the specified number of iterations, the first iteration is saved to the output. This is because the iteration counter starts from zero and whenever the counter modulo the value of <code>thin</code> equals zero, the iteration is saved to the output file. Since zero modulo any positive integer is zero, the first iteration is always saved. When <code>num_sampling=M</code> and <code>thin=N</code>, the number of iterations written to the output CSV file will be <code>ceiling(M/N)</code>. If <code>save_warmup=true</code>, thinning is applied to the warmup iterations as well.</p>
+</section>
+<section id="adaptation" class="level2">
+<h2 class="anchored" data-anchor-id="adaptation">Adaptation</h2>
+<p>The <code>adapt</code> keyword is used to specify non-default options for the sampler adaptation schedule and settings.</p>
+<p>Adaptation can be turned off by setting sub-argument <code>engaged</code> to value <code>false</code>. If <code>engaged=false</code>, no adaptation will be done, and all other adaptation sub-arguments will be ignored. Since the default argument is <code>engaged=1</code>, this keyword-value pair can be omitted from the command.</p>
+<p>There are two sets of adaptation sub-arguments: step size optimization parameters and the warmup schedule. These are described in detail in the Reference Manual section <a href="https://mc-stan.org/docs/reference-manual/mcmc.html#hmc-algorithm-parameters">Automatic Parameter Tuning</a>.</p>
+<p>The boolean sub-argument <code>save_metric</code> was added in Stan version 2.34. When <code>save_metric=true</code>, the adapted stepsize and metric are output as JSON at the end of adaptation. The saved metric file name is the output file basename with the suffix <code>_metric.json</code>, e.g., if using the default output filename <code>output.csv</code>, the saved metric file will be <code>output_metric.json</code>. This metric file can be reused in subsequent sampler runs as the initial metric, via sampler argument <code>metric_file</code>.</p>
+<section id="step-size-optimization-configuration" class="level3">
+<h3 class="anchored" data-anchor-id="step-size-optimization-configuration">Step size optimization configuration</h3>
+<p>The Stan User’s Guide section on <a href="https://mc-stan.org/docs/stan-users-guide/efficiency-tuning.html#model-conditioning-and-curvature">model conditioning and curvature</a> provides a discussion of adaptation and stepsize issues. The Stan Reference Manual section on <a href="https://mc-stan.org/docs/reference-manual/mcmc.html#hmc-algorithm-parameters">HMC algorithm parameters</a> explains the NUTS-HMC adaptation schedule and the tuning parameters for setting the step size.</p>
+<p>The following keyword-value arguments control the settings used to optimize the step size:</p>
+<ul>
+<li><p><code>delta</code> - The target Metropolis acceptance rate. The default value is <span class="math inline">\(0.8\)</span>. Its value must be strictly between <span class="math inline">\(0\)</span> and <span class="math inline">\(1\)</span>. Increasing the default value forces the algorithm to use smaller step sizes. This can improve sampling efficiency (effective sample size per iteration) at the cost of increased iteration times. Raising the value of <code>delta</code> will also allow some models that would otherwise get stuck to overcome their blockages. <br> Models with difficult posterior geometries may required increasing the <code>delta</code> argument closer to <span class="math inline">\(1\)</span>; we recommend first trying to raise it to <span class="math inline">\(0.9\)</span> or at most <span class="math inline">\(0.95\)</span>. Values about <span class="math inline">\(0.95\)</span> are strong indication of bad geometry; the better solution is to change the model geometry through <a href="https://mc-stan.org/docs/stan-users-guide/reparameterization.html">reparameterization</a> which could yield both more efficient and faster sampling.</p></li>
+<li><p><code>gamma</code> - Adaptation regularization scale. Must be a positive real number, default value is <span class="math inline">\(0.05\)</span>. This is a parameter of the Nesterov dual-averaging algorithm. We recommend always using the default value.</p></li>
+<li><p><code>kappa</code> - Adaptation relaxation exponent. Must be a positive real number, default value is <span class="math inline">\(0.75\)</span>. This is a parameter of the Nesterov dual-averaging algorithm. We recommend always using the default value.</p></li>
+<li><p><code>t_0</code> - Adaptation iteration offset. Must be a positive real number, default value is <span class="math inline">\(10\)</span>. This is a parameter of the Nesterov dual-averaging algorithm. We recommend always using the default value.</p></li>
+</ul>
+</section>
+<section id="warmup-schedule-configuration" class="level3">
+<h3 class="anchored" data-anchor-id="warmup-schedule-configuration">Warmup schedule configuration</h3>
+<p>When adaptation is engaged, the warmup schedule is specified by sub-arguments, all of which take positive integers as values:</p>
+<ul>
+<li><code>init_buffer</code> - The number of iterations spent tuning the step size at the outset of adaptation.</li>
+<li><code>window</code> - The initial number of iterations devoted to tune the metric, will be doubled successively.</li>
+<li><code>term_buffer</code> - The number of iterations used to re-tune the step size once the metric has been tuned.</li>
+</ul>
+<p>The specified values may be modified slightly in order to ensure alignment between the warmup schedule and total number of warmup iterations.</p>
+<p>The following figure is taken from the Stan Reference Manual, where label “I” correspond to <code>init_buffer</code>, the initial “II” corresponds to <code>window</code>, and the final “III” corresponds to <code>term_buffer</code>:</p>
+<p><strong>Warmup Epochs Figure.</strong> <a id="adaptation.figure"></a> <em>Adaptation during warmup occurs in three stages: an initial fast adaptation interval (I), a series of expanding slow adaptation intervals (II), and a final fast adaptation interval (III). For HMC, both the fast and slow intervals are used for adapting the step size, while the slow intervals are used for learning the (co)variance necessitated by the metric. Iteration numbering starts at 1 on the left side of the figure and increases to the right.</em></p>
+<p><img src="img/warmup-epochs.png" class="img-fluid"></p>
+</section>
+</section>
+<section id="algorithm" class="level2">
+<h2 class="anchored" data-anchor-id="algorithm">Algorithm</h2>
+<p>The <code>algorithm</code> keyword-value pair specifies the algorithm used to generate the sample. There are two possible values: <code>hmc</code>, which generates from an HMC-driven Markov chain; and <code>fixed_param</code> which generates a new sample without changing the state of the Markov chain. The default argument is <code>algorithm=hmc</code>.</p>
+<section id="samples-from-a-set-of-fixed-parameters" class="level3">
+<h3 class="anchored" data-anchor-id="samples-from-a-set-of-fixed-parameters">Samples from a set of fixed parameters</h3>
+<p>If a model doesn’t specify any parameters, then argument <code>algorithm=fixed_param</code> is mandatory.</p>
+<p>The fixed parameter sampler generates a new sample without changing the current state of the Markov chain. This can be used to write models which generate pseudo-data via calls to RNG functions in the transformed data and generated quantities blocks.</p>
+</section>
+<section id="hmc-samplers" class="level3">
+<h3 class="anchored" data-anchor-id="hmc-samplers">HMC samplers</h3>
+<p>All HMC algorithms have three parameters:</p>
+<ul>
+<li>step size</li>
+<li>metric</li>
+<li>integration time - the number of steps taken along the Hamiltonian trajectory</li>
+</ul>
+<p>See the Stan Reference Manual section on <a href="https://mc-stan.org/docs/reference-manual/mcmc.html#hmc-algorithm-parameters">HMC algorithm parameters</a> for further details.</p>
+<section id="step-size" class="level4">
+<h4 class="anchored" data-anchor-id="step-size">Step size</h4>
+<p>The HMC algorithm simulates the evolution of a Hamiltonian system. The step size parameter controls the resolution of the sampler. Low step sizes can get HMC samplers unstuck that would otherwise get stuck with higher step sizes.</p>
+<p>The following keyword-value arguments control the step size:</p>
+<ul>
+<li><p><code>stepsize</code> - How far to move each time the Hamiltonian system evolves forward. Must be a positive real number, default value is <span class="math inline">\(1\)</span>.</p></li>
+<li><p><code>stepsize_jitter</code> - Allows step size to be “jittered” randomly during sampling to avoid any poor interactions with a fixed step size and regions of high curvature. Must be a real value between <span class="math inline">\(0\)</span> and <span class="math inline">\(1\)</span>. The default value is <span class="math inline">\(0\)</span>. Setting <code>stepsize_jitter</code> to <span class="math inline">\(1\)</span> causes step sizes to be selected in the range of <span class="math inline">\(0\)</span> to twice the adapted step size. Jittering below the adapted value will increase the number of steps required and will slow down sampling, while jittering above the adapted value can cause premature rejection due to simulation error in the Hamiltonian dynamics calculation. We strongly recommend always using the default value.</p></li>
+</ul>
+</section>
+<section id="metric" class="level4">
+<h4 class="anchored" data-anchor-id="metric">Metric</h4>
+<p>All HMC implementations in Stan utilize quadratic kinetic energy functions which are specified up to the choice of a symmetric, positive-definite matrix known as a <em>mass matrix</em> or, more formally, a <em>metric</em> <span class="citation" data-cites="Betancourt:2017">Betancourt (<a href="#ref-Betancourt:2017" role="doc-biblioref">2017</a>)</span>.</p>
+<p>The <code>metric</code> argument specifies the choice of Euclidean HMC implementations:</p>
+<ul>
+<li><code>metric=unit</code> specifies unit metric (diagonal matrix of ones).</li>
+<li><code>metric=diag_e</code> specifies a diagonal metric (diagonal matrix with positive diagonal entries). This is the default value.</li>
+<li><code>metric=dense_e</code> specifies a dense metric (a dense, symmetric positive definite matrix).</li>
+</ul>
+<p>By default, the metric is estimated during warmup. However, when <code>metric=diag_e</code> or <code>metric=dense_e</code>, an initial guess for the metric can be specified with the <code>metric_file</code> argument whose value is the filepath to a JSON or Rdump file which contains a single variable <code>inv_metric</code>. For a <code>diag_e</code> metric the <code>inv_metric</code> value must be a vector of positive values, one for each parameter in the system. For a <code>dense_e</code> metric, <code>inv_metric</code> value must be a positive-definite square matrix with number of rows and columns equal to the number of parameters in the model.</p>
+<p>The <code>metric_file</code> option can be used with and without adaptation enabled. If adaptation is enabled, the provided metric will be used as the initial guess in the adaptation process. If the initial guess is good, then adaptation should not change it much. If the metric is no good, then the adaptation will override the initial guess.</p>
+<p>If adaptation is disabled, both the <code>metric_file</code> and <code>stepsize</code> arguments should be specified.</p>
+</section>
+<section id="integration-time" class="level4">
+<h4 class="anchored" data-anchor-id="integration-time">Integration time</h4>
+<p>The total integration time is determined by the argument <code>engine</code> which take possible values:</p>
+<ul>
+<li><code>nuts</code> - the No-U-Turn Sampler which dynamically determines the optimal integration time.</li>
+<li><code>static</code> - an HMC sampler which uses a user-specified integration time.</li>
+</ul>
+<p>The default argument is <code>engine=nuts</code>.</p>
+<p>The NUTS sampler generates a proposal by starting at an initial position determined by the parameters drawn in the last iteration. It then evolves the initial system both forwards and backwards in time to form a balanced binary tree. The algorithm is iterative; at each iteration the tree depth is increased by one, doubling the number of leapfrog steps thus effectively doubling the computation time. The algorithm terminates in one of two ways: either the NUTS criterion (i.e., a U-turn in Euclidean space on a subtree) is satisfied for a new subtree or the completed tree; or the depth of the completed tree hits the maximum depth allowed.</p>
+<p>When <code>engine=nuts</code>, the subargument <code>max_depth</code> can be used to control the depth of the tree. The default argument is <code>max_depth=10</code>. In the case where a model has a difficult posterior from which to sample, <code>max_depth</code> should be increased to ensure that that the NUTS tree can grow as large as necessary.</p>
+<p>When the argument <code>engine=static</code> is specified, the user must specify the integration time via keyword <code>int_time</code> which takes as a value a positive number. The default value is <span class="math inline">\(2\pi\)</span>.</p>
+</section>
+</section>
+</section>
+<section id="sampler-diag-file" class="level2">
+<h2 class="anchored" data-anchor-id="sampler-diag-file">Sampler diagnostic file</h2>
+<p>The <code>output</code> keyword sub-argument <code>diagnostic_file=&lt;filepath&gt;</code> specifies the location of the auxiliary output file which contains sampler information for each draw, and the gradients on the unconstrained scale and log probabilities for all parameters in the model. By default, no auxiliary output file is produced.</p>
+</section>
+<section id="multi-chain-sampling" class="level2">
+<h2 class="anchored" data-anchor-id="multi-chain-sampling">Running multiple chains</h2>
+<p>A Markov chain generates samples from the target distribution only after it has converged to equilibrium. In theory, convergence is only guaranteed asymptotically as the number of draws grows without bound. In practice, diagnostics must be applied to monitor convergence for the finite number of draws actually available. One way to monitor whether a chain has approximately converged to the equilibrium distribution is to compare its behavior to other randomly initialized chains. For robust diagnostics, we recommend running 4 chains.</p>
+<p>The preferred way of using multiple chains is to run them all from the same executable using the <code>num_chains</code> argument. There is also the option to use the <a href="#old-multichain">Unix or DOS shell to run multiple executables</a>.</p>
+<section id="sampler-num-chains" class="level3">
+<h3 class="anchored" data-anchor-id="sampler-num-chains">Using the num_chains argument to run multiple chains</h3>
+<p>The <code>num_chains</code> argument can be used for all of Stan’s samplers with the exception of the <code>static</code> HMC engine. This will run multiple chains of MCMC from the same executable, which can save on memory usage due to only needing one copy of the model and data. Depending on whether the model was compiled with <code>STAN_THREADS=true</code>, these will either run in parallel or one after the other.</p>
+<p>The <code>num_chains</code> argument changes the meanings of several other arguments when it is greater than <code>1</code> (the default). Many arguments are now interpreted as a “template” which is used for each chain.</p>
+<p>For example, when <code>num_chains=2</code>, the argument <code>output file=foo.csv</code> <em>no longer produces a file <code>foo.csv</code></em>, but instead produces two files, <code>foo_1.csv</code> and <code>foo_2.csv</code>. If you also supply <code>id=5</code>, the files produced will be <code>foo_5.csv</code> and <code>foo_6.csv</code> – <code>id=5</code> gives the id of the first chain, and the remaining chains are sequential from there.</p>
+<p>This also applies to input files, like those used for initialization. For example, if <code>num_chains=3</code> and <code>init=bar.json</code> will first look for <code>bar_1.json</code>. If it exists, it will use <code>bar_1.json</code> for the first chain, <code>bar_2.json</code> for the second, and so on. If <code>bar_1.json</code> does not exist, it falls back to looking for <code>bar.json</code>, and if it exists, uses the same initial values for each chain. The numbers in these filenames are also based on the <code>id</code> argument, which defaults to <code>1</code>.</p>
+<p>For example, this will run 4 chains:</p>
+<pre><code>./bernoulli sample num_chains=4 data file=bernoulli.data.json output file=output.csv</code></pre>
+<p>This will produce samples in <code>output_1.csv</code>, <code>output_2.csv</code>, <code>output_3.csv</code>, <code>output_4.csv</code>. A suffix with the chain id is appended to the provided output filename (<code>output.csv</code> in the above command).</p>
+<p>If the model was not compiled with <code>STAN_THREADS=true</code>, the above command will run 4 chains sequentially.</p>
+<p>If the model was compiled with <code>STAN_THREADS=true</code>, the chains can run in parallel, with the <code>num_threads</code> argument defining the maximum number of threads used to run the chains. If the model uses no within-chain parallelization (<code>map_rect</code> or <code>reduce_sum</code> calls), the below command will run 4 chains in parallel, provided there are cores available:</p>
+<pre><code>./bernoulli sample num_chains=4 data file=bernoulli.data.json output file=output.csv num_threads=4</code></pre>
+<p>If the model uses within-chain parallelization (<code>map_rect</code> or <code>reduce_sum</code> calls), the threads are automatically scheduled to run the parallel parts of a single chain or run the sequential parts of another chains. The below call starts 4 chains that can use 16 threads. At a given moment a single chain may use all 16 threads, 1 thread, anything in between, or can wait for a thread to be available. The scheduling is left to the <a href="https://www.intel.com/content/www/us/en/docs/onetbb/developer-guide-api-reference/2021-11/how-task-scheduler-works.html">Threading Building Blocks scheduler</a>.</p>
+<pre><code>./bernoulli_par sample num_chains=4 data file=bernoulli.data.json output file=output.csv num_threads=16</code></pre>
+</section>
+</section>
+<section id="summarizing-sampler-outputs-with-stansummary" class="level2">
+<h2 class="anchored" data-anchor-id="summarizing-sampler-outputs-with-stansummary">Summarizing sampler output(s) with <code>stansummary</code></h2>
+<p>The <a href="../cmdstan-guide/stansummary.html"><code>stansummary</code> utility</a> processes one or more output files from a run or set of runs of Stan’s HMC sampler given a model and data. For all columns in the Stan CSV output file <code>stansummary</code> reports a set of statistics including mean, standard deviation, percentiles, effective number of samples, and <span class="math inline">\(\hat{R}\)</span> values.</p>
+<p>To run <code>stansummary</code> on the output files generated by the for loop above, by the above run of the <code>bernoulli</code> model on Mac or Linux:</p>
+<pre><code>&lt;cmdstan-home&gt;/bin/stansummary output_*.csv</code></pre>
+<p>On Windows, use backslashes to call the <code>stansummary.exe</code>.</p>
+<pre><code>&lt;cmdstan-home&gt;\bin\stansummary.exe output_*.csv</code></pre>
+<p>The stansummary output consists of one row of statistics per column in the Stan CSV output file. Therefore, the first rows in the stansummary report statistics over the sampler state. The final row of output summarizes the estimates of the model variable <code>theta</code>:</p>
+<pre><code>Inference for Stan model: bernoulli_model
+4 chains: each with iter=(1000,1000,1000,1000); warmup=(0,0,0,0); thin=(1,1,1,1); 4000 iterations saved.
+
+Warmup took (0.0070, 0.0070, 0.0070, 0.0070) seconds, 0.028 seconds total
+Sampling took (0.020, 0.017, 0.021, 0.019) seconds, 0.077 seconds total
+
+                Mean     MCSE  StdDev     5%   50%   95%    N_Eff  N_Eff/s    R_hat
+lp__            -7.3  1.8e-02    0.75   -8.8  -7.0  -6.8  1.8e+03  2.4e+04  1.0e+00
+accept_stat__   0.89  2.7e-03    0.17   0.52  0.96   1.0  3.9e+03  5.1e+04  1.0e+00
+stepsize__       1.1  7.5e-02    0.11   0.93   1.2   1.2  2.0e+00  2.6e+01  2.5e+13
+treedepth__      1.4  8.1e-03    0.49    1.0   1.0   2.0  3.6e+03  4.7e+04  1.0e+00
+n_leapfrog__     2.3  1.7e-02    0.98    1.0   3.0   3.0  3.3e+03  4.3e+04  1.0e+00
+divergent__     0.00      nan    0.00   0.00  0.00  0.00      nan      nan      nan
+energy__         7.8  2.6e-02     1.0    6.8   7.5   9.9  1.7e+03  2.2e+04  1.0e+00
+theta           0.25  2.9e-03    0.12  0.079  0.23  0.46  1.7e+03  2.1e+04  1.0e+00
+
+Samples were drawn using hmc with nuts.
+For each parameter, N_Eff is a crude measure of effective sample size,
+and R_hat is the potential scale reduction factor on split chains (at
+convergence, R_hat=1).</code></pre>
+<p>In this example, we conditioned the model on data consisting of the outcomes of 10 bernoulli trials, where only 2 trials reported success. The 5%, 50%, and 95% percentile values for <code>theta</code> reflect the uncertainty in our estimate, due to the small amount of data, given the prior of <code>beta(1, 1)</code></p>
+</section>
+<section id="old-multichain" class="level2">
+<h2 class="anchored" data-anchor-id="old-multichain">Examples - older parallelism</h2>
+<p><strong>Note</strong>: Many of these examples can be simplified by using the <a href="#sampler-num-chains"><code>num_chains</code> argument</a>.</p>
+<p>When the <code>num_chains</code> argument is not available or is undesirable for whatever reason, built-in tools in the system shell can be used.</p>
+<p>To run multiple chains given a model and data, either sequentially or in parallel, we can also use the Unix or DOS shell <code>for</code> loop to set up index variables needed to identify each chain and its outputs.</p>
+<p>On MacOS or Linux, the for-loop syntax for both the bash and zsh interpreters is:</p>
+<pre><code>for NAME [in LIST]; do COMMANDS; done</code></pre>
+<p>The list can be a simple sequence of numbers, or you can use the shell expansion syntax <code>{1..N}</code> which expands to the sequence from <span class="math inline">\(1\)</span> to <span class="math inline">\(N\)</span>, e.g.&nbsp;<code>{1..4}</code> expands to <code>1 2 3 4</code>. Note that the expression <code>{1..N}</code> cannot contain spaces.</p>
+<p>To run 4 chains for the example bernoulli model on MacOS or Linux:</p>
+<pre><code>&gt; for i in {1..4}
+    do
+      ./bernoulli sample data file=bernoulli.data.json \
+      output file=output_${i}.csv
+    done</code></pre>
+<p>The backslash (<code>\</code>) indicates a line continuation in Unix. The expression <code>${i}</code> substitutes in the value of loop index variable <code>i</code>. To run chains in parallel, put an ampersand (<code>&amp;</code>) at the end of the nested sampler command:</p>
+<pre><code>&gt; for i in {1..4}
+    do
+      ./bernoulli sample data file=bernoulli.data.json \
+      output file=output_${i}.csv &amp;
+    done</code></pre>
+<p>This pushes each process into the background which allows the loop to continue without waiting for the current chain to finish.</p>
+<p>On Windows, the DOS <a href="https://www.windows-commandline.com/windows-for-loop-examples/">for-loop syntax</a> is one of:</p>
+<pre><code>for %i in (SET) do COMMAND COMMAND-ARGUMENTS
+for /l %i in (START, STEP, END) do COMMAND COMMAND-ARGUMENTS</code></pre>
+<p>To run 4 chains in parallel on Windows:</p>
+<pre><code>&gt;for /l %i in (1, 1, 4) do start /b bernoulli.exe sample ^
+                                    data file=bernoulli.data.json my_data ^
+                                    output file=output_%i.csv</code></pre>
+<p>The caret (<code>^</code>) indicates a line continuation in DOS. The expression <code>%i</code> is the loop index.</p>
+<p>In the following extended examples, we focus on just the nested sampler command for Unix.</p>
+<section id="running-multiple-chains-with-a-specified-rng-seed" class="level3">
+<h3 class="anchored" data-anchor-id="running-multiple-chains-with-a-specified-rng-seed">Running multiple chains with a specified RNG seed</h3>
+<p>For reproducibility, we specify the same RNG seed across all chains and use the chain id argument to specify the RNG offset.</p>
+<p>The RNG seed is specified by <code>random seed=&lt;int&gt;</code> and the offset is specified by <code>id=&lt;loop index&gt;</code>, so the call to the sampler is:</p>
+<pre><code>./my_model sample data file=my_model.data.json \
+            output file=output_${i}.csv \
+            random seed=12345 id=${i}</code></pre>
+</section>
+<section id="changing-the-default-warmup-and-sampling-iterations" class="level3">
+<h3 class="anchored" data-anchor-id="changing-the-default-warmup-and-sampling-iterations">Changing the default warmup and sampling iterations</h3>
+<p>The warmup and sampling iteration keyword-value arguments must follow the <code>sample</code> keyword. The call to the sampler which overrides the default warmup and sampling iterations is:</p>
+<pre><code>./my_model sample num_warmup=500 num_sampling=500 \
+            data file=my_model.data.json \
+            output file=output_${i}.csv</code></pre>
+</section>
+<section id="saving-warmup-draws" class="level3">
+<h3 class="anchored" data-anchor-id="saving-warmup-draws">Saving warmup draws</h3>
+<p>To save warmup draws as part of the Stan CSV output file, use the keyword-value argument <code>save_warmup=true</code>. This must be grouped with the other <code>sample</code> keyword sub-arguments.</p>
+<pre><code>./my_model sample num_warmup=500 num_sampling=500 save_warmup=true \
+            data file=my_model.data.json \
+            output file=output_${i}.csv</code></pre>
+</section>
+<section id="initializing-parameters" class="level3">
+<h3 class="anchored" data-anchor-id="initializing-parameters">Initializing parameters</h3>
+<p>By default, all parameters are initialized on an unconstrained scale to random draws from a uniform distribution over the range <span class="math inline">\([{-2}, 2]\)</span>. To initialize some or all parameters to good starting points on the constrained scale from a data file in JSON or Rdump format, use the keyword-value argument <code>init=&lt;filepath&gt;</code>:</p>
+<pre><code>./my_model sample init=my_param_inits.json data file=my_model.data.json \
+           output file=output_${i}.csv</code></pre>
+<p>To verify that the specified values will be used by the sampler, you can run the sampler with option <code>algorithm=fixed_param</code>, so that the initial values are used to generate the sample. Since this generates a set of identical draws, setting <code>num_warmp=0</code> and <code>num_samples=1</code> saves unnecessary iterations. As the output values are also on the constrained scale, the set of reported values will match the set of specified initial values.</p>
+<p>For example, if we run the example Bernoulli model with specified initial value for parameter “theta”:</p>
+<pre><code>{ "theta" : 0.5 }</code></pre>
+<p>via command:</p>
+<pre><code>./bernoulli sample algorithm=fixed_param num_warmup=0 num_samples=1 \
+            init=bernoulli.init.json data file=bernoulli.data.json</code></pre>
+<p>The resulting output CSV file contains a single draw:</p>
+<pre><code>lp__,accept_stat__,theta
+0,0,0.5
+#
+#  Elapsed Time: 0 seconds (Warm-up)
+#                0 seconds (Sampling)
+#                0 seconds (Total)
+#</code></pre>
+</section>
+<section id="specifying-the-metric-and-stepsize" class="level3">
+<h3 class="anchored" data-anchor-id="specifying-the-metric-and-stepsize">Specifying the metric and stepsize</h3>
+<p>An initial estimate for the metric can be specified with the <code>metric_file</code> argument whose value is the filepath to a JSON or Rdump file which contains a variable <code>inv_metric</code>. The <code>metric_file</code> option can be used with and without adaptation enabled.</p>
+<p>By default, the metric is estimated during warmup adaptation. If the initial guess is good, then adaptation should not change it much. If the metric is no good, then the adaptation will override the initial guess. For example, the JSON file <code>bernoulli.diag_e.json</code>, contents</p>
+<pre><code>{ "inv_metric" : [0.296291] }</code></pre>
+<p>can be used as the initial metric as follows:</p>
+<pre><code>../my_model sample algorithm=hmc metric_file=bernoulli.diag_e.json \
+            data file=my_model.data.json \
+            output file=output_${i}.csv</code></pre>
+<p>If adaptation is disabled, both the <code>metric_file</code> and <code>stepsize</code> arguments should be specified.</p>
+<pre><code>../my_model sample adapt engaged=false \
+            algorithm=hmc stepsize=0.9 \
+            metric_file=bernoulli.diag_e.json \
+            data file=my_model.data.json \
+            output file=output_${i}.csv</code></pre>
+<p>The resulting output CSV file will contain the following set of comment lines:</p>
+<pre><code># Adaptation terminated
+# Step size = 0.9
+# Diagonal elements of inverse mass matrix:
+# 0.296291</code></pre>
+<p>As of Stan versione 2.34, the adapted metric can be saved in JSON format, via sub-argument <code>save_metric</code>, described above. This allows for no or minimal adaptation starting from this file. It is still necessary to specify the <code>stepsize</code> argument as well as the <code>metric_file</code> arguments; the former is the value of the <code>stepsize</code> element in the saved metric file, and the later is the metric file path.</p>
+</section>
+<section id="changing-the-nuts-hmc-adaptation-parameters" class="level3">
+<h3 class="anchored" data-anchor-id="changing-the-nuts-hmc-adaptation-parameters">Changing the NUTS-HMC adaptation parameters</h3>
+<p>The keyword-value arguments for these settings are grouped together under the <code>adapt</code> keyword which itself is a sub-argument of the <code>sample</code> keyword.</p>
+<p>Models with difficult posterior geometries may required increasing the <code>delta</code> argument closer to <span class="math inline">\(1\)</span>.</p>
+<pre><code>./my_model sample adapt delta=0.95 \
+            data file=my_model.data.json \
+            output file=output_${i}.csv</code></pre>
+<p>To skip adaptation altogether, use the keyword-value argument <code>engaged=false</code>. Disabling adaptation disables both metric and stepsize adaptation, so a stepsize should be provided along with a metric to enable efficient sampling.</p>
+<pre><code>../my_model sample adapt engaged=false \
+            algorithm=hmc stepsize=0.9 \
+            metric_file=bernoulli.diag_e.json \
+            data file=my_model.data.json \
+            output file=output_${i}.csv</code></pre>
+<p>Even with adaptation disabled, it is still advisable to run warmup iterations in order to allow the initial parameter values to be adjusted to estimates which fall within the <a href="https://mc-stan.org/docs/stan-users-guide/efficiency-tuning.html#model-conditioning-and-curvature">typical set</a>.</p>
+<p>To skip warmup altogether requires specifying both <code>num_warmup=0</code> and <code>adapt engaged=false</code>.</p>
+<pre><code>../my_model sample num_warmup=0 adapt engaged=false \
+            algorithm=hmc stepsize=0.9 \
+            metric_file=bernoulli.diag_e.json \
+            data file=my_model.data.json \
+            output file=output_${i}.csv</code></pre>
+</section>
+<section id="increasing-the-tree-depth" class="level3">
+<h3 class="anchored" data-anchor-id="increasing-the-tree-depth">Increasing the tree-depth</h3>
+<p>Models with difficult posterior geometries may required increasing the <code>max_depth</code> argument from its default value <span class="math inline">\(10\)</span>. This requires specifying a series of keyword-argument pairs:</p>
+<pre><code>./my_model sample adapt delta=0.95 \
+            algorithm=hmc engine=nuts max_depth=15 \
+            data file=my_model.data.json \
+            output file=output_${i}.csv</code></pre>
+</section>
+<section id="capturing-hamiltonian-diagnostics-and-gradients" class="level3">
+<h3 class="anchored" data-anchor-id="capturing-hamiltonian-diagnostics-and-gradients">Capturing Hamiltonian diagnostics and gradients</h3>
+<p>The <code>output</code> keyword sub-argument <code>diagnostic_file=&lt;filepath&gt;</code> write the sampler parameters and gradients of all model parameters for each draw to a CSV file:</p>
+<pre><code>./my_model sample data file=my_model.data.json \
+            output file=output_${i}.csv \
+            diagnostic_file=diagnostics_${i}.csv</code></pre>
+</section>
+<section id="suppressing-progress-updates-to-the-console" class="level3">
+<h3 class="anchored" data-anchor-id="suppressing-progress-updates-to-the-console">Suppressing progress updates to the console</h3>
+<p>The <code>output</code> keyword sub-argument <code>refresh=&lt;int&gt;</code> specifies the number of iterations between progress messages written to the terminal window. The default value is <span class="math inline">\(100\)</span> iterations. The progress updates look like:</p>
+<pre><code>Iteration:    1 / 2000 [  0%]  (Warmup)
+Iteration:  100 / 2000 [  5%]  (Warmup)
+Iteration:  200 / 2000 [ 10%]  (Warmup)
+Iteration:  300 / 2000 [ 15%]  (Warmup)</code></pre>
+<p>For simple models which fit quickly, such updates can be annoying; to suppress them altogether, set <code>refresh=0</code>. This only turns off the <code>Iteration:</code> messages; the configuration and timing information are still written to the terminal.</p>
+<pre><code>./my_model sample data file=my_model.data.json \
+            output file=output_${i}.csv \
+            refresh=0</code></pre>
+<p>For complicated models which take a long time to fit, setting the refresh rate to a low number, e.g.&nbsp;<span class="math inline">\(10\)</span> or even <span class="math inline">\(1\)</span>, provides a way to more closely monitor the sampler.</p>
+</section>
+<section id="everything-example" class="level3">
+<h3 class="anchored" data-anchor-id="everything-example">Everything example</h3>
+<p>The CmdStan argument parser requires keeping sampler config sub-arguments together; interleaving sampler config with the inputs, outputs, inits, RNG seed and chain id config results in an error message such as the following:</p>
+<pre><code>./bernoulli sample data file=bernoulli.data.json adapt delta=0.95
+adapt is either mistyped or misplaced.
+Perhaps you meant one of the following valid configurations?
+  method=sample sample adapt
+  method=variational variational adapt
+Failed to parse arguments, terminating Stan</code></pre>
+<p>The following example provides a template for a call to the sampler which specifies input data, initial parameters, initial step-size and metric, adaptation, output, and RNG initialization.</p>
+<pre><code>./my_model sample num_warmup=2000 \
+           init=my_param_inits.json \
+           adapt delta=0.95 init_buffer=100 \
+           window=50 term_buffer=100 \
+           algorithm=hmc engine=nuts max_depth=15 \
+           metric=dense_e metric_file=my_metric.json \
+           stepsize=0.6555 \
+           data file=my_model.data.json \
+           output file=output_${i}.csv refresh=10 \
+           random seed=12345 id=${i}</code></pre>
+<p>The keywords <code>sample</code>, <code>data</code>, <code>output</code>, and <code>random</code> are the top-level argument groups. Within the <code>sample</code> config arguments, the keyword <code>adapt</code> groups the adaptation algorithm parameters and the keyword-value <code>algorithm=hmc</code> groups the NUTS-HMC parameters.</p>
+<p>The top-level groups can be freely ordered with respect to one another. The following is also a valid command:</p>
+<pre><code>./my_model random seed=12345 id=${i} \
+           data file=my_model.data.json \
+           output file=output_${i}.csv refresh=10 \
+           sample num_warmup=2000 \
+           init=my_param_inits.json \
+           algorithm=hmc engine=nuts max_depth=15 \
+           metric=dense_e metric_file=my_metric.json \
+           stepsize=0.6555 \
+           adapt delta=0.95 init_buffer=100 \
+           window=50 term_buffer=100</code></pre>
+
+
+
+</section>
+</section>
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-Betancourt:2017" class="csl-entry" role="listitem">
+Betancourt, Michael. 2017. <span>“A Conceptual Introduction to <span>H</span>amiltonian <span>M</span>onte <span>C</span>arlo.”</span> <em>arXiv</em> 1701.02434. <a href="https://arxiv.org/abs/1701.02434">https://arxiv.org/abs/1701.02434</a>.
+</div>
+</div></section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../cmdstan-guide/command_line_options.html" class="pagination-link" aria-label="Command-Line Interface Overview">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Command-Line Interface Overview</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../cmdstan-guide/optimize_config.html" class="pagination-link" aria-label="Optimization">
+        <span class="nav-page-text">Optimization</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/cmdstan-guide/mcmc_config.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

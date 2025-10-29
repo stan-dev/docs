@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+<link rel="canonical" href="https://mc-stan.org/docs/reference-manual/analysis.html" />
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.53">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Posterior Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../reference-manual/optimization.html" rel="next">
+<link href="../reference-manual/mcmc.html" rel="prev">
+<link href="../img/logo_tm.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 200,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../theming/quarto_styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../stan-users-guide/index.html"> 
+<span class="menu-text">Stan Users Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../reference-manual/index.html" aria-current="page"> 
+<span class="menu-text">Reference Manual</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../functions-reference/index.html"> 
+<span class="menu-text">Functions Reference</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-interfaces" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Interfaces</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-interfaces">    
+        <li>
+    <a class="dropdown-item" href="../cmdstan-guide/index.html">
+ <span class="dropdown-text">CmdStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy">
+ <span class="dropdown-text">CmdStanPy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr">
+ <span class="dropdown-text">CmdStanR</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/users/interfaces/pystan.html">
+ <span class="dropdown-text">PyStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstan">
+ <span class="dropdown-text">RStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/">
+ <span class="dropdown-text">Stan.jl</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-other-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Other Packages</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/">
+ <span class="dropdown-text">bayesplot</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/">
+ <span class="dropdown-text">BridgeStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/">
+ <span class="dropdown-text">brms</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/loo/">
+ <span class="dropdown-text">loo</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/posterior">
+ <span class="dropdown-text">posterior</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/projpred">
+ <span class="dropdown-text">projpred</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm">
+ <span class="dropdown-text">rstanarm</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstantools">
+ <span class="dropdown-text">rstantools</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/shinystan">
+ <span class="dropdown-text">shinystan</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools tools-wide">
+    <a href="https://github.com/stan-dev" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-github"></i></a>
+    <a href="https://discourse.mc-stan.org" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-chat-text-fill"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference-manual/mcmc.html">Algorithms</a></li><li class="breadcrumb-item"><a href="../reference-manual/analysis.html">Posterior Analysis</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Stan Reference Manual</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <span class="sidebar-item-text sidebar-link text-start">
+ <span class="menu-text">Version 2.35</span></span>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Language</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/encoding.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Character Encoding</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/includes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Includes</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/comments.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Comments</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/whitespace.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Whitespace</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data Types and Declarations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/expressions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/statements.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Statements</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/blocks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Program Blocks</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/user-functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">User-Defined Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/transforms.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Constraint Transforms</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/syntax.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Language Syntax</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/execution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Program Execution</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/deprecations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Deprecated Features</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/removals.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Removed Features</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Algorithms</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/mcmc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MCMC Sampling</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/analysis.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Posterior Analysis</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/optimization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Optimization</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/pathfinder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Pathfinder</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/variational.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Variational Inference</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/laplace.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Laplace Approximation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/diagnostics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Diagnostic Mode</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Usage</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Reproducibility</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference-manual/licenses.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Licenses and Dependencies</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#analysis.chapter" id="toc-analysis.chapter" class="nav-link active" data-scroll-target="#analysis.chapter">Posterior Analysis</a>
+  <ul class="collapse">
+  <li><a href="#markov-chains" id="toc-markov-chains" class="nav-link" data-scroll-target="#markov-chains">Markov chains</a></li>
+  <li><a href="#convergence" id="toc-convergence" class="nav-link" data-scroll-target="#convergence">Convergence</a></li>
+  <li><a href="#notation-for-samples-chains-and-draws" id="toc-notation-for-samples-chains-and-draws" class="nav-link" data-scroll-target="#notation-for-samples-chains-and-draws">Notation for samples, chains, and draws</a>
+  <ul class="collapse">
+  <li><a href="#potential-scale-reduction" id="toc-potential-scale-reduction" class="nav-link" data-scroll-target="#potential-scale-reduction">Potential scale reduction</a></li>
+  <li><a href="#split-r-hat-for-detecting-non-stationarity" id="toc-split-r-hat-for-detecting-non-stationarity" class="nav-link" data-scroll-target="#split-r-hat-for-detecting-non-stationarity">Split R-hat for detecting non-stationarity</a></li>
+  <li><a href="#convergence-is-global" id="toc-convergence-is-global" class="nav-link" data-scroll-target="#convergence-is-global">Convergence is global</a></li>
+  </ul></li>
+  <li><a href="#effective-sample-size.section" id="toc-effective-sample-size.section" class="nav-link" data-scroll-target="#effective-sample-size.section">Effective sample size</a>
+  <ul class="collapse">
+  <li><a href="#definition-of-effective-sample-size" id="toc-definition-of-effective-sample-size" class="nav-link" data-scroll-target="#definition-of-effective-sample-size">Definition of effective sample size</a></li>
+  <li><a href="#estimation-of-effective-sample-size" id="toc-estimation-of-effective-sample-size" class="nav-link" data-scroll-target="#estimation-of-effective-sample-size">Estimation of effective sample size</a></li>
+  <li><a href="#estimation-of-mcmc-standard-error" id="toc-estimation-of-mcmc-standard-error" class="nav-link" data-scroll-target="#estimation-of-mcmc-standard-error">Estimation of MCMC standard error</a></li>
+  <li><a href="#thinning-samples" id="toc-thinning-samples" class="nav-link" data-scroll-target="#thinning-samples">Thinning samples</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/reference-manual/analysis.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<div>
+This is an old version, <a href="https://mc-stan.org/docs/reference-manual/analysis.html">view current version</a>.
+</div>
+
+
+
+
+<section id="analysis.chapter" class="level1">
+<h1>Posterior Analysis</h1>
+<p>Stan uses Markov chain Monte Carlo (MCMC) techniques to generate samples from the posterior distribution for full Bayesian inference. Markov chain Monte Carlo (MCMC) methods were developed for situations in which it is not straightforward to make independent draws <span class="citation" data-cites="Metropolis:1953">Metropolis et al. (<a href="#ref-Metropolis:1953" role="doc-biblioref">1953</a>)</span>.</p>
+<p>Stan’s variational inference algorithm provides draws from the variational approximation to the posterior which may be analyzed just as any other MCMC output, despite the fact that it is not actually a Markov chain.</p>
+<p>Stan’s Laplace algorithm produces a sample from a normal approximation centered at the mode of a distribution in the unconstrained space. If the mode is a maximum a posteriori (MAP) estimate, the samples provide an estimate of the mean and standard deviation of the posterior distribution. If the mode is a maximum likelihood estimate (MLE), the sample provides an estimate of the standard error of the likelihood.</p>
+<section id="markov-chains" class="level2">
+<h2 class="anchored" data-anchor-id="markov-chains">Markov chains</h2>
+<p>A <em>Markov chain</em> is a sequence of random variables <span class="math inline">\(\theta^{(1)},
+\theta^{(2)},\ldots\)</span> where each variable is conditionally independent of all other variables given the value of the previous value. Thus if <span class="math inline">\(\theta = \theta^{(1)}, \theta^{(2)},\ldots, \theta^{(N)}\)</span>, then</p>
+<p><span class="math display">\[
+p(\theta) = p(\theta^{(1)}) \prod_{n=2}^N p(\theta^{(n)}|\theta^{(n-1)}).
+\]</span></p>
+<p>Stan uses Hamiltonian Monte Carlo to generate a next state in a manner described in the <a href="../reference-manual/mcmc.html">Hamiltonian Monte Carlo chapter</a>.</p>
+<p>The Markov chains Stan and other MCMC samplers generate are <em>ergodic</em> in the sense required by the Markov chain central limit theorem, meaning roughly that there is a reasonable chance of reaching one value of <span class="math inline">\(\theta\)</span> from another. The Markov chains are also <em>stationary</em>, meaning that the transition probabilities do not change at different positions in the chain, so that for <span class="math inline">\(n, n' \geq 0\)</span>, the probability function <span class="math inline">\(p(\theta^{(n+1)}|\theta^{(n)})\)</span> is the same as <span class="math inline">\(p(\theta^{(n'+1)}|\theta^{(n')})\)</span> (following the convention of overloading random and bound variables and picking out a probability function by its arguments).</p>
+<p>Stationary Markov chains have an <em>equilibrium distribution</em> on states in which each has the same marginal probability function, so that <span class="math inline">\(p(\theta^{(n)})\)</span> is the same probability function as <span class="math inline">\(p(\theta^{(n+1)})\)</span>. In Stan, this equilibrium distribution <span class="math inline">\(p(\theta^{(n)})\)</span> is the target density <span class="math inline">\(p(\theta)\)</span> defined by a Stan program, which is typically a proper Bayesian posterior density <span class="math inline">\(p(\theta | y)\)</span> defined on the log scale up to a constant.</p>
+<p>Using MCMC methods introduces two difficulties that are not faced by independent sample Monte Carlo methods. The first problem is determining when a randomly initialized Markov chain has converged to its equilibrium distribution. The second problem is that the draws from a Markov chain may be correlated or even anti-correlated, and thus the central limit theorem’s bound on estimation error no longer applies. These problems are addressed in the next two sections.</p>
+<p>Stan’s posterior analysis tools compute a number of summary statistics, estimates, and diagnostics for Markov chain Monte Carlo (MCMC) samples. Stan’s estimators and diagnostics are more robust in the face of non-convergence, antithetical sampling, and long-term Markov chain correlations than most of the other tools available. The algorithms Stan uses to achieve this are described in this chapter.</p>
+</section>
+<section id="convergence" class="level2">
+<h2 class="anchored" data-anchor-id="convergence">Convergence</h2>
+<p>By definition, a Markov chain generates samples from the target distribution only after it has converged to equilibrium (i.e., equilibrium is defined as being achieved when <span class="math inline">\(p(\theta^{(n)})\)</span> is the target density). The following point cannot be expressed strongly enough:</p>
+<ul>
+<li><p>In theory, <em>convergence is only guaranteed asymptotically</em> as the number of draws grows without bound.</p></li>
+<li><p>In practice, <em>diagnostics must be applied to monitor convergence</em> for the finite number of draws actually available.</p></li>
+</ul>
+</section>
+<section id="notation-for-samples-chains-and-draws" class="level2">
+<h2 class="anchored" data-anchor-id="notation-for-samples-chains-and-draws">Notation for samples, chains, and draws</h2>
+<p>To establish basic notation, suppose a target Bayesian posterior density <span class="math inline">\(p(\theta | y)\)</span> given real-valued vectors of parameters <span class="math inline">\(\theta\)</span> and real- and discrete-valued data <span class="math inline">\(y\)</span>.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+<p>An MCMC <em>sample</em> consists of a set of a sequence of <span class="math inline">\(M\)</span> Markov chains, each consisting of an ordered sequence of <span class="math inline">\(N\)</span> <em>draws</em> from the posterior.<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> The sample thus consists of <span class="math inline">\(M \times N\)</span> draws from the posterior.</p>
+<section id="potential-scale-reduction" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="potential-scale-reduction">Potential scale reduction</h3>
+<p>One way to monitor whether a chain has converged to the equilibrium distribution is to compare its behavior to other randomly initialized chains. This is the motivation for the <span class="citation" data-cites="GelmanRubin:1992">Gelman and Rubin (<a href="#ref-GelmanRubin:1992" role="doc-biblioref">1992</a>)</span> potential scale reduction statistic, <span class="math inline">\(\hat{R}\)</span>. The <span class="math inline">\(\hat{R}\)</span> statistic measures the ratio of the average variance of samples within each chain to the variance of the pooled samples across chains; if all chains are at equilibrium, these will be the same and <span class="math inline">\(\hat{R}\)</span> will be one. If the chains have not converged to a common distribution, the <span class="math inline">\(\hat{R}\)</span> statistic will be greater than one.</p>
+<p>Gelman and Rubin’s recommendation is that the independent Markov chains be initialized with diffuse starting values for the parameters and sampled until all values for <span class="math inline">\(\hat{R}\)</span> are below 1.1. Stan allows users to specify initial values for parameters and it is also able to draw diffuse random initializations automatically satisfying the declared parameter constraints.</p>
+<p>The <span class="math inline">\(\hat{R}\)</span> statistic is defined for a set of <span class="math inline">\(M\)</span> Markov chains, <span class="math inline">\(\theta_m\)</span>, each of which has <span class="math inline">\(N\)</span> samples <span class="math inline">\(\theta^{(n)}_m\)</span>. The <em>between-chain variance</em> estimate is</p>
+<p><span class="math display">\[
+B
+=
+\frac{N}{M-1}
+\,
+\sum_{m=1}^M (\bar{\theta}^{(\bullet)}_{m}
+                - \bar{\theta}^{(\bullet)}_{\bullet})^2,
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[
+\bar{\theta}_m^{(\bullet)}
+= \frac{1}{N} \sum_{n = 1}^N \theta_m^{(n)}
+\]</span></p>
+<p>and</p>
+<p><span class="math display">\[
+\bar{\theta}^{(\bullet)}_{\bullet}
+= \frac{1}{M} \, \sum_{m=1}^M \bar{\theta}_m^{(\bullet)}.
+\]</span></p>
+<p>The <em>within-chain variance</em> is averaged over the chains,</p>
+<p><span class="math display">\[
+W = \frac{1}{M} \, \sum_{m=1}^M s_m^2,
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[
+s_m^2
+=
+\frac{1}{N-1}
+\, \sum_{n=1}^N (\theta^{(n)}_m - \bar{\theta}^{(\bullet)}_m)^2.
+\]</span></p>
+<p>The <em>variance estimator</em> is a mixture of the within-chain and cross-chain sample variances,</p>
+<p><span class="math display">\[
+\widehat{\mbox{var}}^{+}\!(\theta|y)
+= \frac{N-1}{N}\, W \, + \, \frac{1}{N} \, B.
+\]</span></p>
+<p>Finally, the <em>potential scale reduction statistic</em> is defined by</p>
+<p><span class="math display">\[
+\hat{R}
+\, = \,
+\sqrt{\frac{\widehat{\mbox{var}}^{+}\!(\theta|y)}{W}}.
+\]</span></p>
+</section>
+<section id="split-r-hat-for-detecting-non-stationarity" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="split-r-hat-for-detecting-non-stationarity">Split R-hat for detecting non-stationarity</h3>
+<p>Before Stan calculating the potential-scale-reduction statistic <span class="math inline">\(\hat{R}\)</span>, each chain is split into two halves. This provides an additional means to detect non-stationarity in the individual chains. If one chain involves gradually increasing values and one involves gradually decreasing values, they have not mixed well, but they can have <span class="math inline">\(\hat{R}\)</span> values near unity. In this case, splitting each chain into two parts leads to <span class="math inline">\(\hat{R}\)</span> values substantially greater than 1 because the first half of each chain has not mixed with the second half.</p>
+</section>
+<section id="convergence-is-global" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="convergence-is-global">Convergence is global</h3>
+<p>A question that often arises is whether it is acceptable to monitor convergence of only a subset of the parameters or generated quantities. The short answer is “no,” but this is elaborated further in this section.</p>
+<p>For example, consider the value <code>lp__</code>, which is the log posterior density (up to a constant).<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
+<p>It is thus a mistake to declare convergence in any practical sense if <code>lp__</code> has not converged, because different chains are really in different parts of the space. Yet measuring convergence for <code>lp__</code> is particularly tricky, as noted below.</p>
+<section id="asymptotics-and-transience-vs.-equilibrium" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="asymptotics-and-transience-vs.-equilibrium">Asymptotics and transience vs.&nbsp;equilibrium</h4>
+<p>Markov chain convergence is a global property in the sense that it does not depend on the choice of function of the parameters that is monitored. There is no hard cutoff between pre-convergence “transience” and post-convergence “equilibrium.” What happens is that as the number of states in the chain approaches infinity, the distribution of possible states in the chain approaches the target distribution and in that limit the expected value of the Monte Carlo estimator of any integrable function converges to the true expectation. There is nothing like warmup here, because in the limit, the effects of initial state are completely washed out.</p>
+</section>
+<section id="multivariate-convergence-of-functions" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="multivariate-convergence-of-functions">Multivariate convergence of functions</h4>
+<p>The <span class="math inline">\(\hat{R}\)</span> statistic considers the composition of a Markov chain and a function, and if the Markov chain has converged then each Markov chain and function composition will have converged. Multivariate functions converge when all of their margins have converged by the Cramer-Wold theorem.</p>
+<p>The transformation from unconstrained space to constrained space is just another function, so does not effect convergence.</p>
+<p>Different functions may have different autocorrelations, but if the Markov chain has equilibrated then all Markov chain plus function compositions should be consistent with convergence. Formally, any function that appears inconsistent is of concern and although it would be unreasonable to test every function, <code>lp__</code> and other measured quantities should at least be consistent.</p>
+<p>The obvious difference in <code>lp__</code> is that it tends to vary quickly with position and is consequently susceptible to outliers.</p>
+</section>
+<section id="finite-numbers-of-states" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="finite-numbers-of-states">Finite numbers of states</h4>
+<p>The question is what happens for finite numbers of states? If we can prove a strong geometric ergodicity property (which depends on the sampler and the target distribution), then one can show that there exists a finite time after which the chain forgets its initial state with a large probability. This is both the autocorrelation time and the warmup time. But even if you can show it exists and is finite (which is nigh impossible) you can’t compute an actual value analytically.</p>
+<p>So what we do in practice is hope that the finite number of draws is large enough for the expectations to be reasonably accurate. Removing warmup iterations improves the accuracy of the expectations but there is no guarantee that removing any finite number of samples will be enough.</p>
+</section>
+<section id="why-inconsistent-r-hat" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="why-inconsistent-r-hat">Why inconsistent R-hat?</h4>
+<p>Firstly, as noted above, for any finite number of draws, there will always be some residual effect of the initial state, which typically manifests as some small (or large if the autocorrelation time is huge) probability of having a large outlier. Functions robust to such outliers (say, quantiles) will appear more stable and have better <span class="math inline">\(\hat{R}\)</span>. Functions vulnerable to such outliers may show fragility.</p>
+<p>Secondly, use of the <span class="math inline">\(\hat{R}\)</span> statistic makes very strong assumptions. In particular, it assumes that the functions being considered are Gaussian or it only uses the first two moments and assumes some kind of independence. The point is that strong assumptions are made that do not always hold. In particular, the distribution for the log posterior density (<code>lp__</code>) almost never looks Gaussian, instead it features long tails that can lead to large <span class="math inline">\(\hat{R}\)</span> even in the large <span class="math inline">\(N\)</span> limit. Tweaks to <span class="math inline">\(\hat{R}\)</span>, such as using quantiles in place of raw values, have the flavor of making the samples of interest more Gaussian and hence the <span class="math inline">\(\hat{R}\)</span> statistic more accurate.</p>
+</section>
+<section id="final-words-on-convergence-monitoring" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="final-words-on-convergence-monitoring">Final words on convergence monitoring</h4>
+<p>“Convergence” is a global property and holds for all integrable functions at once, but employing the <span class="math inline">\(\hat{R}\)</span> statistic requires additional assumptions and thus may not work for all functions equally well.</p>
+<p>Note that if you just compare the expectations between chains then we can rely on the Markov chain asymptotics for Gaussian distributions and can apply the standard tests.</p>
+</section>
+</section>
+</section>
+<section id="effective-sample-size.section" class="level2">
+<h2 class="anchored" data-anchor-id="effective-sample-size.section">Effective sample size</h2>
+<p>The second technical difficulty posed by MCMC methods is that the samples will typically be autocorrelated (or anticorrelated) within a chain. This increases the uncertainty of the estimation of posterior quantities of interest, such as means, variances, or quantiles; see <span class="citation" data-cites="Geyer:2011">Charles J. Geyer (<a href="#ref-Geyer:2011" role="doc-biblioref">2011</a>)</span>.</p>
+<p>Stan estimates an effective sample size for each parameter, which plays the role in the Markov chain Monte Carlo central limit theorem (MCMC CLT) as the number of independent draws plays in the standard central limit theorem (CLT).</p>
+<p>Unlike most packages, the particular calculations used by Stan follow those for split-<span class="math inline">\(\hat{R}\)</span>, which involve both cross-chain (mean) and within-chain calculations (autocorrelation); see <span class="citation" data-cites="GelmanEtAl:2013">Gelman et al. (<a href="#ref-GelmanEtAl:2013" role="doc-biblioref">2013</a>)</span>.</p>
+<section id="definition-of-effective-sample-size" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="definition-of-effective-sample-size">Definition of effective sample size</h3>
+<p>The amount by which autocorrelation within the chains increases uncertainty in estimates can be measured by effective sample size (ESS). Given independent samples, the central limit theorem bounds uncertainty in estimates based on the number of samples <span class="math inline">\(N\)</span>. Given dependent samples, the number of independent samples is replaced with the effective sample size <span class="math inline">\(N_{\mathrm{eff}}\)</span>, which is the number of independent samples with the same estimation power as the <span class="math inline">\(N\)</span> autocorrelated samples. For example, estimation error is proportional to <span class="math inline">\(1 / \sqrt{N_{\mathrm{eff}}}\)</span> rather than <span class="math inline">\(1/\sqrt{N}\)</span>.</p>
+<p>The effective sample size of a sequence is defined in terms of the autocorrelations within the sequence at different lags. The autocorrelation <span class="math inline">\(\rho_t\)</span> at lag <span class="math inline">\(t \geq 0\)</span> for a chain with joint probability function <span class="math inline">\(p(\theta)\)</span> with mean <span class="math inline">\(\mu\)</span> and variance <span class="math inline">\(\sigma^2\)</span> is defined to be</p>
+<p><span class="math display">\[
+\rho_t
+=
+\frac{1}{\sigma^2} \, \int_{\Theta} (\theta^{(n)} - \mu)
+(\theta^{(n+t)} - \mu) \, p(\theta) \, d\theta.
+\]</span></p>
+<p>This is the correlation between the two chains offset by <span class="math inline">\(t\)</span> positions (i.e., a lag in time-series terminology). Because we know <span class="math inline">\(\theta^{(n)}\)</span> and <span class="math inline">\(\theta^{(n+t)}\)</span> have the same marginal distribution in an MCMC setting, multiplying the two difference terms and reducing yields</p>
+<p><span class="math display">\[
+\rho_t
+= \frac{1}{\sigma^2}
+\, \int_{\Theta}
+      \theta^{(n)} \, \theta^{(n+t)} \, p(\theta)
+   \, d\theta - \frac{\mu^2}{\sigma^2}.
+\]</span></p>
+<p>The effective sample size of <span class="math inline">\(N\)</span> samples generated by a process with autocorrelations <span class="math inline">\(\rho_t\)</span> is defined by <span class="math display">\[
+N_{\mathrm{eff}}
+\ = \
+\frac{N}{\sum_{t = -\infty}^{\infty} \rho_t}
+\ = \
+\frac{N}{1 + 2 \sum_{t = 1}^{\infty} \rho_t}.
+\]</span></p>
+<p>For independent draws, the effective sample size is just the number of iterations. For correlated draws, the effective sample size will be lower than the number of iterations. For anticorrelated draws, the effective sample size can be larger than the number of iterations. In this latter case, MCMC can work better than independent sampling for some estimation problems. Hamiltonian Monte Carlo, including the no-U-turn sampler used by default in Stan, can produce anticorrelated draws if the posterior is close to Gaussian with little posterior correlation.</p>
+</section>
+<section id="estimation-of-effective-sample-size" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="estimation-of-effective-sample-size">Estimation of effective sample size</h3>
+<p>In practice, the probability function in question cannot be tractably integrated and thus the autocorrelation cannot be calculated, nor the effective sample size. Instead, these quantities must be estimated from the samples themselves. The rest of this section describes a autocorrelations and split-<span class="math inline">\(\hat{R}\)</span> based effective sample size estimator, based on multiple chains. As before, each chain <span class="math inline">\(\theta_m\)</span> will be assumed to be of length <span class="math inline">\(N\)</span>.</p>
+<p>Stan carries out the autocorrelation computations for all lags simultaneously using Eigen’s fast Fourier transform (FFT) package with appropriate padding; see <span class="citation" data-cites="Geyer:2011">Charles J. Geyer (<a href="#ref-Geyer:2011" role="doc-biblioref">2011</a>)</span> for more detail on using FFT for autocorrelation calculations. The autocorrelation estimates <span class="math inline">\(\hat{\rho}_{t,m}\)</span> at lag <span class="math inline">\(t\)</span> from multiple chains <span class="math inline">\(m \in
+(1,\ldots,M)\)</span> are combined with within-sample variance estimate <span class="math inline">\(W\)</span> and multi-chain variance estimate <span class="math inline">\(\widehat{\mbox{var}}^{+}\)</span> introduced in the previous section to compute the combined autocorrelation at lag <span class="math inline">\(t\)</span> as</p>
+<p><span class="math display">\[
+\hat{\rho}_t
+= 1 - \frac{\displaystyle W
+              - \textstyle \frac{1}{M}\sum_{m=1}^M s_m^2 \hat{\rho}_{t,m}}
+        {\widehat{\mbox{var}}^{+}}.
+\]</span></p>
+<p>If the chains have not converged, the variance estimator <span class="math inline">\(\widehat{\mbox{var}}^{+}\)</span> will overestimate variance, leading to an overestimate of autocorrelation and an underestimate effective sample size.</p>
+<p>Because of the noise in the correlation estimates <span class="math inline">\(\hat{\rho}_t\)</span> as <span class="math inline">\(t\)</span> increases, a typical truncated sum of <span class="math inline">\(\hat{\rho}_t\)</span> is used. Negative autocorrelations may occur only on odd lags and by summing over pairs starting from lag 0, the paired autocorrelation is guaranteed to be positive, monotone and convex modulo estimator noise <span class="citation" data-cites="Geyer:1992">Charles J. Geyer (<a href="#ref-Geyer:1992" role="doc-biblioref">1992</a>)</span>, <span class="citation" data-cites="Geyer:2011">Charles J. Geyer (<a href="#ref-Geyer:2011" role="doc-biblioref">2011</a>)</span>. Stan uses Geyer’s initial monotone sequence criterion. The effective sample size estimator is defined as</p>
+<p><span class="math display">\[
+\hat{N}_{\mathrm{eff}} = \frac{M \cdot N}{\hat{\tau}},
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[
+\hat{\tau} = 1 + 2 \sum_{t=1}^{2m+1} \hat{\rho}_t = -1 + 2 \sum_{t'=0}^{m} \hat{P}_{t'},
+\]</span></p>
+<p>where <span class="math inline">\(\hat{P}_{t'}=\hat{\rho}_{2t'}+\hat{\rho}_{2t'+1}\)</span>. Initial positive sequence estimators is obtained by choosing the largest <span class="math inline">\(m\)</span> such that <span class="math inline">\(\hat{P}_{t'}&gt;0, \quad t' = 1,\ldots,m\)</span>. The initial monotone sequence is obtained by further reducing <span class="math inline">\(\hat{P}_{t'}\)</span> to the minimum of the preceding ones so that the estimated sequence is monotone.</p>
+</section>
+<section id="estimation-of-mcmc-standard-error" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="estimation-of-mcmc-standard-error">Estimation of MCMC standard error</h3>
+<p>The posterior standard deviation of a parameter <span class="math inline">\(\theta_n\)</span> conditioned on observed data <span class="math inline">\(y\)</span> is just the standard deviation of the posterior density <span class="math inline">\(p(\theta_n | y)\)</span>. This is estimated by the standard deviation of the combined posterior draws across chains,</p>
+<p><span class="math display">\[
+\hat{\sigma}_n = \mathrm{sd}(\theta^{(1)}_n, \ldots, \theta^{(m)}_n).
+\]</span></p>
+<p>The previous section showed how to estimate <span class="math inline">\(N_{\mathrm{eff}}\)</span> for a parameter <span class="math inline">\(\theta_n\)</span> based on multiple chains of posterior draws.</p>
+<p>The mean of the posterior draws of <span class="math inline">\(\theta_n\)</span> <span class="math display">\[
+\hat{\theta}_n
+= \mathrm{mean}(\theta^{(1)}_n, \ldots, \theta^{(m)}_n)
+\]</span></p>
+<p>is treated as an estimator of the true posterior mean,</p>
+<p><span class="math display">\[
+\mathbb{E}[\theta_n \mid y]
+\ = \
+\int_{-\infty}^{\infty}
+    \, \theta \, p(\theta | y)
+\, \mathrm{d}\theta_n,
+\]</span></p>
+<p>based the observed data <span class="math inline">\(y\)</span>.</p>
+<p>The standard error for the estimator <span class="math inline">\(\hat{\theta}_n\)</span> is given by the posterior standard deviation divided by the square root of the effective sample size. This standard error is itself estimated as <span class="math inline">\(\hat{\sigma}_n / \sqrt{N_{\mathrm{eff}}}\)</span>. The smaller the standard error, the closer the estimate <span class="math inline">\(\hat{\theta}_n\)</span> is expected to be to the true value. This is just the MCMC CLT applied to an estimator; see <span class="citation" data-cites="Geyer:2011">Charles J. Geyer (<a href="#ref-Geyer:2011" role="doc-biblioref">2011</a>)</span> for more details of the MCMC central limit theorem.</p>
+</section>
+<section id="thinning-samples" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="thinning-samples">Thinning samples</h3>
+<p>In complex posteriors, draws are almost always positively correlated. In these situations, the autocorrelation at lag <span class="math inline">\(t\)</span>, <span class="math inline">\(\rho_t\)</span>, decreases as the lag, <span class="math inline">\(t\)</span>, increases. In this situation, thinning the sample by keeping only every <span class="math inline">\(N\)</span>-th draw will reduce the autocorrelation of the resulting chain. This is particularly useful if we need to save storage or re-use the draws for inference.</p>
+<p>For instance, consider generating one thousand posterior draws in one of the following two ways.</p>
+<ul>
+<li><p>Generate 1000 draws after convergence and save all of them.</p></li>
+<li><p>Generate 10,000 draws after convergence and save every tenth draw.</p></li>
+</ul>
+<p>Even though both produce a sample consisting one thousand draws, the second approach with thinning can produce a higher effective sample size when the draws are positively correlated. That’s because the autocorrelation <span class="math inline">\(\rho_t\)</span> for the thinned sequence is equivalent to <span class="math inline">\(\rho_{10t}\)</span> in the unthinned sequence, so the sum of the autocorrelations will be lower and thus the effective sample size higher.</p>
+<p>Now contrast the second approach above with the unthinned alternative,</p>
+<ul>
+<li>Generate 10,000 draws after convergence and save every draw.</li>
+</ul>
+<p>This will typically have a higher effective sample than the thinned sample consisting of every tenth drawn. But the gap might not be very large. To summarize, <em>the only reason to thin a sample is to reduce memory requirements</em>.</p>
+<p>If draws are anticorrelated, then thinning will increase correlation and reduce the overall effective sample size.</p>
+
+
+
+</section>
+</section>
+</section>
+
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-GelmanEtAl:2013" class="csl-entry" role="listitem">
+Gelman, Andrew, J. B. Carlin, Hal S. Stern, David B. Dunson, Aki Vehtari, and Donald B. Rubin. 2013. <em>Bayesian Data Analysis</em>. Third Edition. London: Chapman &amp; Hall / CRC Press.
+</div>
+<div id="ref-GelmanRubin:1992" class="csl-entry" role="listitem">
+Gelman, Andrew, and Donald B. Rubin. 1992. <span>“Inference from Iterative Simulation Using Multiple Sequences.”</span> <em>Statistical Science</em> 7 (4): 457–72.
+</div>
+<div id="ref-Geyer:1992" class="csl-entry" role="listitem">
+Geyer, Charles J. 1992. <span>“Practical Markov Chain Monte Carlo.”</span> <em>Statistical Science</em>, 473–83.
+</div>
+<div id="ref-Geyer:2011" class="csl-entry" role="listitem">
+Geyer, Charles J. 2011. <span>“Introduction to <span>M</span>arkov Chain <span>M</span>onte <span>C</span>arlo.”</span> In <em>Handbook of <span>M</span>arkov Chain <span>M</span>onte <span>C</span>arlo</em>, edited by Steve Brooks, Andrew Gelman, Galin L. Jones, and Xiao-Li Meng, 3–48. Chapman; Hall/CRC.
+</div>
+<div id="ref-Metropolis:1953" class="csl-entry" role="listitem">
+Metropolis, N., A. Rosenbluth, M. Rosenbluth, M. Teller, and E. Teller. 1953. <span>“Equations of State Calculations by Fast Computing Machines.”</span> <em>Journal of Chemical Physics</em> 21: 1087–92.
+</div>
+</div></section><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>Using vectors simplifies high level exposition at the expense of collapsing structure.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>The structure is assumed to be rectangular; in the future, this needs to be generalized to ragged samples.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>The <code>lp__</code> value also represents the potential energy in the Hamiltonian system and is rate bounded by the randomly supplied kinetic energy each iteration, which follows a Chi-square distribution in the number of parameters.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../reference-manual/mcmc.html" class="pagination-link" aria-label="MCMC Sampling">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">MCMC Sampling</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../reference-manual/optimization.html" class="pagination-link" aria-label="Optimization">
+        <span class="nav-page-text">Optimization</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/reference-manual/analysis.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

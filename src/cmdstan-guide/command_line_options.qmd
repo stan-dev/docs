@@ -1,0 +1,197 @@
+---
+pagetitle: Command-Line Interface Overview
+---
+
+# Command-Line Interface Overview
+
+A CmdStan executable is built from the Stan model concept and the CmdStan command line parser.
+The command line argument syntax consists of sets of keywords and keyword-value pairs.
+Arguments are grouped by the following keywords:
+
+- `method` - specifies the kind of inference done on the model.<br>
+Each kind of inference requires further configuration via sub-arguments.
+The `method` argument is required.  It can be specified overtly as the
+a keyword-value pair `method=<inference>` or implicitly as one of the following:
+    + `sample` - obtain a sample (set of draws) from the posterior using HMC
+    + `optimize` - penalized maximum likelihood estimation
+    + `variational` - automatic variational inference
+    + `generate_quantities` - run model's `generated quantities` block on existing sample
+to obtain new quantities of interest.
+    + `log_prob` - compute the log probability and gradient of the model for one
+      set of parameters.
+    + `diagnose` - compute and compare sampler gradient calculations to finite differences.
+
+- `data` - specifies the input data file, if any.
+
+- `output` - specifies program outputs, both disk files and terminal window outputs.
+
+- `init` - specifies initial values for the model parameters, if any.
+
+- `random` - specifies the seed for the pseudo-random number.
+
+The remainder of this chapter covers the general configuration options used for all processing.
+The following chapters cover the per-inference configuration options.
+
+## Input data argument
+
+The values for all variables declared in the data block of the model
+are read in from an input data file in either JSON or Rdump format.
+The syntax for the input data argument is:
+```
+data file=<filepath>
+```
+The keyword `data` must be followed directly by the keyword-value pair `file=<filepath>`.
+If the model doesn't declare any data variables, this argument is ignored.
+
+The input data file must contain definitions for all data variables declared in the data block.
+If one or more data block variables are missing from the input data file, the program prints
+an error message to stderr and returns a non-zero return code.
+For example, the model `bernoulli.stan` defines two data variables `N` and `y`.
+If the input data file doesn't include both variables, or if the data variable
+doesn't match the declared type and dimensions, the program will exit with an error message
+at the point where it first encounters missing data.
+
+For example if the input data file doesn't include the definition for variable `y`,
+the executable exits with the following message:
+```
+Exception: variable does not exist; processing stage=data initialization; variable name=y; base type=int (in 'examples/bernoulli/bernoulli.stan', line 3, column 2 to column 28)
+```
+
+## Output control arguments {#output-control.section}
+
+The `output` keyword is used to specify non-default options for
+output files and messages written to the terminal window.
+The `output` keyword takes several keyword-value pair sub-arguments.
+
+The keyword value pair `file=<filepath>` specifies the location of the
+Stan CSV output file.  If unspecified, the output file is written to a file named `output.csv`
+in the current working directory.
+
+The keyword value pair `diagnostic_file=<filepath>` specifies the location of the
+auxiliary output file. By default, no auxiliary output file is produced.
+This option is only valid for the iterative algorithms `sample` and `variational`.
+
+The keyword value pair `refresh=<int>` specifies the
+number of iterations between progress messages written to the terminal window.
+The default value is 100 iterations.
+
+The keyword value pair `sig_figs=<int>` specifies the
+number of significant digits for all numerical values in the output files.
+Allowable values are between 1 and 18, which is the maximum amount of precision
+available for 64-bit floating point arithmetic.
+The default value is 8. &nbsp;
+***Note:*** increasing `sig_figs` above the default will increase the size of
+the output CSV files accordingly.
+
+The keyword value pair `profile_file=<filepath>` specifies the location of the
+output file for profiling data. If the model uses no profiling, the output profile file
+is not produced. If the model uses profiling and `profile_file` is unspecified, the
+profiling data is written to a file named `profile.csv` in the current working directory.
+
+The keyword value pair `save_cmdstan_config=<boolean>` specifies whether to save the
+configuration options used to run the program to a file named `<output file>_config.json`
+alongside the other output files. The default value is `false`, which means the configuration
+file is not saved.
+The contents of this file are similar to the comments in the Stan CSV file, but should
+be more portable across versions and easier to parse.
+
+## Initialize model parameters argument
+
+Initialization is only applied to parameters defined in the parameters block.
+By default, all parameters are initialized to random draws from a uniform distribution over the range $[-2, 2]$.
+These values are on the unconstrained scale, so must be
+inverse transformed back to satisfy the constraints declared for
+parameters.
+Because zero is chosen to be a reasonable default initial value for
+most parameters, the interval around zero provides a fairly diffuse
+starting point. For instance, unconstrained variables are initialized
+randomly in $(-2, 2)$, variables constrained to be positive are
+initialized roughly in $(0.14, 7.4)$, variables constrained to fall
+between 0 and 1 are initialized with values roughly in $(0.12, 0.88)$.
+
+The initialization argument is specified as keyword-value pair with keyword `init`.
+The value can be one of the following:
+
+- positive real number $x$.  All parameters will be initialized to random draws from a uniform distribution over the range $[-x, x]$.
+
+- $0$ - All parameters will be initialized to zero values on the unconstrained scale.
+The transforms are arranged in such a way that zero initialization provides reasonable variable initializations:
+$0$ for unconstrained parameters; $1$ for parameters constrained to be positive; $0.5$ for variables to constrained to lie between $0$ and $1$;
+a symmetric (uniform) vector for simplexes; unit matrices for both correlation and covariance matrices; and so on.
+
+- filepath - A data file in JSON or Rdump format containing initial parameters values for some or all of the model parameters.
+User specified initial values must satisfy the constraints declared in the model (i.e., they are on the constrained scale).
+Parameters which aren't explicitly initialized will be initialized randomly over the range $[-2, 2]$.
+
+## Random number generator arguments
+
+The random-number generator’s behavior is determined by the unsigned seed
+(positive integer) it is started with. If a seed is not specified,
+or a seed of 0 or less is specified,
+the system time is used to generate a seed.
+The seed is recorded and included with Stan’s output regardless of
+whether it was specified or generated randomly from the system time.
+
+The syntax for the random seed argument is:
+```
+random seed=<int>
+```
+The keyword `random` must be followed directly by the keyword-value pair `seed=<int>`.
+
+## Chain identifier argument:  `id`
+
+The chain identifier argument is used in conjunction with the `random seed` argument when running multiple Markov chains for sampling.
+The chain identifier is used to advance the random number generator a very large number of random variates so that two chains
+with the same seed and different identifiers draw from non-overlapping subsequences
+of the random-number sequence determined by the seed.
+Together, the seed and chain identifier determine the behavior of the random number generator.
+
+The syntax for the random seed argument is:
+```
+id=<int>
+```
+The default value is 1.
+
+When running a set of chains from the command line with a specified seed,
+this argument should be set to the chain index.
+E.g., when running 4 chains, the value should be 1,..,4, successively.
+When running multiple chains from a single command,
+Stan’s interfaces manage the chain identifier arguments automatically.
+
+For complete reproducibility, every aspect of the environment needs to be locked down
+from the OS and version to the C++ compiler and version to the version of Stan and all dependent libraries.
+See the [Stan Reference Manual Reproducibility chapter](https://mc-stan.org/docs/reference-manual/reproducibility.html)
+for further details.
+
+
+## Command line help
+
+CmdStan provides a `help` and `help-all` mechanism that displays either the
+available top-level or keyword-specific key-value argument pairs.
+To display top-level help, call the CmdStan executable with keyword `help`:
+
+```
+./bernoulli help
+```
+
+## Error messages and return codes
+
+CmdStan executables and utility programs use streams standard output (stdout) and
+standard error (stderr) to report information and error messages, respectively.
+Some methods also generate warning messages when the algorithm
+detects potential problems with the inference.  Depending on the method,
+these messages are sent to either standard out or standard error.
+
+All program executables provide a return code between 0 and 255:
+
+- 0 - Program ran to termination as expected.
+
+- value in range [1 : 125] - Method invoked could not run due to problems with model or data.
+
+- value > 128 - Fatal error during execution, process terminated by signal.  To determine the signal number,
+subtract 128 from the return value, e.g. return code 139 results from termination signal 11 (segmentation violation).
+
+A non-zero return code or outputs sent to stderr indicate problems with the inference.
+However, a return code of zero and absence of error messages doesn't necessarily mean
+that the inference is valid, it is still necessary to validate the inferences using all
+available summary and diagnostic techniques.

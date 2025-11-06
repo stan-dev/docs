@@ -88,6 +88,9 @@ The stanc3 options are:
 - `--warn-uninitialized` - Emit warnings about uninitialized variables
   to stderr. Currently an experimental feature.
 
+- `--color` - Control whether errors and warnings are emitted with colored
+  styling on terminals that support it. Valid values are `auto` (the default),
+  `always`, `never`. Can also be controlled by the `STANC_COLOR` environment variable.
 
 The compiler also provides a number of debug options which are
 primarily of interest to stanc3 developers; use the `--help`
@@ -108,17 +111,17 @@ in two situations
 
 1. A completely blank Stan program will produce the following warning message
    ```
-   Warning: Empty file 'empty.stan' detected;
-       this is a valid stan model but likely unintended!
+   Warning in 'empty.stan', line 1, column 0 to line 2, column 0:
+       Empty model detected; this is a valid Stan model but likely unintended!
    ```
 2. The use of any [deprecated
    features](https://mc-stan.org/docs/reference-manual/deprecations.html)
    will lead to warnings which will look as follows
    ```
-   Warning in 'deprecated.stan', line 2, column 0: Comments beginning with # are
-    deprecated and this syntax will be removed in Stan 2.32.0. Use // to
-    begin line comments; this can be done automatically using stanc
-    --auto-format
+    Warning in 'deprecated.stan', line 2, column 10 to column 17:
+        lkj_cov is deprecated and will be removed in Stan 3.0. Use lkj_corr with
+        an independent lognormal distribution on the scales, see:
+        https://mc-stan.org/docs/reference-manual/deprecations.html#lkj_cov-distribution
    ```
 A single Stan program can produce many warnings during compilation.
 
@@ -148,7 +151,7 @@ There are five kinds of errors emitted by stanc3
      look like the following.
 
      ```
-     Syntax error in 'char.stan', line 2, column 6, lexing error:
+     Syntax error in 'char.stan', line 2, column 7 to column 8, lexing error:
      -------------------------------------------------
        1:  data {
        2:     int $ome_variable;
@@ -166,10 +169,10 @@ There are five kinds of errors emitted by stanc3
      Syntax error in './incl.stan', line 1, column 0, included from
      './incl.stan', line 1, column 0, included from
      'incl.stan', line 1, column 0, include error:
-     -------------------------------------------------
-       1:  #include <incl.stan>
-           ^
-     -------------------------------------------------
+        -------------------------------------------------
+          1:  #include <incl.stan>
+              ^
+        -------------------------------------------------
      File incl.stan recursively included itself.
      ```
 
@@ -178,15 +181,15 @@ There are five kinds of errors emitted by stanc3
      put a size on a type like vector, as in the following, this raises a parsing
      (structural) error in the compiler.
      ```
-     Syntax error in vec.stan', line 3, column 10 to column 11, parsing error:
-     -------------------------------------------------
-       1:  data {
-       2:     int<lower=0> N;
-       3:     vector x;
-                     ^
-       4:  }
-     -------------------------------------------------
-     "[" expression "]" expected for vector size.
+     Syntax error in 'vec.stan', line 3, column 10 to column 11, parsing error:
+        -------------------------------------------------
+          1:  data {
+          2:     int<lower=0> N;
+          3:     vector x;
+                        ^
+          4:  }
+        -------------------------------------------------
+     Ill-formed type. Expected "[" expression "]" for vector size.
      ```
 
 3. Semantic errors (also known as type errors) occur when a program is structured
@@ -196,14 +199,17 @@ There are five kinds of errors emitted by stanc3
    variable defined as an integer.
    ```
    Semantic error in 'type.stan', line 2, column 3 to column 15:
-   -------------------------------------------------
-     1:  transformed data {
-     2:     int x = 1.5;
-            ^
-     3:  }
-   -------------------------------------------------
-   Ill-typed arguments supplied to assignment operator =: lhs has
-   type int and rhs has type real
+      -------------------------------------------------
+        1:  transformed data {
+        2:     int x = 1.5;
+               ^
+        3:  }
+      -------------------------------------------------
+   Ill-typed arguments supplied to assignment operator =:
+   The left hand side has type
+     int
+   and the right hand side has type
+     real
    ```
 4. The compiler will raise an error for use of any [removed
    features](https://mc-stan.org/docs/reference-manual/removals.html)
@@ -216,7 +222,6 @@ There are five kinds of errors emitted by stanc3
    them on the [stanc3 repo](https://github.com/stan-dev/stanc3/issues) with the
    error message provided. These errors usually say something like "This should
    never happen," and we apologize if they do.
-
 
 
 ## Pedantic mode
@@ -243,13 +248,15 @@ model {
 When pedantic mode is turned on, the compiler will produce the following warnings.
 
 ```
-Warning:
-  The parameter sigma has no priors.
-Warning at 'ped-mode-ex1.stan', line 10, column 14 to column 16:
-  The variable mu may not have been assigned a value before its use.
-Warning at 'ped-mode-ex1.stan', line 10, column 18 to column 23:
-  A normal distribution is given parameter sigma as a scale parameter
-  (argument 2), but sigma was not constrained to be strictly positive.
+Warning in 'ped-mode-ex1.stan', line 6, column 2 to column 13:
+    The parameter sigma has no priors. This means either no prior is
+    provided, or the prior(s) depend on data variables. In the later case,
+    this may be a false positive.
+Warning in 'ped-mode-ex1.stan', line 10, column 13 to column 15:
+    The variable mu may not have been assigned a value before its use.
+Warning in 'ped-mode-ex1.stan', line 10, column 17 to column 22:
+    A normal distribution is given parameter sigma as a scale parameter
+    (argument 2), but sigma was not constrained to be strictly positive.
 ```
 
 Here are the kinds of issues that pedantic mode will find (which are described
@@ -305,7 +312,7 @@ The parameter of `poisson` should be strictly positive, but `unb_p` is not const
 Pedantic mode produces the following warning.
 
 ```
-Warning at 'ex-dist-args.stan', line 6, column 14 to column 19:
+Warning in 'ex-dist-args.stan', line 6, column 14 to column 19:
   A poisson distribution is given parameter unb_p as a rate parameter
   (argument 1), but unb_p was not constrained to be strictly positive.
 ```
@@ -342,7 +349,7 @@ model {
 Pedantic mode produces the following warning.
 
 ```
-Warning at 'uniform-warn.stan', line 6, column 2 to column 20:
+Warning in 'uniform-warn.stan', line 6, column 2 to column 20:
   Parameter a is given a uniform distribution. The uniform distribution is
   not recommended, for two reasons: (a) Except when there are logical or
   physical constraints, it is very unusual for you to be sure that a
@@ -392,8 +399,8 @@ model {
 Pedantic mode produces the following warning.
 
 ```
-Warning:
-  The parameter b was declared but was not used in the density calculation.
+Warning in 'unused.stan', line 3, column 2 to column 9:
+    The parameter b was declared but was not used in the density calculation.
 ```
 
 
@@ -423,12 +430,14 @@ The constants `-100` and `100` suggest that `x` is not unit scaled.
 Pedantic mode produces the following warning.
 
 ```
-Warning at 'constants-warn.stan', line 6, column 14 to column 17:
-  Argument -100 suggests there may be parameters that are not unit scale;
-  consider rescaling with a multiplier (see manual section 22.12).
-Warning at 'constants-warn.stan', line 6, column 19 to column 22:
-  Argument 100 suggests there may be parameters that are not unit scale;
-  consider rescaling with a multiplier (see manual section 22.12).
+Warning in 'constants-warn.stan', line 6, column 13 to column 17:
+    Argument -100 suggests there may be parameters that are not unit scale;
+    consider rescaling with a multiplier, see:
+    https://mc-stan.org/docs/stan-users-guide/efficiency-tuning.html#standardizing-predictors
+Warning in 'constants-warn.stan', line 6, column 19 to column 22:
+    Argument 100 suggests there may be parameters that are not unit scale;
+    consider rescaling with a multiplier, see:
+    https://mc-stan.org/docs/stan-users-guide/efficiency-tuning.html#standardizing-predictors
 ```
 
 
@@ -472,9 +481,9 @@ The `if` and `for` statements are control flow that depend (indirectly) on the v
 Pedantic mode produces the following warning.
 
 ```
-Warning at 'param-dep-cf-warn.stan', line 11, column 2 to line 16, column 3:
+Warning in 'param-dep-cf-warn.stan', line 11, column 2 to line 16, column 3:
   A control flow statement depends on parameter(s): a.
-Warning at 'param-dep-cf-warn.stan', line 19, column 2 to line 21, column 3:
+Warning in 'param-dep-cf-warn.stan', line 19, column 2 to line 21, column 3:
   A control flow statement depends on parameter(s): a.
 ```
 
@@ -506,7 +515,7 @@ model {
 Pedantic mode produces the following warning.
 
 ```
-Warning at 'multi-tildes.stan', line 9, column 2 to column 19:
+Warning in 'multi-tildes.stan', line 9, column 2 to column 19:
   The parameter a is on the left-hand side of more than one tildes
   statement.
 ```
@@ -554,10 +563,13 @@ One prior is found for `a` and for `b`, while `c` only has a factor that touches
 Pedantic mode produces the following warning.
 
 ```
-Warning:
-  The parameter c has no priors.
-Warning:
-  The parameter d has 2 priors.
+Warning in 'priors.stan', line 7, column 2 to column 9:
+    The parameter c has no priors. This means either no prior is provided, or
+    the prior(s) depend on data variables. In the later case, this may be a
+    false positive.
+Warning in 'priors.stan', line 8, column 2 to column 9:
+    The parameter d has 2 priors.
+
 ```
 
 
@@ -584,7 +596,7 @@ Since `x` is only assigned in one of the branches of the `if` statement, it migh
 Pedantic mode produces the following warning.
 
 ```
-Warning at 'uninit-warn.stan', line 7, column 8 to column 9:
+Warning in 'uninit-warn.stan', line 7, column 8 to column 9:
   The variable x may not have been assigned a value before its use.
 ```
 
@@ -611,16 +623,16 @@ model {
 Pedantic mode produces the following warning.
 
 ```
-Warning:
-  Your Stan program has a parameter c with a lower and upper bound in its
-  declaration. These hard constraints are not recommended, for two reasons:
-  (a) Except when there are logical or physical constraints, it is very
-  unusual for you to be sure that a parameter will fall inside a specified
-  range, and (b) The infinite gradient induced by a hard constraint can cause
-  difficulties for Stan's sampling algorithm. As a consequence, we recommend
-  soft constraints rather than hard constraints; for example, instead of
-  constraining an elasticity parameter to fall between 0, and 1, leave it
-  unconstrained and give it a normal(0.5, 0.5) prior distribution.
+Warning in 'hard-constraint.stan', line 4, column 2 to column 31:
+    Your Stan program has a parameter c with a lower and upper bound in its
+    declaration. These hard constraints are not recommended, for two reasons:
+    (a) Except when there are logical or physical constraints, it is very
+    unusual for you to be sure that a parameter will fall inside a specified
+    range, and (b) The infinite gradient induced by a hard constraint can
+    cause difficulties for Stan's sampling algorithm. As a consequence, we
+    recommend soft constraints rather than hard constraints; for example,
+    instead of constraining an elasticity parameter to fall between 0, and 1,
+    leave it unconstrained and give it a normal(0.5,0.5) prior distribution.
 ```
 
 ### Nonlinear transformations {-}
@@ -641,19 +653,17 @@ parameters {
 model {
   log(y) ~ normal(0,1);
 }
-
 ```
 
 Pedantic mode produces the following warning.
 
 ```
-Warning:
+Warning in 'jacobian.stan', line 5, column 2 to column 23:
     Left-hand side of distribution statement (~) may contain a non-linear
-    transform of a parameter or local variable. If it does, you need
-    to include a target += statement with the log absolute determinant
-    of the Jacobian of the transform. You could also consider defining
-    a transformed parameter and using jacobian += in the transformed
-    parameters block.
+    transform of a parameter or local variable. If it does, you need to
+    include a target += statement with the log absolute determinant of the
+    Jacobian of the transform. You could also consider defining a transformed
+    parameter and using jacobian += in the transformed parameters block.
 ```
 
 ### Pedantic mode limitations {-}

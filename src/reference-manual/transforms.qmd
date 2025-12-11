@@ -543,24 +543,24 @@ $$ and $$
 y_n = (S_n - x_{n + 1}) \frac{\sqrt{n (n + 1)}}{n}.
 $$
 
-The mathematical expression above is equivalently expressed within Stan as:
+This transform is expressed in Stan code as:
 
 ``` stan
-  vector manual_sum_to_zero_jacobian(vector y) {
-    int N = num_elements(y);
-    vector[N + 1] z = zeros_vector(N + 1);
+  vector manual_sum_to_zero_jacobian(vector x) {
+    int N = size(x) - 1;
+    vector[N] y;
+    y[N] = -x[N+1] * sqrt(1 + 1. / N);
     real sum_w = 0;
-    for (n in 1:N) {
-      int i = N - n + 1;
-      real w = y[i] * inv_sqrt(i * (i + 1));
+    for (n in 1:(N-1)) {
+      int i = N - n;
+      int i_p_1 = i + 1;
+      real w = y[i_p_1] * inv_sqrt(i_p_1 * (i_p_1 + 1));
       sum_w += w;
-      z[i] += sum_w;
-      z[i + 1] -= w * i;
+      y[i] = (sum_w - x[i_p_1]) * sqrt(i_p_1 * i) / i;
     }
-    return z;
+    return(y);
   }
 ```
-Note that there is no `target +=` increment because the Jacobian is zero.
 
 ### Sum-to-zero vector inverse transform {.unnumbered}
 
@@ -584,6 +584,26 @@ subtracted from $x_{n + 1}$ the number of times it shows up in earlier terms.
 
 The inverse transform is a linear operation, leading to a constant Jacobian
 determinant which is therefore not included.
+
+The sum-to-zero inverse transform is expressed within Stan as:
+
+``` stan
+  vector manual_sum_to_zero_inverse_jacobian(vector y) {
+    int N = num_elements(y);
+    vector[N + 1] z = zeros_vector(N + 1);
+    real sum_w = 0;
+    for (n in 1:N) {
+      int i = N - n + 1;
+      real w = y[i] * inv_sqrt(i * (i + 1));
+      sum_w += w;
+      z[i] += sum_w;
+      z[i + 1] -= w * i;
+    }
+    return z;
+  }
+```
+
+Note that there is no `target +=` increment because the Jacobian is zero.
 
 ### Sum-to-zero matrix transform {.unnumbered}
 

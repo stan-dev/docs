@@ -157,6 +157,9 @@ For a description of argument and return types, see section
 
 ## Wiener First Passage Time Distribution
 
+For an explanation how to use the `wiener_lpdf` and `wiener_l[c]cdf_defective` functions, see
+@Henrich2024 and @Henrich_inpress.
+
 ### Probability density function
 
 If $\alpha \in \mathbb{R}^+$, $\tau \in \mathbb{R}^+$, $\beta \in (0, 1)$,
@@ -204,7 +207,7 @@ In the case where $s_{\delta}$, $s_{\beta}$, and $s_{\tau}$ are all $0$, this si
 \frac{\alpha}{(y-\tau)^{3/2}} \exp \! \left(- \delta \alpha \beta -
 \frac{\delta^2(y-\tau)}{2}\right) \sum_{k = - \infty}^{\infty} (2k +
 \beta) \phi \! \left(\frac{(2k + \beta)\alpha }{\sqrt{y - \tau}}\right),
-\end{equation*} where $\phi(x)$ denotes the standard normal density function;  
+\end{equation*} where $\phi(x)$ denotes the standard normal density function;
 
 and one representation that converges fast for large reaction-time values ("large time expansion"):
 \begin{equation*}
@@ -214,6 +217,46 @@ and one representation that converges fast for large reaction-time values ("larg
 {2\alpha^2}\right) \sin \!(k\pi\beta)
 \end{equation*}
 see [@Feller1968], [@NavarroFuss2009].
+
+### Cumulative distribution function
+
+For the cumulative distribution function there also exist two expressions depending on the reaction time.
+
+Let $\alpha$, $\tau$, $\beta$, $\delta$, $s_{\delta}$, $s_{\beta}$, $s_{\tau}$ and $y$ be as above.
+
+The formula for the large-time CDF of decision times (excluding the additive reaction time components summarized in $\tau$ for the time being) at the upper boundary is stated as follows:
+
+\begin{equation}
+F(y|\alpha, \beta, \delta) = P(\alpha, \beta, \delta) - \exp\left(\delta\alpha(1-\beta)-\frac{\delta^2 y}{2}\right)F_l(y|\alpha,\beta,\delta),
+\end{equation} where $P(\alpha,\beta,\delta)$ is the probability to hit the upper boundary, defined as
+
+\begin{equation}
+P(\alpha, \beta, \delta) = \begin{cases}
+    \frac{1-\exp(2\delta \alpha \beta)}{\exp(-2\delta \alpha(1-\beta)) - \exp(2\delta \alpha \beta)}, & \text{for } \delta\neq 0 \\
+    \beta, & \text{for } \delta=0,
+    \end{cases}
+\end{equation}
+
+and
+
+\begin{equation}
+F_l(y|\alpha, \beta, \delta) = \frac{2\pi}{\alpha^2}\sum_{k=1}^{\infty}{\frac{k\sin{k\pi(1-\beta)}}{\delta^2+(k\pi)^2/\alpha^2}}\exp(-\frac{k^2\pi^2y}{2\alpha^2}).
+\end{equation}
+
+
+The formula for the small-time CDF at the upper boundary is stated as follows:
+
+\begin{equation}
+F(y|\alpha,\beta,\delta) = \exp\left(\delta \alpha(1-\beta) -\frac{\delta^2y}{2}\right)F_s(y|\alpha, \beta,\delta),
+\end{equation} where
+
+\begin{equation}
+F_s(y|\alpha,\beta,\delta) = \sum_{k=0}^{\infty}(-1)^k\phi\left(\frac{\alpha(k+\beta^{*}_k)}{\sqrt{y}} \right) \times \left( R \left(\frac{\alpha(k+\beta^{*}_k)+\delta y}{\sqrt{y}} \right) + R \left(\frac{\alpha(k+\beta^*_k)-\delta y}{\sqrt{y}} \right)\right),
+\end{equation}
+
+where $\beta^*_k=(1-\beta)$ for $k$ even, $\beta^*_k=\beta$ for $k$ odd, and $R$ Mill's Ratio.
+
+The CDF for the lower boundary is $F(y|\alpha,1-\beta,-\delta)$
 
 ### Distribution statement
 
@@ -303,6 +346,61 @@ of the non-decision time `var_tau`, dropping constant additive terms.
 Setting `var_delta`, `var_beta`, and `var_tau` to `0` recovers the 4-parameter signature above.
 {{< since 2.35 >}}
 
+---
+
+**Note:** The `lcdf` and `lccdf` functions for the `wiener` distribution are
+implemented defectively, meaning that the functions do **not** integrate to $1$,
+but rather to the probability to hit [one or the other response boundary](#boundaries).
+
+
+<!-- real; wiener_lcdf_defective; (real y, real alpha, real tau, real beta, real delta); -->
+\index{{\tt \bfseries wiener\_lcdf\_defective }!{\tt (real y, real alpha, real tau, real beta, real delta): real}|hyperpage}
+
+`real` **`wiener_lcdf_defective`**`(real y, real alpha, real tau, real beta, real delta)`<br>\newline
+
+The log of the cumulative distribution function (CDF) of the Wiener distribution
+of `y` given boundary separation `alpha`, non-decision time `tau`, a-priori bias
+`beta`, and drift rate `delta`.
+
+{{< since 2.38 >}}
+
+<!-- real; wiener_lccdf_defective; (real y, real alpha, real tau, real beta, real delta); -->
+\index{{\tt \bfseries wiener\_lccdf\_defective }!{\tt (real y, real alpha, real tau, real beta, real delta): real}|hyperpage}
+
+`real` **`wiener_lccdf_defective`**`(real y, real alpha, real tau, real beta, real delta)`<br>\newline
+
+The log of the complementary cumulative distribution function (CDF) of the
+Wiener distribution of `y` given boundary separation `alpha`, non-decision time
+`tau`, a-priori bias `beta`, and drift rate `delta`.
+
+{{< since 2.38 >}}
+
+<!-- real; wiener_lcdf_defective; (real y, real alpha, real tau, real beta, real delta, real var_delta, real var_beta, real var_tau); -->
+\index{{\tt \bfseries wiener\_lcdf\_defective }!{\tt (real y, real alpha, real tau, real beta, real delta, real var\_delta, real var\_beta, real var\_tau): real}|hyperpage}
+
+`real` **`wiener_lcdf_defective`**`(real y, real alpha, real tau, real beta, real delta, real var_delta, real var_beta, real var_tau)`<br>\newline
+
+The log of the cumulative distribution function (CDF) of the Wiener distribution
+of `y` given boundary separation `alpha`, non-decision time `tau`, a-priori bias
+`beta`, drift rate `delta`, inter-trial drift rate variability `var_delta`,
+inter-trial variability of the starting point (bias) `var_beta`, and inter-trial
+variability of the non-decision time `var_tau`.
+
+{{< since 2.38 >}}
+
+
+<!-- real; wiener_lccdf_defective; (real y, real alpha, real tau, real beta, real delta, real var_delta, real var_beta, real var_tau); -->
+\index{{\tt \bfseries wiener\_lccdf\_defective }!{\tt (real y, real alpha, real tau, real beta, real delta, real var\_delta, real var\_beta, real var\_tau): real}|hyperpage}
+
+`real` **`wiener_lccdf_defective`**`(real y, real alpha, real tau, real beta, real delta, real var_delta, real var_beta, real var_tau)`<br>\newline
+
+The log of the complementary cumulative distribution function (CDF) of the
+Wiener distribution of `y` given boundary separation `alpha`, non-decision time
+`tau`, a-priori bias `beta`, drift rate `delta`, inter-trial drift rate
+variability `var_delta`, inter-trial variability of the starting point (bias)
+`var_beta`, and inter-trial variability of the non-decision time `var_tau`.
+
+{{< since 2.38 >}}
 
 ### Boundaries
 
@@ -312,3 +410,19 @@ the upper boundary only. To get the result for the lower boundary, use
 \text{Wiener}(y | \alpha, \tau, 1 - \beta, - \delta)
 \end{equation*}
 For more details, see the appendix of @Vandekerckhove-Wabersich:2014.
+
+### Vectorization
+
+The 5- and 7-argument forms of the `wiener` distribution functions (listed above
+as recieving only `real`) are implemented in such a way where they can be
+fully [vectorized](conventions_for_probability_functions.qmd#prng-vectorization),
+but currently only versions that accept all `real` and all `vector` arguments
+are exposed by Stan. If there are additional signatures that would prove useful,
+please request them on the Stan issue tracker.
+
+### Tolerance tuning
+
+The 5- and 7-argument forms of the `wiener` distribution functions can also
+accept an additional `data real` argument controlling the required precision of
+the gradient calculation of the function. If omitted, this defaults to `1e-4`
+for the density and `1e-8` for the cdf functions.

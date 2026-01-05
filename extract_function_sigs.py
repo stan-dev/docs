@@ -32,9 +32,9 @@ def get_sigs():
                 for line in lines:
                     if line.startswith('<!-- '):
                         line = line.lstrip('<!- ')
-                        parts = [x.strip(' ~') for x in line.split(';')]
-                        if len(parts) == 3:
-                            parts[1] = parts[1]
+                        parts = [x.strip(' ') for x in line.split(';')]
+                        if len(parts) == 3 and parts[1].endswith(' ~'):
+                            parts[1] = parts[1][:-2]
                             sigs.add((parts[1], '~' ,parts[0], file))
                         elif len(parts) == 4:
                             sigs.add((parts[1], parts[2], parts[0], file))

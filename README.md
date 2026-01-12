@@ -82,6 +82,15 @@ The release process generates a new documentation set and adds links and redirec
 The Stan Functions Reference contains HTML comments which describe the function signature for all functions.  The script `extract_function_sigs.py` is used to scrape these signatures into a plain text file.
 
 
+## How to Add a New Chapter to a Manual
+
+1. Add the new chapter as a `.qmd` file in the correct `src` directory.
+
+2. Update the corresponding `_quarto.yml` file for that manual (in the same directory).
+
+3. Update the `src/_quarto.yml` file; this controls the website navigation for that manual.
+
+
 ## GitHub Pages
 
 This repository uses

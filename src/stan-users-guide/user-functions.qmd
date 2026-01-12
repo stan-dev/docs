@@ -88,7 +88,7 @@ to guard against illegal inputs.
 ```stan
 real dbl_sqrt(real x) {
   if (!(x >= 0)) {
-    reject("dblsqrt(x): x must be positive; found x = ", x);
+    reject("dbl_sqrt(x): x must be positive; found x = ", x);
   }
   return 2 * sqrt(x);
 }
@@ -697,8 +697,8 @@ variety, the variate is scaled by the scale parameter and shifted by
 the location parameter.  For example, to generate
 $\textsf{normal}(\mu, \sigma)$ variates, it is enough to generate a
 uniform variate $u \sim \textsf{uniform}(0, 1)$, then convert it to a
-standard normal variate, $z = \Phi(u)$, where
-$\Phi$ is the inverse cumulative distribution function for the
+standard normal variate, $z = \Phi^{-1}(u)$, where
+$\Phi^{-1}(\cdot)$ is the inverse cumulative distribution function for the
 standard normal, and then, finally, scale and translate it, $y = \mu +
 \sigma \times z$.  In code,
 
@@ -742,7 +742,7 @@ at a time $t$,^[The original code and impetus for including this in the manual c
 
 ```stan
 real weibull_lb_rng(real alpha, real sigma, real t) {
-  real p = weibull_cdf(lt | alpha, sigma);   // cdf for lb
+  real p = weibull_cdf(t | alpha, sigma);   // cdf for lb
   real u = uniform_rng(p, 1);               // unif in bounds
   real y = sigma * (-log1m(u))^inv(alpha);  // inverse cdf
   return y;

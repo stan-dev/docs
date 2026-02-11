@@ -4,23 +4,20 @@ pagetitle: Embedded Laplace Approximation
 
 # Embedded Laplace Approximation
 
-The embedded Laplace approximation can be used to approximate certain
-marginal and conditional distributions that arise in latent Gaussian models.
-A latent Gaussian model observes the following hierarchical structure:
+The embedded Laplace approximation can be used to approximate certain marginal and conditional distributions that arise in latent Gaussian models.
+Embedded Laplace replaces explicit sampling of high-dimensional Gaussian latent variables with a local Gaussian approximation at their conditional posterior mode, producing an approximation to the marginal likelihood.
+Embedded Laplace allows a sampler to search a lower-dimensional marginal posterior over non-latent parameters instead of jointly sampling all latent effects.
+The embedded Laplace approximation in Stan is best suited for latent Gaussian models when full joint sampling is expensive and the latent conditional posterior is reasonably close to Gaussian.
+
+For observed data $y$, latent Gaussian variables $\theta$, and hyperparameters $\phi$, a latent Gaussian model observes the following hierarchical structure:
 \begin{eqnarray}
   \phi &\sim& p(\phi), \\
   \theta &\sim& \text{MultiNormal}(0, K(\phi)), \\
   y &\sim& p(y \mid \theta, \phi).
 \end{eqnarray}
-In this formulation, $y$ represents the
-observed data, and $p(y \mid \theta, \phi)$ is the likelihood function that
-specifies how observations are generated conditional on the latent Gaussian
-variables $\theta$ and hyperparameters $\phi$.
-$K(\phi)$ denotes the prior covariance matrix for the latent Gaussian variables
-$\theta$ and is parameterized by $\phi$.
-The prior $p(\theta \mid \phi)$ is restricted to be a multivariate normal
-centered at 0. That said, we can always pick a likelihood that offsets $\theta$,
-which is equivalently to specifying a prior mean.
+In this formulation, $p(y \mid \theta, \phi)$ is the likelihood function that
+specifies how observations are generated conditional on the $\theta$ and $\phi$.
+$K(\phi)$ denotes the prior covariance matrix for the latent Gaussian variables $\theta$ and is parameterized by $\phi$.
 
 To sample from the joint posterior $p(\phi, \theta \mid y)$, we can either
 use a standard method, such as Markov chain Monte Carlo, or we can follow
@@ -83,12 +80,14 @@ The signature of the function is:
 Which returns an approximation to the log marginal likelihood $p(y \mid \phi)$.
 {{< since 2.37 >}}
 
-This function takes in the following arguments.
+The embedded Laplace functions accept two functors whose user defined arguments are passed in as tuples to `laplace_marginal`.
 
-1. `likelihood_function` - user-specified log likelihood whose first argument is the vector of latent Gaussian variables `theta`
-2. `likelihood_arguments` - A tuple of the log likelihood arguments whose internal members will be passed to the covariance function
-3. `covariance_function` - Prior covariance function
-4. `covariance_arguments` A tuple of the arguments whose internal members will be passed to the the covariance function
+1. `likelihood_function` - user-specified log likelihood whose first argument is the vector of latent Gaussian variables `theta` with other arguments are user defined.
+  - `real likelihood_function(vector theta, likelihood_arguments_1, likelihood_arguments_2, ...)`
+2. `likelihood_arguments` - A tuple of the log likelihood arguments whose internal members will be passed to the covariance function.
+3. `covariance_function` - Prior covariance function.
+  - `matrix covariance_function(covariance_argument_1, covariance_argument_2, ...)`
+4. `covariance_arguments` A tuple of the arguments whose internal members will be passed to the the covariance function.
 
 Below we go over each argument in more detail.
 
@@ -198,12 +197,13 @@ It also possible to specify control parameters, which can help improve the
 optimization that underlies the Laplace approximation, using `laplace_marginal_tol`
 with the following signature:
 
-\index{{\tt \bfseries laplace\_marginal\_tol }!{\tt (function likelihood\_function, tuple(...), function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-
-<!-- real; laplace_marginal_tol; (function likelihood_function, tuple(...), function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol }!{\tt (function likelihood\_function, tuple(...), function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-
-`real` **`laplace_marginal_tol`**`(function likelihood_function, tuple(...), function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+```stan
+real laplace_marginal_tol(function likelihood_function, tuple(...),
+  function covariance_function, tuple(...),
+  tuple(vector theta_init, real tol, int max_steps,
+        int hessian_block_size, int solver,
+        int max_steps_linesearch, int allow_fallback))
+```
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
 and allows the user to tune the control parameters of the approximation.
@@ -243,6 +243,18 @@ objective function. If the Newton step does not improve the objective function,
 the step is repeatedly halved until the objective function decreases or the
 maximum number of steps in the linesearch is reached. By default,
 `max_steps_linesearch=0`, meaning no linesearch is performed.
+
+* `allow_fallback`: If user set solver fails, this flag determines whether to fallback to the next solver. For example, if the user specifies `solver=1` but the Cholesky decomposition fails, the optimizer will try `solver=2` instead.
+
+The embedded Laplace approximation's options have a helper callable `generate_laplace_options(int theta_size)` that will generate the tuple for you. This can be useful for quickly setting up the control parameters in the `transformed data` block to reuse within the model.
+
+```stan
+tuple(vector[theta_size], real, int, int, int, int, int) laplace_ops = generate_laplace_options(theta_size);
+// Modify solver type
+laplace_ops.5 = 2;
+// Turn off fallthrough
+laplace_ops.7 = 0;
+```
 
 {{< since 2.37 >}}
 

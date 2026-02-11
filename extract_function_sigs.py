@@ -12,10 +12,6 @@ import contextlib
 import subprocess
 
 
-if "functions-reference" not in os.getenv("QUARTO_PROJECT_INPUT_FILES", "").replace("functions-reference/functions_index.qmd", ""):
-    print("Functions reference didn't change, skipping index update")
-    exit(0)
-
 @contextlib.contextmanager
 def pushd(new_dir):
     previous_dir = os.getcwd()
@@ -36,9 +32,9 @@ def get_sigs():
                 for line in lines:
                     if line.startswith('<!-- '):
                         line = line.lstrip('<!- ')
-                        parts = [x.strip(' ~') for x in line.split(';')]
-                        if len(parts) == 3:
-                            parts[1] = parts[1]
+                        parts = [x.strip(' ') for x in line.split(';')]
+                        if len(parts) == 3 and parts[1].endswith(' ~'):
+                            parts[1] = parts[1][:-2]
                             sigs.add((parts[1], '~' ,parts[0], file))
                         elif len(parts) == 4:
                             sigs.add((parts[1], parts[2], parts[0], file))

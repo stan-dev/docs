@@ -85,9 +85,7 @@ The Stan Functions Reference contains HTML comments which describe the function 
 ## How to Add a New Chapter to a Manual
 
 1. Add the new chapter as a `.qmd` file in the correct `src` directory.
-
 2. Update the corresponding `_quarto.yml` file for that manual (in the same directory).
-
 3. Update the `src/_quarto.yml` file; this controls the website navigation for that manual.
 
 

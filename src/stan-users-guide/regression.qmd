@@ -656,16 +656,14 @@ data {
   int<lower=0> N;
   int<lower=1> D;
   array[N] int<lower=1, upper=K> y;
-  array[N] row_vector[D] x;
+  matrix[N, D] x;
 }
 parameters {
   vector[D] beta;
   ordered[K - 1] c;
 }
 model {
-  for (n in 1:N) {
-    y[n] ~ ordered_logistic(x[n] * beta, c);
-  }
+  y ~ ordered_logistic(x * beta, c);
 }
 ```
 
@@ -678,47 +676,27 @@ satisfy the ordering constraint.  Luckily, Stan does not need to
 compute the effect of the constraint on the normalizing term because
 the probability is needed only up to a proportion.
 
+The equivalent model can be written using `ordered_logistic_glm`
+distribution, which can provide more efficient computation in case of
+higher dimensional `beta`.
+
+```stan
+  y ~ ordered_logistic_glm(x,  beta, c);
+```
 
 #### Ordered probit {-}
 
-An ordered probit model could be coded in exactly the same way by
-swapping the cumulative logistic (`inv_logit`) for the cumulative
-normal (`Phi`).
+An ordered probit model can be coded in exactly the same way by
+using the built-in `ordered_probit` distribution.
 
 
 ```stan
-data {
-  int<lower=2> K;
-  int<lower=0> N;
-  int<lower=1> D;
-  array[N] int<lower=1, upper=K> y;
-  array[N] row_vector[D] x;
-}
-parameters {
-  vector[D] beta;
-  ordered[K - 1] c;
-}
 model {
-  vector[K] theta;
-  for (n in 1:N) {
-    real eta;
-    eta = x[n] * beta;
-    theta[1] = 1 - Phi(eta - c[1]);
-    for (k in 2:(K - 1)) {
-      theta[k] = Phi(eta - c[k - 1]) - Phi(eta - c[k]);
-    }
-    theta[K] = Phi(eta - c[K - 1]);
-    y[n] ~ categorical(theta);
-  }
+  ordered_probit(x * beta, c);
 }
 ```
 
-The logistic model could also be coded this way by replacing
-`Phi` with `inv_logit`, though the built-in encoding based
-on the softmax transform is more efficient and more numerically
-stable.  A small efficiency gain could be achieved by computing the
-values `Phi(eta - c[k])` once and storing them for re-use.
-
+There is not yet an `ordered_probit_glm` distribution in Stan.
 
 ## Hierarchical regression
 

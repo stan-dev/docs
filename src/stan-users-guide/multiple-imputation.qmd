@@ -4,73 +4,69 @@ pagetitle: Multiple Imputation
 
 # Multiple imputation
 
-Missing data is common in applied data analysis. Pretending that this 
-missingness is irrelevant can distort posterior inferences and reduce
-their precision. So, it is often necessary to account explicitly for
-the missing data when fitting a model of interest[^bda].
-
-[^bda]: Chapter 18 in @GelmanEtAl:2013 offers a Bayesian perspective 
+Missing data is common in applied data analysis. Ignoring this 
+missingness can distort posterior inferences and reduce their
+precision. Modeling the missing data can improve inference quality. Chapter 18 in @GelmanEtAl:2013 offers a Bayesian perspective 
 for analyzing data with missing values.
+
 
 Multiple imputation replaces missing values with different estimates 
 to obtain different versions of a complete data set. Then, the model 
 of interest can be fitted to each of these complete versions 
-separately. Combining the results from these different fits produces 
-estimates that account for the uncertainty in the missing values.
+separately. Combining the resulting draws from these different fits 
+produces a sample that accounts for the uncertainty in the missing values.
 
 ## Motivation and outline
 
-Imagine we have a matrix $Y$ with columns $Y_{(1)}, \ldots, Y_{(K)}$ 
-that we want to use to estimate a vector of quantities of interest 
-called $\theta$. With the completely observed data, $Y_\text{comp}$, we 
-could estimate the posterior distribution of $\theta$ as
-$p(\theta \mid Y_\text{comp})$. But with missing data, our matrix is
-split into $Y_{\text{obs}}$ (the observed values of $Y$) and
-$Y_{\text{mis}}$ (the missing  values of $Y$), which forces us to 
-work with $p(\theta \mid Y_{\text{obs}})$ instead of
-$p(\theta \mid Y_\text{comp})$. This can be problematic because, in 
-general, these two distributions need not be the same, and our 
-knowledge may apply directly only to $p(\theta \mid Y_\text{comp})$.
+Suppose that we have a matrix $x$ with columns
+$x_{\cdot, 1}, \ldots, x_{\cdot, K}$ that we want to use to sample 
+values from a vector of quantities of interest called $\theta$. With
+the completely observed data, $x^\text{comp}$, we could estimate the 
+posterior distribution of $\theta$ as $p(\theta \mid x^\text{comp})$.
+But with missing data, our matrix is split into $x^{\text{obs}}$ (the
+observed values of $x$) and $x^{\text{mis}}$ (the missing  values of
+$x$). This can be problematic because, in general, our knowledge may 
+apply directly only to $p(\theta \mid x^\text{comp})$.
 
-Fortunately, we can treat $Y_{\text{mis}}$ as additional, nuisance 
+Fortunately, we can treat $x^{\text{mis}}$ as additional, nuisance 
 parameters that we can estimate along with $\theta$ as
-$p(\theta, Y_{\text{mis}} \mid Y_{\text{obs}})$. So, we can express 
+$p(\theta, x^{\text{mis}} \mid x^{\text{obs}})$. So, we can express 
 the marginal distribution of $\theta$ given only the observed values 
-$Y_{\text{obs}}$ as
+$x^{\text{obs}}$ as
 \begin{align*}
-p(\theta \mid Y_{\text{obs}}) =&
+p(\theta \mid x^{\text{obs}}) =&
 \int 
-    p(\theta, y_{\text{mis}} \mid Y_{\text{obs}}) 
-    \mathrm{d}y_{\text{mis}} \\
+    p(\theta, y^{\text{mis}} \mid x^{\text{obs}}) 
+    \mathrm{d}y^{\text{mis}} \\
 =&
 \int 
-    p(\theta \mid Y_{\text{obs}}, y_{\text{mis}}) 
-    p(y_{\text{mis}} \mid Y_{\text{obs}})
-    \mathrm{d}y_{\text{mis}} \\
+    p(\theta \mid x^{\text{obs}}, y^{\text{mis}}) 
+    p(y^{\text{mis}} \mid x^{\text{obs}})
+    \mathrm{d}y^{\text{mis}} \\
 =& \int 
-    p(\theta \mid Y_{\text{imp}}) 
-    p(y_{\text{mis}} \mid Y_{\text{obs}})
-    \mathrm{d}y_{\text{mis}},
+    p(\theta \mid x^{\text{imp}}) 
+    p(y^{\text{mis}} \mid x^{\text{obs}})
+    \mathrm{d}y^{\text{mis}},
 \end{align*}
-where $Y_{\text{imp}}$ is a data set that has been completed with
-imputed values of $Y_{\text{mis}}$.
+where $x^{\text{imp}}$ is a data set that has been completed with
+imputed values of $x^{\text{mis}}$.
 
-The expression above shows that we do not need to describe
-$p(\theta \mid Y_{\text{obs}})$ directly. Instead, we can first
-find a way to estimate $Y_{\text{mis}}$ based on $Y_{\text{obs}}$,
+The equations above show that we do not need to describe
+$p(\theta \mid x^{\text{obs}})$ directly. Instead, we can first
+find a way to estimate $x^{\text{mis}}$ based on $x^{\text{obs}}$,
 and then use these estimates to fit the model
-$p(\theta \mid Y_\text{imp})$, treating $Y_\text{imp}$ as if it was 
-$Y_\text{comp}$. Thus, the general outline for multiple imputation 
+$p(\theta \mid x^\text{imp})$, treating $x^\text{imp}$ as if it was 
+$x^\text{comp}$. Thus, the general outline for multiple imputation 
 with a number $M$ of imputations is:
 
-1. Draw $M$ random samples $Y_{\text{mis}}^1, \ldots,
-Y_{\text{mis}}^M$ from the predictive distribution $p(Y_{\text{mis}} 
-\mid Y_{\text{obs}})$.
+1. Draw $M$ random samples $x^{\text{mis}}^1, \ldots,
+x^{\text{mis}}^M$ from the posterior predictive distribution
+$p(x^{\text{mis}} \mid x^{\text{obs}})$.
 2. Use these samples to get $M$ different complete data sets
-$Y_\text{imp}$.
-3. To each of the $M$ imputed data sets, fit the model of interest
-$p(\theta \mid Y_\text{imp}^j)$, each time treating $Y_\text{imp}^j$ as
-if it was $Y_\text{comp}$.
+$x_1^\text{imp}, \ldots, x_M^\text{imp}$.
+3. For each of the $M$ imputed data sets, sample from the model of 
+interest $p(\theta \mid x_m^\text{imp})$, each time treating
+$x_m^\text{imp}$ as if it was $x^\text{comp}$.
 4. Combine the draws for $\theta$ from all $M$ fits.
 
 ### Pseudocode for outline
@@ -80,17 +76,17 @@ pseudocode below:
 ```stan
 theta_estimates = [] // Prepare to store draws from imputed data sets
 for (m in 1:M) {
-  y_mis <- get_imputations(Y_obs) // Draw random values for y_mis
-  Y_imp <- add_imputations(Y, y_mis) // Complete data with imputations 
-  imputation_fits <- my_model.fit(Y_imp).draws() // Get estimates
+  y_mis <- get_imputations(x_obs) // Draw random values for y_mis
+  x_imp <- add_imputations(x, y_mis) // Complete data with imputations 
+  imputation_fits <- my_model.fit(x_imp).draws() // Get estimates
   theta_estimates <- theta_estimates.append(imputation_fits)
 }
 ```
 Each of the functions in this pseudocode can encapsulate simple or
-complex procedures. `get_imputations()`, for example, may sample
-values directly from `Y_obs`; or it may fit a regression model where
-a variable with missing values is the outcome and the variables with
-fully observed values are used as predictors.
+complex procedures. `get_imputations()`, for example, may impute
+missing data by taking values directly from `x_obs`; or it may fit a 
+regression model where a variable with missing values is the outcome
+and the variables with fully observed values are used as predictors.
 
 ## Imputing one variable in Stan
 
@@ -100,18 +96,17 @@ estimate the parameters that govern the conditional association
 $p(y \mid x, z)$, but several values of $x$ are missing. So, before
 we fit this model for $y$, we impute the missing values in $x$.
 
-We first find all the data points that have completely observed data 
-and identify their values as $x_{\text{obs}}$, $y_{\text{obs}}$, 
-and $z_{\text{obs}}$. Then we use these complete data to fit the
-model
+We first find all the fully observed data points and identify their 
+values as $x^{\text{obs}}$, $y^{\text{obs}}$, and $z^{\text{obs}}$.
+Then we use these data to fit the model
 $$
-x_{\text{obs}} \sim \text{Normal}(\gamma_0 + \gamma_1 y_{\text{obs}} +
-    \gamma_2 z_{\text{obs}}, \lambda).
+x^{\text{obs}} \sim \text{Normal}(\gamma_0 + \gamma_1 y^{\text{obs}} +
+    \gamma_2 z^{\text{obs}}, \lambda).
 $$
 
 This model can then give us estimates for the missing values
-$x_{\text{mis}}$ conditional on the corresponding values of $y$ and 
-$z$, which we call $y_{\text{aux}}$ and $z_{\text{aux}}$. The 
+$x^{\text{mis}}$ conditional on the corresponding values of $y$ and 
+$z$, which we call $y^{\text{aux}}$ and $z^{\text{aux}}$. The 
 Stan code for this imputation is:
 ```stan
 // MODEL TO IMPUTE x
@@ -148,9 +143,9 @@ The `generated quantities` block automatically samples $\gamma_0$,
 $\gamma_1$, $\gamma_2$, and $\lambda$ from their posterior 
 distributions. So, the random draws of `x_imp` incorporate 
 uncertainty from the estimated parameters and from the sampling 
-variation in $x_{\text{mis}}$.
+variation in $x^{\text{mis}}$.
 
-Multiple posterior draws of $x_{\text{mis}}$ give us multiple 
+Multiple posterior draws of $x^{\text{mis}}$ give us multiple 
 completed data sets. With these data sets we can model
 $p(y \mid x, z)$ as
 $$
@@ -233,21 +228,21 @@ values that we want to impute.
 
 To do MICE in this example, we can reuse the models for $x$ and $y$
 that we defined above. We also need a new model to impute
-$z_{\text{mis}}$. We use the logistic regression
+$z^{\text{mis}}$. We use the logistic regression
 $$
-z_{\text{obs}} \sim \text{Bernoulli}(
+z^{\text{obs}} \sim \text{Bernoulli}(
   \text{logit}^{-1}(
-    \alpha_0 + \alpha_1 y'_{\text{obs}} + \alpha_2 x'_{\text{obs}})
+    \alpha_0 + \alpha_1 y'^{\text{obs}} + \alpha_2 x'^{\text{obs}})
   ).
 $$
-Here, $z_{\text{obs}}$ contains only the completely observed
-values from our original data set, while $x'_{\text{obs}}$ and 
-$y'_{\text{obs}}$ contain all the values that correspond to
-$z_{\text{obs}}$. Thus, $x'_{\text{obs}}$ can include observed and
-imputed values, and $y'_{\text{obs}}$ need not be the same as in the 
-model for $x_{\text{obs}}$.
+Here, $z^{\text{obs}}$ contains only the completely observed
+values from our original data set, while $x'^{\text{obs}}$ and 
+$y'^{\text{obs}}$ contain all the values that correspond to
+$z^{\text{obs}}$. Thus, $x'^{\text{obs}}$ can include observed and
+imputed values, and $y'^{\text{obs}}$ need not be the same as in the 
+model for $x^{\text{obs}}$.
 
-The Stan code to impute $z_{\text{mis}}$ is:
+The Stan code to impute $z^{\text{mis}}$ is:
 ```stan
 // MODEL TO IMPUTE z (binary)
 data {
@@ -281,8 +276,8 @@ generated quantities {
 
 The pseudocode for this example of MICE, restarting the imputations
 after each imputation cycle, is shown below. Note that we do not need 
-to initialize $x_{\text{mis}}$ in step 0 because we can impute it 
-directly with the model for $x_{\text{obs}}$.
+to initialize $x^{\text{mis}}$ in step 0 because we can impute it 
+directly with the model for $x^{\text{obs}}$.
 ```stan
 completed_datasets <- []
 FOR m = 1 TO M:
@@ -361,10 +356,10 @@ p. 37:
 
 > Cut models arise in applications with multiple data sources that
 provide information about different parameters in the model [...] 
-Interest lies in parameters $\theta$, which are informed by data $Y$. 
+Interest lies in parameters $\theta$, which are informed by data $x$. 
 The likelihood for $\theta$ includes nuisance parameters $\phi$ that 
 are estimated using auxiliary data $Z$. In a full probability model,
-information from $Y$ "feeds back" [...] to influence the posterior 
+information from $x$ "feeds back" [...] to influence the posterior 
 distribution of $\phi$. There are circumstances in which
 this feedback may be considered unhelpful [...]
 
@@ -380,7 +375,7 @@ multiple imputation is
 
 1. Draw $M$ random samples $\phi^1, \ldots, \phi^M$ from a model
 $p(\phi \mid Z)$.
-2. To each of the $M$ samples, fit a model $p(\theta | Y, \phi^j)$. 
+2. To each of the $M$ samples, fit a model $p(\theta | x, \phi^j)$. 
 Each time, treat $\phi^j$ each time as if it was a fixed value, and 
 get multiple draws for $\theta$ from each $\phi^j$.
 3. Combine the draws for $\theta$ from all $M$ fits.

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
-
+<link rel="canonical" href="https://mc-stan.org/docs/stan-users-guide/gaussian-processes.html" />
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.27">
+<meta name="generator" content="quarto-1.5.53">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -21,9 +21,8 @@ ul.task-list li input[type="checkbox"] {
   vertical-align: middle;
 }
 /* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -34,7 +33,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -85,37 +84,32 @@ div.csl-indent {
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../stan-users-guide/copulas.html" rel="next">
+<link href="../stan-users-guide/hyperspherical-models.html" rel="next">
 <link href="../stan-users-guide/clustering.html" rel="prev">
 <link href="../img/logo_tm.png" rel="icon" type="image/png">
-<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../site_libs/quarto-html/quarto.js"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-795e9e8eca1e12b12abcb09a27409631.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-aa0bfeffdde32bb1c7607de7a91446fc.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-795e9e8eca1e12b12abcb09a27409631.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-3134f8de810eb96dee077d404116d0e0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-690a32f078b374cbcfc3ffbbe39893ce.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-3134f8de810eb96dee077d404116d0e0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
   "panel-placement": "end",
   "type": "overlay",
-  "limit": 50,
+  "limit": 200,
   "keyboard-shortcut": [
     "f",
     "/",
     "s"
   ],
-  "show-item-context": false,
   "language": {
     "search-no-results-text": "No results",
     "search-matching-documents-text": "matching documents",
@@ -145,7 +139,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+      if (mathElements[i].tagName == "SPAN") {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -161,185 +155,18 @@ window.Quarto = {
 };
 </script>
 
-<link rel="stylesheet" href="../quarto-config/quarto_styles.css">
-<meta property="og:title" content="Gaussian Processes">
-<meta property="og:description" content="">
-<meta property="og:image" content="img/logo_tm.png">
-<meta property="og:site_name" content="Stan Docs">
+<link rel="stylesheet" href="../theming/quarto_styles.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
-    const toggleBodyColorMode = (bsSheetEl) => {
-      const mode = bsSheetEl.getAttribute("data-mode");
-      const bodyEl = window.document.querySelector("body");
-      if (mode === "dark") {
-        bodyEl.classList.add("quarto-dark");
-        bodyEl.classList.remove("quarto-light");
-      } else {
-        bodyEl.classList.add("quarto-light");
-        bodyEl.classList.remove("quarto-dark");
-      }
-    }
-    const toggleBodyColorPrimary = () => {
-      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
-      if (bsSheetEl) {
-        toggleBodyColorMode(bsSheetEl);
-      }
-    }
-    const setColorSchemeToggle = (alternate) => {
-      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
-      for (let i=0; i < toggles.length; i++) {
-        const toggle = toggles[i];
-        if (toggle) {
-          if (alternate) {
-            toggle.classList.add("alternate");
-          } else {
-            toggle.classList.remove("alternate");
-          }
-        }
-      }
-    };
-    const toggleColorMode = (alternate) => {
-      // Switch the stylesheets
-      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
-      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
-      manageTransitions('#quarto-margin-sidebar .nav-link', false);
-      if (alternate) {
-        // note: dark is layered on light, we don't disable primary!
-        enableStylesheet(alternateStylesheets);
-        for (const sheetNode of alternateStylesheets) {
-          if (sheetNode.id === "quarto-bootstrap") {
-            toggleBodyColorMode(sheetNode);
-          }
-        }
-      } else {
-        disableStylesheet(alternateStylesheets);
-        enableStylesheet(primaryStylesheets)
-        toggleBodyColorPrimary();
-      }
-      manageTransitions('#quarto-margin-sidebar .nav-link', true);
-      // Switch the toggles
-      setColorSchemeToggle(alternate)
-      // Hack to workaround the fact that safari doesn't
-      // properly recolor the scrollbar when toggling (#1455)
-      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
-        manageTransitions("body", false);
-        window.scrollTo(0, 1);
-        setTimeout(() => {
-          window.scrollTo(0, 0);
-          manageTransitions("body", true);
-        }, 40);
-      }
-    }
-    const disableStylesheet = (stylesheets) => {
-      for (let i=0; i < stylesheets.length; i++) {
-        const stylesheet = stylesheets[i];
-        stylesheet.rel = 'disabled-stylesheet';
-      }
-    }
-    const enableStylesheet = (stylesheets) => {
-      for (let i=0; i < stylesheets.length; i++) {
-        const stylesheet = stylesheets[i];
-        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
-          stylesheet.rel = 'stylesheet';
-        }
-      }
-    }
-    const manageTransitions = (selector, allowTransitions) => {
-      const els = window.document.querySelectorAll(selector);
-      for (let i=0; i < els.length; i++) {
-        const el = els[i];
-        if (allowTransitions) {
-          el.classList.remove('notransition');
-        } else {
-          el.classList.add('notransition');
-        }
-      }
-    }
-    const isFileUrl = () => {
-      return window.location.protocol === 'file:';
-    }
-    const hasAlternateSentinel = () => {
-      let styleSentinel = getColorSchemeSentinel();
-      if (styleSentinel !== null) {
-        return styleSentinel === "alternate";
-      } else {
-        return false;
-      }
-    }
-    const setStyleSentinel = (alternate) => {
-      const value = alternate ? "alternate" : "default";
-      if (!isFileUrl()) {
-        window.localStorage.setItem("quarto-color-scheme", value);
-      } else {
-        localAlternateSentinel = value;
-      }
-    }
-    const getColorSchemeSentinel = () => {
-      if (!isFileUrl()) {
-        const storageValue = window.localStorage.getItem("quarto-color-scheme");
-        return storageValue != null ? storageValue : localAlternateSentinel;
-      } else {
-        return localAlternateSentinel;
-      }
-    }
-    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
-      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
-      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
-      let newTheme = '';
-      if(authorPrefersDark) {
-        newTheme = isAlternate ? baseTheme : alternateTheme;
-      } else {
-        newTheme = isAlternate ? alternateTheme : baseTheme;
-      }
-      const changeGiscusTheme = () => {
-        // From: https://github.com/giscus/giscus/issues/336
-        const sendMessage = (message) => {
-          const iframe = document.querySelector('iframe.giscus-frame');
-          if (!iframe) return;
-          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
-        }
-        sendMessage({
-          setConfig: {
-            theme: newTheme
-          }
-        });
-      }
-      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
-      if (isGiscussLoaded) {
-        changeGiscusTheme();
-      }
-    };
-    const authorPrefersDark = false;
-    const darkModeDefault = authorPrefersDark;
-      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
-      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
-    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
-    // Dark / light mode switch
-    window.quartoToggleColorScheme = () => {
-      // Read the current dark / light value
-      let toAlternate = !hasAlternateSentinel();
-      toggleColorMode(toAlternate);
-      setStyleSentinel(toAlternate);
-      toggleGiscusIfUsed(toAlternate, darkModeDefault);
-      window.dispatchEvent(new Event('resize'));
-    };
-    // Switch to dark mode if need be
-    if (hasAlternateSentinel()) {
-      toggleColorMode(true);
-    } else {
-      toggleColorMode(false);
-    }
-  </script>
+<body class="nav-sidebar floating nav-fixed">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a href="https://mc-stan.org/" class="navbar-brand navbar-brand-logo">
-    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo light-content">
-    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo dark-content">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -350,7 +177,7 @@ window.Quarto = {
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
     <a class="nav-link" href="../index.html"> 
-<span class="menu-text">Documentation</span></a>
+<span class="menu-text">Overview</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link active" href="../stan-users-guide/index.html" aria-current="page"> 
@@ -374,23 +201,23 @@ window.Quarto = {
  <span class="dropdown-text">CmdStan</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy">
  <span class="dropdown-text">CmdStanPy</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr">
  <span class="dropdown-text">CmdStanR</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://pystan.readthedocs.io/en/latest/" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/users/interfaces/pystan.html">
  <span class="dropdown-text">PyStan</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/rstan" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/rstan">
  <span class="dropdown-text">RStan</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/" target="_blank">
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/">
  <span class="dropdown-text">Stan.jl</span></a>
   </li>  
     </ul>
@@ -401,39 +228,39 @@ window.Quarto = {
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/">
  <span class="dropdown-text">bayesplot</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/" target="_blank">
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/">
  <span class="dropdown-text">BridgeStan</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/" target="_blank">
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/">
  <span class="dropdown-text">brms</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/loo/" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/loo/">
  <span class="dropdown-text">loo</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/posterior" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/posterior">
  <span class="dropdown-text">posterior</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/projpred" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/projpred">
  <span class="dropdown-text">projpred</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/rstanarm" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm">
  <span class="dropdown-text">rstanarm</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/rstantools" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/rstantools">
  <span class="dropdown-text">rstantools</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/shinystan" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/shinystan">
  <span class="dropdown-text">shinystan</span></a>
   </li>  
     </ul>
@@ -546,12 +373,6 @@ window.Quarto = {
   <div class="sidebar-item-container"> 
   <a href="../stan-users-guide/gaussian-processes.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Gaussian Processes</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../stan-users-guide/copulas.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Copulas</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -720,12 +541,6 @@ window.Quarto = {
  <span class="menu-text">The Bootstrap and Bagging</span></a>
   </div>
 </li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../stan-users-guide/multiple-imputation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Multiple imputation</span></a>
-  </div>
-</li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
@@ -789,8 +604,11 @@ window.Quarto = {
 <div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/stan-users-guide/gaussian-processes.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../stan-users-guide/regression.html">Example Models</a></li><li class="breadcrumb-item"><a href="../stan-users-guide/gaussian-processes.html">Gaussian Processes</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content">
 
+<div>
+This is an old version, <a href="https://mc-stan.org/docs/stan-users-guide/gaussian-processes.html">view current version</a>.
+</div>
 
 
 
@@ -826,13 +644,13 @@ y \sim \textsf{multivariate normal}(m(x), K(x \mid \theta)),
 \]</span> and <span class="math display">\[
   K_2(x \mid \sigma)_{i, j}
 =
-\delta_{i, j} \sigma^2.
+\delta_{i, j} \sigma^2,
 \]</span></p>
 <p>The addition of <span class="math inline">\(\sigma^2\)</span> on the diagonal is important to ensure the positive definiteness of the resulting matrix in the case of two identical inputs <span class="math inline">\(x_i = x_j\)</span>. In statistical terms, <span class="math inline">\(\sigma\)</span> is the scale of the noise term in the regression.</p>
 <p>The hyperparameter <span class="math inline">\(\rho\)</span> is the <em>length-scale</em>, and corresponds to the frequency of the functions represented by the Gaussian process prior with respect to the domain. Values of <span class="math inline">\(\rho\)</span> closer to zero lead the GP to represent high-frequency functions, whereas larger values of <span class="math inline">\(\rho\)</span> lead to low-frequency functions. The hyperparameter <span class="math inline">\(\alpha\)</span> is the <em>marginal standard deviation</em>. It controls the magnitude of the range of the function represented by the GP. If you were to take the standard deviation of many draws from the GP <span class="math inline">\(f_1\)</span> prior at a single input <span class="math inline">\(x\)</span> conditional on one value of <span class="math inline">\(\alpha\)</span> one would recover <span class="math inline">\(\alpha\)</span>.</p>
 <p>The only term in the squared exponential covariance function involving the inputs <span class="math inline">\(x_i\)</span> and <span class="math inline">\(x_j\)</span> is their vector difference, <span class="math inline">\(x_i - x_j\)</span>. This produces a process with stationary covariance in the sense that if an input vector <span class="math inline">\(x\)</span> is translated by a vector <span class="math inline">\(\epsilon\)</span> to <span class="math inline">\(x +
 \epsilon\)</span>, the covariance at any pair of outputs is unchanged, because <span class="math inline">\(K(x \mid \theta) = K(x + \epsilon \mid \theta)\)</span>.</p>
-<p>The summation involved is just the squared Euclidean distance between <span class="math inline">\(x_i\)</span> and <span class="math inline">\(x_j\)</span> (i.e., the squared <span class="math inline">\(L_2\)</span> norm of their difference, <span class="math inline">\(x_i -
+<p>The summation involved is just the squared Euclidean distance between <span class="math inline">\(x_i\)</span> and <span class="math inline">\(x_j\)</span> (i.e., the <span class="math inline">\(L_2\)</span> norm of their difference, <span class="math inline">\(x_i -
 x_j\)</span>). This results in support for smooth functions in the process. The amount of variation in the function is controlled by the free hyperparameters <span class="math inline">\(\alpha\)</span>, <span class="math inline">\(\rho\)</span>, and <span class="math inline">\(\sigma\)</span>.</p>
 <p>Changing the notion of distance from Euclidean to taxicab distance (i.e., an <span class="math inline">\(L_1\)</span> norm) changes the support to functions which are continuous but not smooth.</p>
 </section>
@@ -840,7 +658,7 @@ x_j\)</span>). This results in support for smooth functions in the process. The 
 <h2 class="anchored" data-anchor-id="simulating-from-a-gaussian-process">Simulating from a Gaussian process</h2>
 <p>It is simplest to start with a Stan model that does nothing more than simulate draws of functions <span class="math inline">\(f\)</span> from a Gaussian process. In practical terms, the model will draw values <span class="math inline">\(y_n = f(x_n)\)</span> for finitely many input points <span class="math inline">\(x_n\)</span>.</p>
 <p>The Stan model defines the mean and covariance functions in a transformed data block and then samples outputs <span class="math inline">\(y\)</span> in the model using a multivariate normal distribution. To make the model concrete, the squared exponential covariance function described in the previous section will be used with hyperparameters set to <span class="math inline">\(\alpha^2 = 1\)</span>, <span class="math inline">\(\rho^2 = 1\)</span>, and <span class="math inline">\(\sigma^2 = 0.1\)</span>, and the mean function <span class="math inline">\(m\)</span> is defined to always return the zero vector, <span class="math inline">\(m(x) = \textbf{0}\)</span>. Consider the following implementation of a Gaussian process simulator.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N;</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">real</span> x;</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>}</span>
@@ -861,14 +679,14 @@ x_j\)</span>). This results in support for smooth functions in the process. The 
 <span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
 <span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  y ~ multi_normal(mu, K);</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The above model can also be written more compactly using the specialized covariance function that implements the exponentiated quadratic kernel.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb2"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N;</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">real</span> x;</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span> {</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[N, N] K = gp_exp_quad_cov(x, <span class="fl">1.0</span>, <span class="fl">1.0</span>);</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[N, N] K = cov_exp_quad(x, <span class="fl">1.0</span>, <span class="fl">1.0</span>);</span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] mu = rep_vector(<span class="dv">0</span>, N);</span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    K[n, n] = K[n, n] + <span class="fl">0.1</span>;</span>
@@ -879,35 +697,35 @@ x_j\)</span>). This results in support for smooth functions in the process. The 
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  y ~ multi_normal(mu, K);</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The input data are just the vector of inputs <code>x</code> and its size <code>N</code>. Such a model can be used with values of <code>x</code> evenly spaced over some interval in order to plot sample draws of functions from a Gaussian process.</p>
 <section id="multivariate-inputs" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="multivariate-inputs">Multivariate inputs</h3>
 <p>Only the input data needs to change in moving from a univariate model to a multivariate model.</p>
 <p>The only lines that change from the univariate model above are as follows.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb3"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N;</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; D;</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">vector</span>[D] x;</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span> {</span>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The data are now declared as an array of vectors instead of an array of scalars; the dimensionality <code>D</code> is also declared.</p>
 <p>In the remainder of the chapter, univariate models will be used for simplicity, but any of the models could be changed to multivariate in the same way as the simple sampling model. The only extra computational overhead from a multivariate model is in the distance calculation.</p>
 </section>
 <section id="cholesky-factored-and-transformed-implementation" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="cholesky-factored-and-transformed-implementation">Cholesky factored and transformed implementation</h3>
 <p>A more efficient implementation of the simulation model can be coded in Stan by relocating, rescaling and rotating an isotropic standard normal variate. Suppose <span class="math inline">\(\eta\)</span> is an an isotropic standard normal variate <span class="math display">\[
-\eta \sim \textsf{normal}(\textbf{0}, \textrm{I}),
-\]</span> where <span class="math inline">\(\textbf{0}\)</span> is an <span class="math inline">\(N\)</span>-vector of 0 values and <span class="math inline">\(\textrm{I}\)</span> is the <span class="math inline">\(N
+\eta \sim \textsf{normal}(\textbf{0}, \textbf{1}),
+\]</span> where <span class="math inline">\(\textbf{0}\)</span> is an <span class="math inline">\(N\)</span>-vector of 0 values and <span class="math inline">\(\textbf{1}\)</span> is the <span class="math inline">\(N
 \times N\)</span> identity matrix. Let <span class="math inline">\(L\)</span> be the Cholesky decomposition of <span class="math inline">\(K(x \mid \theta)\)</span>, i.e., the lower-triangular matrix <span class="math inline">\(L\)</span> such that <span class="math inline">\(LL^{\top} =
 K(x \mid \theta)\)</span>. Then the transformed variable <span class="math inline">\(\mu + L\eta\)</span> has the intended target distribution, <span class="math display">\[
   \mu + L\eta \sim \textsf{multivariate normal}(\mu(x), K(x \mid \theta)).
 \]</span></p>
 <p>This transform can be applied directly to Gaussian process simulation.</p>
-<p>This model has the same data declarations for <code>N</code> and <code>x</code>, and the same transformed data definitions of <code>mu</code> and <code>K</code> as the previous model, with the addition of a transformed data variable for the Cholesky decomposition. The parameters change to the raw parameters sampled from an isotropic standard normal, and the actual parameters are defined in generated quantities.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">// ...</span></span>
+<p>This model has the same data declarations for <code>N</code> and <code>x</code>, and the same transformed data definitions of <code>mu</code> and <code>K</code> as the previous model, with the addition of a transformed data variable for the Cholesky decomposition. The parameters change to the raw parameters sampled from an isotropic standard normal, and the actual samples are defined as generated quantities.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">// ...</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span> {</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[N, N] L;</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
@@ -922,7 +740,7 @@ K(x \mid \theta)\)</span>. Then the transformed variable <span class="math inlin
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span> {</span>
 <span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] y;</span>
 <span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  y = mu + L * eta;</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The Cholesky decomposition is only computed once, after the data are loaded and the covariance matrix <code>K</code> computed. The isotropic normal distribution for <code>eta</code> is specified as a vectorized univariate distribution for efficiency; this specifies that each <code>eta[n]</code> has an independent standard normal distribution. The sampled vector <code>y</code> is then defined as a generated quantity using a direct encoding of the transform described above.</p>
 </section>
 </section>
@@ -946,7 +764,7 @@ y      &amp;\sim \textsf{multivariate normal}
 <p>It can be more computationally efficient when dealing with a normal outcome to integrate out the Gaussian process, because this yields a lower-dimensional parameter space over which to do inference. We’ll fit both models in Stan. The former model will be referred to as the latent variable GP, while the latter will be called the marginal likelihood GP.</p>
 <p>The hyperparameters controlling the covariance function of a Gaussian process can be fit by assigning them priors, like we have in the generative models above, and then computing the posterior distribution of the hyperparameters given observed data. The priors on the parameters should be defined based on prior knowledge of the scale of the output values (<span class="math inline">\(\alpha\)</span>), the scale of the output noise (<span class="math inline">\(\sigma\)</span>), and the scale at which distances are measured among inputs (<span class="math inline">\(\rho\)</span>). See the <a href="#priors-gp.section">Gaussian process priors section</a> for more information about how to specify appropriate priors for the hyperparameters.</p>
 <p>The Stan program implementing the marginal likelihood GP is shown below. The program is similar to the Stan programs that implement the simulation GPs above, but because we are doing inference on the hyperparameters, we need to calculate the covariance matrix <code>K</code> in the model block, rather than the transformed data block.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N;</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">real</span> x;</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] y;</span>
@@ -961,7 +779,7 @@ y      &amp;\sim \textsf{multivariate normal}
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
 <span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[N, N] L_K;</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[N, N] K = gp_exp_quad_cov(x, alpha, rho);</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[N, N] K = cov_exp_quad(x, alpha, rho);</span>
 <span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> sq_sigma = square(sigma);</span>
 <span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  <span class="co">// diagonal elements</span></span>
@@ -976,14 +794,14 @@ y      &amp;\sim \textsf{multivariate normal}
 <span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  sigma ~ std_normal();</span>
 <span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  y ~ multi_normal_cholesky(mu, L_K);</span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The data block declares a vector <code>y</code> of observed values <code>y[n]</code> for inputs <code>x[n]</code>. The transformed data block now only defines the mean vector to be zero. The three hyperparameters are defined as parameters constrained to be non-negative. The computation of the covariance matrix <code>K</code> is now in the model block because it involves unknown parameters and thus can’t simply be precomputed as transformed data. The rest of the model consists of the priors for the hyperparameters and the multivariate Cholesky-parameterized normal distribution, only now the value <code>y</code> is known and the covariance matrix <code>K</code> is an unknown dependent on the hyperparameters, allowing us to learn the hyperparameters.</p>
 <p>We have used the Cholesky parameterized multivariate normal rather than the standard parameterization because it allows us to the <code>cholesky_decompose</code> function which has been optimized for both small and large matrices. When working with small matrices the differences in computational speed between the two approaches will not be noticeable, but for larger matrices (<span class="math inline">\(N \gtrsim 100\)</span>) the Cholesky decomposition version will be faster.</p>
 <p>Hamiltonian Monte Carlo sampling is fast and effective for hyperparameter inference in this model <span class="citation" data-cites="Neal:1997">(<a href="#ref-Neal:1997" role="doc-biblioref">Neal 1997</a>)</span>. If the posterior is well-concentrated for the hyperparameters the Stan implementation will fit hyperparameters in models with a few hundred data points in seconds.</p>
 <section id="latent-variable-gp" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="latent-variable-gp">Latent variable GP</h4>
 <p>We can also explicitly code the latent variable formulation of a GP in Stan. This will be useful for when the outcome is not normal. We’ll need to add a small positive term, <span class="math inline">\(\delta\)</span> to the diagonal of the covariance matrix in order to ensure that our covariance matrix remains positive definite.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N;</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">real</span> x;</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] y;</span>
@@ -1001,7 +819,7 @@ y      &amp;\sim \textsf{multivariate normal}
 <span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] f;</span>
 <span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  {</span>
 <span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] L_K;</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] K = gp_exp_quad_cov(x, alpha, rho);</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] K = cov_exp_quad(x, alpha, rho);</span>
 <span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="co">// diagonal elements</span></span>
 <span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
@@ -1018,7 +836,7 @@ y      &amp;\sim \textsf{multivariate normal}
 <span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  eta ~ std_normal();</span>
 <span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  y ~ normal(f, sigma);</span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Two differences between the latent variable GP and the marginal likelihood GP are worth noting. The first is that we have augmented our parameter block with a new parameter vector of length <span class="math inline">\(N\)</span> called <code>eta</code>. This is used in the model block to generate a multivariate normal vector called <span class="math inline">\(f\)</span>, corresponding to the latent GP. We put a <span class="math inline">\(\textsf{normal}(0,1)\)</span> prior on <code>eta</code> like we did in the Cholesky-parameterized GP in the simulation section. The second difference is that although we could code the distribution statement for <span class="math inline">\(y\)</span> with one <span class="math inline">\(N\)</span>-dimensional multivariate normal with an identity covariance matrix multiplied by <span class="math inline">\(\sigma^2\)</span>, we instead use vectorized univariate normal distribution, which is equivalent but more efficient to use.</p>
 </section>
 </section>
@@ -1028,7 +846,7 @@ y      &amp;\sim \textsf{multivariate normal}
 <section id="poisson-gp" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="poisson-gp">Poisson GP</h4>
 <p>If we want to model count data, we can remove the <span class="math inline">\(\sigma\)</span> parameter, and use <code>poisson_log</code>, which implements a Poisson distribution with log link function, rather than <code>normal</code>. We can also add an overall mean parameter, <span class="math inline">\(a\)</span>, which will account for the marginal expected value for <span class="math inline">\(y\)</span>. We do this because we cannot center count data like we would for normally distributed data.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb7"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; y;</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
@@ -1048,7 +866,7 @@ y      &amp;\sim \textsf{multivariate normal}
 <span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  eta ~ std_normal();</span>
 <span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  y ~ poisson_log(a + f);</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="logistic-gaussian-process-regression" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="logistic-gaussian-process-regression">Logistic Gaussian process regression</h4>
@@ -1059,7 +877,7 @@ z_n \sim \textsf{Bernoulli}(\operatorname{logit}^{-1}(y_n)),
 \Pr[z_n = 1] = \operatorname{logit}^{-1}(y_n).
 \]</span></p>
 <p>We can extend our latent variable GP Stan program to deal with classification problems. Below <code>a</code> is the bias term, which can help account for imbalanced classes in the training data:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb8"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; z;</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
@@ -1068,7 +886,7 @@ z_n \sim \textsf{Bernoulli}(\operatorname{logit}^{-1}(y_n)),
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  y ~ bernoulli_logit(a + f);</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 </section>
 <section id="automatic-relevance-determination" class="level3 unnumbered">
@@ -1081,41 +899,56 @@ z_n \sim \textsf{Bernoulli}(\operatorname{logit}^{-1}(y_n)),
 + \delta_{i, j}\sigma^2.
 \]</span> The estimation of <span class="math inline">\(\rho\)</span> was termed “automatic relevance determination” by <span class="citation" data-cites="Neal:1996">Neal (<a href="#ref-Neal:1996" role="doc-biblioref">1996</a>)</span>, but this is misleading, because the magnitude of the scale of the posterior for each <span class="math inline">\(\rho_d\)</span> is dependent on the scaling of the input data along dimension <span class="math inline">\(d\)</span>. Moreover, the scale of the parameters <span class="math inline">\(\rho_d\)</span> measures non-linearity along the <span class="math inline">\(d\)</span>-th dimension, rather than “relevance” <span class="citation" data-cites="PiironenVehtari:2016">(<a href="#ref-PiironenVehtari:2016" role="doc-biblioref">Piironen and Vehtari 2016</a>)</span>.</p>
 <p>A priori, the closer <span class="math inline">\(\rho_d\)</span> is to zero, the more nonlinear the conditional mean in dimension <span class="math inline">\(d\)</span> is. A posteriori, the actual dependencies between <span class="math inline">\(x\)</span> and <span class="math inline">\(y\)</span> play a role. With one covariate <span class="math inline">\(x_1\)</span> having a linear effect and another covariate <span class="math inline">\(x_2\)</span> having a nonlinear effect, it is possible that <span class="math inline">\(\rho_1 &gt; \rho_2\)</span> even if the predictive relevance of <span class="math inline">\(x_1\)</span> is higher <span class="citation" data-cites="RasmussenWilliams:2006">(<a href="#ref-RasmussenWilliams:2006" role="doc-biblioref">Rasmussen and Williams 2006, 80</a>)</span>. The collection of <span class="math inline">\(\rho_d\)</span> (or <span class="math inline">\(1/\rho_d\)</span>) parameters can also be modeled hierarchically.</p>
-<p>The implementation of automatic relevance determination is a straightforward extension of the one-dimensional case by modifying <code>rho</code> to be an array.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N;</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; D;</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">vector</span>[D] x;</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] y;</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span> {</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> delta = <span class="fl">1e-9</span>;</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[D] <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; rho;</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; alpha;</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma;</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] eta;</span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] f;</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  {</span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] L_K;</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] K = gp_exp_quad_cov(x, alpha, rho);</span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>      K[n, n] = K[n, n] + delta;</span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>    L_K = cholesky_decompose(K);</span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    f = L_K * eta;</span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>  rho ~ inv_gamma(<span class="dv">5</span>, <span class="dv">5</span>);</span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>  alpha ~ std_normal();</span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  sigma ~ std_normal();</span>
-<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>  eta ~ std_normal();</span>
-<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>  y ~ normal(f, sigma);</span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The implementation of automatic relevance determination in Stan is straightforward, though it currently requires the user to directly code the covariance matrix. We’ll write a function to generate the Cholesky of the covariance matrix called <code>L_cov_exp_quad_ARD</code>.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">functions</span> {</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span> L_cov_exp_quad_ARD(<span class="dt">vector</span>[] x,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                            <span class="dt">real</span> alpha,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                            <span class="dt">vector</span> rho,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                            <span class="dt">real</span> delta) {</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> N = size(x);</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] K;</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> sq_alpha = square(alpha);</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span>:(N<span class="dv">-1</span>)) {</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>      K[i, i] = sq_alpha + delta;</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>      <span class="cf">for</span> (j <span class="cf">in</span> (i + <span class="dv">1</span>):N) {</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>        K[i, j] = sq_alpha</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>                      * exp(-<span class="fl">0.5</span> * dot_self((x[i] - x[j]) ./ rho));</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        K[j, i] = K[i, j];</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    K[N, N] = sq_alpha + delta;</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> cholesky_decompose(K);</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N;</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; D;</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">vector</span>[D] x;</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] y;</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span> {</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> delta = <span class="fl">1e-9</span>;</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt;[D] rho;</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; alpha;</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma;</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] eta;</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] f;</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>  {</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] L_K = L_cov_exp_quad_ARD(x, alpha, rho, delta);</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>    f = L_K * eta;</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>  rho ~ inv_gamma(<span class="dv">5</span>, <span class="dv">5</span>);</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>  alpha ~ std_normal();</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>  sigma ~ std_normal();</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>  eta ~ std_normal();</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>  y ~ normal(f, sigma);</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="priors-gp.section" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="priors-gp.section">Priors for Gaussian process parameters</h3>
@@ -1147,7 +980,7 @@ f(x \mid a, b, p) &amp;= \dfrac{\left(a/b\right)^{p/2}}{2K_p\left(\sqrt{ab}\righ
     p \in \mathbb{Z}
 \end{align*}\]</span></p>
 <p>which has an inverse gamma left tail if <span class="math inline">\(p \leq 0\)</span> and an inverse Gaussian right tail. This has not yet been implemented in Stan’s math library, but it is possible to implement as a user defined function:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">functions</span> {</span>
+<div class="sourceCode" id="cb10"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">functions</span> {</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> generalized_inverse_gaussian_lpdf(<span class="dt">real</span> x, <span class="dt">int</span> p,</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                                        <span class="dt">real</span> a, <span class="dt">real</span> b) {</span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> p * <span class="fl">0.5</span> * log(a / b)</span>
@@ -1158,8 +991,8 @@ f(x \mid a, b, p) &amp;= \dfrac{\left(a/b\right)^{p/2}}{2K_p\left(\sqrt{ab}\righ
 <span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>If we have high-frequency covariates in our fixed effects, we may wish to further regularize the GP away from high-frequency functions, which means we’ll need to penalize smaller length-scales. Luckily, we have a useful way of thinking about how length-scale affects the frequency of the functions supported by the GP. If we were to repeatedly draw from a zero-mean GP with a length-scale of <span class="math inline">\(\rho\)</span> in a fixed-domain <span class="math inline">\([0,T]\)</span>, we would get a distribution for the number of times each draw of the GP crossed the zero axis. The expectation of this random variable, the number of zero crossings, is <span class="math inline">\(T / \pi
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If we have high-frequency covariates in our fixed effects, we may wish to further regularize the GP away from high-frequency functions, which means we’ll need to penalize smaller length-scales. Luckily, we have a useful way of thinking about how length-scale affects the frequency of the functions supported the GP. If we were to repeatedly draw from a zero-mean GP with a length-scale of <span class="math inline">\(\rho\)</span> in a fixed-domain <span class="math inline">\([0,T]\)</span>, we would get a distribution for the number of times each draw of the GP crossed the zero axis. The expectation of this random variable, the number of zero crossings, is <span class="math inline">\(T / \pi
 \rho\)</span>. You can see that as <span class="math inline">\(\rho\)</span> decreases, the expectation of the number of upcrossings increases as the GP is representing higher-frequency functions. Thus, this is a good statistic to keep in mind when setting a lower-bound for our prior on length-scale in the presence of high-frequency covariates. However, this statistic is only valid for one-dimensional inputs.</p>
 </section>
 <section id="priors-for-marginal-standard-deviation" class="level4 unnumbered">
@@ -1179,7 +1012,7 @@ p\left(\tilde{y} \mid \tilde{x},x,y\right)
 p\left(\tilde{y}, y \mid \tilde{x},x\right).
 \]</span></p>
 <p>A direct implementation in Stan defines a model in terms of the joint distribution of the observed <span class="math inline">\(y\)</span> and unobserved <span class="math inline">\(\tilde{y}\)</span>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb11"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N1;</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N1] <span class="dt">real</span> x1;</span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N1] y1;</span>
@@ -1207,7 +1040,7 @@ p\left(\tilde{y}, y \mid \tilde{x},x\right).
 <span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] f;</span>
 <span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>  {</span>
 <span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] L_K;</span>
-<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] K = gp_exp_quad_cov(x, alpha, rho);</span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] K = cov_exp_quad(x, alpha, rho);</span>
 <span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">// diagonal elements</span></span>
 <span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
@@ -1231,7 +1064,7 @@ p\left(\tilde{y}, y \mid \tilde{x},x\right).
 <span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (n2 <span class="cf">in</span> <span class="dv">1</span>:N2) {</span>
 <span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>    y2[n2] = normal_rng(f[N1 + n2], sigma);</span>
 <span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The input vectors <code>x1</code> and <code>x2</code> are declared as data, as is the observed output vector <code>y1</code>. The unknown output vector <code>y2</code>, which corresponds to input vector <code>x2</code>, is declared in the generated quantities block and will be sampled when the model is executed.</p>
 <p>A transformed data block is used to combine the input vectors <code>x1</code> and <code>x2</code> into a single vector <code>x</code>.</p>
 <p>The model block declares and defines a local variable for the combined output vector <code>f</code>, which consists of the concatenation of the conditional mean for known outputs <code>y1</code> and unknown outputs <code>y2</code>. Thus the combined output vector <code>f</code> is aligned with the combined input vector <code>x</code>. All that is left is to define the univariate normal distribution statement for <code>y</code>.</p>
@@ -1240,7 +1073,7 @@ p\left(\tilde{y}, y \mid \tilde{x},x\right).
 <h4 class="unnumbered anchored" data-anchor-id="predictive-inference-in-non-gaussian-gps">Predictive inference in non-Gaussian GPs</h4>
 <p>We can do predictive inference in non-Gaussian GPs in much the same way as we do with Gaussian GPs.</p>
 <p>Consider the following full model for prediction using logistic Gaussian process regression.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb12"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N1;</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N1] <span class="dt">real</span> x1;</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N1] <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; z1;</span>
@@ -1268,7 +1101,7 @@ p\left(\tilde{y}, y \mid \tilde{x},x\right).
 <span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] f;</span>
 <span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>  {</span>
 <span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] L_K;</span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] K = gp_exp_quad_cov(x, alpha, rho);</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] K = cov_exp_quad(x, alpha, rho);</span>
 <span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">// diagonal elements</span></span>
 <span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
@@ -1292,7 +1125,7 @@ p\left(\tilde{y}, y \mid \tilde{x},x\right).
 <span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (n2 <span class="cf">in</span> <span class="dv">1</span>:N2) {</span>
 <span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>    z2[n2] = bernoulli_logit_rng(a + f[N1 + n2]);</span>
 <span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="analytical-form-of-joint-predictive-inference" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="analytical-form-of-joint-predictive-inference">Analytical form of joint predictive inference</h4>
@@ -1304,12 +1137,12 @@ p\left(\tilde{y} \mid \tilde{x},y,x\right)
                 \Omega - K^{\top}\Sigma^{-1}K\right),
 \]</span> where <span class="math inline">\(\Sigma = K(x \mid \alpha, \rho, \sigma)\)</span> is the result of applying the covariance function to the inputs <span class="math inline">\(x\)</span> with observed outputs <span class="math inline">\(y\)</span>, <span class="math inline">\(\Omega =
 K(\tilde{x} \mid \alpha, \rho)\)</span> is the result of applying the covariance function to the inputs <span class="math inline">\(\tilde{x}\)</span> for which predictions are to be inferred, and <span class="math inline">\(K\)</span> is the matrix of covariances between inputs <span class="math inline">\(x\)</span> and <span class="math inline">\(\tilde{x}\)</span>, which in the case of the exponentiated quadratic covariance function would be <span class="math display">\[
-K(x \mid \alpha, \rho)_{i, j} = \alpha^2 \exp\left(-\dfrac{1}{2 \rho^2}
+K(x \mid \alpha, \rho)_{i, j} = \eta^2 \exp\left(-\dfrac{1}{2 \rho^2}
 \sum_{d=1}^D \left(x_{i,d} - \tilde{x}_{j,d}\right)^2\right).
 \]</span></p>
 <p>There is no noise term including <span class="math inline">\(\sigma^2\)</span> because the indexes of elements in <span class="math inline">\(x\)</span> and <span class="math inline">\(\tilde{x}\)</span> are never the same.</p>
 <p>This Stan code below uses the analytic form of the posterior and provides sampling of the resulting multivariate normal through the Cholesky decomposition. The data declaration is the same as for the latent variable example, but we’ve defined a function called <code>gp_pred_rng</code> which will generate a draw from the posterior predictive mean conditioned on observed data <code>y1</code>. The code uses a Cholesky decomposition in triangular solves in order to cut down on the number of matrix-matrix multiplications when computing the conditional mean and the conditional covariance of <span class="math inline">\(p(\tilde{y})\)</span>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">functions</span> {</span>
+<div class="sourceCode" id="cb13"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">functions</span> {</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span> gp_pred_rng(<span class="dt">array</span>[] <span class="dt">real</span> x2,</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                     <span class="dt">vector</span> y1,</span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                     <span class="dt">array</span>[] <span class="dt">real</span> x1,</span>
@@ -1329,17 +1162,17 @@ K(x \mid \alpha, \rho)_{i, j} = \alpha^2 \exp\left(-\dfrac{1}{2 \rho^2}
 <span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>      <span class="dt">matrix</span>[N2, N2] cov_f2;</span>
 <span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>      <span class="dt">matrix</span>[N2, N2] diag_delta;</span>
 <span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>      <span class="dt">matrix</span>[N1, N1] K;</span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>      K = gp_exp_quad_cov(x1, alpha, rho);</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>      K = cov_exp_quad(x1, alpha, rho);</span>
 <span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>      <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N1) {</span>
 <span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>        K[n, n] = K[n, n] + square(sigma);</span>
 <span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>      }</span>
 <span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>      L_K = cholesky_decompose(K);</span>
 <span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>      K_div_y1 = mdivide_left_tri_low(L_K, y1);</span>
 <span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>      K_div_y1 = mdivide_right_tri_low(K_div_y1', L_K)';</span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>      k_x1_x2 = gp_exp_quad_cov(x1, x2, alpha, rho);</span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>      k_x1_x2 = cov_exp_quad(x1, x2, alpha, rho);</span>
 <span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>      f2_mu = (k_x1_x2' * K_div_y1);</span>
 <span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>      v_pred = mdivide_left_tri_low(L_K, k_x1_x2);</span>
-<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>      cov_f2 = gp_exp_quad_cov(x2, alpha, rho) - v_pred' * v_pred;</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>      cov_f2 = cov_exp_quad(x2, alpha, rho) - v_pred' * v_pred;</span>
 <span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>      diag_delta = diag_matrix(rep_vector(delta, N2));</span>
 <span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>      f2 = multi_normal_rng(f2_mu, cov_f2 + diag_delta);</span>
@@ -1366,7 +1199,7 @@ K(x \mid \alpha, \rho)_{i, j} = \alpha^2 \exp\left(-\dfrac{1}{2 \rho^2}
 <span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
 <span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[N1, N1] L_K;</span>
 <span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a>  {</span>
-<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N1, N1] K = gp_exp_quad_cov(x1, alpha, rho);</span>
+<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N1, N1] K = cov_exp_quad(x1, alpha, rho);</span>
 <span id="cb13-59"><a href="#cb13-59" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> sq_sigma = square(sigma);</span>
 <span id="cb13-60"><a href="#cb13-60" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-61"><a href="#cb13-61" aria-hidden="true" tabindex="-1"></a>    <span class="co">// diagonal elements</span></span>
@@ -1391,7 +1224,7 @@ K(x \mid \alpha, \rho)_{i, j} = \alpha^2 \exp\left(-\dfrac{1}{2 \rho^2}
 <span id="cb13-80"><a href="#cb13-80" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (n2 <span class="cf">in</span> <span class="dv">1</span>:N2) {</span>
 <span id="cb13-81"><a href="#cb13-81" aria-hidden="true" tabindex="-1"></a>    y2[n2] = normal_rng(f2[n2], sigma);</span>
 <span id="cb13-82"><a href="#cb13-82" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb13-83"><a href="#cb13-83" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb13-83"><a href="#cb13-83" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 </section>
 <section id="multiple-output-gaussian-processes" class="level3 unnumbered">
@@ -1427,7 +1260,7 @@ L_C(\phi)  &amp;= \texttt{cholesky}\mathtt{\_}\texttt{decompose}\big(C(\phi)\big
 L_{K(x \mid 1.0, \rho)} &amp;= \texttt{cholesky}\mathtt{\_}\texttt{decompose}\big(K(x \mid 1.0, \rho)\big)
 \end{align*}\]</span></p>
 <p>This can be implemented in Stan using a latent-variable GP formulation. We’ve used <span class="math inline">\(\textsf{LKJCorr}\)</span> for <span class="math inline">\(C(\phi)\)</span>, but any positive-definite matrix will do.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb14"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N;</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; D;</span>
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">real</span> x;</span>
@@ -1446,7 +1279,7 @@ L_{K(x \mid 1.0, \rho)} &amp;= \texttt{cholesky}\mathtt{\_}\texttt{decompose}\bi
 <span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
 <span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[N, D] f;</span>
 <span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  {</span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] K = gp_exp_quad_cov(x, <span class="fl">1.0</span>, rho);</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] K = cov_exp_quad(x, <span class="fl">1.0</span>, rho);</span>
 <span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>    <span class="dt">matrix</span>[N, N] L_K;</span>
 <span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>    <span class="co">// diagonal elements</span></span>
@@ -1470,7 +1303,7 @@ L_{K(x \mid 1.0, \rho)} &amp;= \texttt{cholesky}\mathtt{\_}\texttt{decompose}\bi
 <span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span> {</span>
 <span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[D, D] Omega;</span>
 <span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>  Omega = L_Omega * L_Omega';</span>
-<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 
 
@@ -1506,256 +1339,383 @@ Zhang, Hao. 2004. <span>“Inconsistent Estimation and Asymptotically Equal Inte
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
-  window.document.addEventListener("DOMContentLoaded", function (event) {
-    // Ensure there is a toggle, if there isn't float one in the top right
-    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
-      const a = window.document.createElement('a');
-      a.classList.add('top-right');
-      a.classList.add('quarto-color-scheme-toggle');
-      a.href = "";
-      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
-      const i = window.document.createElement("i");
-      i.classList.add('bi');
-      a.appendChild(i);
-      window.document.body.appendChild(a);
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
     }
-    setColorSchemeToggle(hasAlternateSentinel())
-    const icon = "";
-    const anchorJS = new window.AnchorJS();
-    anchorJS.options = {
-      placement: 'right',
-      icon: icon
-    };
-    anchorJS.add('.anchored');
-    const isCodeAnnotation = (el) => {
-      for (const clz of el.classList) {
-        if (clz.startsWith('code-annotation-')) {                     
-          return true;
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
         }
       }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
       return false;
     }
-    const onCopySuccess = function(e) {
-      // button target
-      const button = e.trigger;
-      // don't keep focus
-      button.blur();
-      // flash "checked"
-      button.classList.add('code-copy-button-checked');
-      var currentTitle = button.getAttribute("title");
-      button.setAttribute("title", "Copied!");
-      let tooltip;
-      if (window.bootstrap) {
-        button.setAttribute("data-bs-toggle", "tooltip");
-        button.setAttribute("data-bs-placement", "left");
-        button.setAttribute("data-bs-title", "Copied!");
-        tooltip = new bootstrap.Tooltip(button, 
-          { trigger: "manual", 
-            customClass: "code-copy-button-tooltip",
-            offset: [0, -8]});
-        tooltip.show();    
-      }
-      setTimeout(function() {
-        if (tooltip) {
-          tooltip.hide();
-          button.removeAttribute("data-bs-title");
-          button.removeAttribute("data-bs-toggle");
-          button.removeAttribute("data-bs-placement");
-        }
-        button.setAttribute("title", currentTitle);
-        button.classList.remove('code-copy-button-checked');
-      }, 1000);
-      // clear code selection
-      e.clearSelection();
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
     }
-    const getTextToCopy = function(trigger) {
-      const outerScaffold = trigger.parentElement.cloneNode(true);
-      const codeEl = outerScaffold.querySelector('code');
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
       for (const childEl of codeEl.children) {
         if (isCodeAnnotation(childEl)) {
           childEl.remove();
         }
       }
       return codeEl.innerText;
-    }
-    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-      text: getTextToCopy
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
     });
-    clipboard.on('success', onCopySuccess);
-    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-        text: getTextToCopy,
-        container: window.document.getElementById('quarto-embedded-source-code-modal')
-      });
-      clipboardModal.on('success', onCopySuccess);
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
     }
-      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-      var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
-      var isInternal = (href) => {
-          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
-      }
-      // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
-      for (var i=0; i<links.length; i++) {
-        const link = links[i];
-        if (!isInternal(link.href)) {
-          // undo the damage that might have been done by quarto-nav.js in the case of
-          // links that we want to consider external
-          if (link.dataset.originalHref !== undefined) {
-            link.href = link.dataset.originalHref;
-          }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
         }
       }
-    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
-      const config = {
-        allowHTML: true,
-        maxWidth: 500,
-        delay: 100,
-        arrow: false,
-        appendTo: function(el) {
-            return el.parentElement;
-        },
-        interactive: true,
-        interactiveBorder: 10,
-        theme: 'quarto',
-        placement: 'bottom-start',
-      };
-      if (contentFn) {
-        config.content = contentFn;
-      }
-      if (onTriggerFn) {
-        config.onTrigger = onTriggerFn;
-      }
-      if (onUntriggerFn) {
-        config.onUntrigger = onUntriggerFn;
-      }
-      window.tippy(el, config); 
     }
-    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
-    for (var i=0; i<noterefs.length; i++) {
-      const ref = noterefs[i];
-      tippyHover(ref, function() {
-        // use id or data attribute instead here
-        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
-        try { href = new URL(href).hash; } catch {}
-        const id = href.replace(/^#\/?/, "");
-        const note = window.document.getElementById(id);
-        if (note) {
-          return note.innerHTML;
-        } else {
-          return "";
-        }
-      });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
     }
-    const xrefs = window.document.querySelectorAll('a.quarto-xref');
-    const processXRef = (id, note) => {
-      // Strip column container classes
-      const stripColumnClz = (el) => {
-        el.classList.remove("page-full", "page-columns");
-        if (el.children) {
-          for (const child of el.children) {
-            stripColumnClz(child);
-          }
-        }
-      }
-      stripColumnClz(note)
-      if (id === null || id.startsWith('sec-')) {
-        // Special case sections, only their first couple elements
-        const container = document.createElement("div");
-        if (note.children && note.children.length > 2) {
-          container.appendChild(note.children[0].cloneNode(true));
-          for (let i = 1; i < note.children.length; i++) {
-            const child = note.children[i];
-            if (child.tagName === "P" && child.innerText === "") {
-              continue;
-            } else {
-              container.appendChild(child.cloneNode(true));
-              break;
-            }
-          }
-          if (window.Quarto?.typesetMath) {
-            window.Quarto.typesetMath(container);
-          }
-          return container.innerHTML
-        } else {
-          if (window.Quarto?.typesetMath) {
-            window.Quarto.typesetMath(note);
-          }
-          return note.innerHTML;
-        }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
       } else {
-        // Remove any anchor links if they are present
-        const anchorLink = note.querySelector('a.anchorjs-link');
-        if (anchorLink) {
-          anchorLink.remove();
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
         }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
         if (window.Quarto?.typesetMath) {
           window.Quarto.typesetMath(note);
         }
-        if (note.classList.contains("callout")) {
-          return note.outerHTML;
-        } else {
-          return note.innerHTML;
-        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
       }
     }
-    for (var i=0; i<xrefs.length; i++) {
-      const xref = xrefs[i];
-      tippyHover(xref, undefined, function(instance) {
-        instance.disable();
-        let url = xref.getAttribute('href');
-        let hash = undefined; 
-        if (url.startsWith('#')) {
-          hash = url;
-        } else {
-          try { hash = new URL(url).hash; } catch {}
-        }
-        if (hash) {
-          const id = hash.replace(/^#\/?/, "");
-          const note = window.document.getElementById(id);
-          if (note !== null) {
-            try {
-              const html = processXRef(id, note.cloneNode(true));
-              instance.setContent(html);
-            } finally {
-              instance.enable();
-              instance.show();
-            }
-          } else {
-            // See if we can fetch this
-            fetch(url.split('#')[0])
-            .then(res => res.text())
-            .then(html => {
-              const parser = new DOMParser();
-              const htmlDoc = parser.parseFromString(html, "text/html");
-              const note = htmlDoc.getElementById(id);
-              if (note !== null) {
-                const html = processXRef(id, note);
-                instance.setContent(html);
-              } 
-            }).finally(() => {
-              instance.enable();
-              instance.show();
-            });
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
           }
         } else {
-          // See if we can fetch a full url (with no hash to target)
-          // This is a special case and we should probably do some content thinning / targeting
-          fetch(url)
+          // See if we can fetch this
+          fetch(url.split('#')[0])
           .then(res => res.text())
           .then(html => {
             const parser = new DOMParser();
             const htmlDoc = parser.parseFromString(html, "text/html");
-            const note = htmlDoc.querySelector('main.content');
+            const note = htmlDoc.getElementById(id);
             if (note !== null) {
-              // This should only happen for chapter cross references
-              // (since there is no id in the URL)
-              // remove the first header
-              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
-                note.children[0].remove();
-              }
-              const html = processXRef(null, note);
+              const html = processXRef(id, note);
               instance.setContent(html);
             } 
           }).finally(() => {
@@ -1763,161 +1723,185 @@ Zhang, Hao. 2004. <span>“Inconsistent Estimation and Asymptotically Equal Inte
             instance.show();
           });
         }
-      }, function(instance) {
-      });
-    }
-        let selectedAnnoteEl;
-        const selectorForAnnotation = ( cell, annotation) => {
-          let cellAttr = 'data-code-cell="' + cell + '"';
-          let lineAttr = 'data-code-annotation="' +  annotation + '"';
-          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
-          return selector;
-        }
-        const selectCodeLines = (annoteEl) => {
-          const doc = window.document;
-          const targetCell = annoteEl.getAttribute("data-target-cell");
-          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
-          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
-          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
-          const lineIds = lines.map((line) => {
-            return targetCell + "-" + line;
-          })
-          let top = null;
-          let height = null;
-          let parent = null;
-          if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
-            }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
-            }
-            selectedAnnoteEl = annoteEl;
-          }
-        };
-        const unselectCodeLines = () => {
-          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
-          elementsIds.forEach((elId) => {
-            const div = window.document.getElementById(elId);
-            if (div) {
-              div.remove();
-            }
-          });
-          selectedAnnoteEl = undefined;
-        };
-          // Handle positioning of the toggle
-      window.addEventListener(
-        "resize",
-        throttle(() => {
-          elRect = undefined;
-          if (selectedAnnoteEl) {
-            selectCodeLines(selectedAnnoteEl);
-          }
-        }, 10)
-      );
-      function throttle(fn, ms) {
-      let throttle = false;
-      let timer;
-        return (...args) => {
-          if(!throttle) { // first call gets through
-              fn.apply(this, args);
-              throttle = true;
-          } else { // all the others get throttled
-              if(timer) clearTimeout(timer); // cancel #2
-              timer = setTimeout(() => {
-                fn.apply(this, args);
-                timer = throttle = false;
-              }, ms);
-          }
-        };
-      }
-        // Attach click handler to the DT
-        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
-        for (const annoteDlNode of annoteDls) {
-          annoteDlNode.addEventListener('click', (event) => {
-            const clickedEl = event.target;
-            if (clickedEl !== selectedAnnoteEl) {
-              unselectCodeLines();
-              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
-              if (activeEl) {
-                activeEl.classList.remove('code-annotation-active');
-              }
-              selectCodeLines(clickedEl);
-              clickedEl.classList.add('code-annotation-active');
-            } else {
-              // Unselect the line
-              unselectCodeLines();
-              clickedEl.classList.remove('code-annotation-active');
-            }
-          });
-        }
-    const findCites = (el) => {
-      const parentEl = el.parentElement;
-      if (parentEl) {
-        const cites = parentEl.dataset.cites;
-        if (cites) {
-          return {
-            el,
-            cites: cites.split(' ')
-          };
-        } else {
-          return findCites(el.parentElement)
-        }
       } else {
-        return undefined;
-      }
-    };
-    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
-    for (var i=0; i<bibliorefs.length; i++) {
-      const ref = bibliorefs[i];
-      const citeInfo = findCites(ref);
-      if (citeInfo) {
-        tippyHover(citeInfo.el, function() {
-          var popup = window.document.createElement('div');
-          citeInfo.cites.forEach(function(cite) {
-            var citeDiv = window.document.createElement('div');
-            citeDiv.classList.add('hanging-indent');
-            citeDiv.classList.add('csl-entry');
-            var biblioDiv = window.document.getElementById('ref-' + cite);
-            if (biblioDiv) {
-              citeDiv.innerHTML = biblioDiv.innerHTML;
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
             }
-            popup.appendChild(citeDiv);
-          });
-          return popup.innerHTML;
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
         });
       }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
     }
-  });
-  </script>
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
       <a href="../stan-users-guide/clustering.html" class="pagination-link" aria-label="Clustering Models">
@@ -1925,68 +1909,14 @@ Zhang, Hao. 2004. <span>“Inconsistent Estimation and Asymptotically Equal Inte
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../stan-users-guide/copulas.html" class="pagination-link" aria-label="Copulas">
-        <span class="nav-page-text">Copulas</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../stan-users-guide/hyperspherical-models.html" class="pagination-link" aria-label="Directions, Rotations, and Hyperspheres">
+        <span class="nav-page-text">Directions, Rotations, and Hyperspheres</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
 </div> <!-- /content -->
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/stan-users-guide/gaussian-processes.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script>
-
-// Workaround for Safari not scrolling to URL fragment identifiers
-
-// on fresh page loads. Uses MutationObserver to wait for Quarto's
-
-// post-load DOM rendering (sidebar, TOC, MathJax) to settle before
-
-// scrolling. Scrolls as soon as DOM changes stop for 80ms.
-
-window.addEventListener('load', function () {
-
-  if (!window.location.hash) return;
-
-  var el = document.querySelector(window.location.hash);
-
-  if (!el) return;
-
-
-
-  var timer;
-
-  var observer = new MutationObserver(function () {
-
-    clearTimeout(timer);
-
-    timer = setTimeout(function () {
-
-      observer.disconnect();
-
-      el.scrollIntoView();
-
-    }, 80);
-
-  });
-
-
-
-  observer.observe(document.body, { childList: true, subtree: true });
-
-
-
-  timer = setTimeout(function () {
-
-    observer.disconnect();
-
-    el.scrollIntoView();
-
-  }, 80);
-
-});
-
-</script>
 
 
 
 
-
-</body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/stan-users-guide/gaussian-processes.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

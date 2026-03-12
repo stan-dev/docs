@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
-
+<link rel="canonical" href="https://mc-stan.org/docs/stan-users-guide/time-series.html" />
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.27">
+<meta name="generator" content="quarto-1.5.53">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -21,9 +21,8 @@ ul.task-list li input[type="checkbox"] {
   vertical-align: middle;
 }
 /* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -34,7 +33,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -88,34 +87,29 @@ div.csl-indent {
 <link href="../stan-users-guide/missing-data.html" rel="next">
 <link href="../stan-users-guide/regression.html" rel="prev">
 <link href="../img/logo_tm.png" rel="icon" type="image/png">
-<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../site_libs/quarto-html/quarto.js"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-795e9e8eca1e12b12abcb09a27409631.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-aa0bfeffdde32bb1c7607de7a91446fc.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-795e9e8eca1e12b12abcb09a27409631.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-3134f8de810eb96dee077d404116d0e0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-690a32f078b374cbcfc3ffbbe39893ce.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-3134f8de810eb96dee077d404116d0e0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
   "panel-placement": "end",
   "type": "overlay",
-  "limit": 50,
+  "limit": 200,
   "keyboard-shortcut": [
     "f",
     "/",
     "s"
   ],
-  "show-item-context": false,
   "language": {
     "search-no-results-text": "No results",
     "search-matching-documents-text": "matching documents",
@@ -145,7 +139,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+      if (mathElements[i].tagName == "SPAN") {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -161,185 +155,18 @@ window.Quarto = {
 };
 </script>
 
-<link rel="stylesheet" href="../quarto-config/quarto_styles.css">
-<meta property="og:title" content="Time-Series Models">
-<meta property="og:description" content="">
-<meta property="og:image" content="img/logo_tm.png">
-<meta property="og:site_name" content="Stan Docs">
+<link rel="stylesheet" href="../theming/quarto_styles.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
-    const toggleBodyColorMode = (bsSheetEl) => {
-      const mode = bsSheetEl.getAttribute("data-mode");
-      const bodyEl = window.document.querySelector("body");
-      if (mode === "dark") {
-        bodyEl.classList.add("quarto-dark");
-        bodyEl.classList.remove("quarto-light");
-      } else {
-        bodyEl.classList.add("quarto-light");
-        bodyEl.classList.remove("quarto-dark");
-      }
-    }
-    const toggleBodyColorPrimary = () => {
-      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
-      if (bsSheetEl) {
-        toggleBodyColorMode(bsSheetEl);
-      }
-    }
-    const setColorSchemeToggle = (alternate) => {
-      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
-      for (let i=0; i < toggles.length; i++) {
-        const toggle = toggles[i];
-        if (toggle) {
-          if (alternate) {
-            toggle.classList.add("alternate");
-          } else {
-            toggle.classList.remove("alternate");
-          }
-        }
-      }
-    };
-    const toggleColorMode = (alternate) => {
-      // Switch the stylesheets
-      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
-      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
-      manageTransitions('#quarto-margin-sidebar .nav-link', false);
-      if (alternate) {
-        // note: dark is layered on light, we don't disable primary!
-        enableStylesheet(alternateStylesheets);
-        for (const sheetNode of alternateStylesheets) {
-          if (sheetNode.id === "quarto-bootstrap") {
-            toggleBodyColorMode(sheetNode);
-          }
-        }
-      } else {
-        disableStylesheet(alternateStylesheets);
-        enableStylesheet(primaryStylesheets)
-        toggleBodyColorPrimary();
-      }
-      manageTransitions('#quarto-margin-sidebar .nav-link', true);
-      // Switch the toggles
-      setColorSchemeToggle(alternate)
-      // Hack to workaround the fact that safari doesn't
-      // properly recolor the scrollbar when toggling (#1455)
-      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
-        manageTransitions("body", false);
-        window.scrollTo(0, 1);
-        setTimeout(() => {
-          window.scrollTo(0, 0);
-          manageTransitions("body", true);
-        }, 40);
-      }
-    }
-    const disableStylesheet = (stylesheets) => {
-      for (let i=0; i < stylesheets.length; i++) {
-        const stylesheet = stylesheets[i];
-        stylesheet.rel = 'disabled-stylesheet';
-      }
-    }
-    const enableStylesheet = (stylesheets) => {
-      for (let i=0; i < stylesheets.length; i++) {
-        const stylesheet = stylesheets[i];
-        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
-          stylesheet.rel = 'stylesheet';
-        }
-      }
-    }
-    const manageTransitions = (selector, allowTransitions) => {
-      const els = window.document.querySelectorAll(selector);
-      for (let i=0; i < els.length; i++) {
-        const el = els[i];
-        if (allowTransitions) {
-          el.classList.remove('notransition');
-        } else {
-          el.classList.add('notransition');
-        }
-      }
-    }
-    const isFileUrl = () => {
-      return window.location.protocol === 'file:';
-    }
-    const hasAlternateSentinel = () => {
-      let styleSentinel = getColorSchemeSentinel();
-      if (styleSentinel !== null) {
-        return styleSentinel === "alternate";
-      } else {
-        return false;
-      }
-    }
-    const setStyleSentinel = (alternate) => {
-      const value = alternate ? "alternate" : "default";
-      if (!isFileUrl()) {
-        window.localStorage.setItem("quarto-color-scheme", value);
-      } else {
-        localAlternateSentinel = value;
-      }
-    }
-    const getColorSchemeSentinel = () => {
-      if (!isFileUrl()) {
-        const storageValue = window.localStorage.getItem("quarto-color-scheme");
-        return storageValue != null ? storageValue : localAlternateSentinel;
-      } else {
-        return localAlternateSentinel;
-      }
-    }
-    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
-      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
-      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
-      let newTheme = '';
-      if(authorPrefersDark) {
-        newTheme = isAlternate ? baseTheme : alternateTheme;
-      } else {
-        newTheme = isAlternate ? alternateTheme : baseTheme;
-      }
-      const changeGiscusTheme = () => {
-        // From: https://github.com/giscus/giscus/issues/336
-        const sendMessage = (message) => {
-          const iframe = document.querySelector('iframe.giscus-frame');
-          if (!iframe) return;
-          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
-        }
-        sendMessage({
-          setConfig: {
-            theme: newTheme
-          }
-        });
-      }
-      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
-      if (isGiscussLoaded) {
-        changeGiscusTheme();
-      }
-    };
-    const authorPrefersDark = false;
-    const darkModeDefault = authorPrefersDark;
-      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
-      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
-    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
-    // Dark / light mode switch
-    window.quartoToggleColorScheme = () => {
-      // Read the current dark / light value
-      let toAlternate = !hasAlternateSentinel();
-      toggleColorMode(toAlternate);
-      setStyleSentinel(toAlternate);
-      toggleGiscusIfUsed(toAlternate, darkModeDefault);
-      window.dispatchEvent(new Event('resize'));
-    };
-    // Switch to dark mode if need be
-    if (hasAlternateSentinel()) {
-      toggleColorMode(true);
-    } else {
-      toggleColorMode(false);
-    }
-  </script>
+<body class="nav-sidebar floating nav-fixed">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a href="https://mc-stan.org/" class="navbar-brand navbar-brand-logo">
-    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo light-content">
-    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo dark-content">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -350,7 +177,7 @@ window.Quarto = {
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
     <a class="nav-link" href="../index.html"> 
-<span class="menu-text">Documentation</span></a>
+<span class="menu-text">Overview</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link active" href="../stan-users-guide/index.html" aria-current="page"> 
@@ -374,23 +201,23 @@ window.Quarto = {
  <span class="dropdown-text">CmdStan</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy">
  <span class="dropdown-text">CmdStanPy</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr">
  <span class="dropdown-text">CmdStanR</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://pystan.readthedocs.io/en/latest/" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/users/interfaces/pystan.html">
  <span class="dropdown-text">PyStan</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/rstan" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/rstan">
  <span class="dropdown-text">RStan</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/" target="_blank">
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/">
  <span class="dropdown-text">Stan.jl</span></a>
   </li>  
     </ul>
@@ -401,39 +228,39 @@ window.Quarto = {
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/">
  <span class="dropdown-text">bayesplot</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/" target="_blank">
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/">
  <span class="dropdown-text">BridgeStan</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/" target="_blank">
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/">
  <span class="dropdown-text">brms</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/loo/" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/loo/">
  <span class="dropdown-text">loo</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/posterior" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/posterior">
  <span class="dropdown-text">posterior</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/projpred" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/projpred">
  <span class="dropdown-text">projpred</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/rstanarm" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm">
  <span class="dropdown-text">rstanarm</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/rstantools" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/rstantools">
  <span class="dropdown-text">rstantools</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://mc-stan.org/shinystan" target="_blank">
+    <a class="dropdown-item" href="https://mc-stan.org/shinystan">
  <span class="dropdown-text">shinystan</span></a>
   </li>  
     </ul>
@@ -546,12 +373,6 @@ window.Quarto = {
   <div class="sidebar-item-container"> 
   <a href="../stan-users-guide/gaussian-processes.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Gaussian Processes</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../stan-users-guide/copulas.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Copulas</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -720,12 +541,6 @@ window.Quarto = {
  <span class="menu-text">The Bootstrap and Bagging</span></a>
   </div>
 </li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../stan-users-guide/multiple-imputation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Multiple imputation</span></a>
-  </div>
-</li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
@@ -791,14 +606,25 @@ window.Quarto = {
   <li><a href="#identifiability-and-stationarity" id="toc-identifiability-and-stationarity" class="nav-link" data-scroll-target="#identifiability-and-stationarity">Identifiability and stationarity</a></li>
   </ul></li>
   <li><a href="#stochastic-volatility-models" id="toc-stochastic-volatility-models" class="nav-link" data-scroll-target="#stochastic-volatility-models">Stochastic volatility models</a></li>
-  <li><a href="#hmms.section" id="toc-hmms.section" class="nav-link" data-scroll-target="#hmms.section">Hidden Markov models</a></li>
+  <li><a href="#hmms.section" id="toc-hmms.section" class="nav-link" data-scroll-target="#hmms.section">Hidden Markov models</a>
+  <ul class="collapse">
+  <li><a href="#supervised-parameter-estimation" id="toc-supervised-parameter-estimation" class="nav-link" data-scroll-target="#supervised-parameter-estimation">Supervised parameter estimation</a></li>
+  <li><a href="#start-state-and-end-state-probabilities" id="toc-start-state-and-end-state-probabilities" class="nav-link" data-scroll-target="#start-state-and-end-state-probabilities">Start-state and end-state probabilities</a></li>
+  <li><a href="#calculating-sufficient-statistics" id="toc-calculating-sufficient-statistics" class="nav-link" data-scroll-target="#calculating-sufficient-statistics">Calculating sufficient statistics</a></li>
+  <li><a href="#analytic-posterior" id="toc-analytic-posterior" class="nav-link" data-scroll-target="#analytic-posterior">Analytic posterior</a></li>
+  <li><a href="#semisupervised-estimation" id="toc-semisupervised-estimation" class="nav-link" data-scroll-target="#semisupervised-estimation">Semisupervised estimation</a></li>
+  <li><a href="#predictive-inference" id="toc-predictive-inference" class="nav-link" data-scroll-target="#predictive-inference">Predictive inference</a></li>
+  </ul></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/stan-users-guide/time-series.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../stan-users-guide/regression.html">Example Models</a></li><li class="breadcrumb-item"><a href="../stan-users-guide/time-series.html">Time-Series Models</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content">
 
+<div>
+This is an old version, <a href="https://mc-stan.org/docs/stan-users-guide/time-series.html">view current version</a>.
+</div>
 
 
 
@@ -816,7 +642,7 @@ y_n \sim \textsf{normal}(\alpha + \beta y_{n-1}, \sigma).
 <section id="ar1-models" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="ar1-models">AR(1) models</h3>
 <p>With improper flat priors on the regression coefficients <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> and on the positively-constrained noise scale (<span class="math inline">\(\sigma\)</span>), the Stan program for the AR(1) model is as follows.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; N;</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] y;</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>}</span>
@@ -829,14 +655,14 @@ y_n \sim \textsf{normal}(\alpha + \beta y_{n-1}, \sigma).
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">2</span>:N) {</span>
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    y[n] ~ normal(alpha + beta * y[n<span class="dv">-1</span>], sigma);</span>
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The first observed data point, <code>y[1]</code>, is not modeled here because there is nothing to condition on; instead, it acts to condition <code>y[2]</code>. This model also uses an improper prior for <code>sigma</code>, but there is no obstacle to adding an informative prior if information is available on the scale of the changes in <code>y</code> over time, or a weakly informative prior to help guide inference if rough knowledge of the scale of <code>y</code> is available.</p>
 <section id="slicing-for-efficiency" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="slicing-for-efficiency">Slicing for efficiency</h4>
 <p>Although perhaps a bit more difficult to read, a much more efficient way to write the above model is by slicing the vectors, with the model above being replaced with the one-liner</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<div class="sourceCode" id="cb2"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  y[<span class="dv">2</span>:N] ~ normal(alpha + beta * y[<span class="dv">1</span>:(N - <span class="dv">1</span>)], sigma);</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The left-hand side slicing operation pulls out the last <span class="math inline">\(N-1\)</span> elements and the right-hand side version pulls out the first <span class="math inline">\(N-1\)</span>.</p>
 </section>
 </section>
@@ -844,20 +670,20 @@ y_n \sim \textsf{normal}(\alpha + \beta y_{n-1}, \sigma).
 <h3 class="unnumbered anchored" data-anchor-id="extensions-to-the-ar1-model">Extensions to the AR(1) model</h3>
 <p>Proper priors of a range of different families may be added for the regression coefficients and noise scale. The normal noise model can be changed to a Student-<span class="math inline">\(t\)</span> distribution or any other distribution with unbounded support. The model could also be made hierarchical if multiple series of observations are available.</p>
 <p>To enforce the estimation of a stationary AR(1) process, the slope coefficient <code>beta</code> may be constrained with bounds as follows.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span>&lt;<span class="kw">lower</span>=-<span class="dv">1</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; beta;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span>&lt;<span class="kw">lower</span>=-<span class="dv">1</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; beta;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>In practice, such a constraint is not recommended. If the data are not well fit by a stationary model it is best to know this. Stationary parameter estimates can be encouraged with a prior favoring values of <code>beta</code> near zero.</p>
 </section>
 <section id="ar2-models" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="ar2-models">AR(2) models</h3>
 <p>Extending the order of the model is also straightforward. For example, an AR(2) model could be coded with the second-order coefficient <code>gamma</code> and the following model statement.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">3</span>:N) {</span>
+<div class="sourceCode" id="cb4"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">3</span>:N) {</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  y[n] ~ normal(alpha + beta*y[n<span class="dv">-1</span>] + gamma*y[n<span class="dv">-2</span>], sigma);</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="ark-models" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="ark-models">AR(<span class="math inline">\(K\)</span>) models</h3>
 <p>A general model where the order is itself given as data can be coded by putting the coefficients in an array and computing the linear predictor in a loop.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; K;</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; N;</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">real</span> y;</span>
@@ -875,7 +701,7 @@ y_n \sim \textsf{normal}(\alpha + \beta y_{n-1}, \sigma).
 <span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    y[n] ~ normal(mu, sigma);</span>
 <span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="arch1-models" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="arch1-models">ARCH(1) models</h3>
@@ -890,7 +716,7 @@ a_t        &amp;=  \sigma_t \epsilon_t \\
 <p>In order to ensure the noise terms <span class="math inline">\(\sigma^2_t\)</span> are positive, the scale coefficients are constrained to be positive, <span class="math inline">\(\alpha_0, \alpha_1
 &gt; 0\)</span>. To ensure stationarity of the time series, the slope is constrained to be less than one, i.e., <span class="math inline">\(\alpha_1 &lt; 1\)</span>.<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
 <p>The ARCH(1) model may be coded directly in Stan as follows.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; T;                <span class="co">// number of time points</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[T] <span class="dt">real</span> r;               <span class="co">// return at time t</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>}</span>
@@ -904,7 +730,7 @@ a_t        &amp;=  \sigma_t \epsilon_t \\
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    r[t] ~ normal(mu, sqrt(alpha0 + alpha1</span>
 <span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                                    * pow(r[t - <span class="dv">1</span>] - mu,<span class="dv">2</span>)));</span>
 <span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The loop in the model is defined so that the return at time <span class="math inline">\(t=1\)</span> is not modeled; the model in the next section shows how to model the return at <span class="math inline">\(t=1\)</span>. The model can be vectorized to be more efficient; the model in the next section provides an example.</p>
 </section>
 </section>
@@ -918,7 +744,7 @@ a_t        &amp;=  \sigma_t \epsilon_t \\
 \]</span></p>
 <p>To ensure the scale term is positive and the resulting time series stationary, the coefficients must all satisfy <span class="math inline">\(\alpha_0, \alpha_1,
 \beta_1 &gt; 0\)</span> and the slopes <span class="math inline">\(\alpha_1 + \beta_1 &lt; 1\)</span>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb7"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; T;</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[T] <span class="dt">real</span> r;</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma1;</span>
@@ -940,7 +766,7 @@ a_t        &amp;=  \sigma_t \epsilon_t \\
 <span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
 <span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  r ~ normal(mu, sigma);</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>To get the recursive definition of the volatility regression off the ground, the data declaration includes a non-negative value <code>sigma1</code> for the scale of the noise at <span class="math inline">\(t = 1\)</span>.</p>
 <p>The constraints are coded directly on the parameter declarations. This declaration is order-specific in that the constraint on <code>beta1</code> depends on the value of <code>alpha1</code>.</p>
 <p>A transformed parameter array of non-negative values <code>sigma</code> is used to store the scale values at each time point. The definition of these values in the transformed parameters block is where the regression is now defined. There is an intercept <code>alpha0</code>, a slope <code>alpha1</code> for the squared difference in return from the mean at the previous time, and a slope <code>beta1</code> for the previous noise scale squared. Finally, the whole regression is inside the <code>sqrt</code> function because Stan requires scale (deviation) parameters (not variance parameters) for the normal distribution.</p>
@@ -958,7 +784,7 @@ y_t = \mu + \theta_1 \epsilon_{t-1} + \dotsb + \theta_Q \epsilon_{t-Q}
 <section id="ma2-example" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="ma2-example">MA(2) example</h3>
 <p>An <span class="math inline">\(\mbox{MA}(2)\)</span> model can be coded in Stan as follows.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb8"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">3</span>&gt; T;          <span class="co">// number of observations</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[T] y;             <span class="co">// observation at time T</span></span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>}</span>
@@ -987,14 +813,14 @@ y_t = \mu + \theta_1 \epsilon_{t-1} + \dotsb + \theta_Q \epsilon_{t-Q}
 <span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>                  + theta[<span class="dv">2</span>] * epsilon[t - <span class="dv">2</span>],</span>
 <span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>                  sigma);</span>
 <span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The error terms <span class="math inline">\(\epsilon_t\)</span> are defined as transformed parameters in terms of the observations and parameters. The definition of the distribution statement (which also defines the likelihood) follows the definition, which can only be applied to <span class="math inline">\(y_n\)</span> for <span class="math inline">\(n &gt; Q\)</span>. In this example, the parameters are all given Cauchy (half-Cauchy for <span class="math inline">\(\sigma\)</span>) priors, although other priors can be used just as easily.</p>
 <p>This model could be improved in terms of speed by vectorizing the distribution statement in the model block. Vectorizing the calculation of the <span class="math inline">\(\epsilon_t\)</span> could also be sped up by using a dot product instead of a loop.</p>
 </section>
 <section id="vectorized-maq-model" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="vectorized-maq-model">Vectorized MA(Q) model</h3>
 <p>A general <span class="math inline">\(\mbox{MA}(Q)\)</span> model with a vectorized distribution statement may be defined as follows.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb9"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; Q;       <span class="co">// num previous noise terms</span></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">3</span>&gt; T;       <span class="co">// num observations</span></span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[T] y;          <span class="co">// observation at time t</span></span>
@@ -1025,14 +851,14 @@ y_t = \mu + \theta_1 \epsilon_{t-1} + \dotsb + \theta_Q \epsilon_{t-Q}
 <span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  }</span>
 <span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>  y ~ normal(eta, sigma);</span>
-<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Here all of the data are modeled, with missing terms just dropped from the regressions as in the calculation of the error terms. Both models converge quickly and mix well at convergence, with the vectorized model being faster (per iteration, not to converge—they compute the same model).</p>
 </section>
 </section>
 <section id="autoregressive-moving-average-models" class="level2">
 <h2 class="anchored" data-anchor-id="autoregressive-moving-average-models">Autoregressive moving average models</h2>
 <p>Autoregressive moving-average models (ARMA), combine the predictors of the autoregressive model and the moving average model. An ARMA(1,1) model, with a single state of history, can be encoded in Stan as follows.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb10"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; T;            <span class="co">// num observations</span></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[T] <span class="dt">real</span> y;                 <span class="co">// observed outputs</span></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>}</span>
@@ -1056,13 +882,13 @@ y_t = \mu + \theta_1 \epsilon_{t-1} + \dotsb + \theta_Q \epsilon_{t-Q}
 <span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>  theta ~ normal(<span class="dv">0</span>, <span class="dv">2</span>);</span>
 <span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>  sigma ~ cauchy(<span class="dv">0</span>, <span class="dv">5</span>);</span>
 <span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>  err ~ normal(<span class="dv">0</span>, sigma);    <span class="co">// error model</span></span>
-<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The data are declared in the same way as the other time-series regressions and the parameters are documented in the code.</p>
 <p>In the model block, the local vector <code>nu</code> stores the predictions and <code>err</code> the errors. These are computed similarly to the errors in the moving average models described in the previous section.</p>
 <p>The priors are weakly informative for stationary processes. The data model only involves the error term, which is efficiently vectorized here.</p>
 <p>Often in models such as these, it is desirable to inspect the calculated error terms. This could easily be accomplished in Stan by declaring <code>err</code> as a transformed parameter, then defining it the same way as in the model above. The vector <code>nu</code> could still be a local variable, only now it will be in the transformed parameter block.</p>
 <p>Wayne Folta suggested encoding the model without local vector variables as follows.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<div class="sourceCode" id="cb11"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> err;</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  mu ~ normal(<span class="dv">0</span>, <span class="dv">10</span>);</span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  phi ~ normal(<span class="dv">0</span>, <span class="dv">2</span>);</span>
@@ -1074,16 +900,16 @@ y_t = \mu + \theta_1 \epsilon_{t-1} + \dotsb + \theta_Q \epsilon_{t-Q}
 <span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    err = y[t] - (mu + phi * y[t - <span class="dv">1</span>] + theta * err);</span>
 <span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    err ~ normal(<span class="dv">0</span>, sigma);</span>
 <span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>This approach to ARMA models illustrates how local variables, such as <code>err</code> in this case, can be reused in Stan. Folta’s approach could be extended to higher order moving-average models by storing more than one error term as a local variable and reassigning them in the loop.</p>
 <p>Both encodings are fast. The original encoding has the advantage of vectorizing the normal distribution, but it uses a bit more memory. A halfway point would be to vectorize just <code>err</code>.</p>
 <section id="identifiability-and-stationarity" class="level3 unnumbered">
 <h3 class="unnumbered anchored" data-anchor-id="identifiability-and-stationarity">Identifiability and stationarity</h3>
 <p>MA and ARMA models are not identifiable if the roots of the characteristic polynomial for the MA part lie inside the unit circle, so it’s necessary to add the following constraint<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span>&lt;<span class="kw">lower</span>=-<span class="dv">1</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; theta;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span>&lt;<span class="kw">lower</span>=-<span class="dv">1</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; theta;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>When the model is run without the constraint, using synthetic data generated from the model, the simulation can sometimes find modes for (<code>theta</code>, <code>phi</code>) outside the <span class="math inline">\([-1,1]\)</span> interval, which creates a multiple mode problem in the posterior and also causes the NUTS tree depth to get large (often above 10). Adding the constraint both improves the accuracy of the posterior and dramatically reduces the tree depth, which speeds up the simulation considerably (typically by much more than an order of magnitude).</p>
 <p>Further, unless one thinks that the process is really non-stationary, it’s worth adding the following constraint to ensure stationarity.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span>&lt;<span class="kw">lower</span>=-<span class="dv">1</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; phi;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="dt">real</span>&lt;<span class="kw">lower</span>=-<span class="dv">1</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; phi;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 </section>
 <section id="stochastic-volatility-models" class="level2">
@@ -1100,7 +926,7 @@ y_t \sim \textsf{normal}(0,\exp(h_t/2)).
 \]</span> The recurrence equation for <span class="math inline">\(h_{t+1}\)</span> may be combined with the scaling of <span class="math inline">\(\delta_t\)</span> to yield the distribution <span class="math display">\[
 h_t \sim \mathsf{normal}(\mu + \phi(h_{t-1} - \mu), \sigma).
 \]</span> This formulation can be directly encoded, as shown in the following Stan model.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<div class="sourceCode" id="cb14"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; T;   <span class="co">// # time points (equally spaced)</span></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[T] y;      <span class="co">// mean corrected return at time t</span></span>
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>}</span>
@@ -1121,107 +947,225 @@ h_t \sim \mathsf{normal}(\mu + \phi(h_{t-1} - \mu), \sigma).
 <span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span>:T) {</span>
 <span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    y[t] ~ normal(<span class="dv">0</span>, exp(h[t] / <span class="dv">2</span>));</span>
 <span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Compared to the Kim et al.&nbsp;formulation, the Stan model adds priors for the parameters <span class="math inline">\(\phi\)</span>, <span class="math inline">\(\sigma\)</span>, and <span class="math inline">\(\mu\)</span>. The shock terms <span class="math inline">\(\epsilon_t\)</span> and <span class="math inline">\(\delta_t\)</span> do not appear explicitly in the model, although they could be calculated efficiently in a generated quantities block.</p>
 <p>The posterior of a stochastic volatility model such as this one typically has high posterior variance. For example, simulating 500 data points from the above model with <span class="math inline">\(\mu = -1.02\)</span>, <span class="math inline">\(\phi = 0.95\)</span>, and <span class="math inline">\(\sigma = 0.25\)</span> leads to 95% posterior intervals for <span class="math inline">\(\mu\)</span> of <span class="math inline">\((-1.23, -0.54)\)</span>, for <span class="math inline">\(\phi\)</span> of <span class="math inline">\((0.82, 0.98)\)</span>, and for <span class="math inline">\(\sigma\)</span> of <span class="math inline">\((0.16, 0.38)\)</span>.</p>
-<p>The NUTS draws show a high degree of autocorrelation, both for this model and the stochastic volatility model evaluated in <span class="citation" data-cites="Hoffman-Gelman:2014">(<a href="#ref-Hoffman-Gelman:2014" role="doc-biblioref">Hoffman and Gelman 2014</a>)</span>. Using a non-diagonal mass matrix provides faster convergence and higher effective sample size than a diagonal mass matrix, but will not scale to large values of <span class="math inline">\(T\)</span>.</p>
-<p>It is relatively straightforward to speed up the effective sample size per second generated by this model by one or more orders of magnitude. First, the distribution statements for return <span class="math inline">\(y\)</span> is easily vectorized to</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>y ~ normal(<span class="dv">0</span>, exp(h / <span class="dv">2</span>));</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The samples using NUTS show a high degree of autocorrelation among the samples, both for this model and the stochastic volatility model evaluated in <span class="citation" data-cites="Hoffman-Gelman:2014">(<a href="#ref-Hoffman-Gelman:2014" role="doc-biblioref">Hoffman and Gelman 2014</a>)</span>. Using a non-diagonal mass matrix provides faster convergence and more effective samples than a diagonal mass matrix, but will not scale to large values of <span class="math inline">\(T\)</span>.</p>
+<p>It is relatively straightforward to speed up the effective samples per second generated by this model by one or more orders of magnitude. First, the distribution statements for return <span class="math inline">\(y\)</span> is easily vectorized to</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>y ~ normal(<span class="dv">0</span>, exp(h / <span class="dv">2</span>));</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>This speeds up the iterations, but does not change the effective sample size because the underlying parameterization and log probability function have not changed. Mixing is improved by reparameterizing in terms of a standardized volatility, then rescaling. This requires a standardized parameter <code>h_std</code> to be declared instead of <code>h</code>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
+<div class="sourceCode" id="cb16"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[T] h_std;  <span class="co">// std log volatility time t</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The original value of <code>h</code> is then defined in a transformed parameter block.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed parameters</span> {</span>
+<div class="sourceCode" id="cb17"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed parameters</span> {</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[T] h = h_std * sigma;  <span class="co">// now h ~ normal(0, sigma)</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  h[<span class="dv">1</span>] /= sqrt(<span class="dv">1</span> - phi * phi);  <span class="co">// rescale h[1]</span></span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  h += mu;</span>
 <span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">2</span>:T) {</span>
 <span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    h[t] += phi * (h[t - <span class="dv">1</span>] - mu);</span>
 <span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>The first assignment rescales <code>h_std</code> to have a <span class="math inline">\(\textsf{normal}(0,\sigma)\)</span> distribution and temporarily assigns it to <code>h</code>. The second assignment rescales <code>h[1]</code> so that its prior differs from that of <code>h[2]</code> through <code>h[T]</code>. The next assignment supplies a <code>mu</code> offset, so that <code>h[2]</code> through <code>h[T]</code> are now distributed <span class="math inline">\(\textsf{normal}(\mu,\sigma)\)</span>; note that this shift must be done after the rescaling of <code>h[1]</code>. The final loop adds in the moving average so that <code>h[2]</code> through <code>h[T]</code> are appropriately modeled relative to <code>phi</code> and <code>mu</code>.</p>
 <p>As a final improvement, the distribution statements for <code>h[1]</code> to <code>h[T]</code> are replaced with a single vectorized standard normal distribution statement.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<div class="sourceCode" id="cb18"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  h_std ~ std_normal();</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Although the original model can take hundreds and sometimes thousands of iterations to converge, the reparameterized model reliably converges in tens of iterations. Mixing is also dramatically improved, which results in higher effective sample sizes per iteration. Finally, each iteration runs in roughly a quarter of the time of the original iterations.</p>
 </section>
 <section id="hmms.section" class="level2">
 <h2 class="anchored" data-anchor-id="hmms.section">Hidden Markov models</h2>
-<p>A Hidden Markov model is a probabilistic model over <span class="math inline">\(N\)</span> observations <span class="math inline">\(y_{1:N}\)</span> and <span class="math inline">\(N\)</span> hidden states <span class="math inline">\(z_{1:N}\)</span>. This models is defined by the conditional distributions <span class="math inline">\(p(y_n \mid z_n, \phi)\)</span> and <span class="math inline">\(p(z_n \mid z_{n-1}, \phi)\)</span>. Here we make the dependency on additional model parameters <span class="math inline">\(\phi\)</span> explicit. (<span class="math inline">\(\phi\)</span> may be a vector of parameters.) The complete data likelihood is then <span class="math display">\[
-p(y, z \mid \phi) = \prod_n p(y_n \mid z_n, \phi) p(z_n \mid z_{n - 1}, \phi)
-\]</span> When <span class="math inline">\(z_{1:N}\)</span> is continuous, the user can explicitly encode these distributions in Stan and use Markov chain Monte Carlo to integrate <span class="math inline">\(z\)</span> out.</p>
-<p>When each state <span class="math inline">\(z\)</span> takes a value over a discrete and finite set, say <span class="math inline">\(\{1, 2, ..., K\}\)</span>, we can use Stan’s suite of HMM functions to marginalize out <span class="math inline">\(z_{1:N}\)</span> and compute <span class="math display">\[
-p(y_{1:N} \mid \phi) = \int_{\mathcal Z} p(y, z \mid \phi) \text d z.
-\]</span> We start by defining the conditional observation distribution, stored in a <span class="math inline">\(K \times N\)</span> matrix <span class="math inline">\(\omega\)</span> with <span class="math display">\[
-\omega_{kn} = p(y_n \mid z_n = k, \phi).
-\]</span> Next, we introduce the <span class="math inline">\(K \times K\)</span> transition matrix, <span class="math inline">\(\Gamma\)</span>, with <span class="math display">\[
-\Gamma_{ij} = p(z_n = j \mid z_{n - 1} = i, \phi).
-\]</span> (This is a right-stochastic matrix.) Finally, we define the initial state <span class="math inline">\(K\)</span>-vector <span class="math inline">\(\rho\)</span>, with <span class="math display">\[
-\rho_k = p(z_0 = k \mid \phi).
-\]</span> It is common practice to set <span class="math inline">\(\rho\)</span> to be the stationary distribution of the HMM, that is <span class="math inline">\(\rho\)</span> is the first eigenvector of <span class="math inline">\(\Gamma\)</span> and solves <span class="math inline">\(\Gamma \rho = \rho\)</span>.</p>
-<p>As an example, consider a three-state model with <span class="math inline">\(K=3\)</span>. The observations are normally distributed conditional on the HMM states with <span class="math display">\[
-  y_n \sim \text{normal}(\mu_k, \sigma),
-\]</span> where <span class="math inline">\(\mu = (1, 5, 9)\)</span> and the standard deviation <span class="math inline">\(\sigma\)</span> is the same across all observations. The model is then</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> N;  <span class="co">// Number of observations</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">real</span> y;</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Rows of the transition matrix</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[<span class="dv">3</span>] <span class="dt">simplex</span>[<span class="dv">3</span>] gamma_arr;</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Initial state</span></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">simplex</span>[<span class="dv">3</span>] rho;</span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Parameters of measurement model</span></span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[<span class="dv">3</span>] mu;</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span> = <span class="fl">0.0</span>&gt; sigma;</span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed parameters</span> {</span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Build transition matrix</span></span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[<span class="dv">3</span>, <span class="dv">3</span>] gamma;</span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:<span class="dv">3</span>) gamma[k, ] = to_row_vector(gamma_arr[k]);</span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Compute the log likelihoods in each possible state</span></span>
-<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[<span class="dv">3</span>, N] log_omega;</span>
-<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
-<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span>:<span class="dv">3</span>) {</span>
-<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>      log_omega[i, n] = normal_lpdf(y[n] | mu[i], sigma);</span>
-<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
-<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>  <span class="co">// prior</span></span>
-<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>  mu ~ normal(<span class="dv">0</span>, <span class="dv">1</span>);</span>
-<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>  sigma ~ normal(<span class="dv">0</span>, <span class="dv">1</span>);</span>
-<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>  <span class="co">// no explicit prior on gamma_arr, meaning we default to a</span></span>
-<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>  <span class="co">// uniform prior over the simplexes.</span></span>
-<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Increment target by log p(y | mu, sigma, Gamma, rho)</span></span>
-<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a>  <span class="kw">target +=</span> hmm_marginal(log_omega, gamma, rho);</span>
-<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The last function <code>hmm_marginal</code> takes in all the ingredients of the HMM and computes the relevant log marginal distribution, <span class="math inline">\(\log p(y \mid \phi)\)</span>.</p>
-<p>If we desire draws from the posterior distribution of <span class="math inline">\(z\)</span>, we use the generated quantities block and draw, for each sample <span class="math inline">\(\phi\)</span>, a sample from <span class="math inline">\(p(z \mid y, \phi)\)</span>. In effect, MCMC produces draws from <span class="math inline">\(p(\phi \mid y)\)</span> and with the draws in generated quantities, we obtain draws from <span class="math inline">\(p(\phi \mid y) p(z \mid y, \phi) = p(z, \phi \mid y)\)</span>. It is also possible to compute the posterior probbability of each hidden state, that is <span class="math inline">\(\text{Pr}(z_n = k \mid \phi, y)\)</span>. Averagging these probabilities over all MCMC draws, we obtain <span class="math inline">\(\text{Pr}(z_n = k \mid y)\)</span>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span> {</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">int</span> latent_states = hmm_latent_rng(log_omega, gamma, rho);</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[<span class="dv">3</span>, N] hidden_probs = hmm_hidden_state_prob(log_omega, gamma, rho);</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>hmm_hidden_state_prob</code> returns the marginal probabilities of each state, <span class="math inline">\(\text{Pr}(z_n = k \mid \phi, y)\)</span>. This function cannot be used to compute the joint probability <span class="math inline">\(\text{Pr}(z \mid \phi, y)\)</span>, because such calculation requires accounting for the posterior correlation between the different components of <span class="math inline">\(z\)</span>. Therefore, <code>hidden_probs</code> should <em>not</em> be used to obtain posterior draws. Instead, users should rely on <code>hmm_latent_rng</code>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span> {</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>   <span class="dt">array</span>[N] <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>, <span class="kw">upper</span>=K&gt; z = hmm_latent_rng(...fill-<span class="cf">in</span> params here to match example...);</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The example in this section is derived from the more detailed case study by Ben Bales: <a href="https://mc-stan.org/users/documentation/case-studies/hmm-example.html">https://mc-stan.org/users/documentation/case-studies/hmm-example.html</a>.</p>
+<p>A hidden Markov model (HMM) generates a sequence of <span class="math inline">\(T\)</span> output variables <span class="math inline">\(y_t\)</span> conditioned on a parallel sequence of latent categorical state variables <span class="math inline">\(z_t \in \{1,\ldots, K\}\)</span>. These “hidden” state variables are assumed to form a Markov chain so that <span class="math inline">\(z_t\)</span> is conditionally independent of other variables given <span class="math inline">\(z_{t-1}\)</span>. This Markov chain is parameterized by a transition matrix <span class="math inline">\(\theta\)</span> where <span class="math inline">\(\theta_k\)</span> is a <span class="math inline">\(K\)</span>-simplex for <span class="math inline">\(k \in \{ 1, \dotsc, K \}\)</span>. The probability of transitioning to state <span class="math inline">\(z_t\)</span> from state <span class="math inline">\(z_{t-1}\)</span> is <span class="math display">\[
+z_t \sim \textsf{categorical}(\theta_{z[t-1]}).
+\]</span> The output <span class="math inline">\(y_t\)</span> at time <span class="math inline">\(t\)</span> is generated conditionally independently based on the latent state <span class="math inline">\(z_t\)</span>.</p>
+<p>This section describes HMMs with a simple categorical model for outputs <span class="math inline">\(y_t \in \{ 1, \dotsc, V \}\)</span>. The categorical distribution for latent state <span class="math inline">\(k\)</span> is parameterized by a <span class="math inline">\(V\)</span>-simplex <span class="math inline">\(\phi_k\)</span>. The observed output <span class="math inline">\(y_t\)</span> at time <span class="math inline">\(t\)</span> is generated based on the hidden state indicator <span class="math inline">\(z_t\)</span> at time <span class="math inline">\(t\)</span>, <span class="math display">\[
+y_t \sim \textsf{categorical}(\phi_{z[t]}).
+\]</span> In short, HMMs form a discrete mixture model where the mixture component indicators form a latent Markov chain.</p>
+<section id="supervised-parameter-estimation" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="supervised-parameter-estimation">Supervised parameter estimation</h3>
+<p>In the situation where the hidden states are known, the following naive model can be used to fit the parameters <span class="math inline">\(\theta\)</span> and <span class="math inline">\(\phi\)</span>.</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; K;             <span class="co">// num categories</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; V;             <span class="co">// num words</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; T;             <span class="co">// num instances</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[T] <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>, <span class="kw">upper</span>=V&gt; w;  <span class="co">// words</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[T] <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>, <span class="kw">upper</span>=K&gt; z;  <span class="co">// categories</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt;[K] alpha;   <span class="co">// transit prior</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt;[V] beta;    <span class="co">// emit prior</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[K] <span class="dt">simplex</span>[K] theta;        <span class="co">// transit probs</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[K] <span class="dt">simplex</span>[V] phi;          <span class="co">// emit probs</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>    theta[k] ~ dirichlet(alpha);</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>    phi[k] ~ dirichlet(beta);</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span>:T) {</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>    w[t] ~ categorical(phi[z[t]]);</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">2</span>:T) {</span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    z[t] ~ categorical(theta[z[t - <span class="dv">1</span>]]);</span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Explicit Dirichlet priors have been provided for <span class="math inline">\(\theta_k\)</span> and <span class="math inline">\(\phi_k\)</span>; dropping these two statements would implicitly take the prior to be uniform over all valid simplexes.</p>
+</section>
+<section id="start-state-and-end-state-probabilities" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="start-state-and-end-state-probabilities">Start-state and end-state probabilities</h3>
+<p>Although workable, the above description of HMMs is incomplete because the start state <span class="math inline">\(z_1\)</span> is not modeled (the index runs from 2 to <span class="math inline">\(T\)</span>). If the data are conceived as a subsequence of a long-running process, the probability of <span class="math inline">\(z_1\)</span> should be set to the stationary state probabilities in the Markov chain. In this case, there is no distinct end to the data, so there is no need to model the probability that the sequence ends at <span class="math inline">\(z_T\)</span>.</p>
+<p>An alternative conception of HMMs is as models of finite-length sequences. For example, human language sentences have distinct starting distributions (usually a capital letter) and ending distributions (usually some kind of punctuation). The simplest way to model the sequence boundaries is to add a new latent state <span class="math inline">\(K+1\)</span>, generate the first state from a categorical distribution with parameter vector <span class="math inline">\(\theta_{K+1}\)</span>, and restrict the transitions so that a transition to state <span class="math inline">\(K+1\)</span> is forced to occur at the end of the sentence and is prohibited elsewhere.</p>
+</section>
+<section id="calculating-sufficient-statistics" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="calculating-sufficient-statistics">Calculating sufficient statistics</h3>
+<p>The naive HMM estimation model presented above can be sped up dramatically by replacing the loops over categorical distributions with a single multinomial distribution.</p>
+<p>The data are declared as before. The transformed data block computes the sufficient statistics for estimating the transition and emission matrices.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span> {</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[K, K] <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; trans;</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[K, V] <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; emit;</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k1 <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (k2 <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>      trans[k1, k2] = <span class="dv">0</span>;</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">2</span>:T) {</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>    trans[z[t - <span class="dv">1</span>], z[t]] += <span class="dv">1</span>;</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (v <span class="cf">in</span> <span class="dv">1</span>:V) {</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>      emit[k, v] = <span class="dv">0</span>;</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span>:T) {</span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    emit[z[t], w[t]] += <span class="dv">1</span>;</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The data model component based on looping over the input is replaced with multinomials as follows.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    trans[k] ~ multinomial(theta[k]);</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    emit[k] ~ multinomial(phi[k]);</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In a continuous HMM with normal emission probabilities could be sped up in the same way by computing sufficient statistics.</p>
+</section>
+<section id="analytic-posterior" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="analytic-posterior">Analytic posterior</h3>
+<p>With the Dirichlet-multinomial HMM, the posterior can be computed analytically because the Dirichlet is the conjugate prior to the multinomial. The following example illustrates how a Stan model can define the posterior analytically. This is possible in the Stan language because the model only needs to define the conditional probability of the parameters given the data up to a proportion, which can be done by defining the (unnormalized) joint probability or the (unnormalized) conditional posterior, or anything in between.</p>
+<p>The model has the same data and parameters as the previous models, but now computes the posterior Dirichlet parameters in the transformed data block.</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span> {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt;[K] alpha_post[K];</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt;[V] beta_post[K];</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    alpha_post[k] = alpha;</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">2</span>:T) {</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>    alpha_post[z[t - <span class="dv">1</span>], z[t]] += <span class="dv">1</span>;</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>    beta_post[k] = beta;</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span>:T) {</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>    beta_post[z[t], w[t]] += <span class="dv">1</span>;</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The posterior can now be written analytically as follows.</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    theta[k] ~ dirichlet(alpha_post[k]);</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    phi[k] ~ dirichlet(beta_post[k]);</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="semisupervised-estimation" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="semisupervised-estimation">Semisupervised estimation</h3>
+<p>HMMs can be estimated in a fully unsupervised fashion without any data for which latent states are known. The resulting posteriors are typically extremely multimodal. An intermediate solution is to use semisupervised estimation, which is based on a combination of supervised and unsupervised data. Implementing this estimation strategy in Stan requires calculating the probability of an output sequence with an unknown state sequence. This is a marginalization problem, and for HMMs, it is computed with the so-called forward algorithm.</p>
+<p>In Stan, the forward algorithm is coded as follows. First, two additional data variable are declared for the unsupervised data.</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; T_unsup;             <span class="co">// num unsupervised items</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[T_unsup] <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>, <span class="kw">upper</span>=V&gt; u;  <span class="co">// unsup words</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The model for the supervised data does not change; the unsupervised data are handled with the following Stan implementation of the forward algorithm.</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[K] <span class="dt">real</span> acc;</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[T_unsup, K] <span class="dt">real</span> gamma;</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    gamma[<span class="dv">1</span>, k] = log(phi[k, u[<span class="dv">1</span>]]);</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">2</span>:T_unsup) {</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>      <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>        acc[j] = gamma[t - <span class="dv">1</span>, j] + log(theta[j, k])</span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>                 + log(phi[k, u[t]]);</span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>      gamma[t, k] = log_sum_exp(acc);</span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">target +=</span> log_sum_exp(gamma[T_unsup]);</span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The forward values <code>gamma[t, k]</code> are defined to be the log marginal probability of the inputs <code>u[1],...,u[t]</code> up to time <code>t</code> and the latent state being equal to <code>k</code> at time <code>t</code>; the previous latent states are marginalized out. The first row of <code>gamma</code> is initialized by setting <code>gamma[1, k]</code> equal to the log probability of latent state <code>k</code> generating the first output <code>u[1]</code>; as before, the probability of the first latent state is not itself modeled. For each subsequent time <code>t</code> and output <code>j</code>, the value <code>acc[j]</code> is set to the probability of the latent state at time <code>t-1</code> being <code>j</code>, plus the log transition probability from state <code>j</code> at time <code>t-1</code> to state <code>k</code> at time <code>t</code>, plus the log probability of the output <code>u[t]</code> being generated by state <code>k</code>. The <code>log_sum_exp</code> operation just multiplies the probabilities for each prior state <code>j</code> on the log scale in an arithmetically stable way.</p>
+<p>The brackets provide the scope for the local variables <code>acc</code> and <code>gamma</code>; these could have been declared earlier, but it is clearer to keep their declaration near their use.</p>
+</section>
+<section id="predictive-inference" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="predictive-inference">Predictive inference</h3>
+<p>Given the transition and emission parameters, <span class="math inline">\(\theta_{k, k'}\)</span> and <span class="math inline">\(\phi_{k,v}\)</span> and an observation sequence <span class="math inline">\(u_1, \dotsc, u_T \in \{
+1, \dotsc, V \}\)</span>, the Viterbi (dynamic programming) algorithm computes the state sequence which is most likely to have generated the observed output <span class="math inline">\(u\)</span>.</p>
+<p>The Viterbi algorithm can be coded in Stan in the generated quantities block as follows. The predictions here is the most likely state sequence <code>y_star[1], ..., y_star[T_unsup]</code> underlying the array of observations <code>u[1], ..., u[T_unsup]</code>. Because this sequence is determined from the transition probabilities <code>theta</code> and emission probabilities <code>phi</code>, it may be different from sample to sample in the posterior.</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span> {</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[T_unsup] <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>, <span class="kw">upper</span>=K&gt; y_star;</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> log_p_y_star;</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  {</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">array</span>[T_unsup, K] <span class="dt">int</span> back_ptr;</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">array</span>[T_unsup, K] <span class="dt">real</span> best_logp;</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">real</span> best_total_logp;</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>      best_logp[<span class="dv">1</span>, k] = log(phi[k, u[<span class="dv">1</span>]]);</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">2</span>:T_unsup) {</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>      <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>        best_logp[t, k] = negative_infinity();</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>          <span class="dt">real</span> logp;</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>          logp = best_logp[t - <span class="dv">1</span>, j]</span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>                  + log(theta[j, k]) + log(phi[k, u[t]]);</span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span> (logp &gt; best_logp[t, k]) {</span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>            back_ptr[t, k] = j;</span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>            best_logp[t, k] = logp;</span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a>    log_p_y_star = max(best_logp[T_unsup]);</span>
+<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span>:K) {</span>
+<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (best_logp[T_unsup, k] == log_p_y_star) {</span>
+<span id="cb26-28"><a href="#cb26-28" aria-hidden="true" tabindex="-1"></a>        y_star[T_unsup] = k;</span>
+<span id="cb26-29"><a href="#cb26-29" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb26-30"><a href="#cb26-30" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb26-31"><a href="#cb26-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span>:(T_unsup - <span class="dv">1</span>)) {</span>
+<span id="cb26-32"><a href="#cb26-32" aria-hidden="true" tabindex="-1"></a>      y_star[T_unsup - t] = back_ptr[T_unsup - t + <span class="dv">1</span>,</span>
+<span id="cb26-33"><a href="#cb26-33" aria-hidden="true" tabindex="-1"></a>                                      y_star[T_unsup - t + <span class="dv">1</span>]];</span>
+<span id="cb26-34"><a href="#cb26-34" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb26-35"><a href="#cb26-35" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb26-36"><a href="#cb26-36" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The bracketed block is used to make the three variables <code>back_ptr</code>, <code>best_logp</code>, and <code>best_total_logp</code> local so they will not be output. The variable <code>y_star</code> will hold the label sequence with the highest probability given the input sequence <code>u</code>. Unlike the forward algorithm, where the intermediate quantities were total probability, here they consist of the maximum probability <code>best_logp[t, k]</code> for the sequence up to time <code>t</code> with final output category <code>k</code> for time <code>t</code>, along with a backpointer to the source of the link. Following the backpointers from the best final log probability for the final time <code>t</code> yields the optimal state sequence.</p>
+<p>This inference can be run for the same unsupervised outputs <code>u</code> as are used to fit the semisupervised model. The above code can be found in the same model file as the unsupervised fit. This is the Bayesian approach to inference, where the data being reasoned about is used in a semisupervised way to train the model. It is not “cheating” because the underlying states for <code>u</code> are never observed — they are just estimated along with all of the other parameters.</p>
+<p>If the outputs <code>u</code> are not used for semisupervised estimation but simply as the basis for prediction, the result is equivalent to what is represented in the BUGS modeling language via the cut operation. That is, the model is fit independently of <code>u</code>, then those parameters used to find the most likely state to have generated <code>u</code>.</p>
 
 
 
+</section>
 </section>
 </section>
 
@@ -1241,260 +1185,387 @@ Kim, Sangjoon, Neil Shephard, and Siddhartha Chib. 1998. <span>“Stochastic Vol
 <ol>
 <li id="fn1"><p>The intercept in this model is <span class="math inline">\(\alpha / (1 - \beta)\)</span>. An alternative parameterization in terms of an intercept <span class="math inline">\(\gamma\)</span> suggested Mark Scheuerell on GitHub is <span class="math inline">\(y_n \sim \textsf{normal}\left(\gamma + \beta \cdot (y_{n-1} - \gamma), \sigma\right)\)</span>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p>In practice, it can be useful to remove the constraint to test whether a non-stationary set of coefficients provides a better fit to the data. It can also be useful to add a trend term to the model, because an unfitted trend will manifest as non-stationarity.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3"><p>This subsection is a lightly edited comment of Jonathan Gilligan’s on GitHub; see <a href="https://github.com/stan-dev/stan/issues/1617#issuecomment-160249142">https://github.com/stan-dev/stan/issues/1617#issuecomment-160249142</a>.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>This subsection is a lightly edited comment of Jonathan Gilligan’s on GitHub; see <a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
-  window.document.addEventListener("DOMContentLoaded", function (event) {
-    // Ensure there is a toggle, if there isn't float one in the top right
-    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
-      const a = window.document.createElement('a');
-      a.classList.add('top-right');
-      a.classList.add('quarto-color-scheme-toggle');
-      a.href = "";
-      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
-      const i = window.document.createElement("i");
-      i.classList.add('bi');
-      a.appendChild(i);
-      window.document.body.appendChild(a);
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
     }
-    setColorSchemeToggle(hasAlternateSentinel())
-    const icon = "";
-    const anchorJS = new window.AnchorJS();
-    anchorJS.options = {
-      placement: 'right',
-      icon: icon
-    };
-    anchorJS.add('.anchored');
-    const isCodeAnnotation = (el) => {
-      for (const clz of el.classList) {
-        if (clz.startsWith('code-annotation-')) {                     
-          return true;
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
         }
       }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
       return false;
     }
-    const onCopySuccess = function(e) {
-      // button target
-      const button = e.trigger;
-      // don't keep focus
-      button.blur();
-      // flash "checked"
-      button.classList.add('code-copy-button-checked');
-      var currentTitle = button.getAttribute("title");
-      button.setAttribute("title", "Copied!");
-      let tooltip;
-      if (window.bootstrap) {
-        button.setAttribute("data-bs-toggle", "tooltip");
-        button.setAttribute("data-bs-placement", "left");
-        button.setAttribute("data-bs-title", "Copied!");
-        tooltip = new bootstrap.Tooltip(button, 
-          { trigger: "manual", 
-            customClass: "code-copy-button-tooltip",
-            offset: [0, -8]});
-        tooltip.show();    
-      }
-      setTimeout(function() {
-        if (tooltip) {
-          tooltip.hide();
-          button.removeAttribute("data-bs-title");
-          button.removeAttribute("data-bs-toggle");
-          button.removeAttribute("data-bs-placement");
-        }
-        button.setAttribute("title", currentTitle);
-        button.classList.remove('code-copy-button-checked');
-      }, 1000);
-      // clear code selection
-      e.clearSelection();
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
     }
-    const getTextToCopy = function(trigger) {
-      const outerScaffold = trigger.parentElement.cloneNode(true);
-      const codeEl = outerScaffold.querySelector('code');
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
       for (const childEl of codeEl.children) {
         if (isCodeAnnotation(childEl)) {
           childEl.remove();
         }
       }
       return codeEl.innerText;
-    }
-    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-      text: getTextToCopy
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
     });
-    clipboard.on('success', onCopySuccess);
-    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-        text: getTextToCopy,
-        container: window.document.getElementById('quarto-embedded-source-code-modal')
-      });
-      clipboardModal.on('success', onCopySuccess);
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
     }
-      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-      var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
-      var isInternal = (href) => {
-          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
-      }
-      // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
-      for (var i=0; i<links.length; i++) {
-        const link = links[i];
-        if (!isInternal(link.href)) {
-          // undo the damage that might have been done by quarto-nav.js in the case of
-          // links that we want to consider external
-          if (link.dataset.originalHref !== undefined) {
-            link.href = link.dataset.originalHref;
-          }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
         }
       }
-    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
-      const config = {
-        allowHTML: true,
-        maxWidth: 500,
-        delay: 100,
-        arrow: false,
-        appendTo: function(el) {
-            return el.parentElement;
-        },
-        interactive: true,
-        interactiveBorder: 10,
-        theme: 'quarto',
-        placement: 'bottom-start',
-      };
-      if (contentFn) {
-        config.content = contentFn;
-      }
-      if (onTriggerFn) {
-        config.onTrigger = onTriggerFn;
-      }
-      if (onUntriggerFn) {
-        config.onUntrigger = onUntriggerFn;
-      }
-      window.tippy(el, config); 
     }
-    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
-    for (var i=0; i<noterefs.length; i++) {
-      const ref = noterefs[i];
-      tippyHover(ref, function() {
-        // use id or data attribute instead here
-        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
-        try { href = new URL(href).hash; } catch {}
-        const id = href.replace(/^#\/?/, "");
-        const note = window.document.getElementById(id);
-        if (note) {
-          return note.innerHTML;
-        } else {
-          return "";
-        }
-      });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
     }
-    const xrefs = window.document.querySelectorAll('a.quarto-xref');
-    const processXRef = (id, note) => {
-      // Strip column container classes
-      const stripColumnClz = (el) => {
-        el.classList.remove("page-full", "page-columns");
-        if (el.children) {
-          for (const child of el.children) {
-            stripColumnClz(child);
-          }
-        }
-      }
-      stripColumnClz(note)
-      if (id === null || id.startsWith('sec-')) {
-        // Special case sections, only their first couple elements
-        const container = document.createElement("div");
-        if (note.children && note.children.length > 2) {
-          container.appendChild(note.children[0].cloneNode(true));
-          for (let i = 1; i < note.children.length; i++) {
-            const child = note.children[i];
-            if (child.tagName === "P" && child.innerText === "") {
-              continue;
-            } else {
-              container.appendChild(child.cloneNode(true));
-              break;
-            }
-          }
-          if (window.Quarto?.typesetMath) {
-            window.Quarto.typesetMath(container);
-          }
-          return container.innerHTML
-        } else {
-          if (window.Quarto?.typesetMath) {
-            window.Quarto.typesetMath(note);
-          }
-          return note.innerHTML;
-        }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
       } else {
-        // Remove any anchor links if they are present
-        const anchorLink = note.querySelector('a.anchorjs-link');
-        if (anchorLink) {
-          anchorLink.remove();
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
         }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
         if (window.Quarto?.typesetMath) {
           window.Quarto.typesetMath(note);
         }
-        if (note.classList.contains("callout")) {
-          return note.outerHTML;
-        } else {
-          return note.innerHTML;
-        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
       }
     }
-    for (var i=0; i<xrefs.length; i++) {
-      const xref = xrefs[i];
-      tippyHover(xref, undefined, function(instance) {
-        instance.disable();
-        let url = xref.getAttribute('href');
-        let hash = undefined; 
-        if (url.startsWith('#')) {
-          hash = url;
-        } else {
-          try { hash = new URL(url).hash; } catch {}
-        }
-        if (hash) {
-          const id = hash.replace(/^#\/?/, "");
-          const note = window.document.getElementById(id);
-          if (note !== null) {
-            try {
-              const html = processXRef(id, note.cloneNode(true));
-              instance.setContent(html);
-            } finally {
-              instance.enable();
-              instance.show();
-            }
-          } else {
-            // See if we can fetch this
-            fetch(url.split('#')[0])
-            .then(res => res.text())
-            .then(html => {
-              const parser = new DOMParser();
-              const htmlDoc = parser.parseFromString(html, "text/html");
-              const note = htmlDoc.getElementById(id);
-              if (note !== null) {
-                const html = processXRef(id, note);
-                instance.setContent(html);
-              } 
-            }).finally(() => {
-              instance.enable();
-              instance.show();
-            });
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
           }
         } else {
-          // See if we can fetch a full url (with no hash to target)
-          // This is a special case and we should probably do some content thinning / targeting
-          fetch(url)
+          // See if we can fetch this
+          fetch(url.split('#')[0])
           .then(res => res.text())
           .then(html => {
             const parser = new DOMParser();
             const htmlDoc = parser.parseFromString(html, "text/html");
-            const note = htmlDoc.querySelector('main.content');
+            const note = htmlDoc.getElementById(id);
             if (note !== null) {
-              // This should only happen for chapter cross references
-              // (since there is no id in the URL)
-              // remove the first header
-              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
-                note.children[0].remove();
-              }
-              const html = processXRef(null, note);
+              const html = processXRef(id, note);
               instance.setContent(html);
             } 
           }).finally(() => {
@@ -1502,161 +1573,185 @@ Kim, Sangjoon, Neil Shephard, and Siddhartha Chib. 1998. <span>“Stochastic Vol
             instance.show();
           });
         }
-      }, function(instance) {
-      });
-    }
-        let selectedAnnoteEl;
-        const selectorForAnnotation = ( cell, annotation) => {
-          let cellAttr = 'data-code-cell="' + cell + '"';
-          let lineAttr = 'data-code-annotation="' +  annotation + '"';
-          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
-          return selector;
-        }
-        const selectCodeLines = (annoteEl) => {
-          const doc = window.document;
-          const targetCell = annoteEl.getAttribute("data-target-cell");
-          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
-          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
-          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
-          const lineIds = lines.map((line) => {
-            return targetCell + "-" + line;
-          })
-          let top = null;
-          let height = null;
-          let parent = null;
-          if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
-            }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
-            }
-            selectedAnnoteEl = annoteEl;
-          }
-        };
-        const unselectCodeLines = () => {
-          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
-          elementsIds.forEach((elId) => {
-            const div = window.document.getElementById(elId);
-            if (div) {
-              div.remove();
-            }
-          });
-          selectedAnnoteEl = undefined;
-        };
-          // Handle positioning of the toggle
-      window.addEventListener(
-        "resize",
-        throttle(() => {
-          elRect = undefined;
-          if (selectedAnnoteEl) {
-            selectCodeLines(selectedAnnoteEl);
-          }
-        }, 10)
-      );
-      function throttle(fn, ms) {
-      let throttle = false;
-      let timer;
-        return (...args) => {
-          if(!throttle) { // first call gets through
-              fn.apply(this, args);
-              throttle = true;
-          } else { // all the others get throttled
-              if(timer) clearTimeout(timer); // cancel #2
-              timer = setTimeout(() => {
-                fn.apply(this, args);
-                timer = throttle = false;
-              }, ms);
-          }
-        };
-      }
-        // Attach click handler to the DT
-        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
-        for (const annoteDlNode of annoteDls) {
-          annoteDlNode.addEventListener('click', (event) => {
-            const clickedEl = event.target;
-            if (clickedEl !== selectedAnnoteEl) {
-              unselectCodeLines();
-              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
-              if (activeEl) {
-                activeEl.classList.remove('code-annotation-active');
-              }
-              selectCodeLines(clickedEl);
-              clickedEl.classList.add('code-annotation-active');
-            } else {
-              // Unselect the line
-              unselectCodeLines();
-              clickedEl.classList.remove('code-annotation-active');
-            }
-          });
-        }
-    const findCites = (el) => {
-      const parentEl = el.parentElement;
-      if (parentEl) {
-        const cites = parentEl.dataset.cites;
-        if (cites) {
-          return {
-            el,
-            cites: cites.split(' ')
-          };
-        } else {
-          return findCites(el.parentElement)
-        }
       } else {
-        return undefined;
-      }
-    };
-    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
-    for (var i=0; i<bibliorefs.length; i++) {
-      const ref = bibliorefs[i];
-      const citeInfo = findCites(ref);
-      if (citeInfo) {
-        tippyHover(citeInfo.el, function() {
-          var popup = window.document.createElement('div');
-          citeInfo.cites.forEach(function(cite) {
-            var citeDiv = window.document.createElement('div');
-            citeDiv.classList.add('hanging-indent');
-            citeDiv.classList.add('csl-entry');
-            var biblioDiv = window.document.getElementById('ref-' + cite);
-            if (biblioDiv) {
-              citeDiv.innerHTML = biblioDiv.innerHTML;
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
             }
-            popup.appendChild(citeDiv);
-          });
-          return popup.innerHTML;
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
         });
       }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
     }
-  });
-  </script>
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
       <a href="../stan-users-guide/regression.html" class="pagination-link" aria-label="Regression Models">
@@ -1670,62 +1765,8 @@ Kim, Sangjoon, Neil Shephard, and Siddhartha Chib. 1998. <span>“Stochastic Vol
   </div>
 </nav>
 </div> <!-- /content -->
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/stan-users-guide/time-series.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script>
-
-// Workaround for Safari not scrolling to URL fragment identifiers
-
-// on fresh page loads. Uses MutationObserver to wait for Quarto's
-
-// post-load DOM rendering (sidebar, TOC, MathJax) to settle before
-
-// scrolling. Scrolls as soon as DOM changes stop for 80ms.
-
-window.addEventListener('load', function () {
-
-  if (!window.location.hash) return;
-
-  var el = document.querySelector(window.location.hash);
-
-  if (!el) return;
-
-
-
-  var timer;
-
-  var observer = new MutationObserver(function () {
-
-    clearTimeout(timer);
-
-    timer = setTimeout(function () {
-
-      observer.disconnect();
-
-      el.scrollIntoView();
-
-    }, 80);
-
-  });
-
-
-
-  observer.observe(document.body, { childList: true, subtree: true });
-
-
-
-  timer = setTimeout(function () {
-
-    observer.disconnect();
-
-    el.scrollIntoView();
-
-  }, 80);
-
-});
-
-</script>
 
 
 
 
-
-</body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/stan-users-guide/time-series.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

@@ -1,12 +1,15 @@
 ---
 pagetitle: Wiener Diffusion Model
+format:
+  html:
+    default-image-extension: jpg
 ---
 
 # Wiener Diffusion Model
 
-Diffusion models, sometimes also called Wiener diffusion models, are among the most frequently used model families in modeling two-alternative forced-choice tasks (see @Wagenmaker2009, for a review). Diffusion models allow to model response times and responses jointly. The basic version of a diffusion model comprises four parameters: the boundary separation, $a$, the relative starting point, $w$, the drift rate, $v$, and the non-decision time, $t0$ [@Ratcliff1978]. In the seven-parameter extension of the diffusion model there are the following three parameters added: the inter-trial variability in relative starting point, $s_w$, the inter-trial variability in drift rate, $s_v$, and the inter-trial variability in non-decision time, $s_{t0}$ [@Ratcliff1989].
+Diffusion models, sometimes also called Wiener diffusion models, are among the most frequently used model families in modeling two-alternative forced-choice tasks (see @Wagenmakers2009, for a review). Diffusion models allow to model response times and responses jointly. The basic version of a diffusion model comprises four parameters: the boundary separation, $a$, the relative starting point, $w$, the drift rate, $v$, and the non-decision time, $t0$ [@Ratcliff1978]. In the seven-parameter extension of the diffusion model there are the following three parameters added: the inter-trial variability in relative starting point, $s_w$, the inter-trial variability in drift rate, $s_v$, and the inter-trial variability in non-decision time, $s_{t0}$ [@Ratcliff1998].
 
-As a diffusion model describes the decision process for a decision with exactly two choices, there exist reaction time distributions for each response alternative. This means that the probability distribution function ($\text{PDF}$) splits into one part for one response alternative and one part for the other response alternative. In the following, we will refer to one alternative as the _upper response boundary_ and to the other alternative as the _lower response boundary_. The $\text{PDF}$ of the lower response boundary can be obtained when inserting $-v$ and $1-w$ to the $\text{PDF}$ of the upper response boundary. Let's call the $\text{PDF}$ for the lower response boundary $\text{PDF}_0$ and the $\text{PDF}$ for the upper response boundary $\text{PDF}_1$. Then: 
+As a diffusion model describes the decision process for a decision with exactly two choices, there exist reaction time distributions for each response alternative. This means that the probability distribution function ($\text{PDF}$) splits into one part for one response alternative and one part for the other response alternative. In the following, we will refer to one alternative as the _upper response boundary_ and to the other alternative as the _lower response boundary_. The $\text{PDF}$ of the lower response boundary can be obtained when inserting $-v$ and $1-w$ to the $\text{PDF}$ of the upper response boundary. Let's call the $\text{PDF}$ for the lower response boundary $\text{PDF}_0$ and the $\text{PDF}$ for the upper response boundary $\text{PDF}_1$. Then:
 
 $$
 \text{PDF}_0(a,t0,v,w,sv,sw,st0) = \text{PDF}_1(a,t0,-v,1-w,sv,sw,st0)
@@ -16,14 +19,12 @@ Usually, a $\text{PDF}$ integrates to 1. In the case of the diffusion model, onl
 
 
 ::: {#fig-DDM}
-![](img/Figure_DDM.jpg)
+![](img/Figure_DDM)
 
 Figure 1: Realization of a Four-Parameter Diffusion Process Modeling the Binary Decision Process.
  **Note.** The parameters are the boundary separation a for two response alternatives, the relative starting point w, the drift rate v, and the non-decision time t0. The decision process is illustrated as a jagged line between the two boundaries. The predicted distributions of the reaction times are depicted as curved lines below and above the response boundaries (blue).
 :::
 
-THE PDF VERSION OF THE IMAGE HAS A MUCH BETTER QUALITY. I DON'T KNOW HOW TO INCLUDE PDF.
-![](img/Figure_DDM.pdf)
 
 The Stan function `wiener_lpdf()` returns the logarithm of the first-passage time density function for a diffusion model with up to seven parameters for upper boundary responses, $\log(\text{PDF}_1)$. Any combination of fixed and estimated parameters can be specified. In other words, with this implementation it is not only possible to estimate parameters of the full seven-parameter model, but also to estimate restricted models such as the basic four-parameter model, or a five or six-parameter model, or even a one-parameter model when fixing the other six parameters.
 
@@ -87,7 +88,7 @@ The data should consist of at least three variables:
 2. the response, coded as 0 = “lower bound” and 1 = “upper bound", and
 3. the reaction times in seconds (not milliseconds).
 
-Note that two different ways of coding responses are commonly used: First, in _response coding_, the boundaries correspond to the two response alternatives. Second, in _accuracy coding_, the boundaries correspond to correct (upper bound) and wrong (lower bound) responses. 
+Note that two different ways of coding responses are commonly used: First, in _response coding_, the boundaries correspond to the two response alternatives. Second, in _accuracy coding_, the boundaries correspond to correct (upper bound) and wrong (lower bound) responses.
 
 Depending on the experimental design, one would typically also provide the number of conditions and the condition associated with each trial as a vector. In a hierarchical setting, the **data block** would also specify the number of participants and the participant associated with each trial as a vector. It is also possible to hand over a precision value in the **data block**.
 
@@ -119,7 +120,7 @@ $$
 
 ### The Model Block
 
-In the **model block**, the priors are defined and the likelihood is called for the upper and the lower response boundary. Different kinds of priors can be specifed here. When no prior is specifed for a parameter, Stan uses default priors. 
+In the **model block**, the priors are defined and the likelihood is called for the upper and the lower response boundary. Different kinds of priors can be specifed here. When no prior is specifed for a parameter, Stan uses default priors.
 
 Generally, mildly informative priors might help to get the full benefit of a Bayesian analysis.
 
@@ -128,15 +129,13 @@ In the second part of the **model block**, the likelihood function is applied to
 For more details, see @Henrich2024.
 
 
-## Truncated and censored data
+## Truncated and censored data {#wiener-truncation}
 
 Truncation and censoring frequently occur in psychological data collection. For reaction time data, truncated and censored data regularly arise in psychological studies as a consequence of using response windows or deadlines. These are sometimes introduced in the analysis of data to exclude reaction times that appear too short or too long, but they are also sometimes already built into the study procedures to push participants to respond within a specifc temporal window.
 
 Depending on the implementation of the response window, two different types of data arise: _truncated_ data or _censored_ data. Since the effects of truncation or censoring on summary statistics such as mean, median, standard deviation, and skewness is regularly too large to ignore [@Ulrich1994], data analysts are well advised to account for these effects.
 
-MAYBE IN THE FOLLOWING PARAGRAPH A LINK TO THE NAMED SUBCHAPTER:
-
-As described in the subchapter "Truncated and Censored Data" in this Users Guide, the cumulative distribution function ($\text{CDF}$) and its complement ($\text{CCDF}$) are needed to model truncated and censored data.
+As described in the [Truncated or Censored Data](./truncation-censoring.qmd) chapter, the cumulative distribution function ($\text{CDF}$) and its complement ($\text{CCDF}$) are needed to model truncated and censored data.
 
 As explained above, the $\text{PDF}$ is defined _defectively_, meaning that only the sum of the $\text{PDF}$s for both response alternatives integrates to 1. For the same reason, the $\text{CDF}$ and $\text{CCDF}$ are also implemented defectively. Analogously, only the sum of the $\text{CDF}$s and $\text{CCDF}$s for both response alternatives converges to 1.
 
@@ -185,7 +184,7 @@ $$
 
 
 
-As the functions are implemented defectively, a truncated diffusion model cannot be calculated with the truncation functor $T[,]$ as it would usually be done in Stan. This means the function call: `x ~ wiener(...)T[L,U]` does not work the way it is supposed to. When the truncation functor is called in Stan, Stan searches for a CDF implementation internally. In the case of the diffusion model, Stan would find the CDF, but is not aware of its defective implementation and calculates the computations as if it were a non-defective CDF. This causes misleading and incorrect results. 
+As the functions are implemented defectively, a truncated diffusion model cannot be calculated with the truncation functor $T[,]$ as it would usually be done in Stan. This means the function call: `x ~ wiener(...)T[L,U]` does not work the way it is supposed to. When the truncation functor is called in Stan, Stan searches for a CDF implementation internally. In the case of the diffusion model, Stan would find the CDF, but is not aware of its defective implementation and calculates the computations as if it were a non-defective CDF. This causes misleading and incorrect results.
 
 Therefore, to implement the truncated model, write out the function shown above on the log-scale with `left_bound = L` and `right_bound = U`, where `wiener_lcdf_unnorm()` calls the
 logarithmized CDF of the diffusion model at the response-1-boundary:
@@ -238,15 +237,15 @@ model { // ... // definition of priors for all model parameters
    } // end if
   } // end else if
  } // end for
- 
+
  // summands for response = 0
  target += N_cens_left_0 * wiener_lcdf_unnorm(left_bound | a, t0, 1-w, -v, sv, sw, st0);
-  
+
  target += N_cens_right_0 * wiener_lccdf_unnorm(right_bound | a, t0, 1-w, -v, sv, sw, st0);
-  
+
  // summands for response = 1
  target += N_cens_left_1 * wiener_lcdf_unnorm(left_bound | a, t0, w, v, sv, sw, st0);
-  
+
  target += N_cens_right_1 * wiener_lccdf_unnorm(right_bound | a, t0, w, v, sv, sw, st0);
 }
 ```
@@ -256,7 +255,7 @@ When data are censored at only one side, omit the lines for the other side in th
 When data consist of many conditions, it is sometimes more convenient to loop over all trials instead of using count variables as described above, using the following notation and code. A vector containing the information whether a trial is censored or not, here `censored`, needs to be handed over in the **data block**. This vector splits the data into three bins: all trials $i$ with `censored[i]=0` are censored below the left reaction time bound, all trials $i$ with `censored[i]=1` fall between the reaction time bounds, and all trials $i$ with `censored[i]=2` are censored above the right reaction time bound. For non-censored trials, the log-PDF is computed, for left censored trials, the log-CDF is computed, and for right censored trials, the log-CCDF is computed:
 
 
-```stan 
+```stan
 model { // ... // definition of priors for all model parameters
  for (i in 1:N) { // right censored at right_bound
   if (resp [i] == 1) { // upper response boundary
@@ -279,7 +278,7 @@ model { // ... // definition of priors for all model parameters
   }
  }
 }
-``` 
+```
 
 When the data are censored to only one side, omit the case that is not needed.
 
@@ -307,7 +306,7 @@ $$
 
 See the following code for an example of Stan code implementing this second case of censoring. This model call deals with the problem of unknown responses by computing the probability of choosing the response-1- or response-0 boundary outside the response window. Here, the CDF and/or the CCDF are required, depending upon whether there is only left-censoring, right-censoring, or censoring both to the left and to the right. The following code shows the **functions block** for a model that is right-censored using the function `partial_sum_wiener()` for parallel computations. Combine this block with the **model block** in the example above:
 
-```stan 
+```stan
 functions { // parallelization function
  real partial_sum_wiener(array[] real rt_slice, int start,
  int end, real a, real t0, real w, real v, real sv, real sw,
@@ -320,7 +319,7 @@ functions { // parallelization function
      ans += wiener_lpdf(rt_slice[i+1- start ] | a, t0, w, v, sv, sw, st);
     } else { // lower boundary(mirror v and w)
      ans += wiener_lpdf(rt_slice[i+1- start ] | a, t0, 1 - w, -v, sv, sw, st);
-    } 
+    }
    } else { // censored data
     ans += log_sum_exp (
      wiener_lccdf_unnorm(right_bound | a, t0, w, v, sv, sw, st),

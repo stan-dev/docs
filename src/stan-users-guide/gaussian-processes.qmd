@@ -476,7 +476,19 @@ parameters {
   vector[N] eta;
 }
 model {
-  // ...
+  vector[N] f;
+  {
+    matrix[N, N] L_K;
+    matrix[N, N] K = gp_exp_quad_cov(x, alpha, rho);
+
+    // diagonal elements
+    for (n in 1:N) {
+      K[n, n] = K[n, n] + delta;
+    }
+
+    L_K = cholesky_decompose(K);
+    f = L_K * eta;
+  }
   rho ~ inv_gamma(5, 5);
   alpha ~ std_normal();
   a ~ std_normal();
@@ -510,7 +522,7 @@ the marginal likelihood as follows:
 $$
   \hat p_\mathcal{L}(y \mid \rho, \alpha, a)
     = \frac{p(f^* \mid \alpha, \rho) p(y \mid f^*, a)}{
-    \hat p_\mathcal{L}(f \mid \rho, \alpha, a, y)},
+    \hat p_\mathcal{L}(f^* \mid \rho, \alpha, a, y)},
 $$
 where $f^*$ is the mode of $p(f \mid \rho, \alpha, a, y)$, obtained via
 numerical optimization.
@@ -533,7 +545,24 @@ functions {
 }
 ```
 
-We then increment `target` in the model block with the approximation to
+The embedded Laplace relies on calculations of the log likelihood's Hessian,
+$\partial^2 \log p(y \mid f, a, \rho, \alpha) / \partial f^2$, and these
+calculations can be much faster when the Hessian is sparse. In particular,
+it is expected that the Hessian is block diagonal. In the `transformed data`
+block we can specify the block size of the Hessian.
+```stan
+transformed data {
+  int hessian_block_size = 1;
+}
+```
+For example, if $y_i$ depends only on $f_i$, then the Hessian of the log
+likelihood is diagonal and the block size is 1. On the other hand, if the
+Hessian is not sparse, then we set the hessian block size
+to $N$, where $N$ is the dimension of $f$. Currently, Stan does not check
+the block size of the Hessian and so the user is responsible for correctly
+specifying the block size.
+
+Finally, we increment `target` in the model block with the approximation to
 $\log p(y \mid \rho, \alpha, a)$.
 ```stan
 model {
@@ -541,7 +570,7 @@ model {
   alpha ~ std_normal();
   sigma ~ std_normal();
 
-  target += laplace_marginal(ll_function, (a, y),
+  target += laplace_marginal(ll_function, (a, y), hessian_block_size,
                              cov_function, (rho, alpha, x, N, delta));
 }
 ```
@@ -549,51 +578,56 @@ Notice that we do not need to construct $f$ explicitly, since it is
 marginalized out. Instead, we recover the GP function in `generated quantities`:
 ```stan
 generated quantities {
-  vector[N] f = laplace_latent_rng(ll_function, (a, y),
+  vector[N] f = laplace_latent_rng(ll_function, (a, y), hessian_block_size,
                                    cov_function, (rho, alpha, x, N, delta));
 }
 ```
 
 Users can set the control parameters of the embedded Laplace approximation,
 via `laplace_marginal_tol` and `laplace_latent_tol_rng`. When using these
-functions, the user must set *all* the control parameters.
+functions, the user must set *all* the control options and store them in a tuple.
+These control parameters mostly concern the numerical optimizer used to find
+the mode $f^*$ of $p(f \mid \rho, \alpha, a)$.
 ```stan
 transformed data {
-// ...
+  tuple(vector[N], real, int, int, int, int) laplace_ops;
+  laplace_ops.1 = rep_vector(0, N);  // starting point for Laplace optimizer
+  laplace_ops.2 = 1.49e-8;           // tolerance for optimizer
+  laplace_ops.3 = 500;               // maximum number of steps for optimizer.
+  laplace_ops.4 = 1;              // solver type being used.
+  laplace_ops.5 = 1000;           // max number of steps for linesearch.
+  laplace_ops.6 = 1;              // allow_fallback (1: TRUE, 0: FALSE)
+```
+If users want to depart from the defaults for only some of the control
+parameters, a tuple with the default values (as above) can be created with the
+helper callable `generate_laplace_options()`, and the specific control
+parameter can then be modified,
+```stan
+transformed data {
+  tuple(vector[N], real, int, int, int, int, int) laplace_ops =
+    generate_laplace_options(N);
 
-  vector[N] f_init = rep_vector(0, N);  // starting point for optimizer.
-  real tol = 1e-6;             // optimizer's tolerance for Laplace approx.
-  int max_num_steps = 1e3;     // maximum number of steps for optimizer.
-  int hessian_block_size = 1;  // when hessian of log likelihood is block
-                               // diagonal, size of block (here 1).
-  int solver = 1;              // which Newton optimizer to use; default is 1,
-                               // use 2 and 3 only for special cases.
-  max_steps_linesearch = 0;    // if >= 1, optimizer does a lineseach with
-                               // specified number of steps.
+  laplace_ops.2 = 1e-6; // make tolerance of the optimizer less strict.
 }
-
-// ...
-
+```
+The tuple `laplace_ops` is then passed is then passed to `laplace_marginal_tol`
+and `laplace_rng_tol`.
+```stan
 model {
 // ...
 
-  target += laplace_marginal(ll_function, (a, y),
-                             cov_function, (rho, alpha, x, N, delta),
-                             f_init, tol, max_num_steps, hessian_block_size,
-                             solver, max_steps_linesearch);
+  target += laplace_marginal_tol(ll_function, (a, y), hessian_block_size,
+                                 cov_function, (rho, alpha, x, N, delta),
+                                 laplace_ops);
 }
 
 generated quantities {
-  vector[N] f = laplace_latent_rng(ll_function, (a, y),
+  vector[N] f = laplace_latent_rng(ll_function, (a, y), hessian_block_size,
                                    cov_function, (rho, alpha, x, N, delta),
-                                   f_init, tol, max_num_steps,
-                                   hessian_block_size, solver,
-                                   max_steps_linesearch);
+                                   laplace_ops);
 }
 
 ```
-For details about the control parameters, see @Margossian:2023.
-
 
 Stan also provides support for a limited menu of built-in functions, including
 the Poisson distribution with a log link and and prior mean $m$. When using such
@@ -696,13 +730,19 @@ functions {
 
 // ...
 
+transformed data {
+  int hessian_block_size = 1;
+}
+
+// ...
+
 model {
-  target += laplace_marginal(ll_function, (a, z),
+  target += laplace_marginal(ll_function, (a, z), hessian_block_size,
                              cov_function, (rho, alpha, x, N, delta));
 }
 
 generated quantities {
-  vector[N] f = laplace_latent_rng(ll_function, (a, z),
+  vector[N] f = laplace_latent_rng(ll_function, (a, z), hessian_block_size,
                                    cov_function, (rho, alpha, x, N, delta));
 }
 ```

@@ -6,8 +6,8 @@ pagetitle: Multiple Imputation
 
 Missing data is common in applied data analysis. Ignoring this 
 missingness can distort posterior inferences and reduce their
-precision. Modeling the missing data can improve inference quality. Chapter 18 in @GelmanEtAl:2013 offers a Bayesian perspective 
-for analyzing data with missing values.
+precision. Modeling the missing data can improve inference quality. Chapter 18 in @GelmanEtAl:2013 offers an approximate Bayesian 
+perspective for analyzing data with missing values.
 
 
 Multiple imputation replaces missing values with different estimates 
@@ -48,8 +48,8 @@ p(\theta \mid x^{\text{obs}}) =&
     p(y^{\text{mis}} \mid x^{\text{obs}})
     \mathrm{d}y^{\text{mis}},
 \end{align*}
-where $x^{\text{imp}}$ is a data set that has been completed with
-imputed values of $x^{\text{mis}}$.
+where $x^{\text{imp}}$ is a data set that includes imputed values of
+$x^{\text{mis}}$.
 
 The equations above show that we do not need to describe
 $p(\theta \mid x^{\text{obs}})$ directly. Instead, we can first
@@ -84,14 +84,15 @@ for (m in 1:M) {
 ```
 Each of the functions in this pseudocode can encapsulate simple or
 complex procedures. `get_imputations()`, for example, may impute
-missing data by taking values directly from `x_obs`; or it may fit a 
-regression model where a variable with missing values is the outcome
+missing data by taking values directly from `x_obs`; or it may model 
+a regression where a variable with missing values is the outcome
 and the variables with fully observed values are used as predictors.
+Below we illustrate how to implement this second approach in Stan.
 
 ## Imputing one variable in Stan
 
 Imagine our data set is composed of two numerical, continuous 
-variables $x$ and $y$, and one dichotomic variable $z$. We want to 
+variables $x$ and $y$, and one binary variable $z$. We want to 
 estimate the parameters that govern the conditional association
 $p(y \mid x, z)$, but several values of $x$ are missing. So, before
 we fit this model for $y$, we impute the missing values in $x$.
@@ -100,7 +101,7 @@ We first find all the fully observed data points and identify their
 values as $x^{\text{obs}}$, $y^{\text{obs}}$, and $z^{\text{obs}}$.
 Then we use these data to fit the model
 $$
-x^{\text{obs}} \sim \text{Normal}(\gamma_0 + \gamma_1 y^{\text{obs}} +
+x^{\text{obs}} \sim \text{normal}(\gamma_0 + \gamma_1 y^{\text{obs}} +
     \gamma_2 z^{\text{obs}}, \lambda).
 $$
 
@@ -109,7 +110,6 @@ $x^{\text{mis}}$ conditional on the corresponding values of $y$ and
 $z$, which we call $y^{\text{aux}}$ and $z^{\text{aux}}$. The 
 Stan code for this imputation is:
 ```stan
-// MODEL TO IMPUTE x
 data {
   int<lower=0> N_obs;   // number of fully-observed x's
   vector[N_obs] x_obs;  // observed values of x
@@ -118,24 +118,20 @@ data {
                                              // correspond to x_obs
   int<lower=0> N_mis;   // number of rows with missing x's
   vector[N_mis] y_aux;  // y corresponding to the missing x's
-  array[N_obs] int<lower=0, upper=1> z_aux;  // z corresponding to
+  array[N_mis] int<lower=0, upper=1> z_aux;  // z corresponding to
                                              // the missing x's
 }
 parameters {
-  real gamma_0;         // intercept
-  real gamma_1;         // coefficient for y_obs
-  real gamma_2;         // coefficient for z_obs
-  real<lower=0> lambda;  // standard deviation for x_obs
+  vector[3] gamma;       // [intercept, coef for y, coef for z]
+  real<lower=0> lambda;  // scale for x_obs
 }
 model {
   // Likelihood
-  x_obs ~ normal(gamma_0 + gamma_1 * y_obs + gamma_2 * z_obs, lambda);
+  x_obs ~ normal(gamma[1] + gamma[2] * y_obs + gamma[3] * z_obs, lambda);
 }
 generated quantities {
-  vector[N_mis] x_imp; // Random draws to impute missing x's
-  for (n in 1:N_mis) {
-    x_imp[n] = normal_rng(gamma_0 + gamma_1 * y_aux[n] 
-                + gamma_2 * z_aux[n], lambda);
+  array[N_mis] x_imp = normal_rng(gamma[1] + gamma[2] * y_aux[n]
+                      + gamma[3] * z_aux[n], lambda);
   }
 }
 ```
@@ -145,16 +141,14 @@ distributions. So, the random draws of `x_imp` incorporate
 uncertainty from the estimated parameters and from the sampling 
 variation in $x^{\text{mis}}$.
 
-Multiple posterior draws of $x^{\text{mis}}$ give us multiple 
-completed data sets. With these data sets we can model
-$p(y \mid x, z)$ as
+Multiple posterior draws of $x^{\text{mis}}$ give us multiple imputed
+data sets. With these data sets we can model $p(y \mid x, z)$ as
 $$
-y \sim \text{Normal}(\beta_0 + \beta_1 x' + \beta_2 z, \sigma),
+y \sim \text{normal}(\beta_0 + \beta_1 x^\text{comp} + \beta_2 z, \sigma),
 $$
-where $x'$ contains observed and imputed values. The Stan code for
-this model is:
+where $x^\text{comp}$ contains observed and imputed values. The Stan
+code for this model is:
 ```stan
-// MODEL FOR y 
 data {
   int<lower=0> N;              // number of observations
   vector[N] y;                 // response variable

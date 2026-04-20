@@ -19,14 +19,13 @@ produces a sample that accounts for the uncertainty in the missing values.
 ## Motivation and outline
 
 Suppose that we have a matrix $x$ with columns
-$x_{\cdot, 1}, \ldots, x_{\cdot, K}$ that we want to use to sample 
-values from a vector of quantities of interest called $\theta$. With
+$x_{\cdot, 1}, \ldots, x_{\cdot, K}$ that make up covariates in a
+regression with quantities of interest $\theta$. With
 the completely observed data, $x^\text{comp}$, we could estimate the 
 posterior distribution of $\theta$ as $p(\theta \mid x^\text{comp})$.
 But with missing data, our matrix is split into $x^{\text{obs}}$ (the
 observed values of $x$) and $x^{\text{mis}}$ (the missing  values of
-$x$). This can be problematic because, in general, our knowledge may 
-apply directly only to $p(\theta \mid x^\text{comp})$.
+$x$).
 
 Fortunately, we can treat $x^{\text{mis}}$ as additional, nuisance 
 parameters that we can estimate along with $\theta$ as
@@ -36,17 +35,17 @@ $x^{\text{obs}}$ as
 \begin{align*}
 p(\theta \mid x^{\text{obs}}) =&
 \int 
-    p(\theta, y^{\text{mis}} \mid x^{\text{obs}}) 
-    \mathrm{d}y^{\text{mis}} \\
+    p(\theta, x^{\text{mis}} \mid x^{\text{obs}}) 
+    \mathrm{d}x^{\text{mis}} \\
 =&
 \int 
-    p(\theta \mid x^{\text{obs}}, y^{\text{mis}}) 
-    p(y^{\text{mis}} \mid x^{\text{obs}})
-    \mathrm{d}y^{\text{mis}} \\
+    p(\theta \mid x^{\text{obs}}, x^{\text{mis}}) 
+    p(x^{\text{mis}} \mid x^{\text{obs}})
+    \mathrm{d}x^{\text{mis}} \\
 =& \int 
     p(\theta \mid x^{\text{imp}}) 
-    p(y^{\text{mis}} \mid x^{\text{obs}})
-    \mathrm{d}y^{\text{mis}},
+    p(x^{\text{mis}} \mid x^{\text{obs}})
+    \mathrm{d}x^{\text{mis}},
 \end{align*}
 where $x^{\text{imp}}$ is a data set that includes imputed values of
 $x^{\text{mis}}$.
@@ -56,11 +55,21 @@ $p(\theta \mid x^{\text{obs}})$ directly. Instead, we can first
 find a way to estimate $x^{\text{mis}}$ based on $x^{\text{obs}}$,
 and then use these estimates to fit the model
 $p(\theta \mid x^\text{imp})$, treating $x^\text{imp}$ as if it was 
-$x^\text{comp}$. Thus, the general outline for multiple imputation 
-with a number $M$ of imputations is:
+$x^\text{comp}$. 
 
-1. Draw $M$ random samples $x^{\text{mis}}^1, \ldots,
-x^{\text{mis}}^M$ from the posterior predictive distribution
+Note that the model for $p(x^{\text{mis}} \mid x^{\text{obs}})$ needs
+to be explicit. In a typical regression setting with covariates $x$
+and outcome $y$, this model for $x$ is not needed because inferences
+for the regression parameters are independent of the model of $x$
+when $x$ is fully observed. But with missing data and multiple
+imputation, we need to generate values for $x^{\text{mis}}$ based on
+$x^{\text{obs}}$, which in turn needs an explicit model for $x$.
+
+Thus, the general outline for multiple imputation with a number $M$
+of imputations is:
+
+1. Draw $M$ random samples $x^{\text{mis}}_1, \ldots,
+x^{\text{mis}}_M$ from the posterior predictive distribution
 $p(x^{\text{mis}} \mid x^{\text{obs}})$.
 2. Use these samples to get $M$ different complete data sets
 $x_1^\text{imp}, \ldots, x_M^\text{imp}$.
@@ -111,28 +120,27 @@ $z$, which we call $y^{\text{aux}}$ and $z^{\text{aux}}$. The
 Stan code for this imputation is:
 ```stan
 data {
-  int<lower=0> N_obs;   // number of fully-observed x's
-  vector[N_obs] x_obs;  // observed values of x
-  vector[N_obs] y_obs;  // values of y that correspond to x_obs
-  array[N_obs] int<lower=0, upper=1> z_obs;  // values of z that
-                                             // correspond to x_obs
-  int<lower=0> N_mis;   // number of rows with missing x's
-  vector[N_mis] y_aux;  // y corresponding to the missing x's
-  array[N_mis] int<lower=0, upper=1> z_aux;  // z corresponding to
-                                             // the missing x's
+  int<lower=0> N_obs;
+  vector[N_obs] x_obs;
+  vector[N_obs] y_obs;
+  array[N_obs] int<lower=0, upper=1> z_obs;  
+  int<lower=0> N_mis;   
+  vector[N_mis] y_aux;  
+  array[N_mis] int<lower=0, upper=1> z_aux; 
 }
 parameters {
-  vector[3] gamma;       // [intercept, coef for y, coef for z]
-  real<lower=0> lambda;  // scale for x_obs
+  vector[3] gamma;
+  real<lower=0> lambda;
 }
 model {
-  // Likelihood
-  x_obs ~ normal(gamma[1] + gamma[2] * y_obs + gamma[3] * z_obs, lambda);
+  gamma ~ normal(0, 1);
+  lambda ~ exponential(1);
+  x_obs ~ normal(gamma[1] + gamma[2] * y_obs + gamma[3] * z_obs,
+          lambda);
 }
 generated quantities {
   array[N_mis] x_imp = normal_rng(gamma[1] + gamma[2] * y_aux[n]
                       + gamma[3] * z_aux[n], lambda);
-  }
 }
 ```
 The `generated quantities` block automatically samples $\gamma_0$,
@@ -150,20 +158,19 @@ where $x^\text{comp}$ contains observed and imputed values. The Stan
 code for this model is:
 ```stan
 data {
-  int<lower=0> N;              // number of observations
-  vector[N] y;                 // response variable
-  vector[N] x;                 // predictor variable x
-  vector[N] z;                 // predictor variable z
+  int<lower=0> N;
+  vector[N] y;
+  vector[N] x;
+  vector[N] z;
 }
 parameters {
-  real beta_0;                 // intercept
-  real beta_1;                 // coefficient for x
-  real beta_2;                 // coefficient for z
-  real<lower=0> sigma;         // error standard deviation
+  vector[3] beta;
+  real<lower=0> sigma;
 }
 model {
-  // Likelihood
-  y ~ normal(beta_0 + beta_1 * x + beta_2 * z, sigma);
+  beta ~ normal(0, 1);
+  sigma ~ exponential(1);
+  y ~ normal(beta[1] + beta[2] * x + beta[3] * z, sigma);
 }
 ```
 
@@ -190,14 +197,14 @@ rule).
 1. **Update each $x_i$ given $y$ and the other $x$’s**.
 For $i=1, \ldots, K$, fit a model for the *observed* $x_i$
 conditional on the current versions (with observed and imputed 
-values) of $y$ and $x_{-i} = \{x_j: j \neq i\}$. Use this model to 
-draw impuations from the predictive distribution of the *missing* 
-$x_i$. Completing this step for all $i=1, \ldots, K$ constitutes a 
-single imputation cycle.
-2. **Burn-in period**. Repeat the imputation cycle in step 1 several 
-times as burn-in to let the imputations stabilize.
-3. **Create M completed datasets**. After burn-in, record the current 
-completed dataset as one imputed dataset. Then either: *restart* from 
+values) of $y$ and $x_{-k} = x_1, \ldots x_{k-1}, x_{k+1}, \ldots,
+x_{K}$. Use this model to draw impuations from the predictive
+distribution of the *missing* $x_i$. Completing this step for all
+$i=1, \ldots, K$ constitutes a single imputation cycle.
+2. **Warmup period**. Repeat the imputation cycle in step 1 several 
+times as warmup to let the imputations stabilize.
+3. **Create M completed datasets**. After the warmup, record the current 
+complete dataset as one imputed dataset. Then either *restart* from 
 step 0 and repeat steps 1–3 until you have $M$ completed datasets; or
 do a *single long run*, i.e., continue iterating steps 1–2 and save 
 the completed dataset at $M$ well-spaced iterations (e.g., every $S$ 
@@ -206,12 +213,22 @@ step 0 each time.
 4. **Fit the target model** $p(y|x_1, \ldots, x_K)$ separately to
 each of the $M$ completed datasets and save the posterior draws for 
 the parameters of interest.
-5. **Combine the draws** (or other inferential summaries) across the $M$ fits.
+5. **Combine the draws** (or other summaries) across the $M$ fits.
 
 The random samples from step 0 kickstart the imputation cycle but we
 do not use them to fit $p(y|x_1, \ldots, x_K)$. This kickstart is 
 especially useful when there are few complete data points in the 
 original data.
+
+Note that, as described here, the MICE procedure may lead to having
+incompatible conditional models. Compatibility means that there is
+a joint distribution that can be decomposed as the conditional
+distributions defined for the imputation. Using incompatible
+conditional distriubtions means that the imputation will technically
+not sample from any well defined probability distribution. But the
+consequences of this are not always serious. See section 6.4 in
+@carpenter-etal:2023 for a more detailed explanation of compatible
+models.
 
 ### Imputing two variables in Stan
 
@@ -238,33 +255,27 @@ model for $x^{\text{obs}}$.
 
 The Stan code to impute $z^{\text{mis}}$ is:
 ```stan
-// MODEL TO IMPUTE z (binary)
 data {
-  int<lower=0> N_obs;       // number of fully-observed z's
-  array[N_obs] int<lower=0, upper=1> z_obs;  // observed values of z 
-  vector[N_obs] y_obs;      // values of y that correspond to z_obs
-  vector[N_obs] x_obs;      // values of x that correspond to z_obs
-  int<lower=0> N_mis;       // number of rows with missing z's
-  vector[N_mis] y_aux;      // y corresponding to the missing z's
-  vector[N_mis] x_aux;      // x corresponding to the missing z's
+  int<lower=0> N_obs;
+  array[N_obs] int<lower=0, upper=1> z_obs;
+  vector[N_obs] y_obs;
+  vector[N_obs] x_obs;
+  int<lower=0> N_mis;
+  vector[N_mis] y_aux;
+  vector[N_mis] x_aux;
 }
 parameters {
-  real gamma_0;             // intercept
-  real gamma_1;             // coefficient for y_obs
-  real gamma_2;             // coefficient for x_obs
+  vector[3] gamma;
 }
 model {
-  // Likelihood (logistic regression)
-  z_obs ~ bernoulli_logit(gamma_0 + gamma_1 * y_obs 
-                          + gamma_2 * x_obs);
+  gamma ~ normal(0, 1);
+  z_obs ~ bernoulli_logit(gamma[1] + gamma[2] * y_obs 
+                          + gamma[3] * x_obs);
 }
 generated quantities {
-  // Random draws to impute missing z's
-  array[N_mis] int<lower=0, upper=1> z_imp; 
-  for (n in 1:N_mis) {
-    z_imp[n] = bernoulli_logit_rng(gamma_0 + gamma_1 * y_aux[n] 
-                                   + gamma_2 * x_aux[n]);
-  }
+  array[N_mis] int z_imp = bernoulli_logit_rng(gamma[1]
+                      + gamma[2] * y_aux
+                      + gamma[3] * x_aux);
 }
 ```
 
@@ -274,43 +285,32 @@ to initialize $x^{\text{mis}}$ in step 0 because we can impute it
 directly with the model for $x^{\text{obs}}$.
 ```stan
 completed_datasets <- []
-FOR m = 1 TO M:
-  // Step 0: Initialize missing z
+for (m in 1:M) {
   data_m <- copy(data_orig)
   data_m.z[missing_idz] <- random_sample(data_m.z[observed_idz])
-  // Begin burn-in imputation cycles
-  FOR cycle = 1 TO n_burn:
-    // Step 1: imputation cycle
-    // Update x given y, z
+  for (cycle in 1:n_burn) {
     stanmod_x <- build_model("model_for_x.stan")
     fit_x <- stanmod_x.fit(
       obs_data=data_m[observed_idx],
       mis_data=data_m[missing_idx]
     )
     data_m.x[missing_idx] <- get_imputations(fit_x, "x_imp")
-    // NOTE: get_imputations() takes ONE random draw for "x_imp" from
-    // the generated quantities block in the model fit.
-    // Update z given y, x (fit on observed z)
     stanmod_z <- build_model("model_for_z.stan")
     fit_z <- stanmod_z.fit(
       obs_data=data_m[observed_idz],
       mis_data=data_m[missing_idz]
     )
     data_m.z[missing_idz] <- get_imputations(fit_z, "z_imp")
-  END FOR
-  // Step 3 (Restart option): Save the latest completed dataset,  
-  // then restart for next imputation
+  }
   completed_datasets.append(data_m)
-END FOR
+}
 
 all_draws <- []
-FOR dataset IN completed_datasets:
-  // Step 4: Fit target model to each completed dataset
+for (dataset in completed_datasets){
   stanmod_y <- build_model("model_for_y.stan")
   fit_y <- stanmod_y.fit(dataset)   // fits p(y | x, z)
   all_draws.append(extract_draws(model_results))
-END FOR
-// Step 5: Combine posterior draws across imputations
+}
 all_results <- combine_results(all_draws)
 ```
 
@@ -318,7 +318,7 @@ all_results <- combine_results(all_draws)
 
 With Stan's MCMC sampler, we can treat posterior draw chains from
 imputed data sets as if they were chains based on complete data.
-There is one important difference: multiple imputation expresses
+There is one important difference. Multiple imputation expresses
 uncertainty in the missing values as consistent differences in the
 estimates obtained from different imputated data
 sets. This means that chains obtained from the same imputed data set 
@@ -326,8 +326,6 @@ should converge, but chains obtained from different data sets do not
 have to. So, we need not worry if diagnostics[^rhat] signal that the
 chains from different data sets are not converging properly.
 
-<!-- there is no need to use any special pooling 
-rules[^rubin] to account for the uncertainty in the imputation.  -->
 
 [^rubin]: Chapter 3, page 45 of @carpenter-etal:2023 summarizes one
 such set of pooling rules.
@@ -339,10 +337,7 @@ in the *Reference Manual*.
 
 ## Cut models
 
-[**NOTE**: I would greatly appreciate any comments or changes to
-improve this subsection.]
-
-A full bayesian probability model includes a feedback flow of
+A full Bayesian probability model includes a feedback flow of
 information between all parameters and all data. Cut models separate 
 some parts of this feedback flow so that different subsets of data 
 influence only some parameters in the model. From @plummer:2015,

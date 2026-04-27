@@ -6,15 +6,16 @@ pagetitle: Multiple Imputation
 
 Missing data is common in applied data analysis. Ignoring this 
 missingness can distort posterior inferences and reduce their
-precision. Modeling the missing data can improve inference quality. Chapter 18 in @GelmanEtAl:2013 offers an approximate Bayesian 
+precision. Modeling the missing data can improve inference quality.
+Chapter 18 in @GelmanEtAl:2013 offers an approximately Bayesian 
 perspective for analyzing data with missing values.
-
 
 Multiple imputation replaces missing values with different estimates 
 to obtain different versions of a complete data set. Then, the model 
 of interest can be fitted to each of these complete versions 
 separately. Combining the resulting draws from these different fits 
-produces a sample that accounts for the uncertainty in the missing values.
+produces a sample that accounts for the uncertainty in the missing
+values.
 
 ## Motivation and outline
 
@@ -83,7 +84,7 @@ $x_m^\text{imp}$ as if it was $x^\text{comp}$.
 Following the notation above, we can express the outline with the
 pseudocode below:
 ```stan
-theta_estimates = [] // Prepare to store draws from imputed data sets
+theta_estimates = []
 for (m in 1:M) {
   y_mis <- get_imputations(x_obs) // Draw random values for y_mis
   x_imp <- add_imputations(x, y_mis) // Complete data with imputations 
@@ -94,9 +95,9 @@ for (m in 1:M) {
 Each of the functions in this pseudocode can encapsulate simple or
 complex procedures. `get_imputations()`, for example, may impute
 missing data by taking values directly from `x_obs`; or it may model 
-a regression where a variable with missing values is the outcome
-and the variables with fully observed values are used as predictors.
-Below we illustrate how to implement this second approach in Stan.
+a regression where `x` is the outcome and the variables without
+missing observations are predictors. Below we illustrate how
+to implement this second approach in Stan.
 
 ## Imputing one variable in Stan
 
@@ -150,9 +151,11 @@ uncertainty from the estimated parameters and from the sampling
 variation in $x^{\text{mis}}$.
 
 Multiple posterior draws of $x^{\text{mis}}$ give us multiple imputed
-data sets. With these data sets we can model $p(y \mid x, z)$ as
+data sets. With these data sets we can model
+$p(y \mid \beta, \sigma, x, z)$ as
 $$
-y \sim \text{normal}(\beta_0 + \beta_1 x^\text{comp} + \beta_2 z, \sigma),
+y \sim \text{normal}(\beta_0 + \beta_1 x^\text{comp} + \beta_2 z,
+        \sigma),
 $$
 where $x^\text{comp}$ contains observed and imputed values. The Stan
 code for this model is:
@@ -174,9 +177,11 @@ model {
 }
 ```
 
-With multiple imputation, the model for $p(y \mid x, z)$ does not
-need to distinguish between observed and imputed values of $x$.
-Instead, it can treat all imputed data sets as complete because we can combine all the posterior draws from multiple fits.
+With multiple imputation, the model for
+$p(y \mid \beta, \sigma, x, z)$ does not need to distinguish
+between observed and imputed values of $x$. Instead, it can treat all
+imputed data sets as complete because we can combine all the
+posterior draws from multiple fits.
 
 ## Imputing two or more variables
 
@@ -200,46 +205,44 @@ conditional on the current versions (with observed and imputed
 values) of $y$ and $x_{-k} = x_1, \ldots x_{k-1}, x_{k+1}, \ldots,
 x_{K}$. Use this model to draw impuations from the predictive
 distribution of the *missing* $x_i$. Completing this step for all
-$i=1, \ldots, K$ constitutes a single imputation cycle.
+$i = 1, \ldots, K$ constitutes a single imputation cycle.
 2. **Warmup period**. Repeat the imputation cycle in step 1 several 
 times as warmup to let the imputations stabilize.
-3. **Create M completed datasets**. After the warmup, record the current 
-complete dataset as one imputed dataset. Then either *restart* from 
-step 0 and repeat steps 1–3 until you have $M$ completed datasets; or
-do a *single long run*, i.e., continue iterating steps 1–2 and save 
-the completed dataset at $M$ well-spaced iterations (e.g., every $S$ 
-cycles) to obtain $M$ completed datasets, without restarting from 
-step 0 each time.
-4. **Fit the target model** $p(y|x_1, \ldots, x_K)$ separately to
-each of the $M$ completed datasets and save the posterior draws for 
-the parameters of interest.
-5. **Combine the draws** (or other summaries) across the $M$ fits.
+3. **Create M imputed datasets**. After the warmup, record the
+current complete dataset as one imputed dataset. Then either
+*restart* from step 0 and repeat steps 1–3 until you have $M$
+imputed datasets; or do a *single long run*, i.e., continue
+iterating steps 1–2 and save the imputed dataset at $M$ well-spaced
+iterations (e.g., every $S$ cycles) to obtain $M$ imputed datasets,
+without restarting from step 0 each time.
+4. **Fit the target model** $p(y \mid \beta, \sigma, x_1, \ldots,
+x_K)$ separately to each of the $M$ imputed datasets and save the
+posterior draws for the parameters of interest.
+5. **Combine the draws** (or other summaries) from all $M$ fits.
 
-The random samples from step 0 kickstart the imputation cycle but we
-do not use them to fit $p(y|x_1, \ldots, x_K)$. This kickstart is 
-especially useful when there are few complete data points in the 
-original data.
 
-Note that, as described here, the MICE procedure may lead to having
-incompatible conditional models. Compatibility means that there is
-a joint distribution that can be decomposed as the conditional
-distributions defined for the imputation. Using incompatible
-conditional distriubtions means that the imputation will technically
-not sample from any well defined probability distribution. But the
-consequences of this are not always serious. See section 6.4 in
-@carpenter-etal:2023 for a more detailed explanation of compatible
-models.
+Note that, as described here, the MICE procedure does not guarantee
+that the conditional distributions of all variables will be
+compatible. *Compatibility* means that there is a joint distribution
+that can be decomposed as the conditional distributions defined for
+the imputation. So, to get a compatible imputation model, we must be
+careful when defining all the distributions used in the imputation.
+An incompatible imputation model will technically not sample from any
+well-defined probability distribution. But the consequences of this
+are not always serious. See section 6.4 in @carpenter-etal:2023 for a
+more detailed explanation of compatibility and of the related concept
+of congeniality.
 
 ### Imputing two variables in Stan
 
 Imagine that we again want to use numerical variables $x$ and $y$, 
 and dichotomic variable $z$ to estimate the parameters in
-$p(y \mid x, z)$. But now both $x$ and $z$ have missing
-values that we want to impute.
+$p(y \mid \beta, \sigma, x, z)$. But now both $x$ and $z$ have
+missing values that we want to impute.
 
-To do MICE in this example, we can reuse the models for $x$ and $y$
-that we defined above. We also need a new model to impute
-$z^{\text{mis}}$. We use the logistic regression
+To apply the MICE procedure in this example, we can reuse the models
+for $x$ and $y$ that we defined above. We also need a new model to
+impute $z^{\text{mis}}$, so we use the logistic regression
 $$
 z^{\text{obs}} \sim \text{Bernoulli}(
   \text{logit}^{-1}(
@@ -306,7 +309,7 @@ for (m in 1:M) {
 }
 
 all_draws <- []
-for (dataset in completed_datasets){
+for (dataset in completed_datasets) {
   stanmod_y <- build_model("model_for_y.stan")
   fit_y <- stanmod_y.fit(dataset)   // fits p(y | x, z)
   all_draws.append(extract_draws(model_results))
@@ -320,11 +323,12 @@ With Stan's MCMC sampler, we can treat posterior draw chains from
 imputed data sets as if they were chains based on complete data.
 There is one important difference. Multiple imputation expresses
 uncertainty in the missing values as consistent differences in the
-estimates obtained from different imputated data
-sets. This means that chains obtained from the same imputed data set 
-should converge, but chains obtained from different data sets do not
-have to. So, we need not worry if diagnostics[^rhat] signal that the
-chains from different data sets are not converging properly.
+estimates obtained from different imputated data sets. This means
+that chains obtained from the same imputed data set should converge,
+but chains obtained from different data sets do not have to. So, we
+need not worry if diagnostics[^rhat] signal that the chains from
+different data sets are not converging properly. See an example in
+@burkner:2025.
 
 
 [^rubin]: Chapter 3, page 45 of @carpenter-etal:2023 summarizes one
@@ -340,31 +344,11 @@ in the *Reference Manual*.
 A full Bayesian probability model includes a feedback flow of
 information between all parameters and all data. Cut models separate 
 some parts of this feedback flow so that different subsets of data 
-influence only some parameters in the model. From @plummer:2015,
-p. 37:
-
-> Cut models arise in applications with multiple data sources that
-provide information about different parameters in the model [...] 
-Interest lies in parameters $\theta$, which are informed by data $x$. 
-The likelihood for $\theta$ includes nuisance parameters $\phi$ that 
-are estimated using auxiliary data $Z$. In a full probability model,
-information from $x$ "feeds back" [...] to influence the posterior 
-distribution of $\phi$. There are circumstances in which
-this feedback may be considered unhelpful [...]
+influence only some parameters in the model (see @plummer:2015).
 
 Multiple imputation interrupts the flow of information from data to
-parameters. In our scenario above, for examlpe, the imputations
+parameters. In our regression above, for example, the imputations
 influence the distribution of the parameters in
 $p(y \mid x_1, \ldots, x_K)$, but these parameters do not influence
 the imputations. So, we could use multiple imputation to implement a
 cut model.
-
-Following Plummer's notation above, the outline for a cut model with 
-multiple imputation is
-
-1. Draw $M$ random samples $\phi^1, \ldots, \phi^M$ from a model
-$p(\phi \mid Z)$.
-2. To each of the $M$ samples, fit a model $p(\theta | x, \phi^j)$. 
-Each time, treat $\phi^j$ each time as if it was a fixed value, and 
-get multiple draws for $\theta$ from each $\phi^j$.
-3. Combine the draws for $\theta$ from all $M$ fits.

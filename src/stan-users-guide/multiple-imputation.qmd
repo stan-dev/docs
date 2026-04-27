@@ -6,7 +6,7 @@ pagetitle: Multiple Imputation
 
 Missing data is common in applied data analysis. Ignoring this 
 missingness can distort posterior inferences and reduce their
-precision. Modeling the missing data can improve inference quality.
+precision. Modeling this missingness can improve inference quality.
 Chapter 18 in @GelmanEtAl:2013 offers an approximately Bayesian 
 perspective for analyzing data with missing values.
 
@@ -53,8 +53,8 @@ $x^{\text{mis}}$.
 
 The equations above show that we do not need to describe
 $p(\theta \mid x^{\text{obs}})$ directly. Instead, we can first
-find a way to estimate $x^{\text{mis}}$ based on $x^{\text{obs}}$,
-and then use these estimates to fit the model
+find a way to sample from $x^{\text{mis}}$ based on $x^{\text{obs}}$,
+and then use these samples to fit the model
 $p(\theta \mid x^\text{imp})$, treating $x^\text{imp}$ as if it was 
 $x^\text{comp}$. 
 
@@ -86,18 +86,19 @@ pseudocode below:
 ```stan
 theta_estimates = []
 for (m in 1:M) {
-  y_mis <- get_imputations(x_obs) // Draw random values for y_mis
-  x_imp <- add_imputations(x, y_mis) // Complete data with imputations 
-  imputation_fits <- my_model.fit(x_imp).draws() // Get estimates
+  x_mis <- get_imputations(x_obs)
+  x_imp <- add_imputations(x_obs, x_mis)
+  imputation_fits <- my_model.fit(x_imp).draws()
   theta_estimates <- theta_estimates.append(imputation_fits)
 }
 ```
 Each of the functions in this pseudocode can encapsulate simple or
 complex procedures. `get_imputations()`, for example, may impute
 missing data by taking values directly from `x_obs`; or it may model 
-a regression where `x` is the outcome and the variables without
-missing observations are predictors. Below we illustrate how
-to implement this second approach in Stan.
+a regression where an $x_{\cdot, k}$ with missing values is the
+outcome and the $x_{\cdot, j}$ without missing observations are
+predictors. Below we illustrate how to implement this second approach
+in Stan.
 
 ## Imputing one variable in Stan
 
@@ -115,7 +116,7 @@ x^{\text{obs}} \sim \text{normal}(\gamma_0 + \gamma_1 y^{\text{obs}} +
     \gamma_2 z^{\text{obs}}, \lambda).
 $$
 
-This model can then give us estimates for the missing values
+This model can then give us samples for the missing values
 $x^{\text{mis}}$ conditional on the corresponding values of $y$ and 
 $z$, which we call $y^{\text{aux}}$ and $z^{\text{aux}}$. The 
 Stan code for this imputation is:
@@ -224,14 +225,13 @@ posterior draws for the parameters of interest.
 Note that, as described here, the MICE procedure does not guarantee
 that the conditional distributions of all variables will be
 compatible. *Compatibility* means that there is a joint distribution
-that can be decomposed as the conditional distributions defined for
-the imputation. So, to get a compatible imputation model, we must be
-careful when defining all the distributions used in the imputation.
-An incompatible imputation model will technically not sample from any
-well-defined probability distribution. But the consequences of this
-are not always serious. See section 6.4 in @carpenter-etal:2023 for a
-more detailed explanation of compatibility and of the related concept
-of congeniality.
+for all the variables used in the imputation that can be decomposed
+as the conditional distributions we used. An incompatible imputation
+model will technically not sample from any well-defined probability
+distribution. But the consequences of this are not always serious.
+See section 6.4 in @carpenter-etal:2023 for a more detailed
+explanation of compatibility and of the related concept of
+*congeniality*.
 
 ### Imputing two variables in Stan
 
@@ -246,14 +246,14 @@ impute $z^{\text{mis}}$, so we use the logistic regression
 $$
 z^{\text{obs}} \sim \text{Bernoulli}(
   \text{logit}^{-1}(
-    \alpha_0 + \alpha_1 y'^{\text{obs}} + \alpha_2 x'^{\text{obs}})
+    \alpha_0 + \alpha_1 y^{\text{obs}} + \alpha_2 x^{\text{obs}})
   ).
 $$
 Here, $z^{\text{obs}}$ contains only the completely observed
-values from our original data set, while $x'^{\text{obs}}$ and 
-$y'^{\text{obs}}$ contain all the values that correspond to
-$z^{\text{obs}}$. Thus, $x'^{\text{obs}}$ can include observed and
-imputed values, and $y'^{\text{obs}}$ need not be the same as in the 
+values from our original data set, while $x^{\text{obs}}$ and 
+$y^{\text{obs}}$ contain all the values that correspond to
+$z^{\text{obs}}$. Thus, $x^{\text{obs}}$ can include observed and
+imputed values, and $y^{\text{obs}}$ need not be the same as in the 
 model for $x^{\text{obs}}$.
 
 The Stan code to impute $z^{\text{mis}}$ is:
@@ -291,7 +291,7 @@ completed_datasets <- []
 for (m in 1:M) {
   data_m <- copy(data_orig)
   data_m.z[missing_idz] <- random_sample(data_m.z[observed_idz])
-  for (cycle in 1:n_burn) {
+  for (cycle in 1:n_warm) {
     stanmod_x <- build_model("model_for_x.stan")
     fit_x <- stanmod_x.fit(
       obs_data=data_m[observed_idx],
@@ -307,11 +307,10 @@ for (m in 1:M) {
   }
   completed_datasets.append(data_m)
 }
-
 all_draws <- []
 for (dataset in completed_datasets) {
   stanmod_y <- build_model("model_for_y.stan")
-  fit_y <- stanmod_y.fit(dataset)   // fits p(y | x, z)
+  fit_y <- stanmod_y.fit(dataset)
   all_draws.append(extract_draws(model_results))
 }
 all_results <- combine_results(all_draws)

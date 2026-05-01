@@ -6,27 +6,29 @@ pagetitle: Multiple Imputation
 
 Missing data is common in applied data analysis. Ignoring this 
 missingness can distort posterior inferences and reduce their
-precision. Modeling this missingness can improve inference quality.
-Chapter 18 in @GelmanEtAl:2013 offers an approximately Bayesian 
-perspective for analyzing data with missing values.
+precision, and modeling it can improve inference quality. There are
+several ways to model missing data. Chapter 18 in @GelmanEtAl:2013
+offers an approximately Bayesian perspective, and the chapter
+[*Missing Data and Partially Known Parameters*](https://mc-stan.org/docs/stan-users-guide/missing-data.html)
+in the *Reference Manual* shows an approach that handles missing
+data as parameters.
 
-Multiple imputation replaces missing values with different estimates 
-to obtain different versions of a complete data set. Then, the model 
-of interest can be fitted to each of these complete versions 
-separately. Combining the resulting draws from these different fits 
-produces a sample that accounts for the uncertainty in the missing
-values.
+Another way to model missing data is through multiple imputation,
+which replaces missing values with sampled values to obtain
+different versions of a complete data set. Then, the model of
+interest can be fitted to each of these complete versions separately.
+Combining the resulting draws from these different fits produces a
+sample that accounts for the uncertainty in the missing values.
 
 ## Motivation and outline
 
-Suppose that we have a matrix $x$ with columns
+Suppose that we have a data set $x$ with columns
 $x_{\cdot, 1}, \ldots, x_{\cdot, K}$ that make up covariates in a
-regression with quantities of interest $\theta$. With
-the completely observed data, $x^\text{comp}$, we could estimate the 
-posterior distribution of $\theta$ as $p(\theta \mid x^\text{comp})$.
-But with missing data, our matrix is split into $x^{\text{obs}}$ (the
-observed values of $x$) and $x^{\text{mis}}$ (the missing  values of
-$x$).
+regression with quantities of interest $\theta$. With the completely
+observed data, $x^\text{comp}$, we could estimate the posterior
+distribution of $\theta$ as $p(\theta \mid x^\text{comp})$. But with
+missing data, our matrix is split into $x^{\text{obs}}$ (the observed
+values of $x$) and $x^{\text{mis}}$ (the missing values of $x$).
 
 Fortunately, we can treat $x^{\text{mis}}$ as additional, nuisance 
 parameters that we can estimate along with $\theta$ as
@@ -64,7 +66,8 @@ and outcome $y$, this model for $x$ is not needed because inferences
 for the regression parameters are independent of the model of $x$
 when $x$ is fully observed. But with missing data and multiple
 imputation, we need to generate values for $x^{\text{mis}}$ based on
-$x^{\text{obs}}$, which in turn needs an explicit model for $x$.
+$x^{\text{obs}}$, which in turn needs an explicit model for
+$x^{\text{mis}}$.
 
 Thus, the general outline for multiple imputation with a number $M$
 of imputations is:
@@ -180,9 +183,9 @@ model {
 
 With multiple imputation, the model for
 $p(y \mid \beta, \sigma, x, z)$ does not need to distinguish
-between observed and imputed values of $x$. Instead, it can treat all
-imputed data sets as complete because we can combine all the
-posterior draws from multiple fits.
+between observed and imputed values of $x$. Instead, this model can
+treat all imputed data sets as complete because we can combine all
+the posterior draws from multiple fits.
 
 ## Imputing two or more variables
 
@@ -191,15 +194,16 @@ explanatory variables $x_1, \ldots, x_K$, each of which can have
 missing values that we want to impute.
 
 One solution is to do multiple imputation through chained equations, 
-often called "MICE"[^mice]. The MICE procedure in this scenario is:
+a procedure often called "MICE"[^mice]. The MICE procedure in this
+scenario is:
 
 [^mice]: Section 5 of chapter 4 in @vanbuuren:2018 details the
 MICE procedure in a frequentist context.
 
 0. **Initialize missing values in all $x_i$**. For each variable 
 $x_i$ with missing entries, fill its missing values with random 
-samples from its observed values (or another simple initialization 
-rule). 
+samples from its observed values (or use another simple
+initialization rule). 
 1. **Update each $x_i$ given $y$ and the other $x$’s**.
 For $i=1, \ldots, K$, fit a model for the *observed* $x_i$
 conditional on the current versions (with observed and imputed 
@@ -255,6 +259,9 @@ $y^{\text{obs}}$ contain all the values that correspond to
 $z^{\text{obs}}$. Thus, $x^{\text{obs}}$ can include observed and
 imputed values, and $y^{\text{obs}}$ need not be the same as in the 
 model for $x^{\text{obs}}$.
+
+With this model we can sample values for $z^{\text{mis}}$ conditional
+on its corresponding values $y^{\text{aux}}$ and $x^{\text{aux}}$.
 
 The Stan code to impute $z^{\text{mis}}$ is:
 ```stan
@@ -326,10 +333,11 @@ estimates obtained from different imputated data sets. This means
 that chains obtained from the same imputed data set should converge,
 but chains obtained from different data sets do not have to. So, we
 need not worry if diagnostics[^rhat] signal that the chains from
-different data sets are not converging properly. See an example in
-@burkner:2025.
+different imputed data sets are not converging properly. See an
+example in @burkner:2025.
 
-[^rhat]: Such as $\hat{R}$. See [*Split R-hat for detecting non-stationarity*](https://mc-stan.org/docs/reference-manual/analysis.html#split-r-hat-for-detecting-non-stationarity) 
+[^rhat]: Such as $\hat{R}$. See
+[*Split R-hat for detecting non-stationarity*](https://mc-stan.org/docs/reference-manual/analysis.html#split-r-hat-for-detecting-non-stationarity) 
 in the *Reference Manual*.
 
 ## Cut models

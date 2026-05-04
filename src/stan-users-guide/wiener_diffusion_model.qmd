@@ -16,7 +16,8 @@ point, $w$, the drift rate, $v$, and the non-decision time, $t0$ [@Ratcliff1978]
 In the seven-parameter extension of the diffusion model there are the following 
 three parameters added: the inter-trial variability in relative starting point, 
 $s_w$, the inter-trial variability in drift rate, $s_v$, and the inter-trial 
-variability in non-decision time, $s_{t0}$ [@Ratcliff1998].
+variability in non-decision time, $s_{t0}$ 
+[@Ratcliff1998, @nicenboim2025introduction].
 
 As a diffusion model describes the decision process for a decision with exactly 
 two choices, there exist reaction time distributions for each response 
@@ -36,7 +37,7 @@ $$
 
 Usually, a $\text{PDF}$ integrates to 1. In the case of the diffusion model, 
 only the sum of both parts, $\text{PDF}_0$ and $\text{PDF}_1$, integrates to 1. 
-This is called a _defective_.
+This is called _defective_.
 
 
 ::: {#fig-DDM}
@@ -95,6 +96,11 @@ parameters {
  real <lower=0> st0; // variability in non - decision time
 }
 
+transformed parameters{
+ real one_minus_w = 1-w;
+ real neg_v = -v;
+}
+
 model {
  // prior distributions of parameters
  a ∼ normal(1, 1);
@@ -111,7 +117,7 @@ model {
   if (resp[i] == 1) { // upper boundary
    target += wiener_full_lpdf(rt[i] | a, t0, w, v, sv, sw, st0);
   } else { // lower boundary(mirror drift and starting point )
-   target += wiener_full_lpdf(rt[i] | a, t0, 1-w, -v, sv, sw, st0);
+   target += wiener_full_lpdf(rt[i] | a, t0, one_minus_w, neg_v, sv, sw, st0);
   }
  }
 }
@@ -128,10 +134,15 @@ The data should consist of at least three variables:
 Note that two different ways of coding responses are commonly used: First, in 
 _response coding_, the boundaries correspond to the two response alternatives. 
 Second, in _accuracy coding_, the boundaries correspond to correct (upper bound) 
-and wrong (lower bound) responses.
+and wrong (lower bound) responses. This means, depending on the coding you 
+choose, the bounds mentioned in the second variable above differ and the 
+_response_ variable will have a different form.
 
 Depending on the experimental design, one would typically also provide the 
-number of conditions and the condition associated with each trial as a vector. 
+number of conditions and the condition associated with each trial as a vector.
+Then, there will be computed one model for each condition. This means that the 
+parameters also have to be defined for each condition.
+
 In a hierarchical setting, the **data block** would also specify the number of 
 participants and the participant associated with each trial as a vector. It is 
 also possible to hand over a precision value in the **data block**.
@@ -289,17 +300,17 @@ model { // compute the denominator on log scale
  real denom = log_diff_exp(
   log_sum_exp(
    wiener_lcdf_unnorm(right_bound | a, t0, w, v, sv, sw, st),
-   wiener_lcdf_unnorm(right_bound | a, t0, 1-w, -v, sv, sw, st)),
+   wiener_lcdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st)),
   log_sum_exp(
    wiener_lcdf_unnorm(left_bound | a, t0, w, v, sv, sw, st),
-   wiener_lcdf_unnorm(left_bound | a, t0, 1-w, -v, sv, sw, st))
+   wiener_lcdf_unnorm(left_bound | a, t0, one_minus_w, neg_v, sv, sw, st))
  ); // parenthesis log_diff_exp
  // compute log - likelihood
  for (i in 1:N) {
   if (resp[i] == 1) { // response -1 boundary
    target += wiener_lpdf (rt[i] | a, t0, w, v, sv, sw, st);
   } else { // response -0 boundary ( mirror v and w)
-   target += wiener_lpdf (rt[i] | a, t0, 1-w, -v, sv, sw, st);
+   target += wiener_lpdf (rt[i] | a, t0, one_minus_w, neg_v, sv, sw, st);
   }
    target += -denom ;
  } // end for
@@ -345,15 +356,15 @@ model { // ... // definition of priors for all model parameters
    }
   } else if (resp[i] == 0) { // response-0 boundary
    if (censored[i] == 0) {
-    x[i] ∼ wiener(a, t0, 1-w, -v, sv, sw, st0);
+    x[i] ∼ wiener(a, t0, one_minus_w, neg_v, sv, sw, st0);
    } // end if
   } // end else if
  } // end for
 
  // summands for response = 0
- target += N_cens_left_0 * wiener_lcdf_unnorm(left_bound | a, t0, 1-w, -v, sv, sw, st0);
+ target += N_cens_left_0 * wiener_lcdf_unnorm(left_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
 
- target += N_cens_right_0 * wiener_lccdf_unnorm(right_bound | a, t0, 1-w, -v, sv, sw, st0);
+ target += N_cens_right_0 * wiener_lccdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
 
  // summands for response = 1
  target += N_cens_left_1 * wiener_lcdf_unnorm(left_bound | a, t0, w, v, sv, sw, st0);
@@ -391,11 +402,11 @@ model { // ... // definition of priors for all model parameters
   } else { // lower response boundary (mirror drift and
  // starting point!)
    if (censored[i] == 1) {
-    target += wiener_lpdf(x[i] | a, t0, 1-w, -v, sv, sw, st0);
+    target += wiener_lpdf(x[i] | a, t0, one_minus_w, neg_v, sv, sw, st0);
    } else if (censored[i] == 0) {
-    target += wiener_lcdf_unnorm(left_bound | a, t0, 1-w, -v, sv, sw, st0);
+    target += wiener_lcdf_unnorm(left_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
    } else if (censored[i] == 2) {
-    target += wiener_lccdf_unnorm(right_bound | a, t0, 1-w, -v, sv, sw, st0);
+    target += wiener_lccdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
    }
   }
  }
@@ -461,12 +472,12 @@ functions { // parallelization function
     if (resp[i] == 1) { // upper boundary
      ans += wiener_lpdf(rt_slice[i+1- start ] | a, t0, w, v, sv, sw, st);
     } else { // lower boundary(mirror v and w)
-     ans += wiener_lpdf(rt_slice[i+1- start ] | a, t0, 1 - w, -v, sv, sw, st);
+     ans += wiener_lpdf(rt_slice[i+1- start ] | a, t0, one_minus_w, neg_v, sv, sw, st);
     }
    } else { // censored data
     ans += log_sum_exp (
      wiener_lccdf_unnorm(right_bound | a, t0, w, v, sv, sw, st),
-     wiener_lccdf_unnorm(right_bound | a, t0, 1-w, -v, sv, sw, st);
+     wiener_lccdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st);
    }
   } // end for
   return ans;

@@ -5,7 +5,7 @@ format:
     default-image-extension: jpg
 ---
 
-# Wiener Diffusion Model
+# Wiener diffusion model
 
 Diffusion models, sometimes also called Wiener diffusion models, are among the 
 most frequently used model families in modeling two-alternative forced-choice 
@@ -45,7 +45,7 @@ This is called _defective_.
 
 Figure 1: Realization of a Four-Parameter Diffusion Process Modeling the Binary 
 Decision Process.
- **Note.** The parameters are the boundary separation a for two response 
+ *Note.* The parameters are the boundary separation a for two response 
  alternatives, the relative starting point w, the drift rate v, and the 
  non-decision time t0. The decision process is illustrated as a jagged line 
  between the two boundaries. The predicted distributions of the reaction times 
@@ -74,7 +74,7 @@ $$
 y \sim \operatorname{wiener\_lpdf}(a, t0, w, v, s_v, s_w, s_{t0})
 $$
 
-## Function Call Example
+## Function call example
 
 The following example demonstrates a diffusion model call in Stan:
 
@@ -123,7 +123,7 @@ model {
 }
 ```
 
-### The Data Block
+### The data block
 
 The data should consist of at least three variables:
 
@@ -143,23 +143,23 @@ number of conditions and the condition associated with each trial as a vector.
 Then, there will be computed one model for each condition. This means that the 
 parameters also have to be defined for each condition.
 
-In a hierarchical setting, the **data block** would also specify the number of 
+In a hierarchical setting, the data block would also specify the number of 
 participants and the participant associated with each trial as a vector. It is 
-also possible to hand over a precision value in the **data block**.
+also possible to hand over a precision value in the data block.
 
 
 
-### The Parameters Block
+### The parameters block
 
 The model arguments of the `wiener_lpdf()` function that are not fixed to a 
-certain value are defned as parameters in the **parameters block**. In this 
+certain value are defned as parameters in the parameters block. In this 
 block, it is also possible to insert restrictions on the parameters. Note that 
 the MCMC algorithm iteratively searches for the next parameter set. If the 
 suggested sample falls outside the internally defined parameter ranges, the 
 program will throw an error, which causes the algorithm to restart the current 
 iteration. Since this slows down the sampling process, it is advisable to 
 include the parameter ranges in the defnition of the parameters in the 
-**parameters block** to improve the sampling process (see table below for the 
+parameters block to improve the sampling process (see table below for the 
 parameter ranges). In addition, the parameter space is further constrained by 
 the following conditions:
 
@@ -185,9 +185,9 @@ $$
 
 
 
-### The Model Block
+### The model block
 
-In the **model block**, the priors are defined and the likelihood is called for 
+In the model block, the priors are defined and the likelihood is called for 
 the upper and the lower response boundary. Different kinds of priors can be 
 specifed here. When no prior is specifed for a parameter, Stan uses default 
 priors.
@@ -195,7 +195,7 @@ priors.
 Generally, mildly informative priors might help to get the full benefit of a 
 Bayesian analysis.
 
-In the second part of the **model block**, the likelihood function is applied to 
+In the second part of the model block, the likelihood function is applied to 
 all responses. Drift rate $v$ and relative starting point $w$ have to be 
 mirrored for responses at the lower boundary.
 
@@ -340,7 +340,7 @@ first the case where the response is known even for censored data.
 
 To model such data in Stan, the left and right reaction time bounds, 
 `left_bound` and `right_bound`, respectively, are handed over in the 
-**data block**, as well as a vector `censored` that tracks whether a trial is 
+data block, as well as a vector `censored` that tracks whether a trial is 
 censored (= 1) or not (= 0), and counts of trials censored at the left reaction 
 time bound and counts of trials censored at the right reaction time bound for 
 each response in {0,1}. There are four such count variables: `N_cens_left_0`, 
@@ -380,7 +380,7 @@ When data consist of many conditions, it is sometimes more convenient to loop
 over all trials instead of using count variables as described above, using the 
 following notation and code. A vector containing the information whether a trial 
 is censored or not, here `censored`, needs to be handed over in the 
-**data block**. This vector splits the data into three bins: all trials $i$ with
+data block. This vector splits the data into three bins: all trials $i$ with
 `censored[i]=0` are censored below the left reaction time bound, all trials $i$ 
 with `censored[i]=1` fall between the reaction time bounds, and all trials $i$ 
 with `censored[i]=2` are censored above the right reaction time bound. For 
@@ -456,9 +456,9 @@ computing the probability of choosing the response-1- or response-0 boundary
 outside the response window. Here, the CDF and/or the CCDF are required, 
 depending upon whether there is only left-censoring, right-censoring, or 
 censoring both to the left and to the right. The following code shows the 
-**functions block** for a model that is right-censored using the function 
+functions block for a model that is right-censored using the function 
 `partial_sum_wiener()` for parallel computations. Combine this block with the 
-**model block** in the example above:
+model block in the example above:
 
 ```stan
 functions { // parallelization function

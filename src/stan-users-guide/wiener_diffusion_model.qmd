@@ -21,22 +21,22 @@ variability in non-decision time, $s_{t0}$
 
 As a diffusion model describes the decision process for a decision with exactly 
 two choices, there exist reaction time distributions for each response 
-alternative. This means that the probability distribution function 
-($\text{PDF}$) splits into one part for one response alternative and one part 
+alternative. This means that the probability density function 
+($p$) splits into one part for one response alternative and one part 
 for the other response alternative. In the following, we will refer to one 
 alternative as the _upper response boundary_ and to the other alternative as 
-the _lower response boundary_. The $\text{PDF}$ of the lower response boundary 
-can be obtained when inserting $-v$ and $1-w$ to the $\text{PDF}$ of the upper 
-response boundary. Let's call the $\text{PDF}$ for the lower response boundary 
-$\text{PDF}_0$ and the $\text{PDF}$ for the upper response boundary 
-$\text{PDF}_1$. Then:
+the _lower response boundary_. $p$ of the lower response boundary 
+can be obtained when inserting $-v$ and $1-w$ to $p$ of the upper 
+response boundary. Let's call $p$ for the lower response boundary 
+$p_0$ and $p$ for the upper response boundary 
+$p_1$. Then:
 
 $$
-\text{PDF}_0(a,t0,v,w,sv,sw,st0) = \text{PDF}_1(a,t0,-v,1-w,sv,sw,st0)
+p_0(a,t0,v,w,sv,sw,st0) = p_1(a,t0,-v,1-w,sv,sw,st0)
 $$
 
-Usually, a $\text{PDF}$ integrates to 1. In the case of the diffusion model, 
-only the sum of both parts, $\text{PDF}_0$ and $\text{PDF}_1$, integrates to 1. 
+Usually, a $PDF$ integrates to 1. In the case of the diffusion model, 
+only the sum of both parts, $p_0$ and $p_1$, integrates to 1. 
 This is called _defective_.
 
 
@@ -55,7 +55,7 @@ Decision Process.
 
 The Stan function `wiener_lpdf()` returns the logarithm of the first-passage 
 time density function for a diffusion model with up to seven parameters for 
-upper boundary responses, $\log(\text{PDF}_1)$. Any combination of fixed and 
+upper boundary responses, $\log(p_1)$. Any combination of fixed and 
 estimated parameters can be specified. In other words, with this implementation 
 it is not only possible to estimate parameters of the full seven-parameter 
 model, but also to estimate restricted models such as the basic four-parameter 
@@ -80,46 +80,50 @@ The following example demonstrates a diffusion model call in Stan:
 
 ```stan
 data {
- int <lower=0> N; // Number of trials
- array[N] real rt; // response times (in seconds )
- array[N] int <lower=0, upper=1> resp; // responses {0 ,1}
+  int <lower=0> N; // Number of trials
+  array[N] real rt; // response times (in seconds )
+  array[N] int <lower=0, upper=1> resp; // responses {0 ,1}
+}
+
+transformed data{
+  real min_rt = min(rt);
 }
 
 parameters {
- real <lower=0> a; // boundary separation
- real v; // drift
- real <lower=0, upper=1> w; // relative starting point
- real <lower=0> t0; // non - decision time
+  real <lower=0> a; // boundary separation
+  real v; // drift
+  real <lower=0, upper=1> w; // relative starting point
+  real <lower=0, upper=min_rt> t0; // non-decision time
 
- real <lower=0> sv; // variability in drift
- real <lower=0, upper=1> sw; // variability in starting point
- real <lower=0> st0; // variability in non - decision time
+  real <lower=0> sv; // variability in drift
+  real <lower=0, upper=fmin(2*w, 2*(1-w))> sw; // variability in starting point
+  real <lower=0> st0; // variability in non-decision time
 }
 
 transformed parameters{
- real one_minus_w = 1-w;
- real neg_v = -v;
+  real one_minus_w = 1-w;
+  real neg_v = -v;
 }
 
 model {
- // prior distributions of parameters
- a ∼ normal(1, 1);
- w ∼ normal(0.5, 0.1);
- v ∼ normal(2, 3);
- t0 ∼ normal(0.435, 0.12);
+  // prior distributions of parameters
+  a ∼ normal(1, 1);
+  w ∼ normal(0.5, 0.1);
+  v ∼ normal(2, 3);
+  t0 ∼ normal(0.435, 0.12);
 
- sv ∼ normal(1, 3);
- st0 ∼ normal(0.183, 0.09);
- sw ∼ beta(1, 3);
+  sv ∼ normal(1, 3);
+  st0 ∼ normal(0.183, 0.09);
+  sw ∼ beta(1, 3);
 
- // diffusion model
- for (i in 1:N) {
-  if (resp[i] == 1) { // upper boundary
-   target += wiener_full_lpdf(rt[i] | a, t0, w, v, sv, sw, st0);
-  } else { // lower boundary(mirror drift and starting point )
-   target += wiener_full_lpdf(rt[i] | a, t0, one_minus_w, neg_v, sv, sw, st0);
+  // diffusion model
+  for (i in 1:N) {
+    if (resp[i] == 1) { // upper boundary
+      target += wiener_full_lpdf(rt[i] | a, t0, w, v, sv, sw, st0);
+    } else { // lower boundary(mirror drift and starting point )
+      target += wiener_full_lpdf(rt[i] | a, t0, one_minus_w, neg_v, sv, sw, st0);
+    }
   }
- }
 }
 ```
 
@@ -180,7 +184,7 @@ $$
 |:-----------|:-------------|:--|:----------|:------------|
 |$a$         | (0, $\infty$)|   | $y$         |(0, $\infty$)|
 |$v$         | (-$\infty$, $\infty$)| | $s_v$ |[0, $\infty$)|
-|$w$         | (0,1)        |   | $s_w$     | [0,1)|
+|$w$         | (0,1)        |   | $s_w$     | [0,min(2*w, 2*(1-w)))|
 |$t_0$       |[0,$\infty$)  |   | $s_{t0}$  |[0,$\infty$)|
 
 
@@ -189,17 +193,17 @@ $$
 
 In the model block, the priors are defined and the likelihood is called for 
 the upper and the lower response boundary. Different kinds of priors can be 
-specifed here. When no prior is specifed for a parameter, Stan uses default 
-priors.
+specifed here.
 
 Generally, mildly informative priors might help to get the full benefit of a 
 Bayesian analysis.
 
 In the second part of the model block, the likelihood function is applied to 
-all responses. Drift rate $v$ and relative starting point $w$ have to be 
+all responses. The drift rate $v$ and relative starting point $w$ have to be 
 mirrored for responses at the lower boundary.
 
-For more details, see @Henrich2024.
+For more details regarding the application of the diffusion model in Stan, see
+@Henrich2024.
 
 
 ## Truncated and censored data {#wiener-truncation}
@@ -219,23 +223,23 @@ skewness is regularly too large to ignore [@Ulrich1994], data analysts are well
 advised to account for these effects.
 
 As described in the [Truncated or Censored Data](./truncation-censoring.qmd) 
-chapter, the cumulative distribution function ($\text{CDF}$) and its complement 
+chapter, the cumulative distribution function ($F$) and its complement 
 ($\text{CCDF}$) are needed to model truncated and censored data.
 
-As explained above, the $\text{PDF}$ is defined _defectively_, meaning that only 
-the sum of the $\text{PDF}$s for both response alternatives integrates to 1. For 
-the same reason, the $\text{CDF}$ and $\text{CCDF}$ are also implemented 
-defectively. Analogously, only the sum of the $\text{CDF}$s and $\text{CCDF}$s 
-for both response alternatives converges to 1.
+As explained above, $p$ is defined _defectively_, meaning that only 
+the sum of $p$s for both response alternatives integrates to 1. For 
+the same reason, $F$ and $\text{CCDF}$ are also implemented 
+defectively. Analogously, only the sum of the $F$s and $\text{CCDF}$s 
+for both response alternatives asymptotes above at 1.
 
-In the case of the diffusion model, the $\text{CDF}$ converges to the 
-probability $P$ to hit the corresponding response boundary: (for simplicity, we 
+In the case of the diffusion model, $F$ asymptotes above at the 
+probability $PROB$ to hit the corresponding response boundary: (for simplicity, we 
 omit the inter-trial variabilities in the following)
 
 $$
 \begin{aligned}
-\text{CDF}_1(\infty\mid a,w,v) &= P(a,w,v) \text{ and} \\
-\text{CDF}_0(\infty\mid a,w,v) &= \text{CDF}_1(\infty\mid a,1-w,-v) = P(a,1-w,-v)
+F_1(\infty\mid a,w,v) &= \text{PROB}(a,w,v) \text{ and} \\
+F_0(\infty\mid a,w,v) &= F_1(\infty\mid a,1-w,-v) = \text{PROB}(a,1-w,-v)
 \end{aligned}
 $$
 
@@ -257,17 +261,17 @@ denoted as $\text{resp}\in\{0,1\}$, can be formulated as follows:
 
 $$
 \begin{aligned}
-&\text{PDF}_{\text{resp}}(x \mid L<X\leq U, a, w, v) = \\ &\frac{\text{PDF}_{\text{resp}}(x \mid a, w, v)\cdot \mathbb{I}_{\{L<x\leq U\}}}
-{\bigl(\text{CDF}_0(U \mid a, w, v)+\text{CDF}_1(U \mid a, w, v)\bigr) -
-\bigl(\text{CDF}_0(L\mid a, w, v)+\text{CDF}_1(L\mid a, w, v)\bigr)}
+&p_{\text{resp}}(x \mid L<X\leq U, a, w, v) = \\ &\frac{p_{\text{resp}}(x \mid a, w, v)\cdot \mathbb{I}_{\{L<x\leq U\}}}
+{\bigl(F_0(U \mid a, w, v)+F_1(U \mid a, w, v)\bigr) -
+\bigl(F_0(L\mid a, w, v)+F_1(L\mid a, w, v)\bigr)}
 \end{aligned}
 $$
 
 The density of left truncated  data can be formulated as follows:
 $$
 \begin{aligned}
-\text{PDF}_{\text{resp}}(x \mid L<X, a, w, v) = \frac{\text{PDF}_{\text{resp}}(x \mid a, w, v)\cdot \mathbb{I}_{\{L<x\}}}
-{1-\bigl(\text{CDF}_0(L \mid a, w, v)+\text{CDF}_1(L \mid a, w, v)\bigr)},
+p_{\text{resp}}(x \mid L<X, a, w, v) = \frac{p_{\text{resp}}(x \mid a, w, v)\cdot \mathbb{I}_{\{L<x\}}}
+{1-\bigl(F_0(L \mid a, w, v)+F_1(L \mid a, w, v)\bigr)},
 \end{aligned}
 $$
 
@@ -275,7 +279,7 @@ and the density of right truncated data can be formulated as follows:
 
 $$
 \begin{aligned}
-\text{PDF}_{\text{resp}}(x \mid X\leq U, a, w, v) = \frac{\text{PDF}_{\text{resp}}(x \mid a, w, v)\cdot \mathbb{I}_{\{x\leq U\}}}{\text{CDF}_0(U \mid a, w, v)+\text{CDF}_1(U \mid a, w, v)}
+p_{\text{resp}}(x \mid X\leq U, a, w, v) = \frac{p_{\text{resp}}(x \mid a, w, v)\cdot \mathbb{I}_{\{x\leq U\}}}{F_0(U \mid a, w, v)+F_1(U \mid a, w, v)}
 \end{aligned}
 $$
 
@@ -297,28 +301,28 @@ logarithmized CDF of the diffusion model at the response-1-boundary:
 
 ```stan
 model { // compute the denominator on log scale
- real denom = log_diff_exp(
-  log_sum_exp(
-   wiener_lcdf_unnorm(right_bound | a, t0, w, v, sv, sw, st),
-   wiener_lcdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st)),
-  log_sum_exp(
-   wiener_lcdf_unnorm(left_bound | a, t0, w, v, sv, sw, st),
-   wiener_lcdf_unnorm(left_bound | a, t0, one_minus_w, neg_v, sv, sw, st))
- ); // parenthesis log_diff_exp
- // compute log - likelihood
- for (i in 1:N) {
-  if (resp[i] == 1) { // response -1 boundary
-   target += wiener_lpdf (rt[i] | a, t0, w, v, sv, sw, st);
-  } else { // response -0 boundary ( mirror v and w)
-   target += wiener_lpdf (rt[i] | a, t0, one_minus_w, neg_v, sv, sw, st);
-  }
-   target += -denom ;
- } // end for
+  real log_denom = log_diff_exp(
+    log_sum_exp(
+      wiener_lcdf_unnorm(right_bound | a, t0, w, v, sv, sw, st),
+      wiener_lcdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st)),
+    log_sum_exp(
+      wiener_lcdf_unnorm(left_bound | a, t0, w, v, sv, sw, st),
+      wiener_lcdf_unnorm(left_bound | a, t0, one_minus_w, neg_v, sv, sw, st))
+  ); // parenthesis log_diff_exp
+  // compute log - likelihood
+  for (i in 1:N) {
+    if (resp[i] == 1) { // response -1 boundary
+      target += wiener_lpdf (rt[i] | a, t0, w, v, sv, sw, st);
+    } else { // response -0 boundary ( mirror v and w)
+      target += wiener_lpdf (rt[i] | a, t0, one_minus_w, neg_v, sv, sw, st);
+    }
+  } // end for
+  target += -N * log_denom;
 }
 ```
 
-How to call a truncated model within the parallelization routine of `reduce_sum`
-or with truncation to only on side, see @Henrich2026.
+For details of how to call a truncated model within the parallelization routine 
+of `reduce_sum` or with truncation to only on side, see @Henrich2026.
 
 
 
@@ -349,27 +353,31 @@ each response in {0,1}. There are four such count variables: `N_cens_left_0`,
 
 ```stan
 model { // ... // definition of priors for all model parameters
- for (i in 1:N) {
-  if (resp[i] == 1) { // response-1 boundary
-   if (censored[i] == 0) {
-    x[i] ∼ wiener(a, t0, w, v, sv, sw, st0);
-   }
-  } else if (resp[i] == 0) { // response-0 boundary
-   if (censored[i] == 0) {
-    x[i] ∼ wiener(a, t0, one_minus_w, neg_v, sv, sw, st0);
-   } // end if
-  } // end else if
- } // end for
+  for (i in 1:N) {
+    if (resp[i] == 1) { // response-1 boundary
+      if (censored[i] == 0) {
+        x[i] ∼ wiener(a, t0, w, v, sv, sw, st0);
+      }
+    } else if (resp[i] == 0) { // response-0 boundary
+      if (censored[i] == 0) {
+        x[i] ∼ wiener(a, t0, one_minus_w, neg_v, sv, sw, st0);
+      } // end if
+    } // end else if
+  } // end for
 
- // summands for response = 0
- target += N_cens_left_0 * wiener_lcdf_unnorm(left_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
+  // summands for response = 0
+  target += N_cens_left_0 
+         * wiener_lcdf_unnorm(left_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
 
- target += N_cens_right_0 * wiener_lccdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
+  target += N_cens_right_0 
+         * wiener_lccdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
 
- // summands for response = 1
- target += N_cens_left_1 * wiener_lcdf_unnorm(left_bound | a, t0, w, v, sv, sw, st0);
+  // summands for response = 1
+  target += N_cens_left_1 
+         * wiener_lcdf_unnorm(left_bound | a, t0, w, v, sv, sw, st0);
 
- target += N_cens_right_1 * wiener_lccdf_unnorm(right_bound | a, t0, w, v, sv, sw, st0);
+  target += N_cens_right_1 
+         * wiener_lccdf_unnorm(right_bound | a, t0, w, v, sv, sw, st0);
 }
 ```
 
@@ -390,30 +398,30 @@ log-CDF is computed, and for right censored trials, the log-CCDF is computed:
 
 ```stan
 model { // ... // definition of priors for all model parameters
- for (i in 1:N) { // right censored at right_bound
-  if (resp [i] == 1) { // upper response boundary
-   if (censored[i] == 1) {
-    target += wiener_lpdf(x[i] | a, t0, w, v, sv, sw, st0);
-   } else if (censored[i] == 0) {
-    target += wiener_lcdf_unnorm(left_bound | a, t0, w, v, sv, sw, st0);
-   } else if (censored[i] == 2) {
-     target += wiener_lccdf_unnorm(right_bound | a, t0, w, v, sv, sw, st0);
-   }
-  } else { // lower response boundary (mirror drift and
- // starting point!)
-   if (censored[i] == 1) {
-    target += wiener_lpdf(x[i] | a, t0, one_minus_w, neg_v, sv, sw, st0);
-   } else if (censored[i] == 0) {
-    target += wiener_lcdf_unnorm(left_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
-   } else if (censored[i] == 2) {
-    target += wiener_lccdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
-   }
+  for (i in 1:N) { // right censored at right_bound
+    if (resp [i] == 1) { // upper response boundary
+      if (censored[i] == 1) {
+        target += wiener_lpdf(x[i] | a, t0, w, v, sv, sw, st0);
+      } else if (censored[i] == 0) {
+        target += wiener_lcdf_unnorm(left_bound | a, t0, w, v, sv, sw, st0);
+      } else if (censored[i] == 2) {
+         target += wiener_lccdf_unnorm(right_bound | a, t0, w, v, sv, sw, st0);
+      }
+    } else { // lower response boundary (mirror drift and
+    // starting point!)
+      if (censored[i] == 1) {
+        target += wiener_lpdf(x[i] | a, t0, one_minus_w, neg_v, sv, sw, st0);
+      } else if (censored[i] == 0) {
+        target += wiener_lcdf_unnorm(left_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
+      } else if (censored[i] == 2) {
+        target += wiener_lccdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st0);
+      }
+    }
   }
- }
 }
 ```
 
-When the data are censored to only one side, omit the case that is not needed.
+When the data are censored on only one side, omit the case that is not needed.
 
 Note that this block can be inserted in the defnition of the parallelization 
 function, `partial_sum_wiener()`, as defined below.
@@ -431,21 +439,21 @@ Here is a more principled approach that uses the cumulative distribution
 functions and their complements to provide the likelihood of censored data. As 
 before, let $L$ be the left reaction time bound, and $U$ the right reaction time 
 bound, and consider decision times without inter-trial variabilities for the 
-sake of simplicity. It follows that the likelihood $p_l$ of observing a 
+sake of simplicity. It follows that the likelihood $lik_l$ of observing a 
 left-censored data point
 is given by
 
 $$
 \begin{aligned}
-p_l(a,w,v) = \text{CDF}_0(L\mid a,w,v) + \text{CDF}_1(L\mid a,w,v),
+lik_l(a,w,v) = F_0(L\mid a,w,v) + F_1(L\mid a,w,v),
 \end{aligned}
 $$
 
-whereas the likelihood $p_r$ of a right-censored data point is given by
+whereas the likelihood $lik_r$ of a right-censored data point is given by
 
 $$
 \begin{aligned}
-p_r(a,w,v) = \text{CCDF}_0(U\mid a,w,v) + \text{CCDF}_1(U\mid a,w,v).
+lik_r(a,w,v) = \text{CCDF}_0(U\mid a,w,v) + \text{CCDF}_1(U\mid a,w,v).
 \end{aligned}
 $$
 
@@ -462,26 +470,26 @@ model block in the example above:
 
 ```stan
 functions { // parallelization function
- real partial_sum_wiener(array[] real rt_slice, int start,
- int end, real a, real t0, real w, real v, real sv, real sw,
- real st, array[] int resp, real right_bound,
- array[] int censored) {
-  real ans = 0;
-  for (i in start : end) {
-   if (censored[i] == 1) { // not censored data
-    if (resp[i] == 1) { // upper boundary
-     ans += wiener_lpdf(rt_slice[i+1- start ] | a, t0, w, v, sv, sw, st);
-    } else { // lower boundary(mirror v and w)
-     ans += wiener_lpdf(rt_slice[i+1- start ] | a, t0, one_minus_w, neg_v, sv, sw, st);
-    }
-   } else { // censored data
-    ans += log_sum_exp (
-     wiener_lccdf_unnorm(right_bound | a, t0, w, v, sv, sw, st),
-     wiener_lccdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st);
-   }
-  } // end for
-  return ans;
- } // end partial_sum_fullddm
+  real partial_sum_wiener(array[] real rt_slice, int start,
+  int end, real a, real t0, real w, real v, real sv, real sw,
+  real st, array[] int resp, real right_bound,
+  array[] int censored) {
+    real ans = 0;
+    for (i in start : end) {
+      if (censored[i] == 1) { // not censored data
+        if (resp[i] == 1) { // upper boundary
+          ans += wiener_lpdf(rt_slice[i+1- start ] | a, t0, w, v, sv, sw, st);
+        } else { // lower boundary(mirror v and w)
+          ans += wiener_lpdf(rt_slice[i+1- start ] | a, t0, one_minus_w, neg_v, sv, sw, st);
+        }
+      } else { // censored data
+        ans += log_sum_exp (
+          wiener_lccdf_unnorm(right_bound | a, t0, w, v, sv, sw, st),
+          wiener_lccdf_unnorm(right_bound | a, t0, one_minus_w, neg_v, sv, sw, st);
+      }
+    } // end for
+    return ans;
+  } // end partial_sum_fullddm
 } // end functions
 ```
 

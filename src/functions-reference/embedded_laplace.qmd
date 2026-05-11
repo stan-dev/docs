@@ -10,7 +10,7 @@ Embedded Laplace replaces explicit sampling of high-dimensional Gaussian latent
 variables with a local Gaussian approximation.
 In doing so, it marginalizes out the latent Gaussian variables.
 Inference can then be performed on the remaining, often low-dimensional,
-parameters.  
+parameters.
 The embedded Laplace approximation in Stan is best suited for
 latent Gaussian models when jointly sampling over all model parameters is
 expensive and the conditional posterior of the Gaussian latent variables is
@@ -85,24 +85,27 @@ In the `model` block, we increment `target` with `laplace_marginal`, a function
 that approximates the log marginal likelihood $\log p(y \mid \phi)$.
 The signature of the function is:
 
-\index{{\tt \bfseries laplace\_marginal }!{\tt (function likelihood\_function, tuple(...) likelihood\_arguments, int hessian_block_size, function covariance\_function, tuple(...)): real}|hyperpage}
+
+<!-- real; laplace_marginal; (function likelihood_function, tuple(...) likelihood_arguments, int hessian_block_size, function covariance_function, tuple(...) covariance_arguments); -->
+\index{{\tt \bfseries laplace\_marginal }!{\tt (function likelihood\_function, tuple(...) likelihood\_arguments, int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments): real}|hyperpage}
 
 `real` **`laplace_marginal`**`(function likelihood_function, tuple(...) likelihood_arguments, int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`
 
 which returns an approximation to the log marginal likelihood $p(y \mid \phi)$.
-{{< since 2.37 >}}
 
 The embedded Laplace functions accept two functors whose user defined arguments are passed in as tuples to `laplace_marginal`.
 
 1. `likelihood_function` - user-specified log likelihood whose first argument is the vector of latent Gaussian variables $\theta$.
 The subsequent arguments are user defined.
-  - `real likelihood_function(vector theta, likelihood_arguments_1, likelihood_arguments_2, ...)`
+  - `real likelihood_function(vector theta, likelihood_arguments_1, likelihood_arguments_2, ...)`.
 2. `likelihood_arguments` - A tuple of arguments whose internal members are be passed to the log likelihood function.
 This tuple does NOT include the latent variable $\theta$.
 3. `hessian_block_size` - the block size of the Hessian of the log likelihood, $\partial^2 \log p(y \mid \theta, \phi) / \partial \theta^2$.
 4. `covariance_function` - A function that returns the covariance matrix of the multivariate normal prior on $\theta$.
-  - `matrix covariance_function(covariance_argument_1, covariance_argument_2, ...)`
+  - `matrix covariance_function(covariance_argument_1, covariance_argument_2, ...)`.
 5. `covariance_arguments` A tuple of the arguments whose internal members will be passed to the the covariance function.
+
+{{< since 2.39 >}}
 
 Below we go over each argument in more detail.
 
@@ -205,12 +208,16 @@ It also possible to specify control parameters, which can help improve the
 optimization that underlies the Laplace approximation, using `laplace_marginal_tol`
 with the following signature:
 
+<!-- real; laplace_marginal_tol; (function likelihood_function, tuple(...) likelihood_arguments, int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_marginal\_tol }!{\tt (function likelihood\_function, tuple(...) likelihood\_arguments, int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): real}|hyperpage}
+
+`real` **`laplace_marginal_tol`**`(function likelihood_function, tuple(...), int hessian_block_size, function covariance_function, tuple(...),  tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
+
+
+The final argument, tolerances, is a tuple with the following elements
 ```stan
-real laplace_marginal_tol(function likelihood_function, tuple(...),
-  hessian_block_size,
-  function covariance_function, tuple(...),
-  tuple(vector theta_init, real tol, int max_steps, int solver,
-        int max_steps_linesearch, int allow_fallback))
+tuple(vector theta_init, real tol, int max_steps, int solver,
+      int max_steps_linesearch, int allow_fallback)
 ```
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
@@ -254,6 +261,9 @@ Setting `max_steps_linesearch=0` results in no linesearch.
 * `allow_fallback`: If user set solver fails, this flag determines whether to fallback to the next solver. For example, if the user specifies `solver=1` but the Cholesky decomposition of the negative Hessian $- \partial^2 \log p(y \mid \theta, \phi) / \partial^2 \theta$ fails, the optimizer will try `solver=2` instead.
 By default, `allow_fallback = 1` (TRUE).
 
+{{< since 2.39 >}}
+
+
 The embedded Laplace approximation's options have a helper callable `generate_laplace_options(int theta_size)` that will generate the tuple for the user. This can be useful for quickly setting up the control parameters in the `transformed data` block to reuse within the model.
 
 ```stan
@@ -264,18 +274,24 @@ laplace_ops.5 = 2;
 laplace_ops.7 = 0;
 ```
 
-The arguments stored in the `laplace_ops` tuple are,
-```
-laplace_ops = {theta_init,
-               tol,
-               max_num_steps,
-               hessian_block_size,
-               solver,
-               max_steps_linesearch,
-               allow_fallback}
-```
+<!-- tuple(vector, real, int, int, int, int); generate_laplace_options; (int dimension); -->
+\index{{\tt \bfseries generate\_laplace\_options }!{\tt (int dimension): tuple(vector, real, int, int, int, int)}|hyperpage}
 
-{{< since 2.37 >}}
+`tuple(vector, real, int, int, int, int)` **`generate_laplace_options`**`(int dimension)`<br>\newline
+
+Create a default laplace options tuple for a `theta_init` of size `dimension`.
+
+{{< since 2.39 >}}
+
+
+<!-- tuple(vector, real, int, int, int, int); generate_laplace_options; (vector theta_init); -->
+\index{{\tt \bfseries generate\_laplace\_options }!{\tt (vector theta\_init): tuple(vector, real, int, int, int, int)}|hyperpage}
+
+`tuple(vector, real, int, int, int, int)` **`generate_laplace_options`**`(vector theta_init)`<br>\newline
+
+Create a default Laplace options tuple containing `theta_init`.
+
+{{< since 2.39 >}}
 
 ## Sample from the approximate conditional $\hat{p}(\theta \mid y, \phi)$
 
@@ -284,21 +300,23 @@ approximation of $p(\theta \mid \phi, y)$ using `laplace_latent_rng`.
 The signature for `laplace_latent_rng` follows closely
 the signature for `laplace_marginal`:
 
-<!-- vector; laplace_latent_rng; (function likelihood_function, tuple(...), int hessian_block_size, function covariance_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_latent\_rng }!{\tt (function likelihood\_function, tuple(...), int hessian_block_size, function covariance\_function, tuple(...)): vector}|hyperpage}
+<!-- vector; laplace_latent_rng; (function likelihood_function, tuple(...) likelihood_arguments, int hessian_block_size, function covariance_function, tuple(...) covariance_arguments); -->
+\index{{\tt \bfseries laplace\_latent\_rng }!{\tt (function likelihood\_function, tuple(...) likelihood\_arguments, int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments): vector}|hyperpage}
 
-`vector` **`laplace_latent_rng`**`(function likelihood_function, tuple(...), hessian_block_size, function covariance_function, tuple(...))`<br>\newline
+`vector` **`laplace_latent_rng`**`(function likelihood_function, tuple(...) likelihood_arguments, int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`<br>\newline
 
 Draws samples from the Laplace approximation to the conditional posterior $p(\theta \mid y, \phi)$.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
 Once again, it is possible to specify control parameters:
-\index{{\tt \bfseries laplace\_latent\_tol\_rng }!{\tt (function likelihood\_function, tuple(...), int hessian_block_size, function covariance\_function, tuple(...), tuple(...) laplace_ops): vector}|hyperpage}
 
-`vector` **`laplace_latent_tol_rng`**`(function likelihood_function, tuple(...), int hessian_block_size, function covariance_function, tuple(...), tuple(...) laplace_ops)`<br>\newline
+<!-- vector; laplace_latent_rng_tol; (function likelihood_function, tuple(...) likelihood_arguments, int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_latent\_tol\_rng }!{\tt (function likelihood\_function, tuple(...) likelihood\_arguments, int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): vector}|hyperpage}
+
+`vector` **`laplace_latent_tol_rng`**`(function likelihood_function, tuple(...), int hessian_block_size, function covariance_function, tuple(...), tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
 Draws approximate samples from the conditional posterior $p(\theta \mid y, \phi)$
 and allows the user to tune the control parameters of the approximation.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
 ## Built-in Laplace marginal likelihood functions
 
@@ -331,79 +349,79 @@ group the $i^\text{th}$ observation belongs to.
 <!-- real; laplace_marginal_poisson_log ~; -->
 \index{{\tt \bfseries laplace\_marginal\_poisson\_log }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_poisson_log`**`(y_index, m, covariance_function, (...))`<br>\newline
+`y ~ ` **`laplace_marginal_poisson_log`**`(y_index, m, hessian_block_size, covariance_function, covariance_arguments)`<br>\newline
 
-Increment target log probability density with `laplace_marginal_poisson_log_lupmf(y | y_index, m, covariance_function, (...))`.
-{{< since 2.37 >}}
+Increment target log probability density with `laplace_marginal_poisson_log_lupmf(y | y_index, m, hessian_block_size, covariance_function, covariance_arguments`.
+{{< since 2.39 >}}
 
 <!-- real; laplace_marginal_tol_poisson_log ~; -->
 \index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_log }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_tol_poisson_log`**`(y_index, m, covariance_function, (...), theta_init, tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`<br>\newline
+`y ~ ` **`laplace_marginal_tol_poisson_log`**`(y_index, m, hessian_block_size, covariance_function, covariance_arguments, tolerances)`<br>\newline
 
-Increment target log probability density with `laplace_marginal_poisson_log_lupmf(y | y_index, m, covariance_function, (...))`.
+Increment target log probability density with `laplace_marginal_tol_poisson_log_lupmf(y | y_index, m, hessian_block_size, covariance_function, covaraince_arguments, tolerances)`.
+
+{{< since 2.39 >}}
 
 The signatures for the embedded Laplace approximation function with a Poisson
 likelihood are
 
-<!-- real; laplace_marginal_poisson_log_lpmf; (array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_poisson\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init): real}|hyperpage}
-`real` **`laplace_marginal_poisson_log_lpmf`**`(array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...))`<br>\newline
+<!-- real; laplace_marginal_poisson_log_lpmf; (array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments; -->
+\index{{\tt \bfseries laplace\_marginal\_poisson\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments): real}|hyperpage}
+`real` **`laplace_marginal_poisson_log_lpmf`**`(array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
 in the special case where the likelihood $p(y \mid \theta)$ is a Poisson
 distribution with a log link.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
-<!-- real; laplace_marginal_tol_poisson_log_lpmf; (array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-`real` **`laplace_marginal_tol_poisson_log_lpmf`**`(array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+<!-- real; laplace_marginal_tol_poisson_log_lpmf; (array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): real}|hyperpage}
+`real` **`laplace_marginal_tol_poisson_log_lpmf`**`(array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
 in the special case where the likelihood $p(y \mid \theta)$ is a Poisson
 distribution with a log link, and allows the user to tune the control
 parameters of the approximation.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
-
-<!-- real; laplace_marginal_poisson_log_lupmf; (array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_poisson\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-`real` **`laplace_marginal_poisson_log_lupmf`**`(array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+<!-- real; laplace_marginal_poisson_log_lupmf; (array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments; -->
+\index{{\tt \bfseries laplace\_marginal\_poisson\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments): real}|hyperpage}
+`real` **`laplace_marginal_poisson_log_lupmf`**`(array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
 in the special case where the likelihood $p(y \mid \theta)$ is a Poisson
-distribution with a log link.
-{{< since 2.37 >}}
+distribution with a log link, dropping constant terms.
+{{< since 2.39 >}}
 
-<!-- real; laplace_marginal_tol_poisson_log_lupmf; (array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector m, function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-
-`real` **`laplace_marginal_tol_poisson_log_lupmf`**`(array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+<!-- real; laplace_marginal_tol_poisson_log_lupmf; (array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_poisson\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): real}|hyperpage}
+`real` **`laplace_marginal_tol_poisson_log_lupmf`**`(array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
 in the special case where the likelihood $p(y \mid \theta)$ is a Poisson
 distribution with a log link, and allows the user to tune the control
-parameters of the approximation.
-{{< since 2.37 >}}
+parameters of the approximation, dropping constant terms.
+{{< since 2.39 >}}
 
-<!-- vector; laplace_latent_poisson_log_rng; (array[] int y, array[] int y_index, vector m, function covariance_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_latent\_poisson\_log\_rng }!{\tt (array[] int y, array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init): vector}|hyperpage}
-`vector` **`laplace_latent_poisson_log_rng`**`(array[] int y, array[] int y_index, vector m, function covariance_function, tuple(...))`<br>\newline
+<!-- vector; laplace_latent_poisson_log_rng; (array[] int y, array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments); -->
+\index{{\tt \bfseries laplace\_latent\_poisson\_log\_rng }!{\tt (array[] int y, array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments): vector}|hyperpage}
+`vector` **`laplace_latent_poisson_log_rng`**`(array[] int y, array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`<br>\newline
 Returns a draw from the Laplace approximation to the conditional posterior
 $p(\theta \mid y, \phi)$ in the special case where the likelihood
 $p(y \mid \theta)$ is a Poisson distribution with a log link.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
-<!-- vector; laplace_latent_tol_poisson_log_rng; (array[] int y, array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_latent\_tol\_poisson\_log\_rng }!{\tt (array[] int y, array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+<!-- vector; laplace_latent_tol_poisson_log_rng; (array[] int y, array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_latent\_tol\_poisson\_log\_rng }!{\tt (array[] int y, array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): vector}|hyperpage}
 
-`vector` **`laplace_latent_tol_poisson_log_rng`**`(array[] int y, array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`vector` **`laplace_latent_tol_poisson_log_rng`**`(array[] int y, array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
 
 Returns a draw from the Laplace approximation to the conditional posterior
 $p(\theta \mid y, \phi)$ in the special case where the likelihood
 $p(y \mid \theta)$ is a Poisson distribution with a log link
 and allows the user to tune the control parameters of the approximation.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
 
 ### Negative Binomial with log link
@@ -429,85 +447,85 @@ group the $i^\text{th}$ observation belongs to.
 <!-- real; laplace_marginal_neg_binomial_2_log ~; -->
 \index{{\tt \bfseries laplace\_marginal\_neg\_binomial\_2\_log }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_neg_binomial_2_log`**`(y_index, eta, m, covariance_function, (...))`<br>\newline
+`y ~ ` **`laplace_marginal_neg_binomial_2_log`**`(y_index, eta, m, hessian_block_size, covariance_function, covariance_arguments)`<br>\newline
 
-Increment target log probability density with `laplace_marginal_neg_binomial_2_log_lupmf(y | y_index, eta, m, covariance_function, (...))`.
-{{< since 2.37 >}}
+Increment target log probability density with `laplace_marginal_neg_binomial_2_log_lupmf(y | y_index, eta, m, hessian_block_size, covariance_function, covariance_arguments)`.
+{{< since 2.39 >}}
 
 <!-- real; laplace_marginal_tol_neg_binomial_2_log ~; -->
 \index{{\tt \bfseries laplace\_marginal\_tol\_neg\_binomial\_2\_log }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_tol_neg_binomial_2_log`**`(y_index, eta, m, covariance_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`<br>\newline
+`y ~ ` **`laplace_marginal_tol_neg_binomial_2_log`**`(y_index, eta, m, hessian_block_size, covariance_function, covariance_arguments, tolerances)`<br>\newline
 
-Increment target log probability density with `laplace_marginal_tol_neg_binomial_2_log_lupmf(y | y_index, eta, m, covariance_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`.
-{{< since 2.37 >}}
+Increment target log probability density with `laplace_marginal_tol_neg_binomial_2_log_lupmf(y | y_index, eta, m, hessian_block_size, covariance_function, covariance_arguments, tolerances)`.
+{{< since 2.39 >}}
 
 
 The function signatures for the embedded Laplace approximation with a negative
 Binomial likelihood are
 
-<!-- real; laplace_marginal_neg_binomial_2_log_lpmf; (array[] int y | array[] int y_index, real eta, vector m, function covariance_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_neg\_binomial\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init): real}|hyperpage}
+<!-- real; laplace_marginal_neg_binomial_2_log_lpmf; (array[] int y | array[] int y_index, real eta, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments); -->
+\index{{\tt \bfseries laplace\_marginal\_neg\_binomial\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_farguments): real}|hyperpage}
 
-`real` **`laplace_marginal_neg_binomial_2_log_lpmf`**`(array[] int y | array[] int y_index, real eta, vector m, function covariance_function, tuple(...))`<br>\newline
+`real` **`laplace_marginal_neg_binomial_2_log_lpmf`**`(array[] int y | array[] int y_index, real eta, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi, \eta)$
 in the special case where the likelihood $p(y \mid \theta, \eta)$ is a Negative
 Binomial distribution with a log link.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
-<!-- real; laplace_marginal_tol_neg_binomial_2_log_lpmf; (array[] int y | array[] int y_index, real eta, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_neg\_binomial\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
+<!-- real; laplace_marginal_tol_neg_binomial_2_log_lpmf; (array[] int y | array[] int y_index, real eta, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_neg\_binomial\_2\_log\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): real}|hyperpage}
 
-`real` **`laplace_marginal_tol_neg_binomial_2_log_lpmf`**`(array[] int y | array[] int y_index, real eta, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_tol_neg_binomial_2_log_lpmf`**`(array[] int y | array[] int y_index, real eta, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi, \eta)$
 in the special case where the likelihood $p(y \mid \theta, \eta)$ is a Negative
 Binomial distribution with a log link, and allows the user to tune the control
 parameters of the approximation.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
-<!-- real; laplace_marginal_neg_binomial_2_log_lupmf; (array[] int y | array[] int y_index, real eta, vector m, function covariance_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_neg\_binomial\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init): real}|hyperpage}
+<!-- real; laplace_marginal_neg_binomial_2_log_lupmf; (array[] int y | array[] int y_index, real eta, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments); -->
+\index{{\tt \bfseries laplace\_marginal\_neg\_binomial\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_farguments): real}|hyperpage}
 
-`real` **`laplace_marginal_neg_binomial_2_log_lupmf`**`(array[] int y | array[] int y_index, real eta, vector m, function covariance_function, tuple(...))`<br>\newline
+`real` **`laplace_marginal_neg_binomial_2_log_lupmf`**`(array[] int y | array[] int y_index, real eta, vector m, function covariance_function, data int hessian_block_size, tuple(...) covariance_arguments)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi, \eta)$
 in the special case where the likelihood $p(y \mid \theta, \eta)$ is a Negative
-Binomial distribution with a log link.
-{{< since 2.37 >}}
+Binomial distribution with a log link, dropping constant terms.
+{{< since 2.39 >}}
 
-<!-- real; laplace_marginal_tol_neg_binomial_2_log_lupmf; (array[] int y | array[] int y_index, real eta, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_neg\_binomial\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
+<!-- real; laplace_marginal_tol_neg_binomial_2_log_lupmf; (array[] int y | array[] int y_index, real eta, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_neg\_binomial\_2\_log\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): real}|hyperpage}
 
-`real` **`laplace_marginal_tol_neg_binomial_2_log_lupmf`**`(array[] int y | array[] int y_index, real eta, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_tol_neg_binomial_2_log_lupmf`**`(array[] int y | array[] int y_index, real eta, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi, \eta)$
 in the special case where the likelihood $p(y \mid \theta, \eta)$ is a Negative
 Binomial distribution with a log link, and allows the user to tune the control
-parameters of the approximation.
-{{< since 2.37 >}}
+parameters of the approximation, dropping constant terms.
+{{< since 2.39 >}}
 
-<!-- vector; laplace_latent_neg_binomial_2_log_rng; (array[] int y, array[] int y_index, real eta, vector m, function covariance_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_latent\_neg\_binomial\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init): vector}|hyperpage}
+<!-- vector; laplace_latent_neg_binomial_2_log_rng; (array[] int y, array[] int y_index, real eta, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments); -->
+\index{{\tt \bfseries laplace\_latent\_neg\_binomial\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments): vector}|hyperpage}
 
-`vector` **`laplace_latent_neg_binomial_2_log_rng`**`(array[] int y, array[] int y_index, real eta, vector m, function covariance_function, tuple(...))`<br>\newline
+`vector` **`laplace_latent_neg_binomial_2_log_rng`**`(array[] int y, array[] int y_index, real eta, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`<br>\newline
 
 Returns a draw from the Laplace approximation to the conditional posterior
 $p(\theta \mid y, \phi, \eta)$ in the special case where the likelihood
 $p(y \mid \theta, \eta)$ is a Negative binomial distribution with a log link.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
-<!-- vector; laplace_latent_tol_neg_binomial_2_log_rng; (array[] int y, array[] int y_index, real eta, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_latent\_tol\_neg\_binomial\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+<!-- vector; laplace_latent_tol_neg_binomial_2_log_rng; (array[] int y, array[] int y_index, real eta, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_latent\_tol\_neg\_binomial\_2\_log\_rng }!{\tt (array[] int y, array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): vector}|hyperpage}
 
-`vector` **`laplace_latent_tol_neg_binomial_2_log_rng`**`(array[] int y, array[] int y_index, real eta, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`vector` **`laplace_latent_tol_neg_binomial_2_log_rng`**`(array[] int y, array[] int y_index, real eta, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
 
 Returns a draw from the Laplace approximation to the conditional posterior
 $p(\theta \mid y, \phi, \eta)$ in the special case where the likelihood
 $p(y \mid \theta, \eta)$ is a Negative binomial distribution with a log link
 and allows the user to tune the control parameters of the approximation.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
 ### Bernoulli with logit link
 
@@ -525,83 +543,82 @@ group the $i^\text{th}$ observation belongs to.
 <!-- real; laplace_marginal_bernoulli_logit ~; -->
 \index{{\tt \bfseries laplace\_marginal\_bernoulli\_logit }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_bernoulli_logit`**`(y_index, m, covariance_function, (...))`<br>\newline
+`y ~ ` **`laplace_marginal_bernoulli_logit`**`(y_index, m, hessian_block_size, covariance_function, covariance_arguments)`<br>\newline
 
-Increment target log probability density with `laplace_marginal_bernoulli_logit_lupmf(y | y_index, m, covariance_function, (...))`.
-{{< since 2.37 >}}
+Increment target log probability density with `laplace_marginal_bernoulli_logit_lupmf(y | y_index, m, hessian_block_size, covariance_function, covariance_arguments)`.
+{{< since 2.39 >}}
 
 <!-- real; laplace_marginal_tol_bernoulli_logit ~; -->
 \index{{\tt \bfseries laplace\_marginal\_tol\_bernoulli\_logit }!sampling statement|hyperpage}
 
-`y ~ ` **`laplace_marginal_tol_bernoulli_logit`**`(y_index, m, covariance_function, (...), tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`<br>\newline
+`y ~ ` **`laplace_marginal_tol_bernoulli_logit`**`(y_index, m, hessian_block_size, covariance_function, covariance_arguments, tolerances)`<br>\newline
 
-Increment target log probability density with `laplace_marginal_tol_bernoulli_logit_lupmf(y | y_index, m, covariance_function, (...), theta_init, tol, max_steps, hessian_block_size, solver, max_steps_linesearch)`.
-{{< since 2.37 >}}
+Increment target log probability density with `laplace_marginal_tol_bernoulli_logit_lupmf(y | y_index, m, hessian_block_size, covariance_function, covariance_arguments, tolerances)`.
+{{< since 2.39 >}}
 
 
 The function signatures for the embedded Laplace approximation with a Bernoulli likelihood are
 
-<!-- real; laplace_marginal_bernoulli_logit_lpmf; (array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_bernoulli\_logit\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, function covariance\_function, tuple(...)): real}|hyperpage}
+<!-- real; laplace_marginal_bernoulli_logit_lpmf; (array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments); -->
+\index{{\tt \bfseries laplace\_marginal\_bernoulli\_logit\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments): real}|hyperpage}
 
-`real` **`laplace_marginal_bernoulli_logit_lpmf`**`(array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...))`<br>\newline
-
-Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
-in the special case where the likelihood $p(y \mid \theta)$ is a bernoulli
-distribution with a logit link.
-{{< since 2.37 >}}
-
-<!-- real; laplace_marginal_tol_bernoulli_logit_lpmf; (array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_bernoulli\_logit\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector m, function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
-
-`real` **`laplace_marginal_tol_bernoulli_logit_lpmf`**`(array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
-
-Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
-in the special case where the likelihood $p(y \mid \theta)$ is a bernoulli
-distribution with a logit link and allows the user to tune the control parameters.
-{{< since 2.37 >}}
-
-
-<!-- real; laplace_marginal_bernoulli_logit_lupmf; (array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_marginal\_bernoulli\_logit\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector m, function covariance\_function, tuple(...)): real}|hyperpage}
-
-`real` **`laplace_marginal_bernoulli_logit_lupmf`**`(array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...))`<br>\newline
+`real` **`laplace_marginal_bernoulli_logit_lpmf`**`(array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
 in the special case where the likelihood $p(y \mid \theta)$ is a bernoulli
 distribution with a logit link.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
-<!-- real; laplace_marginal_tol_bernoulli_logit_lupmf; (array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_marginal\_tol\_bernoulli\_logit\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector m, function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): real}|hyperpage}
+<!-- real; laplace_marginal_tol_bernoulli_logit_lpmf; (array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_bernoulli\_logit\_lpmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector m, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): real}|hyperpage}
 
-`real` **`laplace_marginal_tol_bernoulli_logit_lupmf`**`(array[] int y | array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`real` **`laplace_marginal_tol_bernoulli_logit_lpmf`**`(array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
 
 Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
 in the special case where the likelihood $p(y \mid \theta)$ is a bernoulli
 distribution with a logit link and allows the user to tune the control parameters.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
-<!-- vector; laplace_latent_bernoulli_logit_rng; (array[] int y, array[] int y_index, vector m, function covariance_function, tuple(...)); -->
-\index{{\tt \bfseries laplace\_latent\_bernoulli\_logit\_rng }!{\tt (array[] int y, array[] int y\_index, function covariance\_function, tuple(...), vector theta\_init): vector}|hyperpage}
+<!-- real; laplace_marginal_bernoulli_logit_lupmf; (array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments); -->
+\index{{\tt \bfseries laplace\_marginal\_bernoulli\_logit\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments): real}|hyperpage}
 
-`vector` **`laplace_latent_bernoulli_logit_rng`**`(array[] int y, array[] int y_index, vector m, function covariance_function, tuple(...))`<br>\newline
+`real` **`laplace_marginal_bernoulli_logit_lupmf`**`(array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`<br>\newline
+
+Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
+in the special case where the likelihood $p(y \mid \theta)$ is a bernoulli
+distribution with a logit link, dropping constant terms.
+{{< since 2.39 >}}
+
+<!-- real; laplace_marginal_tol_bernoulli_logit_lupmf; (array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_marginal\_tol\_bernoulli\_logit\_lupmf }!{\tt (array[] int y \textbar\ array[] int y\_index, vector m, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): real}|hyperpage}
+
+`real` **`laplace_marginal_tol_bernoulli_logit_lupmf`**`(array[] int y | array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
+
+Returns an approximation to the log marginal likelihood $p(y \mid \phi)$
+in the special case where the likelihood $p(y \mid \theta)$ is a bernoulli
+distribution with a logit link and allows the user to tune the control parameters, dropping constant terms.
+{{< since 2.39 >}}
+
+<!-- vector; laplace_latent_bernoulli_logit_rng; (array[] int y, array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments); -->
+\index{{\tt \bfseries laplace\_latent\_bernoulli\_logit\_rng }!{\tt (array[] int y, array[] int y\_index, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments): vector}|hyperpage}
+
+`vector` **`laplace_latent_bernoulli_logit_rng`**`(array[] int y, array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`<br>\newline
 
 Returns a draw from the Laplace approximation to the conditional posterior
 $p(\theta \mid y, \phi)$ in the special case where the likelihood
 $p(y \mid \theta)$ is a Bernoulli distribution with a logit link.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
-<!-- vector; laplace_latent_tol_bernoulli_logit_rng; (array[] int y, array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch); -->
-\index{{\tt \bfseries laplace\_latent\_tol\_bernoulli\_logit\_rng }!{\tt (array[] int y, array[] int y\_index, vector m, function covariance\_function, tuple(...), vector theta\_init, real tol, int max\_steps, int hessian\_block\_size, int solver, int max\_steps\_linesearch): vector}|hyperpage}
+<!-- vector; laplace_latent_tol_bernoulli_logit_rng; (array[] int y, array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_latent\_tol\_bernoulli\_logit\_rng }!{\tt (array[] int y, array[] int y\_index, vector m, data int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): vector}|hyperpage}
 
-`vector` **`laplace_latent_tol_bernoulli_logit_rng`**`(array[] int y, array[] int y_index, vector m, function covariance_function, tuple(...), vector theta_init, real tol, int max_steps, int hessian_block_size, int solver, int max_steps_linesearch)`<br>\newline
+`vector` **`laplace_latent_tol_bernoulli_logit_rng`**`(array[] int y, array[] int y_index, vector m, data int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
 
 Returns a draw from the Laplace approximation to the conditional posterior
 $p(\theta \mid y, \phi)$ in the special case where the likelihood
 $p(y \mid \theta)$ is a Bernoulli distribution with a logit link,
 and lets the user tune the control parameters of the approximation.
-{{< since 2.37 >}}
+{{< since 2.39 >}}
 
 <!-- ## Draw approximate samples for out-of-sample latent variables. -->
 

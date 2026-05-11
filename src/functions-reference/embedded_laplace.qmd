@@ -10,7 +10,8 @@ Embedded Laplace replaces explicit sampling of high-dimensional Gaussian latent
 variables with a local Gaussian approximation.
 In doing so, it marginalizes out the latent Gaussian variables.
 Inference can then be performed on the remaining, often low-dimensional,
-parameters.  The embedded Laplace approximation in Stan is best suited for
+parameters.  
+The embedded Laplace approximation in Stan is best suited for
 latent Gaussian models when jointly sampling over all model parameters is
 expensive and the conditional posterior of the Gaussian latent variables is
 reasonably close to Gaussian.
@@ -235,11 +236,9 @@ $- \partial^2 \log p(y \mid \theta, \phi) / \partial^2 \theta$.
 This operation is legal if the negative Hessian is positive-definite,
 which will always be true when the likelihood is log concave.
 If `solver=2`, the solver makes a Cholesky decomposition of the covariance matrix $K(\phi)$.
-Since a covariance matrix is always positive-definite, compute its
+Since a covariance matrix is always positive-definite, computing its
 Cholesky decomposition is always a legal operation, at least in theory.
-In practice, we may not be able to compute the Cholesky decomposition of the
-negative Hessian or the covariance matrix, either because it does not exist or
-because of numerical issues.
+In practice, we may not be able to compute the Cholesky decomposition of the negative Hessian nor of the covariance matrix, either because it does not exist or because of numerical issues.
 In that case, we can use `solver=3` which uses a more expensive but less
 specialized approach to compute a Newton step.
 
@@ -255,7 +254,7 @@ Setting `max_steps_linesearch=0` results in no linesearch.
 * `allow_fallback`: If user set solver fails, this flag determines whether to fallback to the next solver. For example, if the user specifies `solver=1` but the Cholesky decomposition of the negative Hessian $- \partial^2 \log p(y \mid \theta, \phi) / \partial^2 \theta$ fails, the optimizer will try `solver=2` instead.
 By default, `allow_fallback = 1` (TRUE).
 
-The embedded Laplace approximation's options have a helper callable `generate_laplace_options(int theta_size)` that will generate the tuple for you. This can be useful for quickly setting up the control parameters in the `transformed data` block to reuse within the model.
+The embedded Laplace approximation's options have a helper callable `generate_laplace_options(int theta_size)` that will generate the tuple for the user. This can be useful for quickly setting up the control parameters in the `transformed data` block to reuse within the model.
 
 ```stan
 tuple(vector[theta_size], real, int, int, int, int, int) laplace_ops = generate_laplace_options(theta_size);

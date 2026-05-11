@@ -12,6 +12,7 @@ A standard approach to fit a latent Gaussian model would be to perform inference
 Instead, the embedded Laplace approximation can be used to do *approximate* marginalization of the latent Gaussian variables; we can then use any inference over the remaining hyperparameters.
 By marginalizing out the latent variables, the sampler explores a lower-dimensional, better-behaved marginal posterior.
 Individual iterations are more expensive (each requires an inner optimization), but the sampler typically needs far fewer iterations to achieve the same effective sample size.
+How this trade-off resolves depends on the specific problem at hand.
 
 For complete function signatures and the built-in likelihood wrappers (Poisson, Negative Binomial, Bernoulli), see the [Embedded Laplace functions reference](../functions-reference/embedded_laplace.qmd).
 For worked examples with full data blocks, see the [Gaussian Processes chapter](../stan-users-guide/gaussian-processes.qmd#poisson-gp-using-an-embedded-laplace-approximation).
@@ -19,7 +20,7 @@ For worked examples with full data blocks, see the [Gaussian Processes chapter](
 
 ## Latent Gaussian models
 
-The embedded Laplace approximation is used for latent Gaussian models. A latent Gaussian model is defined by three main components:
+The embedded Laplace approximation is used for latent Gaussian models. A latent Gaussian model is defined by three components:
 
 - $\phi$: hyperparameters (e.g., GP kernel length-scale and magnitude, or variance components in a hierarchical model),
 - $\theta$: latent Gaussian variables (the high-dimensional quantity to be marginalized out),
@@ -27,7 +28,7 @@ The embedded Laplace approximation is used for latent Gaussian models. A latent 
 
 These components are related through a hierarchical structure.
 The hyperparameters $\phi$ are given a prior $p(\phi)$.
-The latent variables $\theta$ have a multivariate normal prior with covariance matrix $K(\phi)$.
+The latent variables $\theta$ have a multivariate normal prior centered at 0 with covariance matrix $K(\phi)$. An non-zero mean offset can be incorporated into the likelihood function.
 The observations $y$ are generated according to a likelihood $p(y \mid \theta, \phi)$.
 The prior on $\theta$ is centered at zero; an offset can be incorporated into the likelihood function if a non-zero mean is needed.
 
@@ -43,7 +44,8 @@ After observing data $y$, Bayes' theorem gives the joint posterior $p(\phi, \the
 Sampling directly from the joint posterior $p(\phi, \theta \mid y)$ of this model is often difficult.
 Challenging geometries (e.g., funnels) frustrate inference algorithms, including Hamiltonian Monte Carlo and variational inference.
 However, the marginal posterior $p(\phi \mid y)$ is often well-behaved and low-dimensional, making it much easier to sample.
-The Laplace approximation allows the conditional posterior $p(\theta \mid \phi, y)$ to be approximated by a normal distribution when the likelihood $p(y \mid \theta, \phi)$ is log concave.
+With an embedded Laplace approximation, we can obtain an approximation of the marginal posterior $p(\phi \mid y)$. This is done via an intermediate approximation of the conditional posterior $p(\theta \mid \phi, y)$ by a normal distribution and this normal approximation is well-justified when the likelihood $p(y \mid \theta, \phi)$ is log concave (given that we already have a normal prior $p(\theta \mid \phi)$).
+Once we obtain (approximate) samples $\phi^{(i)} \sim p(\phi \mid y)$, we can in turn generate posterior samples for $\theta$ using the normal approximation to $p(\theta \mid y, \phi)$, evaluated at the drawn samples $\phi^{(i)}$.
 
 ## Approximation of the conditional posterior and marginal likelihood
 
@@ -86,7 +88,7 @@ Approximate posterior draws for the latent Gaussian variables are then obtained 
 The embedded Laplace approximation presents several trade-offs with standard inference over the joint posterior $p(\theta, \phi \mid y)$.
 The main advantage of the embedded Laplace approximation is that it side-steps the intricate geometry of hierarchical models.
 The marginal posterior $p(\phi \mid y)$ can then be handled by Hamiltonian Monte Carlo sampling without extensive tuning or reparameterization, and the mixing time is faster, meaning we can run shorter chains to achieve a desired precision.
-One additional benefit is that approximate methods, e.g. variational inference, which work poorly on the joint $p(\theta, \phi \mid y)$ work well on the marginal posterior $p(\phi \mid y)$.
+One additional benefit is that approximate methods, e.g. variational inference, which work poorly on the joint $p(\theta, \phi \mid y)$ can work well on the marginal posterior $p(\phi \mid y)$.
 
 On the other hand, the embedded Laplace approximation presents certain disadvantages.
 First, we need to perform a Laplace approximation each time the log marginal likelihood is evaluated, meaning each iteration can be expensive.
@@ -100,12 +102,13 @@ The quality of the Laplace approximation depends on how close the true condition
 **Works well.** Log-concave likelihoods i.e. A Poisson with log link or negative binomial with log link.
 These produce unimodal conditional posteriors when combined with a Gaussian prior.
 The approximation error is typically negligible for these likelihoods, especially with moderate-to-large counts [@Kuss:2005; @Vanhatalo:2010; @Cseke:2011; @Vehtari:2016].
+If the likelihood is normal, there is no error in the approximation but in this case the marginalization can be worked analytically and the resulting implementation is much faster than using the embedded Laplace approximation.
 
 **Works adequately.** Bernoulli with logit link.
 The curvature information from binary observations is weaker, so the Gaussian approximation is less accurate than for count data.
 The embedded Laplace is still useful when $\theta$ is high-dimensional and joint sampling is infeasible; see @Vehtari:2016 and @Margossian:2020 for discussion.
 
-**Not appropriate.** The normal distribution is log-concave, but when the likelihood is normal, marginalization can be performed exactly and no approximation is needed.
+**Not appropriate.** 
 For likelihoods that are not log-concave in $\theta$, the conditional posterior may be multimodal and the Laplace approximation will miss modes.
 When $\theta$ is low-dimensional (a few dozen or fewer), the overhead of the inner optimization may not pay for itself and standard joint HMC sampling is often adequate.
 
@@ -153,7 +156,7 @@ $$
 $$
 
 We repeat this halving of steps until $\Psi (\theta^{(i + 1)}) \ge \Psi (\theta^{(i)})$, or until a maximum number of linesearch steps is reached.
-For certain problems, adding a linesearch can make the optimization and solver more stable.
+For certain problems, adding a linesearch can make the optimization more stable.
 
 ### Solver Strategies
 

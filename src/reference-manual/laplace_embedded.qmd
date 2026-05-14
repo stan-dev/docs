@@ -4,8 +4,8 @@ pagetitle: Embedded Laplace Approximation
 
 # Embedded Laplace Approximation
 
-The embedded Laplace approximation replaces explicit sampling of high-dimensional Gaussian latent variables with a local Gaussian approximation, marginalizing them out so that inference proceeds over the remaining hyperparameters alone.
-This approach is often referred to as the integrated or nested Laplace approximation, although the exact details of the method can vary.
+The embedded Laplace approximation replaces explicit sampling of potentially high-dimensional Gaussian latent variables with a local Gaussian approximation, marginalizing them out so that inference proceeds over the remaining hyperparameters alone.
+This approach is often referred to as the integrated Laplace approximation, although the exact details of the method can vary.
 The details of Stan's implementation can be found in references [@Margossian:2020; @Margossian:2023].
 
 A standard approach to fit a latent Gaussian model would be to perform inference jointly over the latent Gaussian variables and the hyperparameters.
@@ -29,8 +29,8 @@ The embedded Laplace approximation is used for latent Gaussian models. A latent 
 These components are related through a hierarchical structure.
 The hyperparameters $\phi$ are given a prior $p(\phi)$.
 The latent variables $\theta$ have a multivariate normal prior centered at 0 with covariance matrix $K(\phi)$. An non-zero mean offset can be incorporated into the likelihood function.
-The observations $y$ are generated according to a likelihood $p(y \mid \theta, \phi)$.
-The prior on $\theta$ is centered at zero; an offset can be incorporated into the likelihood function if a non-zero mean is needed.
+The observations $y$ have a data model $p(y \mid \theta, \phi)$.
+The prior on $\theta$ is centered at zero; an offset can be incorporated into the data model if a non-zero mean is needed.
 
 \begin{eqnarray*}
   \phi & \sim & p(\phi) \\
@@ -39,17 +39,18 @@ The prior on $\theta$ is centered at zero; an offset can be incorporated into th
 \end{eqnarray*}
 
 The generative model above defines a joint distribution over all three quantities, $p(\phi, \theta, y) = p(\phi) \, p(\theta \mid \phi) \, p(y \mid \theta, \phi)$.
-After observing data $y$, Bayes' theorem gives the joint posterior $p(\phi, \theta \mid y) \propto p(\phi) \, p(\theta \mid \phi) \, p(y \mid \theta, \phi)$.
+After observing data $y$, Bayes' theorem gives the joint posterior $p(\phi, \theta \mid y) \propto p(\phi) \, p(\theta \mid \phi) \, p(y \mid \theta, \phi)$,
+where $p(y \mid \theta, \phi)$  as function of $\theta$ and $\phi$ is the joint likelihood function.
 
 Sampling directly from the joint posterior $p(\phi, \theta \mid y)$ of this model is often difficult.
 Challenging geometries (e.g., funnels) frustrate inference algorithms, including Hamiltonian Monte Carlo and variational inference.
 However, the marginal posterior $p(\phi \mid y)$ is often well-behaved and low-dimensional, making it much easier to sample.
-With an embedded Laplace approximation, we can obtain an approximation of the marginal posterior $p(\phi \mid y)$. This is done via an intermediate approximation of the conditional posterior $p(\theta \mid \phi, y)$ by a normal distribution and this normal approximation is well-justified when the likelihood $p(y \mid \theta, \phi)$ is log concave (given that we already have a normal prior $p(\theta \mid \phi)$).
-Once we obtain (approximate) samples $\phi^{(i)} \sim p(\phi \mid y)$, we can in turn generate posterior samples for $\theta$ using the normal approximation to $p(\theta \mid y, \phi)$, evaluated at the drawn samples $\phi^{(i)}$.
+With an embedded Laplace approximation, we can obtain an approximation of the marginal posterior $p(\phi \mid y)$. This is done via an intermediate approximation of the conditional posterior $p(\theta \mid \phi, y)$ by a normal distribution and this normal approximation is well-justified when the likelihood $p(y \mid \theta, \phi)$ as function of $\theta$ is log concave (given that we already have a normal prior $p(\theta \mid \phi)$).
+Once we obtain (approximate) samples $\phi^{(i)} \sim p(\phi \mid y)$, we can in turn generate posterior draws for $\theta$ using the normal approximation to $p(\theta \mid y, \phi)$, evaluated at the posterior draws $\phi^{(i)}$.
 
 ## Approximation of the conditional posterior and marginal likelihood
 
-The two-step inference strategy for using embedded laplace in a latent Gaussian model requires approximations to both the conditional posterior $p(\theta \mid y, \phi)$ and the marginal likelihood $p(y \mid \phi)$.
+The two-step inference strategy for using embedded Laplace in a latent Gaussian model requires approximations to both the conditional posterior $p(\theta \mid y, \phi)$ and the marginal likelihood $p(y \mid \phi)$.
 The Laplace approximation is the normal distribution that matches the mode and curvature of the conditional posterior $p(\theta \mid y, \phi)$.
 The mode, defined as the value of $\theta$ that maximizes the conditional posterior, is estimated by a Newton solver,
 $$
@@ -80,7 +81,7 @@ $$
 
 Hence, a strategy to approximate the posterior of the latent Gaussian model is to first estimate the marginal posterior $\hat p_\mathcal{L}(\phi \mid y) \propto p(\phi) p_\mathcal{L} (y \mid \phi)$
 using any algorithm supported by Stan.
-Approximate posterior draws for the latent Gaussian variables are then obtained by first drawing $\phi \sim \hat p_\mathcal{L}(\phi \mid y)$ and then $\theta \sim  \hat p_\mathcal{L}(\theta \mid \phi, y)$.
+Approximate posterior draws for the latent Gaussian variables are then obtained by first sampling $\phi \sim \hat p_\mathcal{L}(\phi \mid y)$ and then $\theta \sim  \hat p_\mathcal{L}(\theta \mid \phi, y)$.
 
 
 ## Trade-offs of the approximation
@@ -92,24 +93,24 @@ One additional benefit is that approximate methods, e.g. variational inference, 
 
 On the other hand, the embedded Laplace approximation presents certain disadvantages.
 First, we need to perform a Laplace approximation each time the log marginal likelihood is evaluated, meaning each iteration can be expensive.
-Secondly, the approximation can introduce non-negligible error, especially with non-conventional likelihoods (note the prior is always multivariate normal).
+Secondly, the approximation can introduce non-negligible error, especially with non-log-concave likelihoods (note the prior is always multivariate normal).
 How these trade-offs are resolved depends on the application; see @Margossian:2020 for some examples.
 
 ### When the approximation is appropriate
 
 The quality of the Laplace approximation depends on how close the true conditional posterior $p(\theta \mid y, \phi)$ is to Gaussian.
 
-**Works well.** Log-concave likelihoods i.e. A Poisson with log link or negative binomial with log link.
+**Works well.** Log-concave likelihoods, for example from a Poisson model with log link or negative binomial with log link.
 These produce unimodal conditional posteriors when combined with a Gaussian prior.
-The approximation error is typically negligible for these likelihoods, especially with moderate-to-large counts [@Kuss:2005; @Vanhatalo:2010; @Cseke:2011; @Vehtari:2016].
+The approximation error is typically negligible with these likelihoods, especially with moderate-to-large counts [@Kuss:2005; @Vanhatalo:2010; @Cseke:2011; @Vehtari:2016].
 If the likelihood is normal, there is no error in the approximation but in this case the marginalization can be worked analytically and the resulting implementation is much faster than using the embedded Laplace approximation.
 
-**Works adequately.** Bernoulli with logit link.
-The curvature information from binary observations is weaker, so the Gaussian approximation is less accurate than for count data.
+**Works adequately.** Bernoulli model with logit link has technically log-concave likelihood, but the likelihood can be very skewed
+making the Gaussian approximation less accurate than for count data.
 The embedded Laplace is still useful when $\theta$ is high-dimensional and joint sampling is infeasible; see @Vehtari:2016 and @Margossian:2020 for discussion.
 
 **Not appropriate.** 
-For likelihoods that are not log-concave in $\theta$, the conditional posterior may be multimodal and the Laplace approximation will miss modes.
+For likelihoods that are not log-concave in $\theta$, the conditional posterior may be multimodal and the Newton solver finds only a single mode or can fail completely.
 When $\theta$ is low-dimensional (a few dozen or fewer), the overhead of the inner optimization may not pay for itself and standard joint HMC sampling is often adequate.
 
 ## Details of the approximation
@@ -120,7 +121,7 @@ This section describes the internals of the Newton solver and the options availa
 ### Tuning the Newton solver
 
 A critical component of the embedded Laplace approximation is the Newton solver used to estimate the mode $\theta^*$ of $p(\theta \mid \phi, y)$.
-The objective function being maximized is the log joint density of the prior and likelihood.
+The objective function being maximized is the log joint density of the prior and likelihood with respect to $\theta$.
 
 $$
 \Psi(\theta) = \log p(\theta \mid \phi) + \log p(y \mid \theta, \phi),
@@ -129,7 +130,7 @@ $$
 Convergence is declared when the change in the objective between successive iterations falls below a *tolerance* $\Delta$.
 
 $$
-| \Psi (\theta^{(i + 1)}) - \Psi (\theta^{(i)}) | \le \Delta,
+| \Psi (\theta^{(i + 1)}) - \Psi (\theta^{(i)}) | \le \Delta.
 $$
 
 The solver also stops after reaching a pre-specified *maximum number of steps*.
@@ -137,7 +138,7 @@ In that case, Stan throws a warning, but still returns the last iteration's para
 If you see this warning you should check the diagnostics to understand why the solver failed to converge.
 
 To help with cases where the Newton step does not lead to a decrease in the objective function, the Newton iteration is augmented with a wolfe line-search to ensure that at each iteration the objective function $\Psi$ decreases.
-Specifically, suppose the objective increases after a Newton step, indicating the step overshot a region of improvement.
+Specifically, suppose the objective increases after a Newton step, indicating the step overshot a region of improvement,
 
 $$
 \Psi (\theta^{(i + 1)}) < \Psi (\theta^{(i)}).

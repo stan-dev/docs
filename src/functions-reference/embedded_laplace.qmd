@@ -6,7 +6,7 @@ pagetitle: Embedded Laplace Approximation
 
 The embedded Laplace approximation can be used to approximate certain marginal
 and conditional distributions that arise in latent Gaussian models.
-Embedded Laplace replaces explicit sampling of high-dimensional Gaussian latent
+Embedded Laplace replaces explicit sampling of (high-dimensional) Gaussian latent
 variables with a local Gaussian approximation.
 In doing so, it marginalizes out the latent Gaussian variables.
 Inference can then be performed on the remaining, often low-dimensional,
@@ -22,14 +22,18 @@ For observed data $y$, latent Gaussian variables $\theta$, and hyperparameters $
   \theta &\sim& \text{MultiNormal}(0, K(\phi)), \\
   y &\sim& p(y \mid \theta, \phi).
 \end{eqnarray}
-In this formulation, $p(y \mid \theta, \phi)$ is the likelihood function that
+In this formulation, $p(y \mid \theta, \phi)$ is the data model that
 specifies how observations are generated conditional on $\theta$ and $\phi$.
 $K(\phi)$ denotes the prior covariance matrix for the latent Gaussian variables
 $\theta$ and is parameterized by $\phi$. The prior on $\theta$ is centered at 0,
-however an offset can always be added when specifying the likelihood function
+however an offset can always be added when specifying the data model
 $p(y \mid \theta, \phi)$.
 
-To sample from the joint posterior $p(\phi, \theta \mid y)$, we can either
+Conditioning on observations $y$ we obtain the joint posterior
+$p(\phi, \theta \mid y) \propto p(y \mid \theta, \phi) p(\theta |
+\phi) p(\phi)$, where $p(y \mid \theta, \phi)$ as function of $\theta$
+and $\phi$ is the likelihood function.
+To sample from the joint posterior, we can either
 use a standard method, such as Markov chain Monte Carlo, or we can follow
 a two-step procedure:
 
@@ -65,12 +69,13 @@ depends on the application.
 To obtain posterior draws for $\theta$, we sample from the normal
 approximation to $p(\theta \mid y, \phi)$ in `generated quantities`.
 The process of iteratively sampling from  $p(\phi \mid y)$ (say, with MCMC) and
-then $p(\theta \mid y, \phi)$ produces samples from the joint posterior
+then $p(\theta \mid y, \phi)$ produces posterior draws from the joint posterior
 $p(\theta, \phi \mid y)$.
 
-The Laplace approximation is especially useful if $p(y \mid \phi, \theta)$ is
-log-concave, e.g., Poisson, binomial, negative-binomial, and Bernoulli.
-(The normal distribution is also log concave, however when the likelihood is
+The Laplace approximation is especially useful if $p(y \mid \phi, \theta)$ as 
+function of $\theta$ is
+log-concave, e.g., in case of Poisson, binomial, negative-binomial, and Bernoulli.
+(The likelihood of normal model is also log concave, however when the likelihood is
 normal, marginalization can be performed exactly and does not required an
 approximation.)
 Stan's embedded Laplace approximation is restricted to the case
@@ -78,6 +83,10 @@ where the prior $p(\theta \mid \phi)$ is multivariate normal.
 Furthermore, the likelihood $p(y \mid \phi, \theta)$ must be computed using
 only operations which support higher-order derivatives
 (see section [specifying the likelihood function](#laplace_likelihood_spec)).
+
+The Laplace approximation can also be useful in generated quantities
+to marginalize out latent variables even if the sampling had been done
+using the full joint posterior.
 
 ## Approximating the log marginal likelihood $\log p(y \mid \phi)$
 
@@ -151,11 +160,13 @@ real likelihood_fun(vector theta, real a, matrix X)
 The call to the laplace marginal would start with this likelihood and
 tuple holding the other likelihood arguments. We do not need to pass
 `theta`, since it is marginalized out and therefore does not
-appear explicitly as a model parameter.
+appear explicitly as a passed parameter.
 
 ```stan
-real val = laplace_marginal(likelihood_fun, (a, X), ...);
+real val = laplace_marginal(likelihood_fun, (a, X), hessian_block_size, ...);
 ```
+
+If the `likelihood_function` has only one argument, the tuple syntax is `(a, )`.
 
 As always, users should use parameter arguments only when necessary in order to
 speed up differentiation.
@@ -169,7 +180,12 @@ real likelihood_function(vector theta, data vector x, ...)
 In addition to the likelihood function, users must specify the block size
 of the Hessian, $\partial^2 \log p(y \mid \theta, \phi) / \partial \theta^2$.
 The Hessian is often block diagonal and this structure can be taken advantage of for fast computation.
-For example, if $y_i$ only depends on $\theta_i$, then the Hessian is diagonal and `hessian_block_size=1`.
+For example, if $y_i$ only depends on $\theta_i$, then the Hessian is diagonal and `hessian_block_size=1`,
+
+```stan
+real val = laplace_marginal(likelihood_fun, (a, X), 1, ...);
+```
+
 On the other hand, if the Hessian is not block diagonal, we can always set
 `hessian_block_size=n` where $n$ is the size of $\theta$.
 
@@ -201,6 +217,8 @@ a tuple holding the covariance function arguments.
 ```stan
 real val = laplace_marginal(likelihood_fun, (a, X), cov_fun, (b, Z), ...);
 ```
+
+If the `covariance_function` has only one argument, the tuple syntax is `(b, )`.
 
 ## Control parameters
 
@@ -241,7 +259,7 @@ By default (`solver=1`), the solver attempts a Cholesky decomposition of the
 negative Hessian of the log likelihood,
 $- \partial^2 \log p(y \mid \theta, \phi) / \partial^2 \theta$.
 This operation is legal if the negative Hessian is positive-definite,
-which will always be true when the likelihood is log concave.
+which will always be true when the likelihood as function of $\theta$ is log concave.
 If `solver=2`, the solver makes a Cholesky decomposition of the covariance matrix $K(\phi)$.
 Since a covariance matrix is always positive-definite, computing its
 Cholesky decomposition is always a legal operation, at least in theory.
@@ -305,7 +323,7 @@ the signature for `laplace_marginal`:
 
 `vector` **`laplace_latent_rng`**`(function likelihood_function, tuple(...) likelihood_arguments, int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`<br>\newline
 
-Draws samples from the Laplace approximation to the conditional posterior $p(\theta \mid y, \phi)$.
+Samples from the Laplace approximation to the conditional posterior $p(\theta \mid y, \phi)$.
 {{< since 2.39 >}}
 
 Once again, it is possible to specify control parameters:
@@ -314,14 +332,15 @@ Once again, it is possible to specify control parameters:
 \index{{\tt \bfseries laplace\_latent\_tol\_rng }!{\tt (function likelihood\_function, tuple(...) likelihood\_arguments, int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): vector}|hyperpage}
 
 `vector` **`laplace_latent_tol_rng`**`(function likelihood_function, tuple(...), int hessian_block_size, function covariance_function, tuple(...), tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
-Draws approximate samples from the conditional posterior $p(\theta \mid y, \phi)$
+Samples from the approximate conditional posterior $p(\theta \mid y, \phi)$
 and allows the user to tune the control parameters of the approximation.
 {{< since 2.39 >}}
 
 ## Built-in Laplace marginal likelihood functions
 
 Stan provides convenient wrappers for the embedded Laplace approximation
-when applied to latent Gaussian models with certain likelihoods.
+when applied to latent Gaussian models with certain likelihoods arising from
+some common data models.
 With this wrapper, the likelihood is pre-specified and does not need to be
 specified by the user.
 The selection of supported likelihoods is currently
@@ -655,7 +674,7 @@ and lets the user tune the control parameters of the approximation.
 
 
 <!-- The -->
-<!-- function `laplace_latent_rng` produces samples from the Laplace approximation -->
+<!-- function `laplace_latent_rng` samples from the Laplace approximation -->
 <!-- and admits nearly the same arguments as `laplace_marginal`. A key difference -->
 <!-- is that  -->
 <!-- ``` -->

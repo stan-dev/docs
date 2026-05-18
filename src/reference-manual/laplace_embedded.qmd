@@ -1,0 +1,198 @@
+---
+pagetitle: Embedded Laplace Approximation
+---
+
+# Embedded Laplace Approximation
+
+The embedded Laplace approximation replaces explicit sampling of potentially high-dimensional Gaussian latent variables with a local Gaussian approximation, marginalizing them out so that inference proceeds over the remaining hyperparameters alone.
+This approach is often referred to as the integrated Laplace approximation, although the exact details of the method can vary.
+The details of Stan's implementation can be found in references [@Margossian:2020; @Margossian:2023].
+
+A standard approach to fit a latent Gaussian model would be to perform inference jointly over the latent Gaussian variables and the hyperparameters.
+Instead, the embedded Laplace approximation can be used to do *approximate* marginalization of the latent Gaussian variables; we can then use any inference over the remaining hyperparameters.
+By marginalizing out the latent variables, the sampler explores a lower-dimensional, better-behaved marginal posterior.
+Individual iterations are more expensive (each requires an inner optimization), but the sampler typically needs far fewer iterations to achieve the same effective sample size.
+How this trade-off resolves depends on the specific problem at hand.
+
+For complete function signatures and the built-in likelihood wrappers (Poisson, Negative Binomial, Bernoulli), see the [Embedded Laplace functions reference](../functions-reference/embedded_laplace.qmd).
+For worked examples with full data blocks, see the [Gaussian Processes chapter](../stan-users-guide/gaussian-processes.qmd#poisson-gp-using-an-embedded-laplace-approximation).
+
+
+## Latent Gaussian models
+
+The embedded Laplace approximation is used for latent Gaussian models. A latent Gaussian model is defined by three components:
+
+- $\phi$: hyperparameters (e.g., GP kernel length-scale and magnitude, or variance components in a hierarchical model),
+- $\theta$: latent Gaussian variables (the high-dimensional quantity to be marginalized out),
+- $y$: observed data.
+
+These components are related through a hierarchical structure.
+The hyperparameters $\phi$ are given a prior $p(\phi)$.
+The latent variables $\theta$ have a multivariate normal prior centered at 0 with covariance matrix $K(\phi)$. An non-zero mean offset can be incorporated into the likelihood function.
+The observations $y$ have a data model $p(y \mid \theta, \phi)$.
+The prior on $\theta$ is centered at zero; an offset can be incorporated into the data model if a non-zero mean is needed.
+
+\begin{eqnarray*}
+  \phi & \sim & p(\phi) \\
+  \theta & \sim & \text{Multi-Normal}(0, K(\phi)) \\
+  y & \sim & p(y \mid \theta, \phi).
+\end{eqnarray*}
+
+The generative model above defines a joint distribution over all three quantities, $p(\phi, \theta, y) = p(\phi) \, p(\theta \mid \phi) \, p(y \mid \theta, \phi)$.
+After observing data $y$, Bayes' theorem gives the joint posterior $p(\phi, \theta \mid y) \propto p(\phi) \, p(\theta \mid \phi) \, p(y \mid \theta, \phi)$,
+where $p(y \mid \theta, \phi)$  as function of $\theta$ and $\phi$ is the joint likelihood function.
+
+Sampling directly from the joint posterior $p(\phi, \theta \mid y)$ of this model is often difficult.
+Challenging geometries (e.g., funnels) frustrate inference algorithms, including Hamiltonian Monte Carlo and variational inference.
+However, the marginal posterior $p(\phi \mid y)$ is often well-behaved and low-dimensional, making it much easier to sample.
+With an embedded Laplace approximation, we can obtain an approximation of the marginal posterior $p(\phi \mid y)$. This is done via an intermediate approximation of the conditional posterior $p(\theta \mid \phi, y)$ by a normal distribution and this normal approximation is well-justified when the likelihood $p(y \mid \theta, \phi)$ as function of $\theta$ is log concave (given that we already have a normal prior $p(\theta \mid \phi)$).
+Once we obtain (approximate) samples $\phi^{(i)} \sim p(\phi \mid y)$, we can in turn generate posterior draws for $\theta$ using the normal approximation to $p(\theta \mid y, \phi)$, evaluated at the posterior draws $\phi^{(i)}$.
+
+## Approximation of the conditional posterior and marginal likelihood
+
+The two-step inference strategy for using embedded Laplace in a latent Gaussian model requires approximations to both the conditional posterior $p(\theta \mid y, \phi)$ and the marginal likelihood $p(y \mid \phi)$.
+The Laplace approximation is the normal distribution that matches the mode and curvature of the conditional posterior $p(\theta \mid y, \phi)$.
+The mode, defined as the value of $\theta$ that maximizes the conditional posterior, is estimated by a Newton solver,
+$$
+  \theta^* = \underset{\theta}{\text{argmax}} \ p(\theta \mid y, \phi),
+$$
+
+Since the approximation is normal, the curvature is matched by setting the covariance to the negative Hessian of the log conditional posterior, evaluated at the mode,
+
+$$
+  \Sigma^* = -  \left . \frac{\partial^2}{\partial \theta^2}
+    \log p (\theta \mid \phi, y) \right |_{\theta =\theta^*}.
+$$
+
+The resulting Laplace approximation is a multivariate normal centered at the mode with covariance given by the inverse curvature,
+
+$$
+\hat p_\mathcal{L} (\theta \mid y, \phi) = \text{Multi-Normal}(\theta^*, \Sigma^*)
+\approx p(\theta \mid y, \phi).
+$$
+
+This approximation also yields an approximation to the marginal likelihood, obtained by evaluating the prior, likelihood, and approximate posterior at the mode $\theta^*$,
+
+$$
+   \hat p_\mathcal{L}(y \mid \phi) := \frac{p(\theta^* \mid \phi) \
+   p(y \mid \theta^*, \phi) }{ \hat p_\mathcal{L} (\theta^* \mid \phi, y) }
+   \approx p(y \mid \phi).
+$$
+
+Hence, a strategy to approximate the posterior of the latent Gaussian model is to first estimate the marginal posterior $\hat p_\mathcal{L}(\phi \mid y) \propto p(\phi) p_\mathcal{L} (y \mid \phi)$
+using any algorithm supported by Stan.
+Approximate posterior draws for the latent Gaussian variables are then obtained by first sampling $\phi \sim \hat p_\mathcal{L}(\phi \mid y)$ and then $\theta \sim  \hat p_\mathcal{L}(\theta \mid \phi, y)$.
+
+
+## Trade-offs of the approximation
+
+The embedded Laplace approximation presents several trade-offs with standard inference over the joint posterior $p(\theta, \phi \mid y)$.
+The main advantage of the embedded Laplace approximation is that it side-steps the intricate geometry of hierarchical models.
+The marginal posterior $p(\phi \mid y)$ can then be handled by Hamiltonian Monte Carlo sampling without extensive tuning or reparameterization, and the mixing time is faster, meaning we can run shorter chains to achieve a desired precision.
+One additional benefit is that approximate methods, e.g. variational inference, which work poorly on the joint $p(\theta, \phi \mid y)$ can work well on the marginal posterior $p(\phi \mid y)$.
+
+On the other hand, the embedded Laplace approximation presents certain disadvantages.
+First, we need to perform a Laplace approximation each time the log marginal likelihood is evaluated, meaning each iteration can be expensive.
+Secondly, the approximation can introduce non-negligible error, especially with non-log-concave likelihoods (note the prior is always multivariate normal).
+How these trade-offs are resolved depends on the application; see @Margossian:2020 for some examples.
+
+### When the approximation is appropriate
+
+The quality of the Laplace approximation depends on how close the true conditional posterior $p(\theta \mid y, \phi)$ is to Gaussian.
+
+**Works well.** Log-concave likelihoods, for example from a Poisson model with log link or negative binomial with log link.
+These produce unimodal conditional posteriors when combined with a Gaussian prior.
+The approximation error is typically negligible with these likelihoods, especially with moderate-to-large counts [@Kuss:2005; @Vanhatalo:2010; @Cseke:2011; @Vehtari:2016].
+If the likelihood is normal, there is no error in the approximation but in this case the marginalization can be worked analytically and the resulting implementation is much faster than using the embedded Laplace approximation.
+
+**Works adequately.** Bernoulli model with logit link has technically log-concave likelihood, but the likelihood can be very skewed
+making the Gaussian approximation less accurate than for count data.
+The embedded Laplace is still useful when $\theta$ is high-dimensional and joint sampling is infeasible; see @Vehtari:2016 and @Margossian:2020 for discussion.
+
+**Not appropriate.** 
+For likelihoods that are not log-concave in $\theta$, the conditional posterior may be multimodal and the Newton solver finds only a single mode or can fail completely.
+When $\theta$ is low-dimensional (a few dozen or fewer), the overhead of the inner optimization may not pay for itself and standard joint HMC sampling is often adequate.
+
+## Details of the approximation
+
+When the embedded Laplace approximation does not converge or produces unexpected results, the solver configuration may need adjustment.
+This section describes the internals of the Newton solver and the options available for tuning it.
+
+### Tuning the Newton solver
+
+A critical component of the embedded Laplace approximation is the Newton solver used to estimate the mode $\theta^*$ of $p(\theta \mid \phi, y)$.
+The objective function being maximized is the log joint density of the prior and likelihood with respect to $\theta$.
+
+$$
+\Psi(\theta) = \log p(\theta \mid \phi) + \log p(y \mid \theta, \phi),
+$$
+
+Convergence is declared when the change in the objective between successive iterations falls below a *tolerance* $\Delta$.
+
+$$
+| \Psi (\theta^{(i + 1)}) - \Psi (\theta^{(i)}) | \le \Delta.
+$$
+
+The solver also stops after reaching a pre-specified *maximum number of steps*.
+In that case, Stan throws a warning, but still returns the last iteration's parameters.
+If you see this warning you should check the diagnostics to understand why the solver failed to converge.
+
+To help with cases where the Newton step does not lead to a decrease in the objective function, the Newton iteration is augmented with a wolfe line-search to ensure that at each iteration the objective function $\Psi$ decreases.
+Specifically, suppose the objective increases after a Newton step, indicating the step overshot a region of improvement,
+
+$$
+\Psi (\theta^{(i + 1)}) < \Psi (\theta^{(i)}).
+$$
+
+This can indicate that the Newton step $\alpha$ at iteration $i$ is too large and that we skipped a region where the objective function decreases.
+In that case, we can fallback to a Wolfe line search to find a step size which satisfies the Wolfe conditions. The wolfe line search attempts to find a search direction $p_i$ and step size $\alpha_k$ such that an accepted step both increases our objective while ensuring the slope of the accepted step is flatter than our previous position. Together these help push the algorithm towards a minimum.
+
+$$
+f(x_i + \alpha_k p_i) \le f(x_i) + c_1 \alpha_k \nabla f(x_i)^T p_i
+-p^T_i \Delta f(x_i + \alpha_k p_i) \le -c_2 p^T_i \Delta f(x_i)
+$$
+
+$$
+  \theta^{(i + 1)} \leftarrow \frac{\theta^{(i + 1)} + \theta^{(i)}}{2}.
+$$
+
+We repeat this halving of steps until $\Psi (\theta^{(i + 1)}) \ge \Psi (\theta^{(i)})$, or until a maximum number of linesearch steps is reached.
+For certain problems, adding a linesearch can make the optimization more stable.
+
+### Solver Strategies
+
+The embedded Laplace approximation uses a custom Newton solver, specialized to find the mode of $p(\theta \mid \phi, y)$.
+A key step for efficient optimization is to ensure all matrix inversions are numerically stable.
+This can be done using the Woodbury-Sherman-Morrison formula and requires one of three matrix decompositions:
+
+1. Cholesky decomposition of the Hessian of the negative log likelihood $W = - \partial^2_\theta \log p(y \mid \theta, \phi)$.
+
+2. Cholesky decomposition of the prior covariance matrix $K(\phi)$.
+
+3. LU-decomposition of $I + KW$, where $I$ is the identity matrix.
+
+The first solver (1) should be used if the negative log likelihood is positive-definite.
+Otherwise the user should rely on (2).
+In rarer cases where it is not numerically safe to invert the covariance matrix $K$, users can use the third solver as a last-resort option.
+
+
+### Sparse Hessian of the log likelihood
+
+A key step to speed up computation is to take advantage of the sparsity of $H$, the Hessian of the log likelihood with respect to the latent variables,
+$$
+  H = \frac{\partial^2}{\partial \theta^2} \log p(y \mid \theta, \phi).
+$$
+For example, if the observations $(y_1, \cdots, y_N)$ are conditionally independent and each depends on only one component of $\theta$, the log likelihood decomposes into a sum of per-observation terms,
+$$
+  \log p(y \mid \theta, \phi) = \sum_{i = 1}^N \log p(y_i \mid \theta_i, \phi),
+$$
+and the Hessian is diagonal.
+This leads to faster calculations of the Hessian and subsequently sparse matrix operations.
+This case is common in Gaussian process models, and certain hierarchical models.
+
+Stan's suite of functions for the embedded Laplace approximation exploits block-diagonal structure in the Hessian, where the user specifies the block size B.
+The user can specify the size $B$ of these blocks.
+The user is responsible for working out what $B$ is. If the Hessian is dense, then we simply set $B = N$.
+The diagonal case above corresponds to B = 1.
+Arbitrary sparsity patterns beyond block-diagonal structure are not currently supported.
+

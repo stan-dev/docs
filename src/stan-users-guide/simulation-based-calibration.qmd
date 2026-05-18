@@ -1,21 +1,22 @@
 ---
-pagetitle: Simulation-Based Calibration
+pagetitle: Simulation-Based Calibration Checking
 ---
 
-# Simulation-Based Calibration
+# Simulation-Based Calibration Checking
 
 A Bayesian posterior is calibrated if the posterior intervals have
 appropriate coverage.  For example, 80% intervals are expected to
 contain the true parameter 80% of the time.  If data is generated
 according to a model, Bayesian posterior inference with respect to
 that model is calibrated by construction.  Simulation-based
-calibration (SBC) exploits this property of Bayesian inference to
+calibration checking (SBC) exploits this property of Bayesian inference to
 assess the soundness of a posterior sampler.  Roughly, the way it works
 is by simulating parameters according to the prior, then simulating
 data conditioned on the simulated parameters, then testing posterior
 calibration of the inference algorithm over independently simulated
 data sets.  This chapter follows @TaltsEtAl:2018, which improves on
-the original approach developed by @CookGelmanRubin:2006.
+the original approach developed by @CookGelmanRubin:2006. See also
+@ModrakEtAl:2023 for further improvements.
 
 ## Bayes is calibrated by construction
 
@@ -64,14 +65,14 @@ $\theta^{\textrm{sim}}$ falls in it will also be 90%.  The same goes
 for any other posterior interval.
 
 
-## Simulation-based calibration
+## Simulation-based calibration checking
 
 Suppose the Bayesian model to test has joint density
 $$
 p(y, \theta) = p(y \mid \theta) \cdot p(\theta),
 $$
 with data $y$ and parameters $\theta$ (both are typically
-multivariate).  Simulation-based calibration works by generating $N$
+multivariate).  Simulation-based calibration checking works by generating $N$
 simulated parameter and data pairs according to the joint density,
 $$
 (y^{\textrm{sim}(1)}, \theta^{\textrm{sim}(1)}),
@@ -101,22 +102,25 @@ That is, the rank is the number of posterior draws $\theta^{(n,m)}_k$
 that are less than the simulated draw $\theta^{\textrm{sim}(n)}_k.$
 
 If the algorithm generates posterior draws according to the posterior,
-the ranks should be uniformly distributed from $0$ to $M$, so that
+the ranks should have uniform discrete distribution from $0$ to $M$, so that
 the ranks plus one are uniformly distributed from $1$ to $M + 1$,
 $$
 r_{n, k} + 1
 \sim
 \textrm{categorical}\! \left(\frac{1}{M + 1}, \ldots, \frac{1}{M + 1}\right).
 $$
-Simulation-based calibration uses this expected behavior to test the
-calibration of each parameter of a model on simulated data.
+Simulation-based calibration checking uses this expected behavior to test the
+calibration of each parameter of a model on simulated data. 
 @TaltsEtAl:2018 suggest plotting binned counts of $r_{1:N,
-k}$ for different parameters $k$;  @CookGelmanRubin:2006
-automate the process with a hypothesis test for uniformity.
+k}$ for different parameters $k$;  @SailynojaEtAl:2022 provide
+a graphical test for discrete uniformity testing. Before 
+uniformity testing the Markov chains should be thinned
+to remove autocorrelation as these uniformity tests assume
+independence [@SailynojaEtAl:2022].
 
 ## SBC in Stan
 
-Running simulation-based calibration in Stan will test whether Stan's
+Running simulation-based calibration checking in Stan will test whether Stan's
 sampling algorithm can sample from the posterior associated with data
 generated according to the model.  The data simulation and posterior
 fitting and rank calculation can all be done within a single Stan
@@ -146,7 +150,7 @@ p(\mu, \sigma)
 = \textrm{normal}(\mu \mid 0, 1)
   \cdot \textrm{lognormal}(\sigma \mid 0, 1),
 $$
-and the sampling density is
+and the data model is
 $$
 p(y \mid \mu, \sigma)
 = \prod_{n=1}^N \textrm{normal}(y_n \mid \mu, \sigma).
@@ -158,8 +162,8 @@ $$
 (\mu^{\textrm{sim(1)}}, \sigma^{\textrm{sim(1)}}) = (1.01, 0.23).
 $$
 Then data $y^{\textrm{sim}(1)} \sim p(y \mid \mu^{\textrm{sim(1)}},
-\sigma^{\textrm{sim(1)}})$ is drawn according to the sampling
-distribution.  Next, $M = 4$ draws are taken from the posterior
+\sigma^{\textrm{sim(1)}})$ is drawn according to the data
+model.  Next, $M = 4$ draws are taken from the posterior
 $\mu^{(1,m)}, \sigma^{(1,m)} \sim p(\mu, \sigma \mid y^{\textrm{sim}(1)})$,
 $$
 \begin{array}{r|rr}
@@ -194,9 +198,9 @@ Because the simulated parameters are distributed according to the posterior,
 these ranks should be distributed uniformly between $0$ and $M$, the
 number of posterior draws.
 
-### Testing a Stan program with simulation-based calibration {-}
+### Testing a Stan program with simulation-based calibration checking {-}
 
-To code simulation-based calibration in a Stan program,
+To code simulation-based calibration checking in a Stan program,
 the transformed data block can be used to simulate parameters
 and data from the model.  The parameters, transformed parameters, and
 model block then define the model over the simulated data.  Then, in
@@ -228,7 +232,7 @@ generated quantities {
 }
 ```
 To avoid confusion with the number of simulated data sets used
-for simulation-based calibration, `J` is used for the number of
+for simulation-based calibration checking, `J` is used for the number of
 simulated data points.
 
 The model is implemented twice---once as a data generating process
@@ -239,9 +243,9 @@ chance for errors.  The blessing is that by implementing the model
 twice and comparing results, the chance of there being a mistake
 in the model is reduced.
 
-### Pseudocode for simulation-based calibration {-}
+### Pseudocode for simulation-based calibration checking {-}
 
-The entire simulation-based calibration process is as follows, where
+The entire simulation-based calibration checking process is as follows, where
 
 * `p(theta)` is the prior density
 * `p(y | theta)` is the sampling density
@@ -276,7 +280,7 @@ for (k in 1:K) {
 
 The draws from the posterior are assumed to be roughly independent.
 If they are not, artifacts may arise in the uniformity tests due to
-correlation in the posterior draws.  Thus it is best to thin the
+correlation in the posterior draws [@SailynojaEtAl:2022].  Thus it is best to thin the
 posterior draws down to the point where the effective sample size is
 roughly the same as the number of thinned draws.  This may require
 running the code a few times to judge the number of draws required to
@@ -291,10 +295,9 @@ A simple, though not very highly powered, $\chi^2$-squared test for
 uniformity can be formulated by binning the ranks $0:M$ into $J$
 bins and testing that the bins all have roughly the
 expected number of draws in them.  Many other tests for uniformity are
-possible.  For example, @CookGelmanRubin:2006 transform the ranks
-using the inverse cumulative distribution function for the standard
-normal and then perform a test for normality.  @TaltsEtAl:2018
-recommend visual inspection of the binned plots.
+possible.  For example, @SailynojaEtAl:2022 use binomial model pointiwise
+for the empirical cumlative distribution function and adjust to obtain
+simulatenous envelope to be used as graphical uniformity test.
 
 The bins don't need to be exactly the same size.  In general, if $b_j$
 is the number of ranks that fall into bin $j$ and $e_j$ is the number
@@ -362,7 +365,7 @@ That's why so much attention must be devoted to indexing and binning.
 
 
 
-## Examples of simulation-based calibration
+## Examples of simulation-based calibration checking
 
 This section will show what the results look like when the tests pass
 and then when they fail.  The passing test will compare a normal model
@@ -505,7 +508,7 @@ generated quantities {
 }
 ```
 
-As usual for simulation-based calibration, the transformed data
+As usual for simulation-based calibration checking, the transformed data
 encodes the data-generating process using random number generators.
 Here, the population parameters $\mu$ and $\tau$ are first simulated,
 then the school-level effects $\theta$, and then finally the observed

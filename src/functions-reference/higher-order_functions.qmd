@@ -534,101 +534,158 @@ initial state derivatives passed into the solver, and length of each vector in t
 *   number of solution times and number of vectors in the output.
 
 
-## 1D integrator {#functions-1d-integrator}
+## 1D integrators {#functions-1d-integrator}
 
-Stan provides a built-in mechanism to perform 1D integration of a function via quadrature methods.
+Stan provides built-in 1D integrators using adaptive quadrature.
+`integrate_1d_double_exponential` uses
+double-exponential quadrature; `integrate_1d_gauss_kronrod` uses adaptive
+Gauss-Kronrod quadrature. They differ in which integrands they handle
+well (see [Algorithmic details](#integrator-algorithmic-details)):
+double-exponential quadrature is robust to algebraic or logarithmic
+singularities at the integration limits, while Gauss-Kronrod is more
+accurate on smooth integrands and on integrands whose mass lies away
+from the limits.
 
-It operates similarly to the [algebraic solver](#functions-algebraic-solver) and
-the [ordinary differential equations solver](#functions-ode-solver) in that it allows as an argument a function.
-
-Like both of those utilities, some of the arguments are limited
-to data only expressions. These expressions must not contain variables
-other than those declared in the data or transformed data blocks.
+A 1D integrator is a higher-order function, i.e. it takes another
+function as one of its arguments. Like the algebraic solvers and the
+differential equation solvers, some arguments are restricted to data
+only; these must not contain variables other than those declared in the
+data or transformed data blocks.
 
 ### Specifying an integrand as a function
 
-Performing a 1D integration requires the integrand to be specified somehow.
-This is done by defining a function in the Stan functions block with the special signature:
+The integrand is specified as an ordinary function in Stan within the
+functions block. The function must return a `real` and takes as its
+first two arguments the variable of integration `x` and its complement
+`xc`, both `real`. These are followed by variadic arguments `...` passed
+through unmodified from the integrator call:
 
 ```stan
-real integrand(real x, real xc, array[] real theta,
-               array[] real x_r, array[] int x_i)
+ real integrand(real x, real xc, ...)
 ```
 
-The function should return the value of the integrand evaluated at
-the point x.
+The function should return the value of the integrand evaluated at `x`.
+The arguments are:
 
-The argument of this function are:
+* *`x`*, the variable being integrated over,
 
-* *`x`*, the independent variable being integrated over
+* *`xc`*, for definite integrals, a high-precision version of the
+distance from `x` to the nearest integration limit (see
+[Algorithmic details](#integrator-algorithmic-details) for its use); set
+to `NaN` for integrals with an infinite limit, and always `NaN` for
+`integrate_1d_gauss_kronrod`,
 
-* *`xc`*, a high precision version of the distance from x to the nearest endpoint in a definite integral (for more into see section [Precision Loss](#precision-loss)).
-
-* *`theta`*, parameter values used to evaluate the integral
-
-* *`x_r`*, data values used to evaluate the integral
-
-* *`x_i`*, integer data used to evaluate the integral
-
-Like algebraic solver and the differential equations solver, the 1D
-integrator separates parameter values, `theta`, from data values, `x_r`.
+* *`...`*, variadic arguments passed unmodified from the integrator call.
+The types here must match the types of the `...` arguments of the
+integrator call. There is no type restriction; mark data arguments with
+the keyword `data`.
 
 ### Call to the 1D integrator
 
-<!-- real; integrate_1d; (function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i); -->
-\index{{\tt \bfseries integrate\_1d }!{\tt (function integrand, real a, real b, array[] real theta, array[] real x\_r, array[] int x\_i): real}|hyperpage}
+<!-- real; integrate_1d_double_exponential; (function integrand, real a, real b, ...); -->
+\index{{\tt \bfseries integrate\_1d\_double\_exponential }!{\tt (function integrand, real a, real b, ...): real}|hyperpage}
+`real` **`integrate_1d_double_exponential`**`(function integrand, real a, real b, ...)`<br>\newline
+Integrates the integrand from a to b using double-exponential quadrature.
 
-`real` **`integrate_1d`** `(function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i)`<br>\newline
-Integrates the integrand from a to b.
-{{< since 2.23 >}}
+<!-- real; integrate_1d_double_exponential_tol; (function integrand, real a, real b, data real relative_tolerance, data real absolute_tolerance, data int max_refinements, ...); -->
+\index{{\tt \bfseries integrate\_1d\_double\_exponential\_tol }!{\tt (function integrand, real a, real b, data real relative\_tolerance, data real absolute\_tolerance, data int max\_refinements, ...): real}|hyperpage}
+`real` **`integrate_1d_double_exponential_tol`**`(function integrand, real a, real b, data real relative_tolerance, data real absolute_tolerance, data int max_refinements, ...)`<br>\newline
+Integrates the integrand from a to b using double-exponential quadrature with additional control parameters.
 
-<!-- real; integrate_1d; (function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i, real relative_tolerance); -->
-\index{{\tt \bfseries integrate\_1d }!{\tt (function integrand, real a, real b, array[] real theta, array[] real x\_r, array[] int x\_i, real relative\_tolerance): real}|hyperpage}
+<!-- real; integrate_1d_gauss_kronrod; (function integrand, real a, real b, ...); -->
+\index{{\tt \bfseries integrate\_1d\_gauss\_kronrod }!{\tt (function integrand, real a, real b, ...): real}|hyperpage}
+`real` **`integrate_1d_gauss_kronrod`**`(function integrand, real a, real b, ...)`<br>\newline
+Integrates the integrand from a to b using Gauss-Kronrod quadrature.
 
-`real` **`integrate_1d`** `(function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i, real relative_tolerance)`<br>\newline
-Integrates the integrand from a to b with the given relative tolerance.
-{{< since 2.23 >}}
-
+<!-- real; integrate_1d_gauss_kronrod_tol; (function integrand, real a, real b, data real relative_tolerance, data real absolute_tolerance, data int max_depth, ...); -->
+\index{{\tt \bfseries integrate\_1d\_gauss\_kronrod\_tol }!{\tt (function integrand, real a, real b, data real relative\_tolerance, data real absolute\_tolerance, data int max\_depth, ...): real}|hyperpage}
+`real` **`integrate_1d_gauss_kronrod_tol`**`(function integrand, real a, real b, data real relative_tolerance, data real absolute_tolerance, data int max_depth, ...)`<br>\newline
+Integrates the integrand from a to b using Gauss-Kronrod quadrature with additional control parameters.
 
 #### Arguments to the 1D integrator
 
-The arguments to the 1D integrator are as follows:
+The arguments to the 1D integrators are as follows:
 
-* *`integrand`*: function literal referring to a function specifying the integrand with signature  `(real, real, array[] real, array[] real, array[] int):real`
-The arguments represent
-    + (1) where integrand is evaluated,
-    + (2) distance from evaluation point to integration limit for definite integrals,
-    + (3) parameters,
-    + (4) real data
-    + (5) integer data, and the return value is the integrand evaluated at the given point,
+* *`integrand`*: function literal referring to the integrand, with
+signature `(real, real, ...): real`; the arguments represent (1) where
+the integrand is evaluated, (2) the distance from the evaluation point to
+the nearest integration limit for definite integrals, and (3) the
+variadic arguments, and the return value is the integrand evaluated at
+the given point,
 
-* *`a`*: left limit of integration, may be negative infinity, type `real`,
-* *`b`*: right limit of integration, may be positive infinity, type `real`,
-* *`theta`*: parameters only, type `array[] real`,
-* *`x_r`*: real data only, type `array[] real`,
-* *`x_i`*: integer data only, type `array[] int`.
+* *`a`*: left limit of integration, may be negative infinity (`negative_infinity()`), type `real`,
+* *`b`*: right limit of integration, may be positive infinity (`positive_infinity()`), type `real`,
+* *`...`*: variadic arguments.
 
-A `relative_tolerance` argument can optionally be provided for more control over the algorithm:
+The `_tol` variants take control parameters before the variadic
+arguments. All are data only:
 
-* *`relative_tolerance`*: relative tolerance for the 1d integrator, type `real`, data only.
+* *`relative_tolerance`*: relative tolerance of the integrator, type `real`,
+* *`absolute_tolerance`*: absolute-error floor on the convergence test, type `real`,
+* *`max_refinements`* (`integrate_1d_double_exponential_tol` only): maximum number of refinement levels, type `int`,
+* *`max_depth`* (`integrate_1d_gauss_kronrod_tol` only): maximum recursive bisection depth, type `int`.
 
 #### Return value
 
-The return value for the 1D integrator is a `real`, the value of the integral.
+The return value for the 1D integrators is a `real`, the value of the
+integral.
 
-#### Zero-crossing integrals {#zero-crossing}
+#### Algorithmic details {#integrator-algorithmic-details}
 
-For numeric stability, integrals on the (possibly infinite) interval $(a, b)$ that cross zero are split into two integrals, one from $(a, 0)$ and one from $(0, b)$. Each integral is separately integrated to the given `relative_tolerance`.
+Both integrators use quadrature methods from the Boost library; Boost in
+turn builds on methods developed in [@Takahasi:1974], [@Mori:1978],
+[@Bailey:2005], and [@Tanaka:2009].
 
-#### Precision loss near limits of integration in definite integrals {#precision-loss}
+`integrate_1d_double_exponential` uses the double-exponential methods
+`tanh_sinh`, `exp_sinh`, or `sinh_sinh`, chosen by the finiteness of the
+limits. Its nodes concentrate near the integration limits, which makes it
+robust to algebraic or logarithmic singularities of the integrand at the
+endpoints (for instance the beta density $x^{\alpha-1}(1-x)^{\beta-1}$
+with small $\alpha$, $\beta$). For numeric stability, integrals on the
+(possibly infinite) interval $(a, b)$ that cross zero are split into two
+integrals, one over $(a, 0)$ and one over $(0, b)$, each integrated
+separately to the requested tolerances.
 
-When integrating certain definite integrals, there can be significant precision loss in evaluating the integrand near the endpoints. This has to do with the breakdown in precision of double precision floating point values when adding or subtracting a small number from a number much larger than it in magnitude (for instance, `1.0 - x`). `xc` (as passed to the integrand) is a high-precision version of the distance between `x` and the definite integral endpoints and can be used to address this issue. More information (and an example where this is useful) is given in the User's Guide. For zero crossing integrals, `xc` will be a high precision version of the distance to the endpoints of the two smaller integrals. For any integral with an endpoint at negative infinity or positive infinity, `xc` is set to `NaN`.
+`integrate_1d_gauss_kronrod` uses adaptive Gauss-Kronrod quadrature with
+a 21-point Kronrod rule. Its nodes cover the whole interval, so it is
+more accurate than double-exponential quadrature on smooth integrands and
+on integrands whose mass lies away from the limits (off-centre peaks),
+which the double-exponential nodes can undersample. It applies no
+endpoint transform and does not split zero-crossing integrals; integrands
+with endpoint singularities should use `integrate_1d_double_exponential`
+instead. Infinite limits are handled internally by a change of variable.
 
-#### Algorithmic details
+The integration succeeds when
+$$
+  \text{error} \leq \max(\text{relative\_tolerance} \cdot |I|,
+  \text{absolute\_tolerance}),
+$$
+where $|I|$ is the estimated $L_1$ norm of the integral. With
+`absolute_tolerance = 0` (the default in the non-`_tol` variants) this is
+a pure relative-tolerance test. A positive `absolute_tolerance` lets the
+integration succeed when $|I|$ is so small that the relative test is
+dominated by accumulated floating-point round-off, for instance when the
+integrand is essentially zero across the interval (as happens with nested
+integration in the tails of a density). If an integrator cannot reach the
+requested tolerance an exception is raised; in the model block this
+rejects the current proposal, and in generated quantities the returned
+value is `NaN`. A larger tolerance can then be specified.
 
-Internally the 1D integrator uses the double-exponential methods in the Boost 1D quadrature library. Boost in turn makes use of quadrature methods developed in [@Takahasi:1974], [@Mori:1978], [@Bailey:2005], and [@Tanaka:2009].
+For definite integrals, the `xc` argument passed to the integrand is a
+high-precision version of the distance from `x` to the nearest
+integration limit ($a - x$ near the lower limit, $b - x$ near the upper
+limit). It avoids the precision loss of forming, for example, `1.0 - x`
+for `x` near 1 in double-precision floating point, and is useful for
+integrands that are singular or near-singular at an endpoint. It is `NaN`
+for any integral with an infinite limit, and always `NaN` for
+`integrate_1d_gauss_kronrod`. For zero-crossing integrals it is a
+high-precision distance to the limits of each of the two sub-integrals.
+An example of its use is given in the User's Guide.
 
-The gradients of the integral are computed in accordance with the Leibniz integral rule. Gradients of the integrand are computed internally with Stan's automatic differentiation.
+The gradients of the integral are computed in accordance with the Leibniz
+integral rule. Gradients of the integrand are computed internally with
+Stan's automatic differentiation.
+
 
 ## Reduce-sum function {#functions-reduce}
 

@@ -6,12 +6,13 @@ pagetitle: Computing One Dimensional Integrals
 
 
 Definite and indefinite one dimensional integrals can be performed in Stan
-using the [`integrate_1d` function](https://mc-stan.org/docs/functions-reference/higher-order_functions.html#functions-1d-integrator)
+using the [1D integrators](https://mc-stan.org/docs/functions-reference/higher-order_functions.html#functions-1d-integrator),
+`integrate_1d_double_exponential` and `integrate_1d_gauss_kronrod`.
 
 As an example, the normalizing constant of a left-truncated normal distribution is
 
 $$
-  \int_a^\infty \frac{1}{\sqrt{2 \pi \sigma^2}} e^{-\frac{1}{2}\frac{(x - \mu)^2}{\sigma^2}}
+  \int_a^\infty \frac{1}{\sqrt{2 \pi \sigma^2}} e^{-\frac{1}{2}\frac{(x - \mu)^2}{\sigma^2}}.
 $$
 
 
@@ -20,15 +21,11 @@ To compute this integral in Stan, the integrand must first be defined as a Stan 
 for more information on coding user-defined functions).
 
 ```stan
-real normal_density(real x,             // Function argument
-                    real xc,            // Complement of function argument
-                                        //  on the domain (defined later)
-                    array[] real theta, // parameters
-                    array[] real x_r,   // data (real)
-                    array[] int x_i) {  // data (integer)
-  real mu = theta[1];
-  real sigma = theta[2];
-
+real normal_density(real x,      // Function argument
+                    real xc,     // Complement of function argument
+                                 //  on the domain (defined later)
+                    real mu,     // mean
+                    real sigma) {  // standard deviation
   return 1 / (sqrt(2 * pi()) * sigma) * exp(-0.5 * ((x - mu) / sigma)^2);
 }
 ```
@@ -37,22 +34,17 @@ real normal_density(real x,             // Function argument
 This function is expected to return the value of the integrand evaluated at point `x`. The
 argument `xc` is used in definite integrals to avoid loss of precision near
 the limits of integration and is set to NaN when either limit is infinite
-(see the  section on precision/loss in the chapter on
+(see the section on precision loss in the chapter on
 Higher-Order Functions
-of the Stan Functions Reference for details on how to use this).
-The argument `theta` is used to pass in arguments of the integral
-that are a function of the parameters in our model. The arguments `x_r`
-and `x_i` are used to pass in real and integer arguments of the integral that are
-not a function of our parameters.
+of the Stan Functions Reference for details on how to use this). For
+`integrate_1d_gauss_kronrod`, `xc` is always NaN.
 
-The function defining the integrand must have exactly the argument types and
-return type of `normal_density` above, though argument naming is not important.
-Even if `x_r` and `x_i` are unused in the integrand, they must be
-included in the function signature. Even if the integral does not involve some of these,
-they must still be supplied some value. The most efficient will be a zero-length array
-or vector, which can be created with rep_array(0, 0) and rep_vector(0, 0), respectively.
-Other options include an uninitialized variable declared with size 0, which is equivalent
-to the above, or any easy value, such as size 1 array created with {0}.
+The arguments after `xc` are variadic: any number of arguments of any
+type may follow, and they are passed unmodified from the integrator call
+to the integrand. They may be data or parameters; arguments that are only
+ever data should be marked with the `data` keyword for efficiency, since
+extra parameter arguments increase the cost of propagating derivatives
+through the integral.
 
 ## Calling the integrator
 
@@ -72,11 +64,6 @@ data {
   array[N] real y;
 }
 
-transformed data {
-  array[0] real x_r;
-  array[0] int x_i;
-}
-
 parameters {
   real mu;
   real<lower=0.0> sigma;
@@ -88,12 +75,25 @@ model {
   sigma ~ normal(0, 1);
   left_limit ~ normal(0, 1);
   target += normal_lpdf(y | mu, sigma);
-  target += -log(integrate_1d(normal_density,
-                              left_limit,
-                              positive_infinity(),
-                              { mu, sigma }, x_r, x_i));
+  target += -log(integrate_1d_double_exponential(normal_density,
+                                                 left_limit,
+                                                 positive_infinity(),
+                                                 mu, sigma));
 }
 ```
+
+### Choosing the integrator {-}
+
+`integrate_1d_double_exponential` is robust to algebraic or logarithmic
+singularities of the integrand at the integration limits, and provides
+the `xc` argument for working near those limits (see [Avoiding precision
+loss](#integral-precision)). `integrate_1d_gauss_kronrod` is more
+accurate on smooth integrands and on integrands whose mass lies away
+from the limits (for example a normal density times a smooth function),
+but it cannot resolve endpoint singularities and always passes `xc` as
+NaN. The two functions share the same call signature; see the
+[1D integrators](https://mc-stan.org/docs/functions-reference/higher-order_functions.html#functions-1d-integrator)
+section of the Functions Reference for details.
 
 ### Limits of integration {-}
 
@@ -106,10 +106,10 @@ If both limits are either `negative_infinity()` or
 
 ### Data vs. parameters {-}
 
-The arguments for the real data `x_r` and the integer data `x_i`
-must be expressions that only involve data or transformed data variables.
-`theta`, on the other hand, can be a function of data, transformed data,
-parameters, or transformed parameters.
+The variadic arguments passed to the integrand may be data or parameters.
+Arguments that only ever involve data or transformed data variables
+should be marked with the `data` keyword, which avoids the extra cost of
+propagating derivatives through them.
 
 The endpoints of integration can be data or parameters (and internally the
 derivatives of the integral with respect to the endpoints are handled
@@ -117,39 +117,56 @@ with the Leibniz integral rule).
 
 ## Integrator convergence
 
-The integral is performed with the iterative 1D double exponential quadrature methods implemented
-in the Boost library [@BoostQuadrature:2017]. If the $n$th estimate of the
-integral is denoted $I_n$ and the $n$th estimate of the norm of the integral is
-denoted $|I|_n$, the iteration is terminated when
+The integral is performed with iterative quadrature methods implemented
+in the Boost library [@BoostQuadrature:2017]. The integration succeeds
+when
 
 $$
-  \frac{{|I_{n + 1} - I_n|}}{{|I|_{n + 1}}} < \text{relative tolerance}.
+  \text{error} \leq \max(\text{relative\_tolerance} \cdot |I|,
+  \text{absolute\_tolerance}),
 $$
 
-The `relative_tolerance` parameter can be optionally specified as the
-last argument to `integrate_1d`. By default, `integrate_1d` follows the
-Boost library recommendation of setting `relative_tolerance` to the square
-root of the machine epsilon of double precision floating point numbers
-(about `1e-8`). If the Boost integrator is not able to reach the relative tolerance
-an exception is raised with a message somehing like "Exception: integrate: error
-estimate of integral 4.25366e-13 exceeds the given relative tolerance times norm of integral".
-If `integrate_1d` causes an exception in transformed parameters block or model block, the
-result has the same effect as assigning a $-\infty$ log probability, which causes rejection 
-of the current proposal in MCMC samplers and adjustment of search parameters in optimization.
-If `integrate_1d` causes an exception in generated quantities block, the returned output from
-`integrate_1d` is NaN. In these cases, a bigger `relative_tolerance` value can be specified.
+where $|I|$ is the estimated norm of the integral. The tolerances and the
+maximum iteration count can be set through the `_tol` variants
+(`integrate_1d_double_exponential_tol` and
+`integrate_1d_gauss_kronrod_tol`), which take `relative_tolerance`,
+`absolute_tolerance`, and `max_refinements` (`max_depth` for the
+Gauss-Kronrod variant) before the variadic arguments. The non-`_tol`
+variants use `relative_tolerance` equal to the square root of the machine
+epsilon of double precision floating point numbers (about `1e-8`) and
+`absolute_tolerance` equal to zero, which reduces the test to a pure
+relative-tolerance criterion.
+
+A positive `absolute_tolerance` lets the integration succeed when $|I|$ is
+so small that the relative-tolerance test is dominated by floating-point
+round-off, for instance when the integrand is essentially zero across the
+interval (as happens with nested integration in the tails of a density).
+
+If the integrator cannot reach the requested tolerance an exception is
+raised with a message like "Exception: integrate: error estimate of
+integral 4.25366e-13 exceeds max(relative_tolerance * L1,
+absolute_tolerance)". If this occurs in the transformed parameters or
+model block, the result has the same effect as assigning a $-\infty$ log
+probability, which causes rejection of the current proposal in MCMC
+samplers and adjustment of search parameters in optimization. If it
+occurs in the generated quantities block, the returned value is NaN. In
+these cases, a larger tolerance can be specified.
 
 ### Zero-crossing integrals {- #zero-crossing}
 
-Integrals on the (possibly infinite) interval $(a, b)$ that cross zero are
-split into two integrals, one from $(a, 0)$ and one from $(0, b)$. This is
-because the quadrature methods employed internally can have difficulty near
-zero.
-
-In this case, each integral is separately integrated to the given
-`relative_tolerance`.
+When using `integrate_1d_double_exponential`, integrals on the (possibly
+infinite) interval $(a, b)$ that cross zero are split into two integrals,
+one from $(a, 0)$ and one from $(0, b)$, because the double-exponential
+quadrature can have difficulty near zero. Each integral is separately
+integrated to the given tolerances. `integrate_1d_gauss_kronrod` does not
+split zero-crossing integrals.
 
 ### Avoiding precision loss near limits of integration in definite integrals {- #integral-precision}
+
+The `xc` argument used in this section is provided by
+`integrate_1d_double_exponential`; `integrate_1d_gauss_kronrod` always
+passes `xc` as NaN, so these techniques apply when using the
+double-exponential integrator.
 
 If care is not taken, the quadrature can suffer from numerical loss of
 precision near the endpoints of definite integrals.
@@ -169,10 +186,7 @@ Normalizing this distribution requires computing the integral of $p(x)$ from
 zero to one. In Stan code, the integrand might look like:
 
 ```stan
-real beta(real x, real xc, array[] real theta, array[] real x_r, array[] int x_i) {
-  real alpha = theta[1];
-  real beta = theta[2];
-
+real beta(real x, real xc, real alpha, real beta) {
   return x^(alpha - 1.0) * (1.0 - x)^(beta - 1.0);
 }
 ```
@@ -188,9 +202,7 @@ or `b - x` for a lower endpoint `a` and an upper endpoint `b`. To make use of
 this for the beta integral, the integrand can be re-coded:
 
 ```stan
-real beta(real x, real xc, array[] real theta, array[] real x_r, array[] int x_i) {
-  real alpha = theta[1];
-  real beta = theta[2];
+real beta(real x, real xc, real alpha, real beta) {
   real v;
 
   if(x > 0.5) {
@@ -235,18 +247,9 @@ real shift_lognormal_pdf(real x,
 Therefore, the function that we want to integrate is:
 
 ```stan
-real integrand(real x,
-               real xc,
-               array[] real theta,
-               array[] real x_r,
-               array[] int x_i) {
+real integrand(real x, real xc, real mu, real sigma, real delta, real b) {
   real numerator;
   real p;
-
-  real mu = theta[1];
-  real sigma = theta[2];
-  real delta = theta[3];
-  real b = theta[4];
 
   p = shift_lognormal_pdf(x, mu, sigma, delta);
 
@@ -264,18 +267,9 @@ near zero, leading to a breakdown.
 We can use `xc`, and define the `integrand` as:
 
 ```stan
-real integrand(real x,
-               real xc,
-               array[] real theta,
-               array[] real x_r,
-               array[] int x_i) {
+real integrand(real x, real xc, real mu, real sigma, real delta, real b) {
   real numerator;
   real p;
-
-  real mu = theta[1];
-  real sigma = theta[2];
-  real delta = theta[3];
-  real b = theta[4];
 
   if (x < delta + 1) {
     p = shift_lognormal_pdf(xc, mu, sigma, delta);
@@ -308,3 +302,55 @@ $a < 0$ and $b > 0$) and `xc` is a high precision version of the distance
 to the limits of each of the two integrals separately. This means `xc` will
 be a high precision version of `a - x`, `x`, or `b - x`,
 depending on the value of x and the endpoints.
+
+## Example: integrating out a latent variable with Gauss-Kronrod
+
+A common use of 1D integration is to compute a marginal likelihood by
+integrating out a latent variable. Consider a Poisson count `y_i` with a
+per-observation varying intercept `z` given a normal prior
+`z ~ normal(0, sigmaz)`, and a linear predictor `mu_i`. The likelihood
+marginal over `z` is
+
+$$
+  p(y_i \mid \mu_i, \sigma_z) =
+  \int_{-\infty}^{\infty}
+  \text{normal}(z \mid 0, \sigma_z)\,
+  \text{Poisson}(y_i \mid e^{z + \mu_i})\, dz,
+$$
+
+a normal density times a Poisson probability mass function. The integrand
+is
+
+```stan
+real integrand(real z, real notused, real sigmaz, real mu_i, data int y_i) {
+  real p = exp(normal_lpdf(z | 0, sigmaz)
+               + poisson_log_lpmf(y_i | z + mu_i));
+  return (is_inf(p) || is_nan(p)) ? 0 : p;
+}
+```
+
+The `notused` argument is the `xc` slot, which `integrate_1d_gauss_kronrod`
+always passes as NaN; `y_i` is marked `data` because it is never a
+parameter; and the `is_inf`/`is_nan` guard returns 0 where `exp`
+over- or under-flows in the tails.
+
+Because the normal factor has thin tails, essentially all of the
+integrand's mass lies within `8 * sigmaz` of zero (at the limits the
+normal density is about $e^{-32}$ of its peak), so the integral can be
+taken over the finite interval $[-8\,\sigma_z,\ 8\,\sigma_z]$.
+Gauss-Kronrod places its nodes across the whole interval and resolves the
+peak — which sits near the conditional mode of `z`, away from zero when
+the count is large — where double-exponential quadrature over an infinite
+interval can undersample. In `generated quantities`, where `mu_i` is the
+linear predictor for observation `i` and `sigmaz` is a parameter,
+
+```stan
+log_lik[i] = log(integrate_1d_gauss_kronrod(integrand,
+                                            -8 * sigmaz,
+                                            8 * sigmaz,
+                                            sigmaz, mu_i, y[i]));
+```
+
+The variadic arguments `sigmaz`, `mu_i`, and `y[i]` are passed directly to
+the integrand, with no packing into data and parameter arrays, and the
+integration limits depend on the parameter `sigmaz`, which is allowed.

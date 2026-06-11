@@ -1,0 +1,84 @@
+name: BuildDocs
+
+on:
+  workflow_dispatch:
+    inputs:
+      major_version:
+        type: string
+        description: Major version of the docs to be built
+        default: "2"
+        required: true
+      minor_version:
+        type: string
+        description: Minor version of the docs to be built
+        required: true
+      link_to_latest:
+        type: boolean
+        description: Update older docs with a link to the latest?
+        default: false
+      last_docs_version:
+        type: string
+        description: "Last docs version found in /docs. Only need if link_to_latest. Example: 2_21"
+
+concurrency:
+  group: production
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment: production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          # synced with https://github.com/stan-dev/stan-dev.github.io/blob/master/.github/workflows/build.yml
+          version: 1.6.39
+
+      - run: python3 add_old_links.py ${{ inputs.major_version }} ${{ inputs.minor_version }}
+        if: inputs.link_to_latest
+
+      - name: Build docs
+        run: |
+          rm -rf ./docs/$major_version"_"$minor_version
+          python3 build.py $major_version $minor_version
+
+          rm -rf ./docs/functions-reference ./docs/reference-manual ./docs/stan-users-guide/ ./docs/cmdstan-guide ./docs/img ./docs/site_libs
+
+          cp -r ./docs/$major_version"_"$minor_version/* ./docs/
+          rm ./docs/*.pdf
+          python3 src/quarto-config/generate_redirects.py redirects.txt --output_dir=.
+        env:
+          major_version: ${{ inputs.major_version }}
+          minor_version: ${{ inputs.minor_version }}
+
+      - name: Link docs to latest
+        if: inputs.link_to_latest
+        run: |
+         ls -lhart docs
+         bash ./add_links.sh ${{ inputs.last_docs_version }}
+
+      - name: Open PR
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git checkout -b docs-$major_version-$minor_version
+          git add .
+          git commit -m "Documentation generated for docs-$major_version-$minor_version" -m "Generated in job ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          git push origin docs-$major_version-$minor_version --force
+
+          gh pr create --base master --head docs-$major_version-$minor_version --fill
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          major_version: ${{ inputs.major_version }}
+          minor_version: ${{ inputs.minor_version }}

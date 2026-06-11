@@ -26,9 +26,6 @@ concurrency:
 
 jobs:
   build:
-    permissions:
-      contents: write
-      pull-requests: write
     environment: production
     runs-on: ubuntu-latest
 
@@ -37,6 +34,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          token: ${{ secrets.STAN_BOT_TOKEN }}
 
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
@@ -72,16 +70,16 @@ jobs:
 
       - name: Open PR
         run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          git config user.email "mc.stanislaw@gmail.com"
+          git config user.name "Stan Jenkins"
 
           git checkout -b docs-$major_version-$minor_version
           git add .
           git commit -m "Documentation generated for docs-$major_version-$minor_version" -m "Generated in job ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          git push https://oauth2:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} docs-$major_version-$minor_version --force
+          git push https://oauth2:${{ secrets.STAN_BOT_TOKEN }}@github.com/${{ github.repository }} docs-$major_version-$minor_version --force
 
           gh pr create --base master --head docs-$major_version-$minor_version --fill
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.STAN_BOT_TOKEN }}
           major_version: ${{ inputs.major_version }}
           minor_version: ${{ inputs.minor_version }}

@@ -21,15 +21,14 @@ on:
         description: "Last docs version found in /docs. Only need if link_to_latest. Example: 2_21"
 
 concurrency:
-  group: production
+  group: build
   cancel-in-progress: true
 
 jobs:
-  build-deploy:
+  build:
     permissions:
       contents: read
-      pages: write
-      id-token: write
+      pull-requests: write
     environment: production
     runs-on: ubuntu-latest
 
@@ -44,6 +43,9 @@ jobs:
         with:
           # synced with https://github.com/stan-dev/stan-dev.github.io/blob/master/.github/workflows/build.yml
           version: 1.6.39
+
+      - name: Install TeX
+        run: sudo apt-get install -y pandoc texlive-full
 
       - run: python3 add_old_links.py ${{ inputs.major_version }} ${{ inputs.minor_version }}
         if: inputs.link_to_latest

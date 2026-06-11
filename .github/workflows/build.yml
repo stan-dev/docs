@@ -27,7 +27,7 @@ concurrency:
 jobs:
   build:
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
     environment: production
     runs-on: ubuntu-latest
@@ -74,12 +74,11 @@ jobs:
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git remote set-url origin https://git:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
           git checkout -b docs-$major_version-$minor_version
           git add .
           git commit -m "Documentation generated for docs-$major_version-$minor_version" -m "Generated in job ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          git push origin docs-$major_version-$minor_version --force
+          git push https://oauth2:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} docs-$major_version-$minor_version --force
 
           gh pr create --base master --head docs-$major_version-$minor_version --fill
         env:

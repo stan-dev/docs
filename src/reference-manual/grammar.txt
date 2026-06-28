@@ -24,7 +24,6 @@
 
 <identifier> ::= IDENTIFIER
                | TRUNCATE
-               | JACOBIAN
 
 <decl_identifier> ::= <identifier>
                     | <reserved_word>
@@ -58,8 +57,8 @@
                   | POSITIVEORDERED
                   | SIMPLEX
                   | UNITVECTOR
-                  | SUMTOZERO
-                  | SUMTOZEROMATRIX
+                  | SUMTOZEROVEC
+                  | SUMTOZEROMAT
                   | CHOLESKYFACTORCORR
                   | CHOLESKYFACTORCOV
                   | CORRMATRIX
@@ -70,6 +69,7 @@
                   | REJECT
                   | FATAL_ERROR
                   | TARGET
+                  | JACOBIAN
                   | PROFILE
                   | TUPLE
                   | OFFSET
@@ -88,12 +88,11 @@
 
 <unsized_type> ::= ARRAY <unsized_dims> <basic_type>
                  | ARRAY <unsized_dims> <unsized_tuple_type>
-                 | <basic_type> <unsized_dims>
                  | <basic_type>
                  | <unsized_tuple_type>
 
-<unsized_tuple_type> ::= TUPLE LPAREN <unsized_type> COMMA <unsized_type>
-                         (COMMA <unsized_type>)* RPAREN
+<unsized_tuple_type> ::= TUPLE LPAREN <unsized_type> COMMA [<unsized_type>
+                         (COMMA <unsized_type>)*] RPAREN
 
 <basic_type> ::= INT
                | REAL
@@ -133,8 +132,8 @@
                           | <arr_dims> <tuple_type(type_rule)>
 
 <tuple_type(type_rule)> ::= TUPLE LPAREN <higher_type(type_rule)> COMMA
-                            <higher_type(type_rule)> (COMMA
-                            <higher_type(type_rule)>)* RPAREN
+                            [<higher_type(type_rule)> (COMMA
+                            <higher_type(type_rule)>)*] RPAREN
 
 <var_decl> ::= <decl(<sized_basic_type>, <expression>)>
 
@@ -170,13 +169,13 @@
                  | POSITIVEORDERED LBRACK <expression> RBRACK
                  | SIMPLEX LBRACK <expression> RBRACK
                  | UNITVECTOR LBRACK <expression> RBRACK
-                 | SUMTOZERO LBRACK <expression> RBRACK
-                 | SUMTOZEROMATRIX LBRACK <expression> COMMA <expression> RBRACK
+                 | SUMTOZEROVEC LBRACK <expression> RBRACK
                  | CHOLESKYFACTORCORR LBRACK <expression> RBRACK
                  | CHOLESKYFACTORCOV LBRACK <expression> [COMMA <expression>]
                    RBRACK
                  | CORRMATRIX LBRACK <expression> RBRACK
                  | COVMATRIX LBRACK <expression> RBRACK
+                 | SUMTOZEROMAT LBRACK <expression> COMMA <expression> RBRACK
                  | STOCHASTICCOLUMNMATRIX LBRACK <expression> COMMA
                    <expression> RBRACK
                  | STOCHASTICROWMATRIX LBRACK <expression> COMMA <expression>
@@ -225,8 +224,8 @@
                       | TARGET LPAREN RPAREN
                       | <identifier> LPAREN <expression> BAR [<expression>
                         (COMMA <expression>)*] RPAREN
-                      | LPAREN <expression> COMMA <expression> (COMMA
-                        <expression>)* RPAREN
+                      | LPAREN <expression> COMMA [<expression> (COMMA
+                        <expression>)*] RPAREN
                       | <common_expression> DOTNUMERAL
                       | <common_expression> LBRACK <indexes> RBRACK
                       | LPAREN <expression> RPAREN
@@ -323,5 +322,3 @@
 
 <top_vardecl_or_statement> ::= <statement>
                              | <top_var_decl>
-
-

@@ -113,16 +113,16 @@ Following the config information are two lines of output,
 the CSV headers and the recorded values:
 
 ```
-lp__,theta
--5.00402,0.200003
+lp__,converged__,theta
+-5.00402,31,0.200003
 ```
 
 Note that everything is a comment other than a line for the header,
 and a line for the values. Here, the header indicates the unnormalized
-log probability with `lp__` and the model parameter
-`theta`. The maximum log probability is -5.0 and the posterior
-mode for `theta` is 0.20. The mode exactly matches what we would
-expect from the data.
+log probability with `lp__`, algorithm status in `converged__`,
+and the model parameter `theta`. The maximum log probability is -5.0
+and the posterior mode for `theta` is 0.20. The mode exactly matches what
+we would expect from the data.
 Because the prior was uniform, the result 0.20 represents the maximum
 likelihood estimate (MLE) for the very simple Bernoulli model. Note
 that no uncertainty is reported.
@@ -141,15 +141,36 @@ Running the example model with option `save_iterations=true`, i.e., the command
 ```
 produces CSV file output rows:
 ```
-lp__,theta
--6.85653,0.493689
--6.10128,0.420936
--5.02953,0.22956
--5.00517,0.206107
--5.00403,0.200299
--5.00402,0.200003
+lp__,converged__,theta
+-6.85653,0,0.493689
+-6.10128,0,0.420936
+-5.02953,0,0.22956
+-5.00517,0,0.206107
+-5.00403,0,0.200299
+-5.00402,31,0.200003
 ```
 
+## Meaning of the `converged__` column
+
+The `converged__` column is used to indicate the status of the algorithm. It can
+take on the following values.
+
+| Numeric value | Meaning                                                                           |
+|---------------|-----------------------------------------------------------------------------------|
+| -1            | Line search failed to achieve a sufficient decrease, no more progress can be made |
+| 0             | Successful step completed                                                         |
+| 10            | Convergence detected: absolute parameter change was below tolerance               |
+| 20            | Convergence detected: absolute change in objective function was below tolerance   |
+| 21            | Convergence detected: relative change in objective function was below tolerance   |
+| 30            | Convergence detected: gradient norm is below tolerance                            |
+| 31            | Convergence detected: relative gradient magnitude is below tolerance              |
+| 40            | Maximum number of iterations hit, may not be at an optima                         |
+
+Note that not all algorithms can produce all codes, and some, such as `0`, will
+only be observed if `save_iterations` is used.
+
+A comment explaining the final value (with the same contents as the above table)
+is added at the end of the CSV file.
 
 ## Jacobian adjustments
 

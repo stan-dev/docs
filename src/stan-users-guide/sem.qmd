@@ -1,0 +1,266 @@
+---
+pagetitle: Structural Equation Models
+---
+
+# Structural Equation Models {#structural-equation-models.chapter}
+
+Structural equation modeling (SEM) is a popular notation and
+regression-type framework in the social sciences (e.g., sociology,
+psychology, economics) and fields facing similar noisy and
+heterogeneous data sources (e.g., epidemiology).  In
+the most general case, a structural equation model specifies some
+number of latent variables and covariance relations among them, as
+well as a number of observations and relations among them.  Relations
+among latent variables are expressed as regressiona dn those among
+observations by covariance structure on their error terms.
+
+SEM is popular due to its graphical modeling framework, which supports
+*path analysis*, as first introduced by Sewall Wright.  Path analysis
+allows one to decompose the effects on a given latent parameter or
+observation.  This makes it particularly useful for factor analysis.
+
+There are several well-known proprietary (e.g., LISREL, Mplus) and
+open-source packages for expressing and fitting structural equation
+models (e.g., `lavaan` and its Stan-based Bayesian extension `blavaan`
+in R).  If a structural equation model can be expressed in `blavaan`,
+this is usually a better approach than coding direclty in Stan.  For
+one thing, the output for inference will be in a more standard form
+for SEM. On the other hand, Stan will be helpful for fitting models
+that go beyond the distribution families, latent variable relations
+and error structures supplied out of the box by these packages.
+
+
+## SEM for simple regression
+
+This section demonstrates how the SEM notation can be used for
+regression modeling without latent factors.
+
+
+### SEM path diagrams for regressions
+
+The following SEM diagram for a pair of simultaneous regressions with
+independent error structure was taken from the original edition of the
+standard textbook of @Bollen:1989 (page 184); there is also a new
+edition [@Bollen:2026].
+
+![Structural equation model for a simultaneous regression of two
+measurements of temperature, $x1$ in farenheight and $x2$ in celsius,
+with latent temperature $\xi$, slopes $1, \lambda_1$, intercepts $\tau_1, \tau_2$,
+and error terms $\delta_1, \delta_2$.](img/sem-regression.png)
+
+The figure indicates a single latent variable $\xi$, which is
+represented in a circle.  The variable $\xi$ is used for so-called
+exogenous variables that have no covariates or predictors.  The
+variables $x_1, x_2$ are measurements (called "indicators" in SEM),
+and because they are measurements for an exogenous variable, they are
+written as $x$ rather than $y$.  The constant $1$ value shows up in
+triangles as an input for an intercept.  The regression coefficients
+show up on the labels.  For instance, $x_1$ is a regression on $\xi$
+with slope 1 and a constant 1 so that $\tau_1$ is an intercept.
+
+This path diagram specifies a statistical model that is written in
+sampling notation as follows.
+$$
+x_1 \sim \textrm{normal}(\tau_1 + 1 \cdot \xi, \sqrt{\delta_1})
+\qquad
+x_2 \sim \textrm{normal}(\tau_2 + \lambda_2 \cdot \xi, \sqrt{\delta_2})
+$$
+The square roots arise because $\textrm{normal}$ takes a scale parameter
+whereaas $\delta_1$ and $\delta_2$ are variance parameters.
+The latent variable $\xi$ implicitly gets a free variance term $\phi$
+does not show up in the notation, so that the prior on $\xi$ is implicitly.
+$$
+\xi \sim \textrm{normal}(0, \sqrt{\phi}).
+$$
+There is no prior structure assumed on the measurement variances $\delta_1$ and $\delta_2$
+or on the latent variance $\phi$.
+
+The following Stan program implements the model specified in the SEM
+diagram.  
+
+```stan
+data {
+  int<lower=0> N;
+  array[N] vector[2] x;
+}
+parameters {
+  real xi;
+  vector<lower=0>[2] delta;
+  vector[2] tau;
+  real<lower=0> phi;
+  real lambda2;
+}
+model {
+  xi ~ normal(0, sqrt(phi));
+  x[ , 1] ~ normal(tau[1] + xi, sqrt(delta[1]));
+  x[ , 2] ~ normal(tau[2] + lambda2 * xi, sqrt(delta[2]));
+}
+```
+
+There is only a single data size `N`.  This is because SEM assumes
+that all measurements are done in parallel, because they are usually
+given covariance structure.
+
+### Intercept coefficients vs. centering measurements
+
+Most path diagrams in SEM assume that all of the measurement variables
+have been centered (e.g., $\textrm{sum}(x_k) = 0$ for $k \in \{1, 2\}$
+in the running example).  With centered covariates in linear
+regressions, intercepts can be set to zero.
+
+In the example path diagram, triangles wrapping the constant $1$ are
+included to indicate intercepts in the regressions.  When there are
+no such triangles pointing into measurement nodes, it is assumed
+the data was centered and thus the intercept can be taken to be zero.
+With Stan, the centering can be done in
+the `transformed data` block.
+
+
+## SEM with correlated errors
+
+Next consider the case where there are several measured indicators
+(i.e., covariates) of which two are correlated.  This can be represented
+as the following SEM diagram, recreated form the diagram in the book
+by @Bollen:1989 (page 35).
+
+![Structural equation model for a simultaneous regression of four
+measurements, two of which ($x_2, x_3$) have correlated
+errors.](img/sem-regression-corr.png)
+
+In structural equation model diagrams, the lack of a double-headed
+arrow between two measurement (or latent) variables indicates that
+they are modeled with *zero* correlation.
+
+### Hard SEM with constraints
+
+There are two natural ways to model correlation constraints in SEM.
+The first, covered in this section, is to strictly enforce zero
+correlation on the uncorrelated covariates.  The second is
+covered in the next section, and applies a soft shrinkage prior to
+the zero correlations.
+
+The Stan model for this case is relatively straightforward.  A 2 x 2
+covariance matrix with diagonal $\delta_2, \delta_3$ and off-diagonal
+$\rho \cdot \sqrt{\delta_2 \cdot \delta_3}$ suffices.  In this case,
+there are no triangles, so the input covariates $x$ are assumed to be
+centered.
+
+The standard appraoch in SEM is to create the full $4 \times 4$
+covariance matrix
+$$
+\Sigma =
+\begin{bmatrix}
+\delta_1 & 0 & 0 & 0 \\
+0 & \delta_2 & \rho \cdot \sqrt{\delta_2 \cdot \delta_3} & 0 \\
+0 & \rho \cdot \sqrt{\delta_2 \cdot \delta_3} & \delta_3 & 0 \\
+0 & 0 & 0 & \delta_4
+\end{bmatrix}.
+$$
+and plug it into `multi_normal` as follows.
+
+```stan
+functions {
+  to_cov_matrix(vector[2] sigma, real rho) {
+    return Sigma;
+  }
+}
+data {
+  int<lower=0> N;
+  array[N] vector[4] x;  // centered, mean(x[, k]) = 0
+}
+parameters {
+  real xi;
+  vector[4] lambda;
+  real<lower=0> phi;
+  vector<lower=0>[4] delta;
+  real<lower=-1, upper=1> rho23;
+}
+model {
+  vector[4] mu = lambda * xi;
+  matrix[4, 4] Sigma = diag_matrix(delta);
+  Sigma[2, 3] = rho23 * sqrt(delta[2] * delta[3]);
+  Sigma[3, 2] = Sigma[2, 3];
+
+  xi ~ normal(0, phi);
+  x ~ multi_normal(mu, Sigma);
+}  
+```
+
+It's more efficient in Stan to only work with as much covariance
+structure as is necesary to cut down on the cost of the solves
+built into multivariate normal log density evaluations.  For
+the case at hand, the following model block codes the same thing,
+but only requires a $2 x 2$ solve rather than a $4 x 4$ solve (neither
+are that costly here, but it adds up as the sizes increase).
+
+```stan
+model {
+  vector[4] mu = lambda * xi;
+  matrix[2, 2] Sigma = diag_matrix(sigma);
+  Sigma[1, 2] = rho * sqrt(delta[2] * delta[3]);
+  Sigma[2, 1] = Sigma[1, 2];
+
+
+  xi ~ normal(0, phi);
+  x[ , {2, 3}] ~ multi_normal(mu[{2, 3}], Sigma);
+  x[ , {1, 4}] ~ normal(mu[{1, 4}, delta[{1, 4}]);
+}
+```
+
+### Soft SEM with shrinkage
+
+An alternative way to code the correlation structure implied by a SEM
+model is to shrink putatively zero correlationst to zero.  That is,
+rather than a hard constraint, the lack of correlation is rolled into
+an informative prior.  This is actually easier to code in many ways,
+though the combinatorics adds up in larger models.
+
+```stan
+functions {
+  to_cov_matrix(vector[2] sigma, real rho) {
+    return Sigma;
+  }
+}
+data {
+  int<lower=0> N;
+  array[N] vector[4] x;  // centered, mean(x[, k]) = 0
+}
+parameters {
+  real xi;
+  vector[4] lambda;
+  real<lower=0> phi;
+  cov_matrix[4, 4] Sigma;
+}
+model {
+  vector[4] mu = lambda * xi;
+  { Sigma[1, 2], Sigma[1, 3], Sigma[1, 4], Sigma[2, 4], Sigma[3, 4] }
+    ~ normal(0, 0.0001);
+
+  xi ~ normal(0, phi);
+  x ~ multi_normal(mu, Sigma);
+}  
+```
+
+This Stan program declares `Sigma` to be a covariance matrix, then
+shrinks the covariances between pairs of measurement variables that do
+not have double-headed arrows connecting them.
+
+The softer, shrinkage-based approach is much more tractable to code
+directly in Stan when the non-zero correlations do not form
+fully-connected cliques of nodes.  That is, suppose the previous SEM
+path diagram also had two arrows connecting measurements,
+$$
+\delta_2 \leftrightarrow \delta_3
+\qquad
+\delta_3 \leftrightarrow \delta_4,
+$$
+but does not have any of the other pairs connected.  In this case,
+the shrinkage just shrinks fewer pairs.
+
+```stan
+  { Sigma[1, 2], Sigma[1, 4], Sigma[2, 4] } ~ normal(0, 0.0001);
+```
+
+This is obviously going to be tedious and error prone as the number of
+measurements grows.  So suppose instead that our input includes the
+pairs of edges that 

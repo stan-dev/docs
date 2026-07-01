@@ -2,25 +2,33 @@
 pagetitle: How Stan Works
 ---
 
-Stan is a probabilistic programming language whose variables represent random variables
-and constants.
 
 # How Stan Works
 
-## A quick Description of Stan
+Stan is a differentiable imperative programming language with some
+functional constructs.  It is a probabilistic programming language in
+the sense that its parameters and modeled data are treated as random
+variables in Bayesian statistics.
 
-Stan programs have a similar syntax to C and C++ programs.  Stan is
-strongly statically typed, which means that every variable's type is
-declared (e.g., `int` for integer, `real` for real, or `matrix` for
-matrices) and the type of a variable never changes.  The three
-primitive types are `int`, `real`, and `complex`, but integer values
-cannot be parameters and `complex` is treated as a pair of `real`
-values. Parameters may be declared with constrained types (e.g.,
-`lower=0, upper=1` for probabilities, `cov_matrix` for symmetric
-positive-definite matrices, and `simplex` for simplexes).  These
-constraints are maintained implicitly by Stan through unconstraining
-and constraining transforms, which adjust for non-linear changes of
-variables without user intervention.
+The primary goal of a Stan program is to define three things, (1) a
+differentiable target log density function up to a constant, (2) a way
+to generate predictions based on parameter values, and (3)
+unconstraining transforms and their inverses.
+
+Stan's syntax is similar to C's.  In Stan, every variable, constant,
+and larger expression has a type that does not change. The three
+primitive types are `int`, `real`, and `complex`.  Integer types may
+not be used as parameters.  The primitive container types are
+`vector`, `row_vector`, and `matrix`.  Array types are available to
+hold any single type of value.  Tuples hold a sequence of values
+of fixed types.
+
+Variables can be declared with constraints such as lower and/or upper
+bounds for scalars, and simplex, positive definiteness, and many other
+constraints for vectors and matrices.  Constraints on parameters are
+maintained implicitly by Stan through unconstraining and constraining
+transforms.  Constraints on other variables are validated at the end
+of their respective blocks.
 
 A Stan program is organized into a sequence of blocks, which are
 optional, but must appear in the following order.
@@ -33,45 +41,46 @@ dictionaries in Python, JSON files externally, etc., depending on the
 interface.  Executed once when data is ingested.
 
 3.  `transformed data`: Declare variables defined as functions of the
-data variables, or generated randomly.  Executed once when data is
-ingested.
+data variables, or generated randomly.  This is where constant
+variables should be defined. Executed once when data is ingested.
 
 4.  `parameters`: Declare parameters whose unknown values are
 estimated through sampling, variational inference, or optimization.
-This implicitly adds terms to the log density through
-change-of-variables adjustment for any constrained parameters.
-Executed every log density and gradient evaluation.
+When this block is executed, unconstrained parameters are inverse
+transformed so that they satisfy their declared constraints.  For each
+non-linear transform, a change-of-variables adjustment is added to the
+target log density (unless these adjustments are turned off for
+maximum likelihood estimation).  Executed every log density and
+gradient evaluation.
 
-5.  `transformed parameters`: Declare variables defined as functions of
-parameters, and add to the log Jacobian adjustment for changes of variables.
-Executed every log density and gradient evaluation, with top-level variables
-saved for output.
+5.  `transformed parameters`: Declare and define variables that depend
+on variables from the previous blocks. Statements in this block may
+increment the log Jacobian for changes of variables.  Executed every
+log density and gradient evaluation.
 
-6.  `model`: Define local variables and the kernel of the log density
-defined by the Stan program. Executed every log density and gradient
-evaluation.
+6.  `model`: Define the target log density using the variables from
+previous blocks.  Executed every log density and gradient evaluation.
 
-7. `generated quantities`: Define variabels of interested that are not
-needed for the log density, such as posterior predictive quantities;
-may use randomization.  Executed once per algorithm iteration using,
-which may be far fewer times than the log density and gradient is
-evaluated.  Evaluated with primitive values and no automatic
-differentiation, which is *much* faster (3--4 times or more) and lower
-memory overhead.
+7. `generated quantities`: Define posterior predictive quantities that
+depend on variables in previous blocks.  This is where to define
+quantities that are not needed for the log density evaluation.
+Statements in this block may use random number generators.  Executed
+once per iteration using primitives.  Execution with primitives means
+no automatic differentiation and three or more times faster than
+similar code in the model or transformed parameter blocks.
 
-When compiled a Stan program provides a means to read in data and
-transform it.  It then provides methods for evaluating the log density
-and gradient (and optionally Hessian) at any input value of the
-parameters on the unconstrained scale.  It can also transform and
-inverse transform parameters.  Finally, it can take a parameter value
-and random number generator, and generate the variables defined in
-the `generated quantities` block.
-
+Stan programs are transpiled to C++ by an OCaml program (`stanc3`).
+The resulting C++ class definition is compiled and linked to the Stan
+math library for special functions and automatic differentiation.  At
+this point, an object can be constructed from data.  This object can
+be used to evaluate log densities and derivatives as well as
+unconstraining transforms and their inverses.
 
 ## An example Stan program
 
-To begin with the simplest possible Stan program for fitting data, consider
-a program with the three core blocks, `data`, `parameters`, and `model`.
+Consider the following very simple Stan program, which can be used to
+estimate a proportion $\theta \in (0, 1)$ from binary observations
+$y_n \in \{ 0, 1 \}$.
 
 ```stan
 data {
@@ -87,31 +96,41 @@ model {
 }
 ```
 
-As can be seen in the example, a Stan program is organized into blocks.
-The `data` block specifies the data that must be provided to fit the
-model.  Here, there are two data variables, `N` and `y`.  The variable
-`N` is declared to be an integer with an inclusive lower bound of 0.
-The variable `y` is declared to be an array of `N` integers with
-a lower bound of 0 and upper bound of `1`, that is, a binary variable.
+### Data
 
-The `parameters` block declares the parameters for the model, whose
-values are unknown.  Here there is a single parameter `theta`, which
-is declared to be a real number between 0 and 1.  Given data, a Stan
-program will infer values for the parameters (and other values).
+The `data` block specifies that a non-negative integer `N` and an
+array `y` of size `N`, which contains binary observations.  If the
+data supplied to the Stan program does not satisfy the defined
+constraints (e.g., $y$ has values other than 0 or 1), the algorithm
+terminates and the model will not be constructed.
 
-The `model` block defines the model's posterior log density up to an
-additive constant that doesn't depend on the parameters.
-Alternatively, the model block can be thought of as defining the joint
-log density, as the two are equivalent up to a constant by Bayes's
-rule,
+### Parameters
+
+There is a single scalar parameter `theta` representing the unknown
+probability of success.  It is declared to be a real number between 0
+and 1.
+
+### Target log density
+
+The `model` block defines the model's target log density $\log
+p(\theta \mid y)$ up to an additive constant that doesn't depend on
+the parameters.  Alternatively, the model block can be thought of as
+defining the joint log density or something in between,
+because the two are equivalent up to a constant by Bayes's rule,
 $$
 \log p(y, \theta) = \log p(\theta \mid y) + \textrm{const}.
 $$
 
-The distribution statements with `~` are syntactic sugar for incrementing
-the target log density, which is initialized implicitly at 0.  For
-example, the model block of the previous program could be equivalently
-written as follows.
+In frequentist applications, the target is not treated as a density,
+but a (possibly penalized) log likelihood function
+$\mathcal{L}(\theta) = \log p(y \mid \theta)$ (with optional extra
+penalty terms).
+
+### Distribution statements are syntactic sugar
+
+The distribution statements with `~` are syntactic sugar for
+incrementing the target log density. The model block of the previous
+program could be equivalently written as follows.
 
 ```stan
 model {
@@ -125,147 +144,40 @@ variate from the distribution parameters.  The suffix `_lupdf` is an
 acronym for "log unnormalized probability density function," and
 `_lupmf` for "log unnormalized probability mass function."
 
+The target log density is initialized at 0 and implicitly incremented
+for change-of-variables adjustments for constrained parameters and for
+sampling statements.
 
-## Models define log density functions
+## Model blocks define log density functions
 
-The Stan model defines a log density function, which is the sum of the
-contributions of its sampling and target increment statements.  Here,
+In the running example, the Stan program defines the following
+target log density function $\log p$ up to a constant,
 $$
 \log p(\theta \mid y, N)
 = \log \textrm{beta}(\theta \mid 8, 2)
   + \sum_{n=1}^N \log \textrm{bernoulli}(y \mid \theta)
   + \textrm{const}.
 $$
-The statement in the Stan program is vectorized, which means it
-automatically broadcasts all of its arguments to repeat as many times
-as necessary to match the largest argument.  All arguments must be
-either scalars or arrays/vectors of the same size, and the scalars
-will be reused as many times as necessary (often with more efficient
-evaluation, such as only evaluating $\log \sigma$ once for multiple
-observations with the same error scale in a normal distribution).
+The distribution statement for `y` in the Stan program is vectorized.
+The argument `y` is an array of integers, but `theta` is a scalar.
+When Stan sees this argument pattern, it reuses scalar arguments like
+`theta` for each entry of containers like `y`.  This can lead to much
+more efficient evaluation (e.g., $\log \theta$ is only computed once
+in this example).
 
-## Models define unconstrained log density function
-
-Any parameters declared with constraints, such as `theta` in the
-example, are transformed to unconstrained behind the scenes by Stan.
-For example, declaring `lower=0, upper=1` specifies a log odds
-transform, which is written as $\textrm{logit}$,
-$$
-\theta^\textrm{unc}
-= \textrm{logit}(\theta)
-= \log \frac{\theta}{1 - \theta}.
-$$
-
-Stan will account for the change-of-variables adjustment that is
-required by the non-linear transform.  The *Stan Reference Manual*
-specifies all of the transforms and lays out change-of-variable
-mathematics and goes through derivations for all of Stan's built-in
-transforms.  When the chang-of-variables dust settles on the log
-scale, Stan defines a density with support (finite value) for all
-$\theta^\textrm{unc} \in (-\infty, \infty)$.  It does this by
-inverting the transform and applying the change of variables formula
-on the log scale, which yields
-$$
-\log p(\theta^\textrm{unc} \mid y, N)
-= 
-\log p(\textrm{logit}^{-1}(\theta^\textrm{unc}) \mid y, N)
-+ \log \textrm{logit}^{-1}(\theta^\textrm{unc})
-+ \log (1 - \textrm{logit}^{-1}(\theta^\textrm{unc}))
-+ \textrm{const},
-$$
-where
-$$\
-textrm{logit}^{-1}(\theta^\textrm{unc})
-= \frac{\exp(\theta^\textrm{unc})}
-       {1 + \exp(\theta^\textrm{unc}}.
-$$
-
-This unconstrained log density is what Stan is actually sampling.
-Values are then automatically transformed back to the constrained
-scale using the inverse transforms,
-$$
-\theta
-= \textrm{logit}^{-1}(\theta^\textrm{unc}).
-$
-
-If there is more than one constrained variable, each one's log
-change-of-variables is included and all of them are transformed
-back.
-
-
-## Transformed parameters and Jacobians
-
-The unconstrained parameter model that Stan defines explicitly
-can also be defined directly in Stan.  In the following program,
-the model is reparameterized  in terms of `logit_theta`, the
-log odds of success, which is unconstrained. 
-
-```stan
-data {
-  int<lower=0> N;
-  array[N] int<lower=0, upper=1> y;
-}
-parameters {
-  real logit_theta;                    // log odds of success
-}
-transformed parameters {
-  real<lower=0, upper=1> theta = inv_logit(logit_theta);
-  jacobian += log_inv_logit(logit_theta) + log1m_inv_logit(logit_theta);
-}
-model {
-  theta ~ beta(2.3, 8.1);
-  y ~ bernoulli(theta);
-}
-```
-
-A new block, `transformed parameters`, is used to define the
-probability of success `theta` as the inverse logit of `logit_theta`,
-which maps it back to satisfy the `lower=0, upper=1` constraints.
-Constraints in the transformed parameters` block are evaluated at the
-end of the block and and if they fail, the current algorithm iteration
-will be rejected.  Because this is a non-linear transform and we wish
-to put a prior directly on `theta`, we need to apply a log-scale
-change-of-variables correction, which is done by incrementing the
-variabler `jacobian`, which acts like `target`, but accumulates the
-log Jacobian of the transform.
-
-In most circumstances, the value of `jacobian` will simply be added to
-the `target`.  But it can be dropped with settings in the optimizer
-and Laplace approximation code so that the optimization result is a
-maximum likelihood estimate (or a penalized maximum likelihood
-estimate).  Maximum a posteriori estimates, i.e., posterior modes, are
-computed with the Jacobian included.  User-defined Jacobians and
-implicit Jacobians from constrained parameters have the same effect on
-the final log density and gradient value returned by the Stan program.
-
-Although this shows the base way of writing this code, Stan's built-in
-variable transforms are also available as special functions in the
-Stan language, so that the transformed parameter block could be
-written as follows.
-
-```stan
-transformed parameters {
-  real<lower=0, upper=1> theta
-    = lower_upper_bound_jacobian(logit_theta, 0, 1);
-}
-```
-
-A suffix `_jacobian` on a function indicates that it has access to the
-Jacobian to increment, so such functions are restricted to the
-`transformed parameter` block where the `jacobian +=` statement is
-available.  This particular function applies the inverse logit
-transform, then increments the Jacobian with the log
-change-of-variables adjustment.
 
 
 ## Generated quantities for posterior predictions
 
-Suppose we want to observe $N$ trials of a boolean process like the positive
-or negative outcome of a clinical trial or positive or negative rating of
-a business, and we want to predict what the next $\tilde{N}$ trials might
-look like.  We can do that with our simple example program by
-declaring a data variable for $\tilde{N}$ and then defining our predictive
-quantity in the `generated quantities` block.
+Suppose we want to observe $N$ trials of a binary process like the
+positive or negative outcome of a clinical trial or positive or
+negative rating of a business and conditioned on those observations,
+predict what the next $\tilde{N}$ trials might look like.  This is
+called posterior predictive inference, and in Stan, we can define the
+quantities of interest in the `generated quantity` block.  We extned
+our example program by declaring a data variable for the number of new
+observations $\tilde{N}$ and then defining our predictive quantity in
+the `generated quantities` block.
 
 ```stan
 data {
@@ -281,30 +193,21 @@ generated quantities {
 }
 ```
 
-Rather than sampling notation, this program explicitly calls a random
-number generator for the Bernoulli distribution.  Thus
-rather than just sampling from the posterior $p(\theta \mid y)$,
-we also sample from the posterior predictive, $p(\tilde{y} \mid y)$.
-The Stan program simply samples from the joint posterior,
-$$
-p(\tilde{y}, \theta \mid y)
-= p(\tilde{y} \mid \theta) \cdot p(\theta \mid y),
-$$
-by first sampling $\theta$ from the posterior $p(\theta \mid y)$, then
-sampling $\tilde{y}$ from the data generating distribution
-$p(\tilde{y} \mid \theta)$ given the sample for $\theta$. This matches
-the two sources of uncertainty in the posterior predictive, the
-uncertainty in the parameter value $\theta$ given the "training" data
-$y$, and the uncertainty in generating new "test" data $\tilde{y}$
-given an estimate of $\theta$.
-	 
+This program explicitly calls a random number generator for the
+Bernoulli distribution which is based on a parameter.  That means the
+value of $\tilde{y}$ is sampled from the posterior predictive
+distribution $p(\tilde{y} \mid y)$ by first sampling $\theta$ from the
+posterior, then sampling $\tilde{y}$ given $\theta$.  This accounts for
+the estimation uncertainty in $\theta$ as well as the randomness of
+the data generating process, which here takes Bernoulli draws conditional
+on $\theta$.
 
 ## Fitting a Stan model with Markov chain Monte Carlo
 
-To fit a model, data must be provided.  Stan accepts JavaScript Object
-Notation (JSON) formatted data (or lists or dictionaries in the R and
-Python interfaces), so suppose we have data matching matching the
-declarations in our Stan program, such as the following.
+To fit a model, data must be provided.  Stan accepts file-based data
+in JavaScript Object Notation (JSON), and can also directly accept
+data formatted as lists in R or dictionaries in Python.  For the
+running example, consider the data defined by the following JSON.
 
 
 ```json
@@ -314,50 +217,34 @@ declarations in our Stan program, such as the following.
 }  
 ```
 
-The Stan program must be converted to C++ and then the C++ must be
-compiled.  Then, it must be given data matching the `data` block
-declaration in shape and satisfying all of the declared constraints.
-
-When a Stan program is executed, the first thing that happens is that
-it will read the data file in.  All of the constraints declared
-are checked and any violations will cause the program to terminate
-with an informative error message.
-
 Once the data is loaded, a Stan program is able to evaluate log
-densities and gradients. One way to think about the Stan program is
-that the data block defines the signature for the function that reads
-in data.  Then once the data block is read in, the program defines
-a function whose arguments are given by the parameters block and
-whose value is a log density and gradient evaluated at the argument.
-
-That is, we can provide a value such as $\theta^\textrm{unc} = -1.3786352$ and the
-Stan program will return the posterior log density up to a normalizing
-constant, $\log p(\theta \mid y, N) +
-\textrm{const}$, and its gradient,
-$$
-\nabla \left( \log p(\theta^\textrm{unc} \mid y, N) + \textrm{const} \right)
-= \frac{\partial}{\partial \theta^\textrm{unc}} \log p(\theta^\textrm{unc} \mid y, N),
-$$
-where the constant drops out because it does not involve $\theta$.
+densities and gradients. For example, we could provide a value such as
+$\theta^\textrm{unc} = -1.3786352$ and the Stan program will return
+the posterior log density up to a normalizing constant, $\log p(\theta
+\mid y, N) + \textrm{const}$, and its gradient, $$ \nabla \left( \log
+p(\theta^\textrm{unc} \mid y, N) + \textrm{const} \right) =
+\frac{\partial}{\partial \theta^\textrm{unc}} \log
+p(\theta^\textrm{unc} \mid y, N), $$ where the constant drops out
+because it does not involve $\theta$.
 
 When fitting a model, the data is only read in once, whereas the log
 density is evaluated multiple times, some times as many as 1024 times
 per iteration with the no-U-turn sampler.
 
-Stan's samplers will try to sample values of $\theta$ from the posterior
-distribution.  That is, it will try to generate several Markov chains
-in parallel, each of which has the form
-$$
-\theta^{(1)}, \ldots, \theta^{(M)},
-$$
-where if everything is functioning correctly, marginally, 
-$$
-\theta^{(m)} \sim p(\theta \mid y, N).
-$$
-We say ``marginally'' because the draws $\theta^{(m)}$ in the sample
-Markov chain may be autocorrelated.
+Stan's samplers will try to sample values of $\theta$ from the
+posterior distribution.  That is, it will try to generate several
+Markov chains in parallel, each of which has the form $$ \theta^{(1)},
+\ldots, \theta^{(M)}, $$ where if everything is functioning correctly,
+marginally, $$ \theta^{(m)} \sim p(\theta \mid y, N).  $$ While these
+draws are marginally distributed approximately according to the target
+distribituion, the Markov chain from which they arose may be
+autocorrelated.  In these cases, the number of draws needs to be
+discounted to figure out the effective number of independent draws
+(i.e., the effective sample size) that would have the same
+informativeess.
 
-Sampling will automatically generate all the generated quantities.
+Stan's inference engines will also genreate all generated quantities
+based on the data and the current draw of the parameters.
 
 ## Summarizing a model fit
 
@@ -369,10 +256,11 @@ deviation.  They also typically include posterior quantiles such as
 the posterior median (50\% quantile), and by default in Stan, the 5\%
 and 95\% quantiles (with others being available).  Stan also reports
 diagnostics on sampling, such as $\widehat{R}$, which measures
-convergence, and effective sample size, which estimates the strength
-of Stan's sample in units of independent draws.  Finally, it reports
-standard error on the mean estimates, which works out to be standard
-deviation divided by the square root of the effective sample size.
+convergence, and effective sample size, which estimates the
+informativeness of the potentially autocorrelated Markov chain Monte
+Carlo sample in units of independent draws.  Finally, summaries report
+standard error on the mean estimates, which are calculated as
+standard deviation divided by the square root of the effective sample size.
 
 Stan's interfaces also allow the posterior draws to be extracted
 directly so that they may be used for plotting or to plumb Bayesian
@@ -381,6 +269,125 @@ way Stan does this internally with generated quantities.
 
 Even Stan's variational inference and Laplace approximations allow
 sampling, which is necessary to get the inferences back on the
-appropriate scale after fitting on the unconstrained scale (because
+appropriate scale after fitting on the unconstrained scale.  This
+needs to be done before averaging for estimating expectations because
 averages of functions are not equivalent to functions of averages when
-the function is non-linear, as most of the transforms are).
+the function is non-linear, as most of the transforms are.
+
+
+
+## Technical detail: Models define unconstrained log density functions
+
+This section describe how Stan works under the hood by transforming
+constrained log density functions.  Understranding the details of this
+section is not necessary to write Stan code.
+
+Any parameters declared with constraints, such as `theta` in the
+example, are transformed to unconstrained behind the scenes by Stan.
+For example, declaring `theta` with the type `real<lower=0, upper=1>`
+specifies a log odds transform on $\theta$, $\textrm{logit}:(0, 1)
+\rightarrow (-\infty, \infty)$, defined by
+$$
+\theta^\textrm{unc}
+= \textrm{logit}(\theta)
+= \log \frac{\theta}{1 - \theta}.
+$$
+
+Stan will account for the change-of-variables adjustment that is
+required by the non-linear transform.  The *Stan Reference Manual*
+specifies all of the constrained parameters and corresponding
+transforms and change-of-variables adjustments.  
+
+When the change-of-variables dust settles on the log scale, Stan
+defines a density with support (finite value) for all
+$\theta^\textrm{unc} \in (-\infty, \infty)$.  It does this by
+inverting the transform and applying the change of variables formula
+on the log scale, which yields the unconstrained unnormalized log density
+function
+$$
+\log p(\theta^\textrm{unc} \mid y, N)
+= 
+\log p(\textrm{logit}^{-1}(\theta^\textrm{unc}) \mid y, N)
++ \log \textrm{logit}^{-1}(\theta^\textrm{unc})
++ \log (1 - \textrm{logit}^{-1}(\theta^\textrm{unc}))
++ \textrm{const},
+$$
+where
+$$
+\theta
+\ = \ 
+\textrm{logit}^{-1}(\theta^\textrm{unc})
+\ = \
+\frac{\exp(\theta^\textrm{unc})}
+     {1 + \exp(\theta^\textrm{unc})}.
+$$
+
+This unconstrained log density is what Stan is actually sampling or
+approximating with variational inference or Laplace approximations.
+After inference, parameter values are automatically transformed back
+to the constrained scale using the inverse transforms (here,
+$\textrm{logit}^{-1}$).
+
+### Transformed parameters and Jacobians
+
+Although this is rarely something a user will need to do, the
+unconstrained parameter model that Stan defines explicitly can also be
+defined directly in Stan.  In the following program, the model is
+reparameterized in terms of `logit_theta`, the log odds of success,
+which is unconstrained.
+
+```stan
+data {
+  int<lower=0> N;
+  array[N] int<lower=0, upper=1> y;
+}
+parameters {
+  real logit_theta;                    // log odds of success
+}
+transformed parameters {
+  real<lower=0, upper=1> theta = inv_logit(logit_theta);
+  // change-of-variables adjustment
+  jacobian += log_inv_logit(logit_theta) + log1m_inv_logit(logit_theta);
+}
+model {
+  theta ~ beta(2.3, 8.1);
+  y ~ bernoulli(theta);
+}
+```
+A new block, `transformed parameters`, is used to define the
+probability of success `theta` as the inverse logit of `logit_theta`,
+which maps it back to satisfy the `lower=0, upper=1` constraints.
+Constraints in the transformed parameters` block are evaluated at the
+end of the block and and if they fail, the current algorithm iteration
+will be rejected.  Because this is a non-linear transform and we wish
+to put a prior directly on `theta`, we need to apply a log-scale
+change-of-variables correction, which is done by incrementing the
+variabler `jacobian`, which acts like `target`, but accumulates the
+log Jacobian of the transform (cf. the *Reference Manual* chapter on
+constraining transforms for a derivation).
+
+In most circumstances, the value of `jacobian` will simply be added to
+the `target`.  But it can be dropped with settings in the optimizer
+and Laplace approximation code so that the optimization result is a
+(penalized) maximum likelihood estimate rather than a maximum a posteriori
+(MAP) estimate computed at posterior modes after adjusting for any
+change of variables..
+
+Although this shows the base way of writing this code, Stan's built-in
+variable transforms are also available as special functions in the
+Stan language, so that the transformed parameter block could be
+written as followsm.
+
+```stan
+transformed parameters {
+  real<lower=0, upper=1> theta
+    = lower_upper_bound_jacobian(logit_theta, 0, 1);
+}
+```
+
+A suffix `_jacobian` on a function indicates that it has access to the
+Jacobian to increment, so such functions are restricted to the
+`transformed parameter` block where the `jacobian +=` statement is
+available.  This particular function applies the inverse logit
+transform, then increments the Jacobian with the log
+change-of-variables adjustment.

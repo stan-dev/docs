@@ -3,6 +3,7 @@ Generates a alphabetical index of all the functions in the documentation.
 Points to links created by the html-index.lua pandoc filter.
 """
 
+import os
 import hashlib
 import pathlib
 from collections import defaultdict
@@ -60,6 +61,9 @@ def write_index_page(index):
 
 
 if __name__ == "__main__":
+    if "functions-reference" not in os.getenv("QUARTO_PROJECT_INPUT_FILES", "").replace("functions-reference/functions_index.qmd", ""):
+        print("Functions reference didn't change, skipping index update")
+        exit(0)
     sigs = extract_function_sigs.get_sigs()
     index = make_index_mapping(sigs)
     write_index_page(index)

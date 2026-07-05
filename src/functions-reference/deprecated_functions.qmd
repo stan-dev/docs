@@ -188,6 +188,97 @@ solver,
 be passed to the system function
 
 
+## integrate_1d 1D integrator {#functions-old-1d-integrator}
+
+This function has been replaced by those described in
+[1D integrators](higher-order_functions.qmd#functions-1d-integrator).
+
+### Specifying an integrand as a function
+
+Performing a 1D integration requires the integrand to be specified somehow.
+This is done by defining a function in the Stan functions block with the special signature:
+
+```stan
+real integrand(real x, real xc, array[] real theta,
+               array[] real x_r, array[] int x_i)
+```
+
+The function should return the value of the integrand evaluated at
+the point x.
+
+The argument of this function are:
+
+* *`x`*, the independent variable being integrated over
+
+* *`xc`*, a high precision version of the distance from x to the nearest endpoint in a definite integral (for more into see section [Precision Loss](#precision-loss)).
+
+* *`theta`*, parameter values used to evaluate the integral
+
+* *`x_r`*, data values used to evaluate the integral
+
+* *`x_i`*, integer data used to evaluate the integral
+
+Like algebraic solver and the differential equations solver, the 1D
+integrator separates parameter values, `theta`, from data values, `x_r`.
+
+### Call to the 1D integrator
+
+<!-- real; integrate_1d; (function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i); -->
+\index{{\tt \bfseries integrate\_1d }!{\tt (function integrand, real a, real b, array[] real theta, array[] real x\_r, array[] int x\_i): real}|hyperpage}
+
+`real` **`integrate_1d`** `(function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i)`<br>\newline
+Integrates the integrand from a to b.
+{{< since 2.23 >}}
+
+<!-- real; integrate_1d; (function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i, real relative_tolerance); -->
+\index{{\tt \bfseries integrate\_1d }!{\tt (function integrand, real a, real b, array[] real theta, array[] real x\_r, array[] int x\_i, real relative\_tolerance): real}|hyperpage}
+
+`real` **`integrate_1d`** `(function integrand, real a, real b, array[] real theta, array[] real x_r, array[] int x_i, real relative_tolerance)`<br>\newline
+Integrates the integrand from a to b with the given relative tolerance.
+{{< since 2.23 >}}
+
+
+#### Arguments to the 1D integrator
+
+The arguments to the 1D integrator are as follows:
+
+* *`integrand`*: function literal referring to a function specifying the integrand with signature  `(real, real, array[] real, array[] real, array[] int):real`
+The arguments represent
+    + (1) where integrand is evaluated,
+    + (2) distance from evaluation point to integration limit for definite integrals,
+    + (3) parameters,
+    + (4) real data
+    + (5) integer data, and the return value is the integrand evaluated at the given point,
+
+* *`a`*: left limit of integration, may be negative infinity, type `real`,
+* *`b`*: right limit of integration, may be positive infinity, type `real`,
+* *`theta`*: parameters only, type `array[] real`,
+* *`x_r`*: real data only, type `array[] real`,
+* *`x_i`*: integer data only, type `array[] int`.
+
+A `relative_tolerance` argument can optionally be provided for more control over the algorithm:
+
+* *`relative_tolerance`*: relative tolerance for the 1d integrator, type `real`, data only.
+
+#### Return value
+
+The return value for the 1D integrator is a `real`, the value of the integral.
+
+#### Zero-crossing integrals {#zero-crossing}
+
+For numeric stability, integrals on the (possibly infinite) interval $(a, b)$ that cross zero are split into two integrals, one from $(a, 0)$ and one from $(0, b)$. Each integral is separately integrated to the given `relative_tolerance`.
+
+#### Precision loss near limits of integration in definite integrals {#precision-loss}
+
+When integrating certain definite integrals, there can be significant precision loss in evaluating the integrand near the endpoints. This has to do with the breakdown in precision of double precision floating point values when adding or subtracting a small number from a number much larger than it in magnitude (for instance, `1.0 - x`). `xc` (as passed to the integrand) is a high-precision version of the distance between `x` and the definite integral endpoints and can be used to address this issue. More information (and an example where this is useful) is given in the User's Guide. For zero crossing integrals, `xc` will be a high precision version of the distance to the endpoints of the two smaller integrals. For any integral with an endpoint at negative infinity or positive infinity, `xc` is set to `NaN`.
+
+#### Algorithmic details
+
+Internally the 1D integrator uses the double-exponential methods in the Boost 1D quadrature library. Boost in turn makes use of quadrature methods developed in [@Takahasi:1974], [@Mori:1978], [@Bailey:2005], and [@Tanaka:2009].
+
+The gradients of the integral are computed in accordance with the Leibniz integral rule. Gradients of the integrand are computed internally with Stan's automatic differentiation.
+
+
 ## algebra_solver, algebra_solver_newton algebraic solvers {#functions-old-algebra-solver}
 
 These algebraic solver functions have been replaced by those described in

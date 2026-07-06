@@ -1,13 +1,94 @@
 ---
-pagetitle: Coding Unusual Distributions
+pagetitle: Coding Unusual Constraints
 ---
 
-# Coding Unusual Distributions
+# Coding Unusual Constraints
+
+## Matrices matching known margins
+
+Suppose there is an $M \times N$ matrix $X$ marginals are known but
+entries are unknown.  A normalized outer product and Stan's
+sum-to-zero matrix type define an improper uniform distribution over
+matrices with specified marginals.
+
+Let $r \in \mathbb{R}^M$ be the row sums and $c \in \mathbb{R}^N$ be
+the column marginals.  There is only a solution if $\textrm{sum}(r) =
+\textrm{sum}(c)$. A baseline solution is given by the outer product of
+the vector of row marginals and the vector of normalized column
+marginals,
+$$
+E = r \cdot c^\top / \textrm{sum}(c),
+$$
+so that $E_{m,n} = r_m \cdot c_n / \textrm{sum}(c).$
+
+To see that this is indeed a solution, consider the row $E_m$
+and its marginal,
+
+\begin{align*}
+\textrm{sum}(E_m)
+&= E_{m,1} + \cdots + E_{m, N}
+\\[4pt]
+&= r_m \cdot \frac{c_1}{\textrm{sum}(c)}
+ + \cdots
+ + r_m \cdot \frac{c_N}{\textrm{sum}(c)}
+\\
+&= r_m \cdot \frac{c_1 + \cdots + c_N}{\textrm{sum}(c)}
+\\
+&= r_m.
+\end{align*}
+
+The rows check out and the columns $E_{, n}$ also have the correct
+marginal, which can be shown by noting that $\textrm{sum}(c) =
+\textrm{sum}(r)$ if the input is coherent and then expanding
+the sum,
+
+\begin{align*}
+\textrm{sum}(E_{, n})
+&= E_{1, n} + \cdots + E_{M, n}
+\\[4pt]
+&= r_1 \cdot c_n / \textrm{sum}(c)
++ \cdots
++ r_M \cdot c_n / \textrm{sum}(c)
+\\[4pt]
+&= c_n \cdot (r_1 + \cdots + r_M) / \textrm{sum}(c)
+\\[4pt]
+&= c_n \cdot (r_1 + \cdots + r_M) / \textrm{sum}(r)
+\\[4pt]
+&= c_n.
+\end{align*}
+
+The Stan program is going to take $E$ as a constant mean, then take a sum-to-zero
+matrix as a perturbation.  By itself, this is not identified, but it will be with
+a prior on the entries in the sum-to-zero matrix.
+
+```stan
+data {
+  int<lower=1> M;
+  int<lower=1> N;
+  vector[M] row_sums;
+  row_vector[N] col_sums;
+  real<lower=0> sigma;
+}
+transformed data {
+  matrix[M, N] E = row_sums * (col_sums / sum(col_sums));
+}
+parameters {
+  sum_to_zero_matrix[M, N] Z; 
+}
+transformed parameters {
+  matrix[M, N] x = E + Z;
+}
+model {
+  to_vector(D) ~ normal(0, sigma);
+}
+```
+
 
 ## Fun shapes
 
-The section title is taken from the chapter "Fun Shapes" in the BUGS
-examples [@spiegelhalter2003bugs].
+The title and many of the examples in this section are ported to Stan from
+the chapter "Fun Shapes" in the BUGS examples
+[@spiegelhalter2003bugs].
 
 ### The disc
 
@@ -69,7 +150,7 @@ $$
 J_{f^{-1}} = \begin{bmatrix}
 \cos \theta & - \rho \cdot \sin \theta
 \\
-\sin \theta & \rho \cdpot \cos \theta
+\sin \theta & \rho \cdot \cos \theta
 \end{bmatrix}.
 $$
 After some algebra, the absolute determinant reduces to \left|\, \det

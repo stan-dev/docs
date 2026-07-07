@@ -6,42 +6,43 @@ pagetitle: Coding Unusual Constraints
 
 ## Matrices matching known margins
 
-Suppose there is an $M \times N$ matrix $X$ marginals are known but
-entries are unknown.  A normalized outer product and Stan's
-sum-to-zero matrix type define an improper uniform distribution over
-matrices with specified marginals.
+Suppose $X$ is an $M \times N$ matrix $X$, the marginals of which are
+known, but the entries of which are unknown.  A simple outer product
+of the marginals scaled by the sum of either of the marginals (they're
+the same) provides a baseline matrix with the correct marginals.
+Stan's sum-to-zero matrix type can be used to add to that solution
+to generate a uniform distribution over matrices that have the specified
+marginals.  This distribution is improper and thus requires priors
+on the matrix entries to determine their scale of variation.
 
-Let $r \in \mathbb{R}^M$ be the row sums and $c \in \mathbb{R}^N$ be
-the column marginals.  There is only a solution if $\textrm{sum}(r) =
-\textrm{sum}(c)$. A baseline solution is given by the outer product of
-the vector of row marginals and the vector of normalized column
-marginals,
+Let $r \in \mathbb{R}^M$ be a vector of row marginals and $c \in
+\mathbb{R}^N$ be a vector of column marginals.  There is only a
+solution if $\textrm{sum}(r) = \textrm{sum}(c)$. A matrix with
+row marginals $r$ and column marginals $c$ is
 $$
-E = r \cdot c^\top / \textrm{sum}(c),
+E = r \cdot c^\top / \textrm{sum}(c).
 $$
-so that $E_{m,n} = r_m \cdot c_n / \textrm{sum}(c).$
-
-To see that this is indeed a solution, consider the row $E_m$
-and its marginal,
-
+In this matrix, 
+$$
+E_{m,n} = r_m \cdot c_n / \textrm{sum}(c).
+$$
+To see that this is indeed a solution, consider the row $E_m$,
+the sum of which is equal to the correct marginal 
+$r_m$.
 \begin{align*}
 \textrm{sum}(E_m)
 &= E_{m,1} + \cdots + E_{m, N}
 \\[4pt]
-&= r_m \cdot \frac{c_1}{\textrm{sum}(c)}
+&= r_m \cdot c_1 / \textrm{sum}(c)
  + \cdots
- + r_m \cdot \frac{c_N}{\textrm{sum}(c)}
+ + r_m \cdot c_N / \textrm{sum}(c)
 \\
-&= r_m \cdot \frac{c_1 + \cdots + c_N}{\textrm{sum}(c)}
+&= r_m \cdot (c_1 + \cdots + c_N) / \textrm{sum}(c)
 \\
 &= r_m.
 \end{align*}
-
-The rows check out and the columns $E_{, n}$ also have the correct
-marginal, which can be shown by noting that $\textrm{sum}(c) =
-\textrm{sum}(r)$ if the input is coherent and then expanding
-the sum,
-
+To see that the columns $E_{, n}$ have the correct marginals $c_n$,
+expand the sum.
 \begin{align*}
 \textrm{sum}(E_{, n})
 &= E_{1, n} + \cdots + E_{M, n}
@@ -56,10 +57,29 @@ the sum,
 \\[4pt]
 &= c_n.
 \end{align*}
+The penultimate step of the derivation exploits the fact that
+$\textrm{sum}(c) = \textrm{sum}(r)$ because they are marginals of the
+same matrix and thus both equal to the sum of all matrix entries.
 
-The Stan program is going to take $E$ as a constant mean, then take a sum-to-zero
-matrix as a perturbation.  By itself, this is not identified, but it will be with
-a prior on the entries in the sum-to-zero matrix.
+To generate random matrices that satisfy the marginals, the following
+Stan programs takes the matrix $E$ defined above and then perturbs it
+with a sum-to-zero matrix.  Stan's sum-to-zero matrix type is
+constrained to have rows that sum to zero and columns that sum to
+zero.  Thus when adding it to $E$, the result is still a solution.  In
+the unconstrained domain, there are only $(M - 1) \cdot (N - 1)$
+degrees of freedom.  The program takes the more colloquially named
+data variables `row_sums` and `col_sums` for the row and column
+marginals.  The data variable `sigma` determines the prior scale of a
+normal distribution on the perturbation values $Z$, which must have zero means due to symmetry considerations.
+
+An equivalent, but slightly less efficient way to write the prior
+would be
+```stan
+to_vector(X) ~ normal(to_vector(E), sigma);
+```
+
+equivalently been put on $X$ with slightly higher automatic
+differentiation overhead).
 
 ```stan
 data {
@@ -76,12 +96,87 @@ parameters {
   sum_to_zero_matrix[M, N] Z; 
 }
 transformed parameters {
-  matrix[M, N] x = E + Z;
+  matrix[M, N] X = E + Z;
 }
 model {
-  to_vector(D) ~ normal(0, sigma);
+  to_vector(Z) ~ normal(0, sigma);
 }
 ```
+
+The definition of `E` is written as `row_sums * (col_sums /
+sum(col_sums))`, because it only has to divide `N` elements.  Had `E`
+been defined as `(row_sums * col_sums) / sum(col_sums)`, the result
+would involve `N * M` divisions.  If the program will be run with `N`
+larger than `M`, then it's more efficient to code as the equivalent
+`row_sums / sum(row_sums) * col_sums()`.
+
+To work through an example, suppose $r = [55 \ 23 \ 22]$ and
+$c = [19 \ 18 \ 25 \ 38]$.  Then
+$$
+r \cdot c / \textrm{sum}(c)
+=
+\begin{bmatrix}
+10.45 &  9.90 & 13.75 & 20.90 \\
+ 4.37 &  4.14 &  5.75 &  8.74 \\
+ 4.18 &  3.96 &  5.50 &  8.36
+\end{bmatrix}.
+$$
+
+The solutions for $X$ here are allowed to contain negative entries.
+There is no good way to constrain them to integer values---rounding
+will not guarantee the recovery of exact marginals.  Here are a couple
+of posterior draws for $x$ given the example marginals and $\sigma =
+2.5$.
+
+$$
+X^{(100)}
+=
+\begin{bmatrix}
+12.03 & 11.00 & 12.09 & 19.89 \\
+ 2.67 &  4.91 &  5.19 & 10.23 \\
+ 4.31 &  2.09 &  7.72 &  7.88
+\end{bmatrix}
+\qquad \qquad
+X^{(200)}
+=
+\begin{bmatrix}
+ 8.76 &  8.64 & 14.17 & 23.43 \\
+ 3.49 &  6.63 &  5.22 &  7.66 \\
+ 6.75 &  2.73 &  5.61 &  6.91
+\end{bmatrix}
+$$
+
+The posterior standard deviation on the entries is around 1.8, which
+is lower than the stipulated 2.5 due to the lowered degrees of
+freedom.  To be more specific, there are $3 \cdot 4 = 12$ normal
+priors when there are only $(3 - 1) \cdot (4 - 1) = 6$ degrees of
+freedom due to the sum-to-zero constraint.  This is similar to
+coding a prior in the following way in Stan, which is unusual
+and appears to be a typo, but is legal.
+
+```stan
+parameters {
+  real y;
+}
+model {
+  y ~ normal(0, 1);
+  y ~ normal(0, 1);
+}
+```
+
+This is equivalent to saying that the prior for $y$ is
+
+\begin{align*}
+p(y)
+&\propto \textrm{normal}(y \mid 0, 1) \cdot \textrm{normal}(y \mid 0, 1)
+\\[4pt]
+&\propto \textrm{normal}(y \mid 0, \sqrt{1 / (1 + 1)}).
+\end{align*}
+
+The second line follows by plugging in the definitions
+and reducing.  The result with the sum-to-zero constraint
+is a doubling of the number of priors in the same way, leading
+to a factor of $1 / \sqrt{2}$ lower standard deviation.
 
 
 ## Fun shapes
@@ -111,7 +206,7 @@ parameters {
 
 The $x$ value is free to float anywhere in $(-r, r)$.  Conditional on
 the $x$ value, $y$ must satisfy $x^2 + y^2 < r^2$, or $|y| < \sqrt{r^2
-- x^2}$.  Because the constraint involvs the parameter `x`, the
+- x^2}$.  Because the constraint involves the parameter `x`, the
 combined adjustment does the right thing and assumes that jointly, `x`
 and `y` have a uniform distribution within the disc.  The scatterplot
 of draws shown in @fig-disc-scatterplot verifies that the distribution
@@ -122,7 +217,7 @@ is indeed uniform.
 The easy way to generate parameters in a disc is to simply scale
 the built-in unit vector.  This has the nice property of easily
 extending to higher dimensions, like points within a sphere and
-having built-in change-of-variables adjutsments.
+having built-in change-of-variables adjustments.
 
 ```stan
 data {
@@ -144,8 +239,9 @@ to $(x, y)$ coordinates by
 $$
 x, y = \rho \cdot \cos \theta, \rho \cdot \sin \theta.
 $$
-The transform is non-linear, so it requires a change-of-variabes adjustment (absolute value of
-the determinant of the Jacobian of the transform).  The Jacobian matrix is
+The transform is non-linear, so it requires a change-of-variables
+adjustment (absolute value of the determinant of the Jacobian of the
+transform).  The Jacobian matrix is
 $$
 J_{f^{-1}} = \begin{bmatrix}
 \cos \theta & - \rho \cdot \sin \theta

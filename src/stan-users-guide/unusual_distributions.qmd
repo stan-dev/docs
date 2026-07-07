@@ -4,6 +4,167 @@ pagetitle: Coding Unusual Constraints
 
 # Coding Unusual Constraints
 
+## Ordered simplexes
+
+There are often requests for defining simplex distributions that are
+ordered, so that for $\theta \in \Delta^{N-1}$, not only do we have
+$\theta_n > 0$ and $\sum{n=1}^N \theta_n = 1$, we also have $\theta_n
+< \theta_{n+1}$ for $n < N$.
+
+Now that Stan has the underlying transforms built in, an ordered
+simplex can be defined by taking an ordered vector and applying the
+simplex transform.
+
+```stan
+data {
+  int<lower=1> N;
+}
+parameters {
+  positive_ordered[N - 1] log_theta;
+}
+transformed parameters {
+  simplex[N] theta = simplex_jacobian(-log_theta);
+}
+```
+
+The negation on `log_theta` makes sure the inputs to
+`simplex_jacobian` are negative.  The internal transform in
+`simplex_jacobian` converts this to a sum-to-zero vector in increasing
+order, then applies `softmax()`, then adds the required log
+change-of-variables adjustment to the log Jacobian accumulator.
+
+Enforcing an increasing sequence pattern on the simplex leads to a
+uniform distribution with small means on the early components and
+relatively large means on the later ones.  For example, with `N` set
+to 2, the posterior means are $[0.25 0.75]$, with `N` set to 5, they
+are are $[0.05 \ 0.08 \ 0.12 \ 0.23 \ 0.52]$, and set to 10, they are
+$[0.02 \ 0.02 \ 0.03 \ 0.04 \ 0.05 \ 0.07 \ 0.10 \ 0.14 \ 0.20 \
+0.33]$.  To derive a more uniform distribution, they can be given
+a Dirichlet prior that's skewed in the opposite direction.  For example,
+consider adding the model block for the case where `N` is 5.
+```stan
+model {
+  theta ~ dirichlet([16, 8, 4, 2, 1]');
+}
+```
+The resulting posterior means are now $[0.17 \ 018 \ 0.19 \ 0.21 \ 0.25]$.
+
+
+## Orthonormal and rotation matrices
+
+Stan has a built-in `unit_vector` type that produces vectors where the
+sum of the squared entry is 1.  Those points live on a unit
+hypersphere.  The generalization of this construction is a matrix
+where every row is a unit vector and the rows are orthogonal to one
+another.  When the rows are unit length, such a matrix is said to be
+_orthonormal_.
+
+There are two natural ways to generate orthonormal matrices, which
+will be covered in turn.
+
+### Q in a QR decomposition
+
+Suppose that $X$ is an $N \times N$ matrix with independent standard
+normal entries, i.e., $X_{m,n} \sim \textrm{normal}(0, 1)$.  Then the
+$Q$ matrix resulting from a QR-decompsoition of $X = Q \cdot R$ has a
+uniform distribution over orthonormal matrices.
+
+The Stan program follows the math, as usual.
+
+```stan
+data {
+  int<lower=1> N;
+}
+parameters {
+  matrix[N, N] X_raw;
+}
+transformed parameters {
+  matrix[N, N] X = qr_thin_Q(X_raw);
+}
+model {
+  to_vector(X_raw) ~ normal(0, 1);
+}
+```
+
+The `X` that results from this construction is uniformly distributed
+over orthonromal matrices.  Here's an example draw for the case where
+$N = 5$.  It's easy to verify that each row has unit Euclidean length
+a zero dot product with each of the other rows.
+$$
+X^{(100)} = \begin{bmatrix}
+0.207 & -0.697 & -0.388 & 0.295 & -0.483 \\
+-0.631 & -0.494 & -0.224 & -0.138 & 0.538 \\
+0.738 & -0.294 & 0.060 & -0.199 & 0.571 \\
+-0.118 & -0.409 & 0.892 & 0.092 & -0.120 \\
+-0.010 & -0.127 & -0.015 & -0.920 & -0.371
+\end{bmatrix}
+$$
+
+
+### Restricting to the special orthogonal group of rotations
+
+There are two distinct flavors of square orthonormal matrices,
+rotations and reflections, which describes their action on vectors.
+Given an orthonormal matrix $X$, it is a reflection if $\det X = 1$
+and is a rotation if $\det X = -1$. For example, $X^{(100)}$ given
+above has a determinant of 1 and is thus a rotation.
+
+To flip the sign of a determinant only requires flipping the sign of a
+row.  The following block can be used to generate rotation matrices.
+
+```stan
+transformed parameters {
+  matrix[N, N] X = qr_thin_Q(X_raw);
+  if (determinant(X) < 0) {  // force X to be a rotation
+    X[, N] = -X[, N];
+  }
+}
+```
+
+Now `X` is being drawn from the "special orthogonal" group of
+rotations, the collection of which is written as $\textrm{SO}(N)$ in
+mathematical manifold theory.  The set of rotations forms a group
+under matrix multiplication because the product of two rotations is
+another rotation.  The identity matrix is a rotation because it is
+orthonormal and has a unit determinant.  Inverses exist because every
+rotation can be undone by rotating in the reverse direction.
+
+Replacing the condition `determinant(X) < 0` with `determinant(X) > 0`
+will force `X` to be a reflection rather than a rotation.
+
+The induced geometry from this transform with the sign flip can be
+challenging for sampling.  An alternative is to make sure to
+initialize with a matrix with a unit determinant.  Then HMC won't
+cross over into determinant -1 regions as it has to pass through zero
+measure regions.  Without fiddling with initialization, it would probably
+work to just reject in cases where the determinant is not positive.
+
+```stan
+transformed parameters {
+  matrix[N, N] X = qr_thin_Q(X_raw);
+  if (determinant(X) < 0) {  // force X to be a rotation
+    reject("-1 determinant in Q from QR, but need value 1");
+  }
+}
+```
+
+There's a 50\% chance a random initialization will get the right
+determinant, so this should be OK with Stan's default initialization,
+which retries up to 100 times.
+
+
+### Matrix exponential of a skew symmetric matrix
+
+Sampling may become challenging near the zero determinant boundary in
+the rotation parameterization.  A better alternative geometrically involves
+the matrix exponential.  It turns out that the matrix exponential of
+a skew symmetric matrix (i.e., a matrix where $X^\top = -X$) is smoother
+and better behaved geometrically (though not necessarily computationally
+as the matrix exponential itself is hard to compute).
+
+
+
+
 ## Matrices matching known margins
 
 Suppose $X$ is an $M \times N$ matrix $X$, the marginals of which are

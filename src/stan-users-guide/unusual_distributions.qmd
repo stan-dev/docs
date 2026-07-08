@@ -1,5 +1,5 @@
 ---
-pagetitle: Coding Unusual Constraints
+pagetitle: Coding Unusually Constrained Parameters
 ---
 
 # Coding Unusual Constraints
@@ -7,8 +7,8 @@ pagetitle: Coding Unusual Constraints
 ## Ordered simplexes
 
 There are often requests for defining simplex distributions that are
-ordered, so that for $\theta \in \Delta^{N-1}$, not only do we have
-$\theta_n > 0$ and $\sum{n=1}^N \theta_n = 1$, we also have $\theta_n
+ordered, so that for $\theta \in \Delta^{N-1}$, not only is 
+$\theta_n > 0$ and $\sum{n=1}^N \theta_n = 1$, but also $\theta_n
 < \theta_{n+1}$ for $n < N$.
 
 Now that Stan has the underlying transforms built in, an ordered
@@ -47,49 +47,99 @@ model {
   theta ~ dirichlet([16, 8, 4, 2, 1]');
 }
 ```
-The resulting posterior means are now $[0.17 \ 018 \ 0.19 \ 0.21 \ 0.25]$.
+The resulting posterior means are now $[0.17 \ 0.18 \ 0.19 \ 0.21 \ 0.25]$.
 
 
-## Orthonormal and rotation matrices
+## Orthogonal, rotation, and reflection matrices
 
 Stan has a built-in `unit_vector` type that produces vectors where the
 sum of the squared entry is 1.  Those points live on a unit
-hypersphere.  The generalization of this construction is a matrix
-where every row is a unit vector and the rows are orthogonal to one
-another.  When the rows are unit length, such a matrix is said to be
-_orthonormal_.
+hypersphere.  This section generalizes this notation to orthonormal
+matrices, rotation matrices, and reflection matrices.
 
-There are two natural ways to generate orthonormal matrices, which
-will be covered in turn.
+### Orthogonality and orthonormality
 
-### Q in a QR decomposition
+A pair of $N$-vectors $u, v$ is _orthogonal_ if $u^\top \cdot v = 0$,
+which entails a cosine of zero.  Orthogonal is the $N$-dimensional
+generalization of the opposite and adjacent edges of a right triangle.
+An $N$-vector $u$ has Euclidean _length_ $||u||_2 = \sqrt{u^\top \cdot
+u}$.  Thus it has unit length if $||u||_2 = 1$.  A pair of vectors is
+_orthonormal_ if they are orthogonal and unit length.
 
-Suppose that $X$ is an $N \times N$ matrix with independent standard
+An _orthonormal matrix_ is an $M \times N$ matrix in which the columns
+are orthonormal (waring: in some treatments rows are orthonormal).  In
+a somewhat confusing terminological convention, if $M = N$, the matrix
+is further said to be _orthogonal_ (the confusion arises because the
+columns are orthogonal in an orthonormal matrix even if $M \neq N$).
+
+Stan's built-in unit vector type (`unit_vector`) produces the boundary
+case of an orthnormal matrix with only a single column.
+
+### Rotation and reflection
+
+If $y$ is a point on a hypersphere (e.g., a unit hypersphere) and $X$
+is orthogonal, then $y \cdot X$ is on the same hypersphere.  A point
+on the hypersphere can be derived by either rotation or reflection.
+
+An orthogonal matrix $X$ with $\det X = 1$ is a _rotation matrix_ in
+that its action on a vector $y$, $y \cdot X$, is a rotation.  You
+can get from any point on the sphere to any other point on a sphere
+through a rotation.
+
+An orthgonal $X$ with $\det X = -1$ is said to be a _reflection
+matrix_.  A reflection matrix maps a point through the origin to the
+opposite pole.  
+
+### The special orthogonal group
+
+The set of rotation matrices of dimension $N \times N$ forms a group
+structure which is written as $\textrm{SO}(N)$ for _special orthogonal
+group_.  It's easy to verify that the rotation matrices meet the
+requirements to form a group under multiplication.  First,
+$\textrm{SO}(N)$ is clearly closed under multiplication, because
+applying two rotations is another rotation.  Multiplication is just
+matrix multiplication, so it is associative.  The identity rotation is
+the identity matrix $\textrm{I}$.  Finally, every rotation has an
+inverse that is also a rotation, namely its transpose.
+
+### Generating orthonormal matrices via QR decomposition
+
+Suppose that $X$ is an $M \times N$ matrix with independent standard
 normal entries, i.e., $X_{m,n} \sim \textrm{normal}(0, 1)$.  Then the
-$Q$ matrix resulting from a QR-decompsoition of $X = Q \cdot R$ has a
+$Q$ matrix resulting from a QR-decomposition of $X = Q \cdot R$ has a
 uniform distribution over orthonormal matrices.
 
 The Stan program follows the math, as usual.
 
 ```stan
 data {
-  int<lower=1> N;
+  int<lower=1> M, N;
 }
 parameters {
-  matrix[N, N] X_raw;
+  matrix[M, N] X_raw;
 }
 transformed parameters {
-  matrix[N, N] X = qr_thin_Q(X_raw);
+  matrix[M, N] X = qr_thin_Q(X_raw);
 }
 model {
   to_vector(X_raw) ~ normal(0, 1);
 }
 ```
 
+This can be used in a program requiring uniformly distributed
+orthonormal matrices $X$.  If $M = N$, the result is an orthogonal
+matrix.
+
+The QR decomposition is not unique, in general, because of sign
+flipping.  Stan's QR decomposition takes the canonical form where all
+diagonal entries are positive.  A little linear algebra shows the
+resulting density is rotation invariant and thus uniformly distributed
+on orthonormal matrices.
+
 The `X` that results from this construction is uniformly distributed
-over orthonromal matrices.  Here's an example draw for the case where
-$N = 5$.  It's easy to verify that each row has unit Euclidean length
-a zero dot product with each of the other rows.
+over orthonromal matrices.  Here's an example draw for the orthogonal
+case where $M = N = 5$.  It's easy to verify that each row has unit
+Euclidean length a zero dot product with each of the other rows.
 $$
 X^{(100)} = \begin{bmatrix}
 0.207 & -0.697 & -0.388 & 0.295 & -0.483 \\
@@ -101,16 +151,13 @@ X^{(100)} = \begin{bmatrix}
 $$
 
 
-### Restricting to the special orthogonal group of rotations
+### Uniform distributions on SO(_N_)
 
-There are two distinct flavors of square orthonormal matrices,
-rotations and reflections, which describes their action on vectors.
-Given an orthonormal matrix $X$, it is a reflection if $\det X = 1$
-and is a rotation if $\det X = -1$. For example, $X^{(100)}$ given
-above has a determinant of 1 and is thus a rotation.
-
-To flip the sign of a determinant only requires flipping the sign of a
-row.  The following block can be used to generate rotation matrices.
+To restrict sampling of orthogonal matrices to just the rotations,
+the determinant of the constructed variable `X` needs to be pinned
+to 1.  To do this, it suffices to flip the sign of a single row.
+To generate only rotation matrices, the previous `transformed parameters`
+block can be replaced with the following.
 
 ```stan
 transformed parameters {
@@ -121,23 +168,24 @@ transformed parameters {
 }
 ```
 
-Now `X` is being drawn from the "special orthogonal" group of
-rotations, the collection of which is written as $\textrm{SO}(N)$ in
-mathematical manifold theory.  The set of rotations forms a group
-under matrix multiplication because the product of two rotations is
-another rotation.  The identity matrix is a rotation because it is
-orthonormal and has a unit determinant.  Inverses exist because every
-rotation can be undone by rotating in the reverse direction.
-
 Replacing the condition `determinant(X) < 0` with `determinant(X) > 0`
 will force `X` to be a reflection rather than a rotation.
 
-The induced geometry from this transform with the sign flip can be
-challenging for sampling.  An alternative is to make sure to
-initialize with a matrix with a unit determinant.  Then HMC won't
-cross over into determinant -1 regions as it has to pass through zero
-measure regions.  Without fiddling with initialization, it would probably
-work to just reject in cases where the determinant is not positive.
+The induced geometry from this transform with the sign flip may
+seem like it would be challenging for sampling due to the discrete
+parameter-dependent discontinuity introduced.  It shouldn't be that
+bad because of properties of the manifold of orthogonal matrices---there
+is a zero density gap between the rotation and reflection matrices, so
+the branch will likely get stuck with a single evaluation path and
+thus leave everything continuous in practice.
+
+A safe alternative is to initialize with a rotation matrix, such as
+the identity matrix.  For the same reason as above, it's unlikely to
+jump to reflection matrices because of the energy gap.
+
+Without fiddling with initialization, it would probably
+work to just reject in cases where the determinant is not positive,
+as follows.
 
 ```stan
 transformed parameters {
@@ -148,21 +196,107 @@ transformed parameters {
 }
 ```
 
-There's a 50\% chance a random initialization will get the right
-determinant, so this should be OK with Stan's default initialization,
-which retries up to 100 times.
+There's a 50% chance a random initialization will get the right
+determinant, so this should be work with Stan's default
+initialization, which retries up to 100 times, assuming there
+aren't other stochastic initialization bottlenecks.
 
+### Rotations via skew-symmetric matrix exponential
 
-### Matrix exponential of a skew symmetric matrix
+A matrix $S \in \mathbb{R}^{N \times N}$ is said to be _skew
+symmetric_ if it is equal to the negation of its transpose, $-S =
+S^\top$.  The matrix exponential of a skew-symmetric matrix will
+be a rotation.
 
-Sampling may become challenging near the zero determinant boundary in
-the rotation parameterization.  A better alternative geometrically involves
-the matrix exponential.  It turns out that the matrix exponential of
-a skew symmetric matrix (i.e., a matrix where $X^\top = -X$) is smoother
-and better behaved geometrically (though not necessarily computationally
-as the matrix exponential itself is hard to compute).
+An $N \times N$ skew-symmetric matrix only has $\binom{N}{2}$ degrees
+of freedom (the diagonal plus points below the diagonal).
+Given a vector $v \in \mathbb{R}^{\binom{N}{2}}$, here's a function
+to produce a skew-symmetric matrix.
 
+```stan
+  matrix skew_symmetric(vector v, int N) {
+    matrix[N, N] S = rep_matrix(0, N, N);
+    int idx = 1;
+    for (i in 1:N) {
+      for (j in (i + 1):N) {
+        S[i, j] = v[idx];
+        S[j, i] = -v[idx];
+        idx += 1;
+      }
+    }
+    return S;
+  }
+```
 
+The transform is going to require a Jacobian adjustment, which
+will be written like a built-in transform.  The transform itself
+is rather opaque, as is the following helper function.  
+The helper function computes $\textrm{sinc}(x / 2) / (x / 2)$
+accurately even if $x$ is near zero.  It applies to a whole vector
+and then returns 2 times the sum of the log absolute values of that
+vector.  
+
+```stan
+  real two_log_abs_half_sinc(vector x) {
+    int N = rows(x);
+    vector[N] h = x / 2;
+    vector[N] half_sinc = sin(h) ./ h;
+    // fall back to Taylor expansion for x near 0
+    for (n in 1:N) {
+      if (abs(h[n]) < 1e-4) {
+	real h_sq = square(h[n]);
+	half_sinc[n] = 1 - h_sq / 6 + square(h_sq) / 120;
+      }
+    }
+    return 2 * sum(log(abs(half_sinc)));
+  }
+```  
+
+Depending onthe application, this could be simplified.  Then there's the transform
+itself, which takes a vector $v$ of size $\binom{N}{2}$, creates a skew-symmetric
+matrix, applies matrix exponential, then adds the Jacobian adjustment to the Jacobian
+accumulator.
+
+```stan
+  matrix special_orthogonal_jacobian(vector v, int N) {
+    matrix[N, N] S = skew_symmetric(v, N);
+    matrix[N, N] Q_rot = matrix_exp(S);     // determinant(Q_rot) = 1
+    int m = N / 2;                          // rounds down, skip last 0 eigenvalue if N odd
+    matrix[N, N] M = -S * S;                // symmetric psd
+    vector[N] eig = eigenvalues_sym(M);
+    vector[m] theta;                        // rotation angles
+    for (i in 1:m) {
+      real val = eig[n % 2 + 2 * i];   // one representative from each equal pair
+      theta[i] = val > 0 ? sqrt(val) : 0;
+    }
+    real log_J = 0;
+    if (N % 2 == 1) {
+      jacobian += two_log_abs_half_sinc(theta);
+    }
+    for (j in 1:(m - 1)) {
+      jacobian += two_log_abs_half_sinc(theta[j] - theta[(j + 1):m]);
+      jacobian += two_log_abs_half_sinc(theta[j] + theta[(j + 1):m]);
+    }
+    return Q_rot;
+  }
+```
+
+Given these function definitions are placed in a `functions` block, the program
+to generate random rotation matrices is simple.
+
+```stan
+data {
+  int<lower=1> N;
+}
+parameters {
+  vector[choose(N, 2)] v;
+}
+transformed parameters {
+  matrix[N, N] X = special_orthogonal_jacobian(v, N);
+}
+```
+
+The result is a uniform distribution over $X$.
 
 
 ## Matrices matching known margins
@@ -348,7 +482,7 @@ the chapter "Fun Shapes" in the BUGS examples
 
 ### The disc
 
-Suppose we want parameters $(x, y)$ that have a uniform distribution
+How could we generate parameters $(x, y)$ that have a uniform distribution
 within a disc of radius $r > 0$?  This kind of constraint is easy to
 parameterize by leaning on Stan's built-in constraints.
 
@@ -498,7 +632,7 @@ The following Stan program defines a uniform distribution on $(0, 1)
 \times (0, 1) \setdiff (-0.5, 0.5) \times (-0.5, 0.5)$, which looks
 like a square with a smaller square taken out of the middle.  This one
 is trickier to define and the resulting transform is not continuous.
-The idea is to take $x^\textrm{raw} \sim \texrtrm{uniform}(-1.5, 1.5)$
+The idea is to take $x^\textrm{raw} \sim \textrm{uniform}(-1.5, 1.5)$
 and $y^\textrm{raw} \sim \textrm{uniform}(-1, 1)$ then transform.  If
 $x^\textrm{raw} \in (-0.5, 0.5)$, then positive $y^\textrm{raw}$ are
 compressed to half their height and shifted up, and the opposite for
@@ -554,7 +688,7 @@ Draws from the ring distribution are shown in @fig-ring.
 
 ### Soft ring
 
-Instead of uniform within a ring with a hard boundary, a ``soft''
+Instead of uniform within a ring with a hard boundary, a "soft"
 version of a ring distribution can be defined as follows. Rather than
 bounding `z`, it is just declared with a `<lower=0>` constraint.  By
 itself, this would produce an improper distribution because of the

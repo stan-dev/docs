@@ -232,19 +232,211 @@ non-linear.
 
 ## Cholesky factors of sparse correlation matrices with structural zeros
 
-Stan provide the types `corr_matrix` and `cholesky_factor_corr` for
-correlation matrices and their Cholesky factors.  Stan does _not_
-provide a built-in way for specifying correlation matrices that have
-structural zeros (i.e., correlations known to be zero).  Such
-constraints arise from graphical modeling assumptions in frameworks
-like structural equation modeling, and as assumptions on time-series
-or other prior structure for varying effects (aka "random effects").
+Stan does _not_ provide a built-in way for specifying correlation
+matrices that have structural zeros (i.e., correlations known to be
+zero). Such constraints arise from graphical models in structural
+equation modeling and as priors in varying (aka "random") effects
+models.
 
-This section shows how to parameterize Cholesky factors that induce
-specified structural zeros when multiplied by their transpose to
-produce correlation matrices.
+This section shows how to parameterize Cholesky factors of correlation
+matrices with specified structural zeros and define matching restricted
+LKJ distributions.
+
+### Stan's correlation matrix types and the LKJ distribution
+
+Stan provide the built-in constrained types `corr_matrix` and
+`cholesky_factor_corr` for correlation matrices and their Cholesky
+factors, as in the following Stan program.
+
+```stan
+parameters {
+  corr_matrix[5] Omega1;
+  cholesky_factor_corr[5] L2;
+}
+transformed parameters {
+  cholesky_factor_corr[5] L1 = cholesky_factor(Omega1);  // not uniform
+  corr_marrix[5] Omega2 = L * L';
+}
+```
+
+In this program, `Omega1` will have a uniform distribution over
+correlation matrices and `L2` will have a uniform distribution over
+lower triangular matrices with positive diagonals and unit-length
+rows, i.e., over the Cholesky factors of correlation matrices.
+Factoring `Omega1` into its Cholesky factor, the result `L1` will not
+have a uniform distribution over Cholesky factors of correlation
+matrices. Similarly, `Omega2` will not have a uniform distribution
+over correlation matrices. The transforms are both missing Jacobian
+adjustments for the non-linear transform.
+
+Suppose a model block is now added to the program above giving
+`Omega1` an LKJ distribution with concentration 1 and `L2` a matching
+LKJ distribution over Cholesky factors.
+
+```stan
+model {
+  Omega1 ~ lkj_corr(1);
+  L2 ~ lkj_corr_cholesky(1);
+}
+```
+
+Setting $\eta = 1$ in $\textrm{LKJ}(\eta)$ produces a uniform
+distribution over correlation matrices. Thus `Omega1` still has a
+uniform distribution over correlation matrices. `L2`, on the other
+hand, now has a distribution that matches that of `L1`. In words,
+`L2` now has a distribution over Cholesky factors such that when
+they are multiplied out have a uniform distribution over correlation
+matrices.
+
+With transform functions, another way of specifying this model is
+as follows.
+
+```stan
+parameters {
+ vector[choose(5, 2)] L3_raw;
+}
+transformed parameters {
+  matrix[5] L3 = cholesky_factor_corr_jacobian(L3_raw, 5);
+}
+```
+
+In this program, `L3` will have a uniform distribution over Cholesky
+factors of correlation matrices, matching `L1` in the original
+program.  Similarly, `L3` can be given an LKJ distribution and it will
+continue to behave like `L1`.
+
+
+### Specifying structural zeros
+
+Stan does not support user-defined types. The closest approximation is
+user-defined `_jacobian` transform functions that increment the
+Jacobian accumulator with a change-of-variables adjustment. The rest
+of this section shows how to do that and introduce a matching LKJ
+distribution to recreate Stan's behavior with correlation matrices and
+their Cholesky factors for correlation matrices with structurally specified
+zero values.
+
+The structural zeros will be specified with a simple symmetric
+indicator matrix. For example, specifying that a $4 x 4$ matrix does
+not have correlations between variables 1 and 2 or between variables 3
+and 4 would be specified as a $5 \times 5$ integer array,
+
+$$
+\textrm{zero}
+=
+\begin{bmatrix}
+0 & 1 & 0 & 0 & 0 \\
+1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 \\
+\end{bmatrix}
+$$
+
+In practice, only the below-diagonal elements will be used.  This may seem
+wasteful if there are only a few structural zeros, but integer arrays are
+small and the program will already be generating dense Cholesky factors of
+the same order and automatically differentiating through them.  In
+Stan programs, indicator integer arrays like this can be used as booleans,
+e.g., `if (zero[1, 2])` where the condition is true if `zero[1, 2]` evaluates to
+a non-zero value and false otherwise. 
+
 
 ### Constructing the Cholesky factor via stick breaking
+
+Here's the full, working program to factor out into this section.
+
+```stan
+functions {
+  /* 
+   * Transform the raw parameters into a lower-triangular Cholesky
+   * factor with the specified structural zero entries, applying a
+   * change-of-variables adjustment to the log Jacobian accumulator.
+   *
+   * @param D Number of dimensions.
+   * @param raw Unconstrained raw parameters, size `(D choose 2) - size(zeros)`.
+   * @param is_zero `D` by `D` array of pairs with 1s in positions that
+   * are structural zeros.
+   * @return Correlation matrix with specified structural zeros.
+   */
+  matrix cholesky_corr_zeros_jacobian(int D,
+                                      vector raw,
+                                      array[,] int is_zero) {
+    int raw_idx = 1;
+    matrix[D, D] L = rep_matrix(0, D, D);
+    for (i in 1:D) {
+      real stick = 1;
+      for (j in 1:(i - 1)) {
+        if (is_zero[i, j]) {
+          real b = dot_product(L[j, 1:(j - 1)], L[i, 1:(j - 1)]);
+          L[i, j] = -b / L[j, j];  // implies Omega[i, j] == 0
+        } else {
+          real sqrt_stick = sqrt(stick);
+          L[i, j] = lower_upper_bound_jacobian(raw[raw_idx],
+                                               -sqrt_stick, sqrt_stick);
+          raw_idx += 1;
+        }
+        stick -= L[i, j]^2;
+        if (stick < 0) {
+          reject("structural zeros infeasible at i=", i, ", j=", j);
+        }
+      }
+      L[i, i] = sqrt(stick);
+    }
+    return L;
+  }
+
+  /**
+   * Return the log pdf of the LKJ density of the specified
+   * Cholesky factor of a correlation matrix with the specified
+   * concentration and column structural zero counts.
+   *
+   * Transforming an unconstrained parameter vector using
+   * `cholesky_corr_zeros_jacobian` and applying this density
+   * will generate draws `L` such that `L * L'` has an `LKJ(eta)`
+   * distribution when restricted to satisfy the specified structural
+   * zeros.
+   *
+   * @param L The Cholesky factor of a correlation matrix.
+   * @param eta The concentration of the LKJ distribution.
+   * @param col_zeros The counts of structural zeros below the diagonal.
+   */
+  real lkj_corr_cholesky_zeros_lpdf(matrix L,
+                                    real eta,
+                                    array[] int col_zeros) {
+    real lp = lkj_corr_cholesky_lpdf(L | eta);  // overcorrects
+    for (j in 1:size(col_zeros)) {
+      if (col_zeros[j] > 0) {
+        lp -= col_zeros[j] * log(L[j, j]);
+      }
+    }
+    return lp;
+  }
+}
+data {
+  int<lower=2> D;                            // dimensions
+  real<lower=0> eta;                         // concentration in LKJ Cholesky
+  array[D, D] int<lower=0, upper=1> zeros;   // 1 for zero correlation, 0 otherwise
+}
+transformed data {
+  array[D] int<lower=0, upper=D-1> col_zeros = rep_array(0, D);
+  for (j in 1:D) {
+    col_zeros[j] = sum(zeros[(j + 1):D, j]);
+  }
+}
+parameters {
+  vector[choose(D, 2) - sum(col_zeros)] raw;
+}
+transformed parameters {
+  matrix[D, D] L_Omega = cholesky_corr_zeros_jacobian(D, raw, zeros);
+}
+model {
+  L_Omega ~ lkj_corr_cholesky_zeros(eta, col_zeros);
+}
+generated quantities {
+  matrix[D, D] Omega = multiply_lower_tri_self_transpose(L_Omega);
+}
+```
 
 The construction of a lower-triangular Cholesky factor of a
 correlation matrix must ensure the result is symmetric and positive

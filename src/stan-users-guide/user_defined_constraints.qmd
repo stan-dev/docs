@@ -2,7 +2,7 @@
 pagetitle: User-Defined Constrained Parameterizations
 ---
 
-# User-Defined Constrained Parameterizations
+# User-Defined Constrained Parameters
 
 This chapter will cover how to define parameterizations that satisfy
 constraints that are not handled by Stan's built-in types.  There
@@ -51,7 +51,8 @@ major order.
 ```stan
 matrix tridiagonal_matrix(vector x, int N) {
   if (rows(x) != 3 * N - 2) {
-    reject("rows(x) = ", rows(x), "; but 3 * N - 2 = ", 3 * N - 2);
+    reject("rows(x) = ", rows(x),
+           "; but 3 * N - 2 = ", 3 * N - 2);
   }
   if (N == 1) return [[x[1]]];
   matrix[N, N] y;
@@ -79,8 +80,9 @@ are filled in from the lower left corner $(M, 1)$ to the upper right $(1, N)$.
 ```stan
 matrix toeplitz_matrix(vector x, int M, int N) {
   if (num_elements(x) != M + N - 1) {
-    reject("x must have M + N - 1 elements, found num_elements(x) = ",
-           num_elements(x), " but M + N - 1 = ", M + N - 1);
+    reject("x must have M + N - 1 elements",
+           "found num_elements(x) = ", num_elements(x),
+	   " but M + N - 1 = ", M + N - 1);
   }
   matrix[M, N] y;
   for (i in 1:M) {
@@ -113,7 +115,8 @@ required as an argument.
 ```stan
 matrix lower_triangular_matrix(vector x, int N) {
   if (cols(x) != N + binom(N, 2)) {
-    reject("cols(x) = ", cols(x), "; but N + binom(N, 2) = ", N + binom(N, 2));
+    reject("cols(x) = ", cols(x),
+           "; but N + binom(N, 2) = ", N + binom(N, 2));
   }
   matrix[N, N] y = rep_matrix(0, N, N);  // fills zero entries
   int next = 0;
@@ -152,7 +155,7 @@ matrix symmetric_matrix(vector x, int N) {
 
 ### Skew-symmetric matrices
 
-An $N \times N$ matrx $A$ is skew symmetric if its negation is equal to its transpose,
+An $N \times N$ matrix $A$ is skew symmetric if its negation is equal to its transpose,
 $-A = A^\top$, or equivalently, if it's equal to its negated transpose, $A = -A^\top$.
 Building a skew symmetric matrix is just like building a symmetric matrix only the
 above-diagonal entries are negated.
@@ -162,13 +165,14 @@ matrix skew_symmetric_matrix(vector x, int N) {
   matrix[N, N] y = lower_triangular_matrix(x, N);
   for (i in 1:N) {
     for (j in 1:(i - 1)) {
-      y[j, i] = -y[i, j];  // negation only diff from symmetric_matrix
+      y[j, i] = -y[i, j];
     }
   }    
   return y;
 }
 ```
 
+The only difference form the symmetric matrix case is the negation.
 
 
 ## Ordered simplexes
@@ -230,21 +234,19 @@ distributions on the unconstrained space when the transforms are
 non-linear.
 
 
-## Cholesky factors of sparse correlation matrices with structural zeros
+## Correlation matrices with structural zeros
 
-Stan does _not_ provide a built-in way for specifying correlation
-matrices that have structural zeros (i.e., correlations known to be
-zero). Such constraints arise from graphical models in structural
-equation modeling and as priors in varying (aka "random") effects
-models.
-
-This section shows how to parameterize Cholesky factors of correlation
-matrices with specified structural zeros and define matching restricted
-LKJ distributions.
+Stan does _not_ provide a built-in type for correlation matrices that
+have structural zeros (i.e., correlations known to be zero). Such
+constraints arise from graphical models in structural equation
+modeling and as priors in varying (aka "random") effects models.  This
+section shows how to parameterize Cholesky factors of correlation
+matrices with specified structural zeros and define matching
+restricted LKJ distributions.
 
 ### Stan's correlation matrix types and the LKJ distribution
 
-Stan provide the built-in constrained types `corr_matrix` and
+Stan provides the built-in constrained types `corr_matrix` and
 `cholesky_factor_corr` for correlation matrices and their Cholesky
 factors, as in the following Stan program.
 
@@ -254,7 +256,7 @@ parameters {
   cholesky_factor_corr[5] L2;
 }
 transformed parameters {
-  cholesky_factor_corr[5] L1 = cholesky_factor(Omega1);  // not uniform
+  cholesky_factor_corr[5] L1 = cholesky_factor(Omega1);
   corr_marrix[5] Omega2 = L * L';
 }
 ```
@@ -262,12 +264,20 @@ transformed parameters {
 In this program, `Omega1` will have a uniform distribution over
 correlation matrices and `L2` will have a uniform distribution over
 lower triangular matrices with positive diagonals and unit-length
-rows, i.e., over the Cholesky factors of correlation matrices.
-Factoring `Omega1` into its Cholesky factor, the result `L1` will not
+rows, i.e., over the Cholesky factors of correlation matrices.  This
+matches Stan's overall design for constrained types, which by default,
+will be uniform over variables satisfying the constraints.  Unbounded
+constrained variables like covariance matrices will have improper "uniform"
+distributions, whereas bounded variables like correlation matrices will
+induce proper uniform distributions.
+
+Given this behavior, it should not be surprising that the Cholesky
+factor `L1` of the correlation matrix `Omega1 = L1 * L1'` will _not_
 have a uniform distribution over Cholesky factors of correlation
-matrices. Similarly, `Omega2` will not have a uniform distribution
-over correlation matrices. The transforms are both missing Jacobian
-adjustments for the non-linear transform.
+matrices.  It's missing the change-of-variables adjustment resulting
+from `L1 * L1'`.  For the same reason, `Omega2`, the reconstructed
+correlation matrix from the Cholesky factor `L2`, will not have a
+uniform distribution over correlation matrices.  
 
 Suppose a model block is now added to the program above giving
 `Omega1` an LKJ distribution with concentration 1 and `L2` a matching
@@ -283,27 +293,32 @@ model {
 Setting $\eta = 1$ in $\textrm{LKJ}(\eta)$ produces a uniform
 distribution over correlation matrices. Thus `Omega1` still has a
 uniform distribution over correlation matrices. `L2`, on the other
-hand, now has a distribution that matches that of `L1`. In words,
-`L2` now has a distribution over Cholesky factors such that when
-they are multiplied out have a uniform distribution over correlation
-matrices.
+hand, now has a distribution that matches that of `L1`. In words, `L2`
+now has a distribution over Cholesky factors such that when they are
+multiplied out have a uniform distribution over correlation matrices.
+The `lkj_corr_cholesky` distribution builds in the
+change-of-variables adjustment resulting from transforming `L1` to
+`Omega1`, then applies the LKJ distribution to `Omega1` (conceptually;
+computationally it's more efficient than that).
 
-With transform functions, another way of specifying this model is
-as follows.
+With Stan's built-in constraint transformation functions, another way
+of specifying a parameter to be the Cholesky factor of a correlation
+matrix is as follows.
 
 ```stan
 parameters {
  vector[choose(5, 2)] L3_raw;
 }
 transformed parameters {
-  matrix[5] L3 = cholesky_factor_corr_jacobian(L3_raw, 5);
+  cholesky_factor_corr[5] L3
+      = cholesky_factor_corr_jacobian(L3_raw, 5);
 }
 ```
 
 In this program, `L3` will have a uniform distribution over Cholesky
 factors of correlation matrices, matching `L1` in the original
-program.  Similarly, `L3` can be given an LKJ distribution and it will
-continue to behave like `L1`.
+program.  In particular, it can be given an LKJ-correlation distribution
+to make the resulting correlation matrices LKJ distributed.
 
 
 ### Specifying structural zeros
@@ -311,10 +326,9 @@ continue to behave like `L1`.
 Stan does not support user-defined types. The closest approximation is
 user-defined `_jacobian` transform functions that increment the
 Jacobian accumulator with a change-of-variables adjustment. The rest
-of this section shows how to do that and introduce a matching LKJ
-distribution to recreate Stan's behavior with correlation matrices and
-their Cholesky factors for correlation matrices with structurally specified
-zero values.
+of this section shows how to use this mechanism to develop correlation
+matrix Cholesky factors that lead to structural zeros in specified
+positions of the resulting correlation matrices.
 
 The structural zeros will be specified with a simple symmetric
 indicator matrix. For example, specifying that a $4 x 4$ matrix does
@@ -333,165 +347,200 @@ $$
 \end{bmatrix}
 $$
 
-In practice, only the below-diagonal elements will be used.  This may seem
-wasteful if there are only a few structural zeros, but integer arrays are
-small and the program will already be generating dense Cholesky factors of
-the same order and automatically differentiating through them.  In
-Stan programs, indicator integer arrays like this can be used as booleans,
-e.g., `if (zero[1, 2])` where the condition is true if `zero[1, 2]` evaluates to
-a non-zero value and false otherwise. 
+
+Technically, this array should be symmetric with a zero diagonal.  In
+practice, only the below-diagonal elements will be used, so there
+won't be any error checking.  This may seem wasteful if there are only
+a few structural zeros, but integer arrays are small and the program
+will already be generating dense Cholesky factors of the same order
+and automatically differentiating through them.  In Stan programs,
+indicator integer arrays like this can be used as booleans, e.g., `if
+(zero[1, 2])` where the condition is true if `zero[1, 2]` evaluates to
+a non-zero value and false otherwise.
 
 
-### Constructing the Cholesky factor via stick breaking
+### Constructing Cholesky factors with structural zeros
 
-Here's the full, working program to factor out into this section.
-
-```stan
-functions {
-  /* 
-   * Transform the raw parameters into a lower-triangular Cholesky
-   * factor with the specified structural zero entries, applying a
-   * change-of-variables adjustment to the log Jacobian accumulator.
-   *
-   * @param D Number of dimensions.
-   * @param raw Unconstrained raw parameters, size `(D choose 2) - size(zeros)`.
-   * @param is_zero `D` by `D` array of pairs with 1s in positions that
-   * are structural zeros.
-   * @return Correlation matrix with specified structural zeros.
-   */
-  matrix cholesky_corr_zeros_jacobian(int D,
-                                      vector raw,
-                                      array[,] int is_zero) {
-    int raw_idx = 1;
-    matrix[D, D] L = rep_matrix(0, D, D);
-    for (i in 1:D) {
-      real stick = 1;
-      for (j in 1:(i - 1)) {
-        if (is_zero[i, j]) {
-          real b = dot_product(L[j, 1:(j - 1)], L[i, 1:(j - 1)]);
-          L[i, j] = -b / L[j, j];  // implies Omega[i, j] == 0
-        } else {
-          real sqrt_stick = sqrt(stick);
-          L[i, j] = lower_upper_bound_jacobian(raw[raw_idx],
-                                               -sqrt_stick, sqrt_stick);
-          raw_idx += 1;
-        }
-        stick -= L[i, j]^2;
-        if (stick < 0) {
-          reject("structural zeros infeasible at i=", i, ", j=", j);
-        }
-      }
-      L[i, i] = sqrt(stick);
-    }
-    return L;
-  }
-
-  /**
-   * Return the log pdf of the LKJ density of the specified
-   * Cholesky factor of a correlation matrix with the specified
-   * concentration and column structural zero counts.
-   *
-   * Transforming an unconstrained parameter vector using
-   * `cholesky_corr_zeros_jacobian` and applying this density
-   * will generate draws `L` such that `L * L'` has an `LKJ(eta)`
-   * distribution when restricted to satisfy the specified structural
-   * zeros.
-   *
-   * @param L The Cholesky factor of a correlation matrix.
-   * @param eta The concentration of the LKJ distribution.
-   * @param col_zeros The counts of structural zeros below the diagonal.
-   */
-  real lkj_corr_cholesky_zeros_lpdf(matrix L,
-                                    real eta,
-                                    array[] int col_zeros) {
-    real lp = lkj_corr_cholesky_lpdf(L | eta);  // overcorrects
-    for (j in 1:size(col_zeros)) {
-      if (col_zeros[j] > 0) {
-        lp -= col_zeros[j] * log(L[j, j]);
-      }
-    }
-    return lp;
-  }
-}
-data {
-  int<lower=2> D;                            // dimensions
-  real<lower=0> eta;                         // concentration in LKJ Cholesky
-  array[D, D] int<lower=0, upper=1> zeros;   // 1 for zero correlation, 0 otherwise
-}
-transformed data {
-  array[D] int<lower=0, upper=D-1> col_zeros = rep_array(0, D);
-  for (j in 1:D) {
-    col_zeros[j] = sum(zeros[(j + 1):D, j]);
-  }
-}
-parameters {
-  vector[choose(D, 2) - sum(col_zeros)] raw;
-}
-transformed parameters {
-  matrix[D, D] L_Omega = cholesky_corr_zeros_jacobian(D, raw, zeros);
-}
-model {
-  L_Omega ~ lkj_corr_cholesky_zeros(eta, col_zeros);
-}
-generated quantities {
-  matrix[D, D] Omega = multiply_lower_tri_self_transpose(L_Omega);
-}
-```
+There are easier ways to define this transform which are
+mathematically correct, but computationally sub-optimal.  Rather than
+starting with one of those and then moving on, this section introduces
+a single, numerically stable version of the transform.  The transform
+is complicated in realization, but is based on some simple principles.
 
 The construction of a lower-triangular Cholesky factor of a
 correlation matrix must ensure the result is symmetric and positive
 definite with a unit diagonal. Positive-definiteness is
 straightforward, because for any $D \times D$ lower-triangular matrix
 $L$ with a positive diagonal, $\Omega = L \cdot L^\top$ is symmetric
-and positive definite.
+and positive definite. 
 
-Beyond being symmetric and positive definite, a correlation matrix
-requires a unit diagonal, i.e., $\Omega_{i, i} = 1$ for $i \in 1,
-\ldots, D$. The diagonal entries are the dot products of the rows of
-the Cholesky factor,
+Each of the rows of $L$ must be of unit Euclidean length, so that
 $$
-\Omega_{i, i} = L_i \cdot L_i^\top = \sum_{j=1}^D L_{i,j}^2 = 1,
+L_n \cdot L_n^\top = 1,
 $$
-where, following Stan notation, $L_i$ is the $i$-th row of $L$, and it
-is treated as a row vector, making $L_i \cdot L_i^\top$ a scalar.
+where $L_n$ is read Stan-style as the $n$-th row of $L$ (and hence a
+row vector).  This is going to be handled by sampling from a unit
+hypersphere in $D$ dimensions, because the unit hypersphere is exactly
+the set of vectors such that $v^\top \cdot v = 1$.
 
-The Cholesky factor is lower triangular and will be generated in
-row-major order to simplify the construction of rows with unit dot
-products. The first row is always fixed, with $L_{1, j} = 0$ for $j >
-1$ because $L$ is lower triangular. Thus $L_{1,1} = 1$ to ensure
-$\Omega_{1,1} = L_1 \cdot L_1^\top = 1$. This special case of the
-first row follows from the general algorithm for rows and is unified
-in the Stan code.
+Dealing with the structural zeros is trickier.  For example, if
+$\Omega_{i, j}$ is a structural zero, then $L_{i,j}$ will be defined
+as the solution to an equation making $L_i \cdot L_j^\top = 0$, i.e.,
+keeping the two rows orthogonal.  That's it, in a nutshell.
 
-In each subsequent row $i$, for each non-zero entry before the diagonal ($j < i$),
-pieces of a unit size stick are broken off uniformly one at a time and signed
-positive or negative to keep the dot product below 1,
-$$
-L_{i, j} \sim \textrm{uniform}(-s, s),
-$$
-where
-$$
-s = \sqrt{1 - \left( L_{i, 1}^2 + \cdots + L_{i, j-1}^2 \right)}.
-$$
-For every column $j$, bounding with $(-s, s)$ this keeps $L_{i, 1:j}
-\cdot L_{i, 1:j}^\top < 1$.
+The Stan function to carry out this transform will be presented
+in a sequence of function definitions.  These, of course, should
+be defined in a `functions` block.  The first function is
+just a numerically stable log hyperbolic cosine.
 
-The last non-zero entry in each row is set to
-$$
-L_{i, i} = \sqrt{1 - \sum_{j < i} L_{i, j}^2},
-$$
-so that $L_i \cdot L_i^\top = 1.$ There is no sign ambiguity because
-the diagonal needs to be positive to ensure $\Omega$ is positive
-definite.
+```stan
+/*	
+ * Return the numerically stable log of the hyperbolic cosine of
+ * the argument.
+ *
+ * @param x The argument.
+ * @return The log of the hyperbolic cosine of the argument.
+ */
+real log_cosh(real x) {
+  return log_sum_exp(x, -x) - log2();
+}
+```
 
-If $\Omega_{i, j}$ is a structural zero, then $L_{i, j}$ will
-be defined so that $L_i \cdot L_j^\top = 0$. The lower-triangular form
-means that the product defining entry $(i, j)$ in the correlation matrix
-only involves the first $k = \textrm{min}(i, j)$ entries in $L_i$ and
-$L_j$, and $j < i$ because of the lwoer triangular structure, so the
+The documentation follows the style of the multi-language
+documentation generator
+[Doxygen](https://en.wikipedia.org/wiki/Doxygen).
+
+The next helper function extracts the column indexes that match a
+given value for a given row of the zero correlation indicator array.
+
+```stan
+/**
+ * Return the columns `c` in `1:(i - 1)` for which `row_ind[c] ==
+ * val`, in ascending order.  Used to split the columns of row `i`
+ * of a Cholesky factor into structurally zero columns (`val == 1`)
+ * and free columns (`val == 0`).
+ *
+ * @param i Row index.
+ * @param row_ind Indicator array of size >= i - 1 (row i of the
+ *   zero-indicator matrix).
+ * @param val Indicator value to match (0 or 1).
+ * @return Ascending array of matching column indices.
+ */
+array[] int columns_matching(int i, array[] int row_ind, int val) {
+  int n = 0;
+  for (c in 1:(i - 1)) {
+    n += (row_ind[c] == val);
+  }
+  array[n] int idx;
+  int pos = 0;
+  for (c in 1:(i - 1)) {
+    if (row_ind[c] == val) {
+      pos += 1;
+      idx[pos] = c;
+    }
+  }
+  return idx;
+}
+```
+
+The next function does all the heavy lifting.  It has a long documentation
+string explaining what it does.
+
+```stan
+  /**
+   * Transform unconstrained parameters to the Cholesky factor of a
+   * correlation matrix Omega = L * L' with structural zeros, i.e.,
+   * Omega[i, j] == 0 wherever is_zero[i, j] == 1 (below diagonal;
+   * diagonal and above are ignored).  A change-of-variables
+   * adjustment is applied to the log Jacobian accumulator so that
+   * if `raw` has an (improper) uniform distribution, the returned
+   * Cholesky factor has a uniform distribution over Cholesky
+   * factors that produce the specified structural zeros.
+   *
+   * @param D The number of dimensions.
+   * @param raw The unconstrained parameters.
+   * @param is_zero A D x D indicator array where `is_zero[i, j]`
+   *   is an indicator that there is zero correlation between
+   *   variable `i` and `j`.
+   * @return The Cholesky factor of a correlation matrix satisfying
+   *   the structural zeros.
+   */
+```
+
+The code itself follows.
+
+```stan
+matrix cholesky_corr_zeros_jacobian(int D, vector raw,
+                                    array[,] int is_zero) {
+    matrix[D, D] L = rep_matrix(0, D, D);
+    int raw_idx = 1;
+    L[1, 1] = 1;
+    for (i in 2:D) {
+    int size_fc = i - 1 - sum(is_zero[i, 1:(i - 1)]);
+    // free columns:
+    array[size_fc] int fc = columns_matching(i, is_zero[i], 0);
+    int size_zc = sum(is_zero[i, 1:(i - 1)]);
+    // zero columns:
+    array[size_zc] int zc = columns_matching(i, is_zero[i], 1);
+    int d = size(fc);     // # free dims
+    int n_z = size(zc);   // # structural zeros
+    row_vector[d] z;  // point in d-dimensional unit ball
+    real r = 1;       // leftover radius
+    // invariant: r^2 == 1 - dot_self(z).
+    for (k in 1:d) {
+      real x = raw[raw_idx];
+      z[k] = r * tanh(x);
+      jacobian += -(d - k + 2) * log_cosh(x);
+      r /= cosh(x);
+      raw_idx += 1;
+    }
+    L[i, i] = r;
+    if (n_z == 0) {
+      L[i, 1:d] = z;  // unconstrained row uses z directly
+    } else if (d > 0) {
+      // B[k, m]: entry at zero column zc[m] of the basis direction for
+      // free column fc[k] patched so that the direction is orthogonal
+      // to row zc[m] of L.
+      matrix[d, n_z] B = rep_matrix(0, d, n_z);
+      for (k in 1:d) {
+        for (m in 1:n_z) {
+          int j = zc[m];
+          if (j > fc[k]) {
+            real b = L[j, fc[k]]
+                     + dot_product(L[j, zc[1:(m - 1)]],
+	                    B[k, 1:(m - 1)]);
+            B[k, m] = -b / L[j, j];  // solve to make correlation 0
+          }
+        }
+      }
+      // overlap (Gram) matrix of the basis directions is
+      // G = I + B * B'; straighten with Cholesky factor C so
+      // row's length matches length of z
+      matrix[d, d] C
+        = cholesky_decompose(add_diag(tcrossprod(B), 1.0));
+      jacobian += -sum(log(diagonal(C)));  // free entry Jacobians
+      row_vector[d] t
+        = mdivide_right_tri_low(z, C);  // free entries
+      L[i, fc] = t;
+      L[i, zc] = t * B;  // forced entries
+    }
+  }
+  return L;
+}
+```
+
+To unpack the solve required for zeros, consider the situation where
+$\Omega_{i, j}$ is a structural zero.  Then $L_{i, j}$ will be defined
+so that $L_i \cdot L_j^\top = 0$. The lower-triangular form means that
+the product defining entry $(i, j)$ in the correlation matrix only
+involves the first $k = \textrm{min}(i, j)$ entries in $L_i$ and
+$L_j$, and $j < i$ because of the lower triangular structure, so the
 condition that must be satisfied is
 $$
-\Omega_{i, j} = L_i \cdot L_j^\top = L_{i, 1:j} \cdot L_{j, 1:j}^\top = 0.
+\Omega_{i, j}
+\ = \ L_i \cdot L_j^\top
+\ = \ L_{i, 1:j} \cdot L_{j, 1:j}^\top
+\ = \ 0.
 $$
 Let
 $$
@@ -502,241 +551,85 @@ $$
 L_{i, j} = \dfrac{-b}{L_{j,j}}.
 $$
 
+### LKJ distribution for Cholesky factors leading to structural zeros
+
+As described above, this new transform results in a uniform distribution over
+Cholesky factors that produce correlation matrices with the specified structural
+zeros.  In order to use it, a specialized form of the `lkj_corr_cholesky` distribution
+must be defined to deal with the reduction in the number of underlying parameters due
+to the structural zeros (each zero removes an underlying dimension).
+
+```stan
+/**
+ * Return the log density of the LKJ distribution with the
+ * specified concentration for the specified Cholesky factor
+ * of a correlation matrix, corrected for the specified
+ * structural zeros.
+ *
+ * @param L Cholesky factor of a correlation matrix.
+ * @param eta LKJ concentration (eta > 0).
+ * @param col_zeros Per-column counts of below-diagonal
+ *     structural zeros.
+ * @return Log density of `L`, corrected for structural zeros.
+ */
+real lkj_corr_cholesky_zeros_lpdf(matrix L, real eta,
+                                  row_vector col_zeros) {
+    return lkj_corr_cholesky_lpdf(L | eta)
+      - col_zeros * log(diagonal(L));
+  }
+}
+```
+
+### Stan program using the transform
+
+With all the heavy lifting done in functions, the Stan program that depends
+on them is simple.
+
+```stan
+data {
+  int<lower=2> D;                           // dimensions
+  real<lower=0> eta;                        // LKJ concentration
+  array[D, D] int<lower=0, upper=1> zeros;  // structural zeros
+}
+transformed data {
+  row_vector<lower=0, upper=D>[D] col_zeros;
+  for (j in 1:D) {
+    col_zeros[j] = sum(zeros[(j + 1):D, j]);
+  }
+  int N_zero = sum(col_zeros);
+}
+parameters {
+  vector[choose(D, 2) - N_zero] raw;
+}
+transformed parameters {
+  matrix[D, D] L_Omega
+      = cholesky_corr_zeros_jacobian(D, raw, zeros);
+}
+model {
+  L_Omega ~ lkj_corr_cholesky_zeros(eta, col_zeros);
+}
+generated quantities {
+  matrix[D, D] Omega
+      = multiply_lower_tri_self_transpose(L_Omega);
+}
+```
+
+This just declares the data, including the LKJ concentration and the
+structural zeros.  The transformed data pulls out the column zero
+counts which will be needed by he new Cholesky distribution defined
+above.  The number of raw parameters is the number of correlation
+matrix parameters minus the number of structural zeros.  The variable
+`L_Omega` will be implicitly given a uniform distribution over
+Cholesky factors that lead to the specified structural zeros.  With
+the LKJ distribution in the `model` block, the result is that `Omega =
+L_Omega * L_Omega'` will have an $\textrm{LKJCorr}(\eta)$
+distribution.  
+
 For each pair of non-zero indexes below the diagonal, there is a
 Jacobian adjustment for the change of variables involved in the
 constraining (inverse) transform due to the lower/upper bounding. This
 adjustment is handled implicitly by Stan's built-in lower/upper-bound
 transform.
-
-### Stan implementation as a variable transform
-
-The Stan program is going to take in a dimensionality and the
-zero pattern in the correlation matrix as an array of lower-triangular
-entries sorted into row major order.
-
-For example, to set entries (3, 1), (4, 1), and (5, 1), and (4, 2) to zero, the
-array would be in the following order.
-
-```stan
-array[4, 2] int zeros = {{3, 1}, {4, 1}, {4, 2}, {5, 1}};
-```
-
-The Stan program walks through the `i`, `j` pairs below the diagonal
-in row-major order. At each step, it compares the current `i`, `j`
-pair to the next element in the zeros matrix that has not been
-visited. If it indicates a zero, `L[i, j]` is set to the requisite
-solution outlined above.
-
-The Stan program relies on two user-defined functions, which must be
-defined in a `functions` block. The first is a simple test whether a
-given row index and column index are the next zero in the array of
-zeros. Writing this out this way reduces cut-and-paste clutter and also
-documents the intent of the test. The documentation follows the style
-of the multi-language documentation generator
-[Doxygen](https://en.wikipedia.org/wiki/Doxygen).
-
-```stan
-/**
- * Return 1 if the row and column index pair should be zero, and 0 otherwise.
- *
- * @param row_idx Index of row.
- * @param col_idx Index of column.
- * @param zeros Array of pairs of indexes that should be zero.
- * @param zero_idx Index into next entry of `zeros` or past the end.
- * @return 1 if the row and column index pair should be zero, 0 otherwise.
- */
-int is_zero(int row_idx, int col_idx, array[,] int zeros, int zero_idx) {
-  return zero_idx <= size(zeros)
-    && zeros[zero_idx, 1] == row_idx
-    && zeros[zero_idx, 2] == col_idx;
-}
-```
-
-The second function is the transform. It is defined to behave just
-like the built-in transforms with a `_jacobian` suffix because it
-increments the log Jacobian accumulator with the log
-change-of-variables adjustment (or not if it is turned off for maximum
-likelihood estimation).  It just follows the math above, with the
-portion of the stick remaining coded on the log scale.
-
-```stan
-/* 
- * Transform the raw parameters into a lower-triangular Cholesky
- * factor with the specified structural zero entries, applying a
- * change-of-variables adjustment to the log Jacobian accumulator.
- *
- * The _order of visiting_ entries is row major on the lower
- * triangle, e.g., `(2, 1), (3, 1), (3, 2), (4, 1), (4, 2), (4, 3)`
- * for a 4 x 4 matrix.
- *
- * @param D Number of dimensions.
- * @param raw Unconstrained raw parameters, size `(D choose 2) - size(zeros)`.
- * @param zeros Array of pairs that are structurally zero in visit order.
- * @return Correlation matrix with specified structural zeros.
- */
-matrix cholesky_corr_zeros_jacobian(int D,
-                                    vector raw,
-                                    array[,] int zeros) {
-  int raw_idx = 1;
-  int zero_idx = 1;
-  matrix[D, D] L = rep_matrix(0, D, D);
-  for (i in 1:D) {
-    real log_sq_stick = 0;
-    for (j in 1:(i - 1)) {
-      if (is_zero(i, j, zeros, zero_idx)) {
-        real b = dot_product(L[j, 1:(j - 1)], L[i, 1:(j - 1)]);
-        L[i, j] = -b / L[j, j];  // implies Omega[i, j] == 0
-        zero_idx += 1;
-      } else {
-        real stick = exp(0.5 * log_sq_stick);
-        L[i, j] = lower_upper_bound_jacobian(raw[raw_idx], -stick, stick);  // inside stick
-        raw_idx += 1;
-      }
-      log_sq_stick = log_diff_exp(log_sq_stick, 2 * log(abs(L[i, j])));
-    }
-    L[i, i] = exp(0.5 * log_sq_stick);
-  }
-  return L;
-}
-```
-
-The code relies on Stan's built-in `lower_upper_bound_jacobian` that
-mirrors the way Stan handles lower- and upper-bounded parameter
-transforms. It implicitly increments the Jacobian for the non-linear
-change-of-variables in mapping the raw parameters to `L[i,j]`.
-
-Working through the behavior on the first three rows will help to
-understand the algorithm. For the first row, when `i` is 1, the `j`
-loop runs `j in 1:0`, which means the loop body does not execute and
-the code jumps straight to setting `L[1, 1] = exp(0.5 *
-log_sq_stick)`, where `log_sq_stick` never gets reset from 0, so the
-result is `L[1, 1] = 1` as it needs to be in order to ensure $L_1
-\cdot L_1^\top = 1$ (the rest of the row is zeros).
-
-For the second row, `i` is 2, and the loop body executes exactly once
-with `j` set to 1, so the value of `L[2, 1]` will be set. The stick
-starts at size 1, which is 0 on the log scale. If `Omega[2, 1]` is a
-structural zero, it executes the body of the first branch of the
-conditional. This starts by setting a local variable `b` to be the dot
-product of `L[1, 1:0]` and `L[2, 1:0]`, which is an edge case defined
-to be 0 for 0-vectors. `L[1, 1]` is 1, so `-b / L[1, 1]` is 0, and
-`L[2, 1]` gets set to 0. 
-
-If the first entry on the second row is not a structural zero, a piece
-of the stick is broken off based on the next raw value. The actual
-stick length is computed as `exp(sqrt(log_sq_stick)) = exp(0.5 *
-log_sq_stick)`, and will be 1 here. So the choice is free in the range
-(-1, 1) as determined by `raw[raw_idx]`. The stick is then decremented
-in size on the log scale using `log_diff_exp`, where `log_diff_exp(a,
-b) = log(exp(a) - exp(b))`. The expression `2 * log(abs[L[i, j]])` is
-equivalent to `log(L[i, j]^2)`. The factor of `2` arises because
-`log(x^2) = 2 * log(x)`.
-
-The third row just generalizes by setting both `L[3, 1]` and `L[3,
-2]`, decrementing the stick length after the first choice and second
-choice so that `L[3, 3]` can be set so that the row is of unit length.
-Structural zeros are still solutions to set the equivalent value of
-$L \cdot L^\top$ to zero and their change-of-variables adjustment
-from dividing by `L[j, j]` is accounted for.
-
-### Matching LKJ distribution with zeros
-
-The transform function `cholesky_corr_zeros_jacobian()` defined in the
-previous section works exactly the same way as Stan's built-in
-`cholesky_corr_jacobian()`. With Stan, the result after the
-change-of-variables adjustment is a uniform distribution over Cholesky
-factors `L_Omega` of correlation matrices.  Although `L_Omega` gets
-a uniform distribution, the resulting correlation matrix,
-`Omega = L_Omega * L_Omega'`, will *not* be uniformly distributed.
-Consider the following program.  
-
-```stan
-parameters {
-  corr_matrix[4] Omega1;
-  cholesky_factor_corr[4] L_Omega2;
-}
-transformed parameters {
-  // efficient form of:  Omega2 = L_Omega2 * L_Omega2'
-  matrix[4, 4] Omega2 = multiply_lower_tri_self_transpose(L_Omega2);
-}
-```
-
-Both `Omega1` and `L_Omega2` get uniform distributions over their
-constrained types.  But `Omega2` does not and will have a different
-distribution than `Omega1`.
-
-Stan's built-in LKJ distribution over Cholesky factors is defined so
-that if the following `model` block is added to the above program, the
-distributions of `Omega1` and `Omega2` will match.
-
-```stan
-  Omega1 ~ lkj_corr(nu);
-  L_Omega2 ~ lkj_corr_cholesky(nu);
-```
-
-To ensure `Omega1` and `Omega2` have matching distributions, the
-LKJ distribution on Cholesky factors corrects for the change of
-variables resulting from `Omega2 = L_Omega2 * L_Omega2'`.
-
-Defining a distribution over Cholesky factors with structural zeros
-will require carrying out a similar change of variables, but undoing
-the ones that are inadvertently added by `lkj_corr_cholesky_lupdf`
-due to its assumption that there aren't any structural zeros.  
-This is done in a loop that *subtracts* the Jacobian adjustments that
-are no longer necessary.
-
-```stan
-real lkj_corr_cholesky_zeros_lpdf(matrix L,
-                                  array[,] int zeros,
-                                  real nu) {
-  real lp = lkj_corr_cholesky_lpdf(L | nu);  // over-adjusts
-  int N_zero = size(zeros);
-  for (n in 1:N_zero) {                      
-    int col_idx = zeros[n, 2];
-    lp -= log(L[col_idx, col_idx]);          // correct over-adjustment
-  }
-  return lp;
-}
-```
-
-The following Stan program exercises all of these pieces to produce a
-correlation matrix $\Omega \sim \textrm{lkj}(\nu)$ with the specified
-structural zeros in $\Omega$.
-
-```stan
-data {
-  int<lower=2> D;                             // dimension of correlation matrix
-  real<lower=0> eta;                          // concentration in LKJ Cholesky
-  int<lower=0, upper=choose(D, 2)> N_zero;    // # structural zero correlations
-  array[N_zero, 2] int zeros;                 // lower triangular, row major order
-}
-parameters {
-  vector[choose(D, 2) - N_zero] raw;           // raw parameters
-}
-transformed parameters {
-  matrix[D, D] L_Omega = cholesky_corr_zeros_jacobian(D, raw, zeros);
-}
-model {
-  L_Omega ~ lkj_corr_zeros_cholesky(eta, zeros);
-}
-generated quantities {
-  matrix[D, D] Omega = multiply_lower_tri_self_transpose(L_Omega);
-}
-```
-
-The user-defined transform is employed the same way as the built-ins
-like the transform `cholesky_corr_jacobian(D, raw)` for Cholesky
-factors of dense correlation matrices. The Stan program as a whole
-generates random Cholesky factors with the specified structrural
-zeros, with the whole given an LKJ distribution with concentration
-$\eta$. The number of raw parameters uses the `choose(a, b)` function,
-which implements the binomial coefficient $\binom{n}{k} = \frac{n!}{(n
-- k)! \cdot k!}$ for integers. The transform function must be called
-in the `transformed parameters` block due to its `_jacobian` suffix.
-If the concentration input $\eta$ is set to 1, the result is a uniform
-distribution on `Omega`, which is defined in the `generated
-quantities` block with a specialized built-in function that is nothing
-more than an efficient way to write `L_Omega * L_Omega'`.
 
 This defines a variable `L_Omega` that is uniform over Cholesky
 factors of correlation matrices with the specified structural zeros.
@@ -748,6 +641,41 @@ setting `eta` to 1 produces a uniform distribution).
 As part of a larger application, the correlation matrix or its
 Cholesky factor are typically paired with a vector of scale parameters
 to produce a covariance matrix with the specified pattern of zeros.
+
+As an example, consider a $D = 5$ example where setting $\Omega_{1, 4} = 0$, $\Omega_{2,3} = 0$
+and $\Omega{4,5} = 0$, as representing by the following `zeros` matrix.
+$$
+\textrm{zeros}
+=
+\begin{bmatrix}
+0 & 0 & 0 & 1 & 0
+\\
+0 & 0 & 1 & 0 & 0
+\\
+0 & 1 & 0 & 0 & 0
+\\
+1 & 0 & 0 & 0 & 1
+\\
+0 & 0 & 0 & 1 & 0
+\end{bmatrix}.
+$$
+Taking $\eta = 1$ and running with default NUTS setting, the result is a minimum
+effective sample size of about half the number of iterations.  Here's a representative
+draw,
+$$
+\Omega^{(112)}
+=
+\begin{bmatrix}
+1      &  -0.224 &   0.024 &   0      & -0.372 \\
+-0.224 &       1 &   0     &   0.214  &  0.544 \\
+ 0.024 &       0 &   1     &  -0.072  &  0.737 \\
+     0 &   0.214 &  -0.072 &   1      &  0     \\
+-0.372 &   0.544 &  0.737  &   0      &  1
+\end{bmatrix}.
+$$
+Being floating point, the zero values are not exactly zero, but
+on the order of $10^{-17}$, which is roughly within machine precision
+for double-precision floating point like Stan uses.
 
 
 ## Orthogonal, rotation, and reflection matrices
@@ -773,7 +701,7 @@ is further said to be _orthogonal_ (the confusion arises because the
 columns are orthogonal in an orthonormal matrix even if $M \neq N$).
 
 Stan's built-in unit vector type (`unit_vector`) produces the boundary
-case of an orthnormal matrix with only a single column.
+case of an orthonormal matrix with only a single column.
 
 ### Rotation and reflection
 
@@ -963,13 +891,13 @@ accumulator.
 ```stan
   matrix special_orthogonal_jacobian(vector v, int N) {
     matrix[N, N] S = skew_symmetric(v, N);
-    matrix[N, N] Q_rot = matrix_exp(S);     // determinant(Q_rot) = 1
-    int m = N / 2;                          // rounds down, skip last 0 eigenvalue if N odd
-    matrix[N, N] M = -S * S;                // symmetric psd
+    matrix[N, N] Q_rot = matrix_exp(S);  // determinant(Q_rot) = 1
+    int m = N / 2;    // rounds down (skip last odd eigenvalue)
+    matrix[N, N] M = -S * S;              // symmetric psd
     vector[N] eig = eigenvalues_sym(M);
     vector[m] theta;                        // rotation angles
     for (i in 1:m) {
-      real val = eig[n % 2 + 2 * i];   // one representative from each equal pair
+      real val = eig[n % 2 + 2 * i];   // one from each eq. pair
       theta[i] = val > 0 ? sqrt(val) : 0;
     }
     real log_J = 0;
@@ -977,8 +905,10 @@ accumulator.
       jacobian += two_log_abs_half_sinc(theta);
     }
     for (j in 1:(m - 1)) {
-      jacobian += two_log_abs_half_sinc(theta[j] - theta[(j + 1):m]);
-      jacobian += two_log_abs_half_sinc(theta[j] + theta[(j + 1):m]);
+      jacobian
+          += two_log_abs_half_sinc(theta[j] - theta[(j + 1):m]);
+      jacobian
+          += two_log_abs_half_sinc(theta[j] + theta[(j + 1):m]);
     }
     return Q_rot;
   }
@@ -1247,7 +1177,7 @@ J_{f^{-1}} = \begin{bmatrix}
 \sin \theta & \rho \cdot \cos \theta
 \end{bmatrix}.
 $$
-After some algebra, the absolute determinant reduces to \left|\, \det
+After some algebra, the absolute determinant reduces to $\left|\, \det
 J_{f^{-1}} \, \right| = \rho$, so that the Jacobian adjustment on the
 log scale is $\log \rho$.
 
@@ -1299,7 +1229,8 @@ Draws from the hexagon are shown in @fig-hexagon.
 
 ![Uniform draws from a hexagon.](img/hexagon.png){#fig-hexagon width=50%}
 
-The draws fall off a bit more than they should as $x \rightarrow -1$ and $x \rightarrow
+The draws appear to fall off a bit more than they should as $x
+\rightarrow -1$ and $x \rightarrow 1$.
 
 
 ### Parallelograms
@@ -1332,7 +1263,7 @@ $x$ and $y$.
 ### Hollow square
 
 The following Stan program defines a uniform distribution on $(0, 1)
-\times (0, 1) \setdiff (-0.5, 0.5) \times (-0.5, 0.5)$, which looks
+\times (0, 1) \setminus (-0.5, 0.5) \times (-0.5, 0.5)$, which looks
 like a square with a smaller square taken out of the middle.  This one
 is trickier to define and the resulting transform is not continuous.
 The idea is to take $x^\textrm{raw} \sim \textrm{uniform}(-1.5, 1.5)$

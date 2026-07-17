@@ -15,7 +15,7 @@ sampler is NUTS with a diagonal mass matrix (more details below).
 
 Hamiltonian Monte Carlo (HMC) is a Markov chain Monte Carlo (MCMC)
 method that scales well in dimension due to its use of gradients of
-the the log density function being sampled.  It uses an approximate
+the log density function being sampled.  It uses an approximate
 Hamiltonian dynamics simulation based on numerical integration which
 is then corrected by performing a Metropolis acceptance step.
 
@@ -81,7 +81,7 @@ H(\theta, \rho) & = & - \log p(\rho, \theta)
 $$
 
 The two terms into which it separates are treated in
-the Hamiltonian dynamics as a a potential energy function defined by
+the Hamiltonian dynamics as a potential energy function defined by
 $$
 V(\theta) = - \log p(\theta),
 $$
@@ -89,7 +89,7 @@ and a kinetic energy function defined by
 $$
 T(\rho) = - \log p(\rho  \mid  M).
 $$
-Here, $\log p(\rho \mid M) = \textrm{MultiNormal}(\rho \mid 0, M)$,
+Here, $\log p(\rho \mid M) = \log \textrm{MultiNormal}(\rho \mid 0, M)$,
 so that
 $$
 T(\rho) = \frac{1}{2} \rho^\top M^{-1} \rho + \textrm{const},
@@ -147,13 +147,13 @@ updates of the position.
 
 \begin{align}
 \rho &\leftarrow
-      \rho \, + \, \dfrac{\epsilon}{2} \, \nabla \, p(\theta \mid y)
+      \rho \, + \, \dfrac{\epsilon}{2} \, \nabla \, \log p(\theta \mid y)
 \\[6pt]
 \theta &\leftarrow
        \theta \, + \, \epsilon \, M^{-1} \, \rho
 \\[6pt]
 \rho &\leftarrow
-     \rho \, - \, \dfrac{\epsilon}{2} \, \nabla \, p(\theta \mid y)
+     \rho \, + \, \dfrac{\epsilon}{2} \, \nabla \, \log p(\theta \mid y)
 \end{align}
 
 By applying $L$ leapfrog steps, a total of $t = L \cdot \epsilon$ time is
@@ -182,7 +182,7 @@ $(\rho, \theta)$ is
 $$
 \min\left(
 1,
-\dfrac{p(\theta^*, \rho)}{p(\theta, \rho)}
+\dfrac{p(\theta^*, \rho^*)}{p(\theta, \rho)}
 \right)
 = 
 \min \!
@@ -234,8 +234,9 @@ If $L$ is too small, the trajectory traced out in each iteration will
 be too short and sampling will devolve to a random walk.  If $L$ is
 too large, the algorithm will do too much work on each iteration.
 
-If the inverse metric $M^{-1}$ is a poor estimate of the local
-curvature at some point being visited on a Hamiltonian trajectory, the
+If the metric $M$ is a poor estimate of the local curvature (negative
+Hessian of the target log density $\log p(\theta)$) at some
+position ($\theta$) being visited on a Hamiltonian trajectory, the
 step size $\epsilon$ must be kept small to maintain arithmetic
 precision. This leads to a large $L$ to compensate, and can
 dramatically slow down sampling.
@@ -287,7 +288,7 @@ with two *fast* intervals surrounding a series of growing
 adapt using local and global information, respectively; the
 Hamiltonian Monte Carlo samplers, for example, define the step size as
 a fast parameter and the (co)variance as a slow parameter. The size of
-the the initial and final fast intervals and the initial size of the
+the initial and final fast intervals and the initial size of the
 slow interval are all customizable, although user-specified values may
 be modified slightly in order to ensure alignment with the warmup
 period.
@@ -460,7 +461,7 @@ rapidly to the bulk of the probability mass.  It will then be roughly
 the same amount of work to generate each new roughly independent
 draw.
 
-Warmup times being vast only holds when the posterior is log concave,
+Warmup times being fast only holds when the posterior is log concave,
 and ideally almost normal.  This assumption is violated in the kind of
 complex, real-world models to which Stan is typically applied.  Quite
 often, the tails have large curvature while the bulk of the posterior
@@ -494,7 +495,7 @@ correctness.
 
 NUTS generates a proposal by starting at an initial position
 determined by the parameters drawn in the last iteration.  Like HMC,
-it starts by Gibbs sampling a a random momentum vector with covariance
+it starts by Gibbs sampling a random momentum vector with covariance
 determined by the mass matrix.  It then iteratively doubles the length
 of the trajectory, moving in a random direction in time (forward or
 backward) at each doubling.  It stops the doubling when it encounters
@@ -502,7 +503,8 @@ a U-turn between the start and end (in time) of the trajectory.  A
 U-turn arises when an infinitesimal extension of the trajectory has
 the ends moving closer to each other.  It also stops doubling if a
 maximum number of doublings is achieved (maximum 10 by default, for a
-total of 1024 leapfrog steps).
+total of $2^{10} - 1 = 1023$ leapfrog steps, with the -1 subtracting
+the initial state).
 
 One way to formulate a valid version of NUTS, which
 @Hoffman-Gelman:2014 called "naive NUTS", is to select the next state
@@ -524,8 +526,8 @@ new doubling.  This is done with a Metropolis acceptance ratio
 consisting of the sum of the densities in the new doubling divided by
 the sum of the densities in the current trajectory.  Because these are
 the same length and the Hamiltonian should be preserved, the
-probabability of jumping to the new doubling is close to 1 when the
-leapfrog algoritm is stable.
+probability of jumping to the new doubling is close to 1 when the
+leapfrog algorithm is stable.
 
 Configuring the no-U-turn sample involves putting a cap on the depth
 of the trees that it evaluates during each iteration, as well as

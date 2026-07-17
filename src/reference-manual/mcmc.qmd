@@ -6,30 +6,34 @@ pagetitle: MCMC Sampling
 
 This chapter presents the two Markov chain Monte Carlo (MCMC)
 algorithms used in Stan, the Hamiltonian Monte Carlo (HMC) algorithm
-and its adaptive variant the no-U-turn sampler (NUTS), along with
-details of their implementation and configuration.
+and its adaptive variant, the no-U-turn sampler (NUTS), along with
+details of their implementation and configuration.  The default
+sampler is NUTS with a diagonal mass matrix (more details below).
 
 
 ## Hamiltonian Monte Carlo
 
 Hamiltonian Monte Carlo (HMC) is a Markov chain Monte Carlo (MCMC)
-method that uses the derivatives of the density function being sampled
-to generate efficient transitions spanning the posterior (see, e.g.,
-@Betancourt-Girolami:2013, @Neal:2011 for more details). It uses an
-approximate Hamiltonian dynamics simulation based on numerical
-integration which is then corrected by performing a Metropolis
-acceptance step.
+method that scales well in dimension due to its use of gradients of
+the log density function being sampled.  It uses an approximate
+Hamiltonian dynamics simulation based on numerical integration which
+is then corrected by performing a Metropolis acceptance step.
 
-This section translates the presentation of HMC by
-@Betancourt-Girolami:2013 into the notation of @GelmanEtAl:2013.
-
+Gradients of the target log density function allow HMC to follow the
+Hamiltonian flow in order to efficiently generate long-distance
+proposals with high acceptance rates.  @Neal:2011 provides an
+introduction to HMC, @Betancourt:2017 expands on the geometric
+concepts and introduces the multinomial NUTS that Stan uses, and
+@Bou-Rabee:2025 provides a more theoretical introduction with
+correctness proofs for the version of NUTS introduced by
+Betancourt:2017.
 
 ### Target density {-}
 
 The goal of sampling is to draw from a density $p(\theta)$ for
-parameters $\theta$.  This is typically a Bayesian posterior
-$p(\theta|y)$ given data $y$, and in particular, a Bayesian posterior
-coded as a Stan program.
+parameters $\theta$.  This is typically a Bayesian posterior $p(\theta
+\mid y)$ given data $y$, and in particular, a Bayesian posterior coded
+as a Stan program.
 
 
 ### Auxiliary momentum variable {-}
@@ -38,21 +42,29 @@ HMC introduces auxiliary momentum variables $\rho$ and draws from a
 joint density
 
 $$
-p(\rho, \theta) = p(\rho | \theta) p(\theta).
+p(\rho, \theta) = p(\rho  \mid  \theta) p(\theta).
 $$
 
 In most applications of HMC, including Stan, the auxiliary density is
 a multivariate normal that does not depend on the parameters $\theta$,
 
 $$
-\rho \sim \mathsf{MultiNormal}(0, M).
+\rho \sim \mathsf{MultiNormal}(0, M),
 $$
 
-$M$ is the Euclidean metric. It can be seen as a transform of parameter space
-that makes sampling more efficient; see @Betancourt:2017 for details.
+where $M$ is a positive definite mass matrix.  The mass matrix
+functions as a metric and is equivalent to having a linear
+preconditioner; see @Betancourt:2017 for details.
 
-By default Stan sets $M^{-1}$ equal to a diagonal estimate of the
-covariance computed during warmup.
+Stan estimates a mass matrix during warmup using the covariance of the
+warmup draws.  The mass matrix will be set to the inverse of the
+covariance estimate of the warmup draws, or to the inverse of the
+diagonal of the covariance estimate of the draws.  Using the inverse
+covariance for a multivariate normal preconditions back to a standard
+normal.  Mass matrix adaptation is much less effective when the
+posterior curvature (i.e., the Hessian) varies through the target
+density, as it does, for example, in hierarchical models without a lot
+of data per level.
 
 ### The Hamiltonian {-}
 
@@ -60,28 +72,30 @@ The joint density $p(\rho, \theta)$ defines a Hamiltonian
 
 $$
 \begin{array}{rcl}
-H(\rho, \theta) & = & - \log p(\rho, \theta)
+H(\theta, \rho) & = & - \log p(\rho, \theta)
 \\[3pt]
-& = & - \log p(\rho | \theta) - \log p(\theta).
+& = & - \log p(\rho  \mid  \theta) - \log p(\theta).
 \\[3pt]
-& = & T(\rho | \theta) + V(\theta),
+& = & T(\rho  \mid  \theta) + V(\theta).
 \end{array}
 $$
 
-where the term
-
+The two terms into which it separates are treated in
+the Hamiltonian dynamics as a potential energy function defined by
 $$
-T(\rho | \theta) = - \log p(\rho | \theta)
+V(\theta) = - \log p(\theta),
 $$
-
-is called the "kinetic energy" and the term
-
+and a kinetic energy function defined by
 $$
-V(\theta) = - \log p(\theta)
+T(\rho) = - \log p(\rho  \mid  M).
 $$
+Here, $\log p(\rho \mid M) = \log \textrm{MultiNormal}(\rho \mid 0, M)$,
+so that
+$$
+T(\rho) = \frac{1}{2} \rho^\top M^{-1} \rho + \textrm{const},
+$$
+where the constant does not depend on $\rho$, only on the fixed $M$.
 
-is called the "potential energy."  The potential energy is specified
-by the Stan program through its definition of a log density.
 
 
 ### Generating transitions {-}
@@ -92,52 +106,25 @@ subjected to a Metropolis accept step.
 
 First, a value for the momentum is drawn independently of the current
 parameter values,
-
 $$
 \rho \sim \mathsf{MultiNormal}(0, M).
 $$
 
-Thus momentum does not persist across iterations.
+
+As a consequence, momentum does not persist across iterations.
 
 Next, the joint system $(\theta,\rho)$ made up of the current
 parameter values $\theta$ and new momentum $\rho$ is evolved via
-Hamilton's equations,
-
+Hamilton's equations.  The momentum being independent of the target
+density results in simple derivatives of the Hamiltonian,
 $$
-\begin{array}{rcccl}
-\displaystyle
-\frac{d\theta}{dt}
-& = &
-\displaystyle
-+ \frac{\partial H}{\partial \rho}
-& = &
-\displaystyle
-+ \frac{\partial T}{\partial \rho}
-\\[12pt]
-\displaystyle
-\frac{d\rho}{dt}
-& = &
-\displaystyle
-- \frac{\partial H}{\partial \theta }
-& = &
-\displaystyle
-- \frac{\partial T}{\partial \theta}
-- \frac{\partial V}{\partial \theta}.
-\end{array}
+\dfrac{d \theta}{d t}  =  \dfrac{\partial}{\partial \rho} T(\rho)
+$$
+and
+$$
+\frac{d \rho}{d t}  =  -\dfrac{\partial}{\partial \theta} V(\theta).
 $$
 
-With the momentum density being independent of the target density,
-i.e., $p(\rho | \theta) = p(\rho)$, the first term in the
-momentum time derivative, ${\partial T} / {\partial \theta}$ is
-zero, yielding the pair time derivatives
-
-$$
-\begin{array}{rcl}
-\frac{d \theta}{d t} & = & +\frac{\partial T}{\partial \rho}
-\\[2pt]
-\frac{d \rho}{d t} & = & -\frac{\partial V}{\partial \theta}.
-\end{array}
-$$
 
 ### Leapfrog integrator {-}
 
@@ -158,20 +145,18 @@ $$
 It then alternates half-step updates of the momentum and full-step
 updates of the position.
 
-$$
-\begin{array}{rcl}
-\rho & \leftarrow
-     & \rho \, - \, \frac{\epsilon}{2} \frac{\partial V}{\partial \theta}
+\begin{align}
+\rho &\leftarrow
+      \rho \, + \, \dfrac{\epsilon}{2} \, \nabla \, \log p(\theta \mid y)
 \\[6pt]
-\theta & \leftarrow
-       & \theta \, + \, \epsilon \, M^{-1} \, \rho
+\theta &\leftarrow
+       \theta \, + \, \epsilon \, M^{-1} \, \rho
 \\[6pt]
-\rho & \leftarrow
-     & \rho \, - \, \frac{\epsilon}{2} \frac{\partial V}{\partial \theta}.
-\end{array}
-$$
+\rho &\leftarrow
+     \rho \, + \, \dfrac{\epsilon}{2} \, \nabla \, \log p(\theta \mid y)
+\end{align}
 
-By applying $L$ leapfrog steps, a total of $L \, \epsilon$ time is
+By applying $L$ leapfrog steps, a total of $t = L \cdot \epsilon$ time is
 simulated. The resulting state at the end of the simulation ($L$
 repetitions of the above three steps) will be denoted
 $(\rho^{*}, \theta^{*})$.
@@ -195,15 +180,20 @@ $(\rho^{*}, \theta^{*})$ generated by transitioning from
 $(\rho, \theta)$ is
 
 $$
+\min\left(
+1,
+\dfrac{p(\theta^*, \rho^*)}{p(\theta, \rho)}
+\right)
+= 
 \min \!
 \left(
 1,
-\ \exp \! \left( H(\rho, \theta) - H(\rho^{*}, \theta^{*}) \right)
+\ \exp \! \left(\log p(\theta^*, \rho^*) - \log p(\theta, \rho) \right)
 \right).
 $$
 
 If the proposal is not accepted, the previous parameter value is
-returned for the next draw and used to initialize the next iteration.
+returned for the next draw.
 
 
 ### Algorithm summary {-}
@@ -211,12 +201,14 @@ returned for the next draw and used to initialize the next iteration.
 The Hamiltonian Monte Carlo algorithm starts at a specified initial
 set of parameters $\theta$; in Stan, this value is either
 user-specified or generated randomly. Then, for a given number of
-iterations, a new momentum vector is sampled and the current value of
-the parameter $\theta$ is updated using the leapfrog integrator with
-discretization time $\epsilon$ and number of steps $L$ according to
-the Hamiltonian dynamics. Then a Metropolis acceptance step is
-applied, and a decision is made whether to update to the new state
-$(\theta^{*}, \rho^{*})$ or keep the existing state.
+iterations, a new momentum vector is Gibbs sampled (this step is
+always accepted) and the current value of the parameter $\theta$ is
+updated using Metropolis-within-Gibbs where the proposal is generated
+using the leapfrog integrator with discretization time $\epsilon$ and
+number of steps $L$ according to the Hamiltonian dynamics. Then a
+Metropolis acceptance step is applied, and a decision is made whether
+to update to the new state $(\theta^{*}, \rho^{*})$ or keep the
+existing state.
 
 
 ## HMC algorithm parameters
@@ -224,13 +216,13 @@ $(\theta^{*}, \rho^{*})$ or keep the existing state.
 The Hamiltonian Monte Carlo algorithm has three parameters which must
 be set,
 
-* discretization time $\epsilon$,
-* metric $M$, and
+* discretization time $\epsilon$ (aka step size),
+* metric $M$ (aka mass matrix), and
 * number of steps taken $L$.
 
 In practice, sampling efficiency, both in terms of iteration speed and
 iterations per effective sample, is highly sensitive to these three
-tuning parameters @Neal:2011, @Hoffman-Gelman:2014.
+tuning parameters, as shown by @Hoffman-Gelman:2014.
 
 If $\epsilon$ is too large, the leapfrog integrator will be inaccurate
 and too many proposals will be rejected. If $\epsilon$ is too small,
@@ -242,13 +234,16 @@ If $L$ is too small, the trajectory traced out in each iteration will
 be too short and sampling will devolve to a random walk.  If $L$ is
 too large, the algorithm will do too much work on each iteration.
 
-If the inverse metric $M^{-1}$ is a poor estimate of the posterior covariance,
-the step size $\epsilon$ must be kept small to maintain arithmetic
-precision. This would lead to a large $L$ to compensate.
+If the metric $M$ is a poor estimate of the local curvature (negative
+Hessian of the target log density $\log p(\theta)$) at some
+position ($\theta$) being visited on a Hamiltonian trajectory, the
+step size $\epsilon$ must be kept small to maintain arithmetic
+precision. This leads to a large $L$ to compensate, and can
+dramatically slow down sampling.
 
 ### Integration time {-}
 
-The actual integration time is $L \, \epsilon$, a function of number
+The actual integration time is $\epsilon \cdot L$, a function of number
 of steps.  Some interfaces to Stan set an approximate integration time
 $t$ and the discretization interval (step size) $\epsilon$.  In these
 cases, the number of steps will be rounded down as
@@ -269,12 +264,18 @@ sampling (and during warmup) using the no-U-turn sampling (NUTS)
 algorithm @Hoffman-Gelman:2014.
 
 **Warmup Epochs Figure.** <a id="adaptation.figure"></a>
-*Adaptation during warmup occurs in three stages: an initial fast
-adaptation interval (I), a series of expanding slow adaptation
-intervals (II), and a final fast adaptation interval (III). For HMC,
-both the fast and slow intervals are used for adapting the step size,
-while the slow intervals are used for learning the (co)variance
-necessitated by the metric. Iteration numbering starts at 1 on the
+*Adaptation during warmup occurs in three stages:
+
+- Stage I.  The initial adaptation window uses a unit mass matrix
+and adapts step size to find the bulk of the probability mass.
+
+- Stage II.  A series of expanding adaptation intervals (II) is
+visited, with the draws generated during each used to estimate the
+inverse mass matrix as the (diagonal of the) sample covariance.
+
+- Stage III.  A final adaptation interval for fine-tuning step size.
+
+Iteration numbering starts at 1 on the
 left side of the figure and increases to the right.*
 
 ![](img/warmup-epochs.png)
@@ -287,42 +288,37 @@ with two *fast* intervals surrounding a series of growing
 adapt using local and global information, respectively; the
 Hamiltonian Monte Carlo samplers, for example, define the step size as
 a fast parameter and the (co)variance as a slow parameter. The size of
-the the initial and final fast intervals and the initial size of the
+the initial and final fast intervals and the initial size of the
 slow interval are all customizable, although user-specified values may
 be modified slightly in order to ensure alignment with the warmup
 period.
 
 The motivation behind this partitioning of the warmup period is to
-allow for more robust adaptation.  The stages are as follows.
-
-1. In the initial fast interval the chain is allowed to converge towards the typical set,^[The typical set is a concept borrowed from information theory and refers to the neighborhood (or neighborhoods in multimodal models) of substantial posterior probability mass through which the Markov chain will travel in equilibrium.]
-with only parameters that can learn from local information adapted.
-
-2. After this initial stage parameters that require global
-information, for example (co)variances, are estimated in a series of
-expanding, memoryless windows; often fast parameters will be adapted
-here as well.
-
-3. Lastly, the fast parameters are allowed to adapt to the
-final update of the slow parameters.
-
-These intervals may be controlled through the following configuration
-parameters, all of which must be positive integers:
+allow for more robust adaptation. These intervals may be controlled
+through the following configuration parameters, all of which must be
+positive integers.
 
 **Adaptation Parameters Table.**
 *The parameters controlling adaptation and their default values.*
 
-| parameter        | description                               | default |
-| :--------------- | :---------------------------------------- | :-----: |
-| *initial buffer* | width of initial fast adaptation interval |   75    |
-| *term buffer*    | width of final fast adaptation interval   |   50    |
-| *window*         | initial width of slow adaptation interval |   25    |
+| parameter        | description                                   | default |
+| :--------------- | :---------------------------------------------| :-----: |
+| *initial buffer* | number of position adaptation steps           |   75    |
+| *window*         | initial mass matrix adaptation interval size  |   25    |
+| *term buffer*    | number of final step size adaptation steps    |   50    |
+
+If a smaller total number of warmup iterations is given, these are scaled
+down and at some point get so small that a warning is emitted when they
+are unlikely to be sufficient to carry out reliable adaptation.
 
 
 ### Discretization-interval adaptation parameters {-}
 
-Stan's HMC algorithms utilize dual averaging @Nesterov:2009 to
-optimize the step size.^[This optimization of step size during adaptation of the sampler should not be confused with running Stan's optimization method.]
+As introduced by @Hoffman-Gelman:2014 for NUTS, Stan's HMC and NUTS
+algorithms utilize the dual averaging algorithm of @Nesterov:2009 to
+optimize the step size.^[This optimization of step size during
+adaptation of the sampler should not be confused with running Stan's
+optimization method.]
 
 This warmup optimization procedure is extremely flexible and for
 completeness, Stan exposes each tuning option for dual averaging,
@@ -338,12 +334,12 @@ The full set of dual-averaging parameters are:
 *The parameters controlling step size adaptation, with constraints and
 default values.*
 
-| parameter | description                       | constraint | default |
-| :-------: | :-------------------------------- | :--------- | :-----: |
-|  `delta`  | target Metropolis acceptance rate | [0, 1]     |   0.8   |
-|  `gamma`  | adaptation regularization scale   | (0, infty) |  0.05   |
-|  `kappa`  | adaptation relaxation exponent    | (0, infty) |  0.75   |
-|   `t_0`   | adaptation iteration offset       | (0, infty) |   10    |
+| parameter | description                       | constraint        | default |
+| :-------: | :-------------------------------- | :---------------: | ------: |
+|  `delta`  | target Metropolis acceptance rate | $[0, 1]$          |  0.80   |
+|  `gamma`  | adaptation regularization scale   | $(0, \infty)$     |  0.05   |
+|  `kappa`  | adaptation relaxation exponent    | $(0, \infty)$     |  0.75   |
+|   `t_0`   | adaptation iteration offset       | $(0, \infty)$     | 10.00   |
 
 By setting the target acceptance parameter $\delta$ to a value closer
 to 1 (its value must be strictly less than 1 and its default value is
@@ -371,24 +367,31 @@ stuck with higher step sizes. The downside is that jittering below the
 adapted value will increase the number of leapfrog steps required and
 thus slow down iterations, whereas jittering above the adapted value
 can cause premature rejection due to simulation error in the
-Hamiltonian dynamics calculation. See @Neal:2011 for further
-discussion of step-size jittering.
+Hamiltonian dynamics calculation. @Neal:2011 discusses step-size
+jittering.
+
+Another benefit of jittering is that it can break harmonics that arise
+from unfortunate choices of integration time that lead to half orbits
+or full orbits around the posterior (the former being bad for variance
+estimation and the latter for all estimation).
 
 
-### Euclidean metric {-}
+### The Euclidean metric (aka mass matrix) {-}
 
 All HMC implementations in Stan utilize quadratic kinetic energy
 functions which are specified up to the choice of a symmetric,
-positive-definite matrix known as a *mass matrix* or, more
-formally, a *metric* @Betancourt:2017.
+positive-definite matrix known as a *mass matrix* or, viewed from
+a more geometric angle, a *metric*.
 
 If the metric is constant then the resulting implementation is known
-as *Euclidean* HMC. Stan allows a choice among three Euclidean HMC
+as *Euclidean* HMC (in contrast to the Riemannian HMC of
+@GirolamiCalderhead:2011, which is not exposed in any of Stan's
+interfaces). Stan allows a choice among three Euclidean HMC
 implementations,
 
 * a unit metric (diagonal matrix of ones),
 * a diagonal metric (diagonal matrix with positive diagonal entries), and
-* a dense metric (a dense, symmetric positive definite matrix)
+* a dense metric (a dense, symmetric positive definite matrix).
 
 to be configured by the user.
 
@@ -404,8 +407,9 @@ If the metric is specified to be dense, then regularized
 covariance estimates will be carried out, regularizing the estimate to
 a diagonal matrix, which is itself regularized toward a unit matrix.
 
-Variances or covariances are estimated using Welford accumulators
-to avoid a loss of precision over many floating point operations.
+Variances or covariances are estimated using Welford accumulators to
+minimize dynamic memory overhead and to avoid a loss of precision over
+many floating point operations.
 
 
 #### Warmup times and estimating the metric {-}
@@ -449,15 +453,20 @@ more advanced algorithms, such as Riemannian HMC.
 
 #### Warmup times and curvature {-}
 
-MCMC convergence time is roughly equivalent to the autocorrelation
-time.  Because HMC (and NUTS) chains tend to be lowly autocorrelated
-they also tend to converge quite rapidly.
+MCMC mixing time (e.g., the time to converge to the bulk of the
+probability mass from a random initialization) is proportional to
+autocorrelation time and of the same order.  Because HMC (and NUTS)
+chains tend to have low autocorrelation, they tend to converge quite
+rapidly to the bulk of the probability mass.  It will then be roughly
+the same amount of work to generate each new roughly independent
+draw.
 
-This only applies when there is uniformity of curvature across the
-posterior, an assumption which is violated in many complex models.
-Quite often, the tails have large curvature while the bulk of the
-posterior mass is relatively well-behaved; in other words, warmup is slow
-not because the actual convergence time is slow but rather because the
+Warmup times being fast only holds when the posterior is log concave,
+and ideally almost normal.  This assumption is violated in the kind of
+complex, real-world models to which Stan is typically applied.  Quite
+often, the tails have large curvature while the bulk of the posterior
+mass is relatively well-behaved; in other words, warmup is slow not
+because the actual convergence time is slow but rather because the
 cost of an HMC iteration is more expensive out in the tails.
 
 Poor behavior in the tails is the kind of pathology that can be
@@ -476,36 +485,61 @@ proposals to traverse the posterior without doing unnecessary work.
 The motivation is to maximize the expected squared jump distance (see,
 e.g., @RobertsEtAl:1997) at each step and avoid the random-walk
 behavior that arises in random-walk Metropolis or Gibbs samplers when
-there is correlation in the posterior. For a precise definition of the
-NUTS algorithm and a proof of detailed balance, see
-@Hoffman-Gelman:2014.
+there is correlation in the posterior.  @Hoffman-Gelman:2014 developed
+the original NUTS algorithm and provided a sketch of detailed balance
+(i.e., a demonstration that it has the correct stationary distribution
+and is thus sampling from the correct target).  @Betancourt:2017
+presents the multinomial improvement of NUTS used in Stan and
+@Bou-Rabee:2025 provide a complete presentation and a proof of
+correctness.
 
 NUTS generates a proposal by starting at an initial position
-determined by the parameters drawn in the last iteration. It then
-generates an independent  standard normal random momentum vector. It then
-evolves the initial system both forwards and backwards in time to form
-a balanced binary tree. At each iteration of the NUTS algorithm the
-tree depth is increased by one, doubling the number of leapfrog steps
-and effectively doubles the computation time. The algorithm terminates
-in one of two ways, either
+determined by the parameters drawn in the last iteration.  Like HMC,
+it starts by Gibbs sampling a random momentum vector with covariance
+determined by the mass matrix.  It then iteratively doubles the length
+of the trajectory, moving in a random direction in time (forward or
+backward) at each doubling.  It stops the doubling when it encounters
+a U-turn between the start and end (in time) of the trajectory.  A
+U-turn arises when an infinitesimal extension of the trajectory has
+the ends moving closer to each other.  It also stops doubling if a
+maximum number of doublings is achieved (maximum 10 by default, for a
+total of $2^{10} - 1 = 1023$ leapfrog steps, with the -1 subtracting
+the initial state).
 
-* the NUTS criterion (i.e., a U-turn in Euclidean space on a
-  subtree) is satisfied for a new subtree or the completed tree, or
-* the depth of the completed tree hits the maximum depth allowed.
+One way to formulate a valid version of NUTS, which
+@Hoffman-Gelman:2014 called "naive NUTS", is to select the next state
+from among all the states in the trajectory proportional to its
+density.  This can also be done for basic HMC with just a fixed
+trajectory in a single direction [@Bou-Rabee:2025].  In the original
+version of NUTS this was carried out with slice sampling, which is
+less efficient than the multinomial version introduced by
+@Betancourt:2017.
 
-Rather than using a standard Metropolis step, the final parameter
-value is selected via multinomial sampling with a bias toward the
-second half of the steps in the trajectory @Betancourt:2016.^[Stan previously used slice sampling along the trajectory, following the original NUTS paper of @Hoffman-Gelman:2014.]
+The full (non-naive) version of NUTS introduces biased-progressive
+sampling.  Rather than just sampling along the trajectory proportional
+to its density, this is done for each doubling.  That is, as each new
+doubling is introduced, a point is sampled from along that trajectory
+with probability proportional to its density.  Then there is a
+Metropolis step to determine if the currently selected point (which
+starts as the initial point) is selected or if the sample moves to the
+new doubling.  This is done with a Metropolis acceptance ratio
+consisting of the sum of the densities in the new doubling divided by
+the sum of the densities in the current trajectory.  Because these are
+the same length and the Hamiltonian should be preserved, the
+probability of jumping to the new doubling is close to 1 when the
+leapfrog algorithm is stable.
 
 Configuring the no-U-turn sample involves putting a cap on the depth
-of the trees that it evaluates during each iteration.   This is
-controlled through a maximum depth parameter.   The number of leapfrog
-steps taken is then bounded by 2 to the power of the maximum depth minus 1.
+of the trees that it evaluates during each iteration, as well as
+choosing a step size and mass matrix, both of which can be adapted
+during warmup.
 
-Both the tree depth and the actual number of leapfrog steps computed
-are reported along with the parameters in the output as `treedepth__`
-and `n_leapfrog__`, respectively. Because the final subtree may only
-be partially constructed, these two will always satisfy
+Both the number of doublings (aka tree depth when they are arranged in
+a binary tree) and the actual number of leapfrog steps computed are
+reported along with the parameters in the output as `treedepth__` and
+`n_leapfrog__`, respectively. Because the final subtree may only be
+partially constructed (it can be rejected due to a sub-U-turn before
+being fully built), these two will always satisfy
 
 $$
 2^{\mathrm{treedepth} - 1} - 1
@@ -517,18 +551,21 @@ $$
 
 Tree depth is an important diagnostic tool for NUTS. For example, a
 tree depth of zero occurs when the first leapfrog step is immediately
-rejected and the initial state returned, indicating extreme curvature
-and poorly-chosen step size (at least relative to the current
-position). On the other hand, a tree depth equal to the maximum depth
-indicates that NUTS is taking many leapfrog steps and being terminated
-prematurely to avoid excessively long execution time. Taking very many
-steps may be a sign of poor adaptation, may be due to targeting a very
-high acceptance rate, or may simply indicate a difficult posterior
-from which to sample. In the latter case, reparameterization may help
-with efficiency. But in the rare cases where the model is correctly
-specified and a large number of steps is necessary, the maximum depth
-should be increased to ensure that that the NUTS tree can grow as
-large as necessary.
+rejected and the initial state returned, indicating a step size too
+large for the local curvature (i.e., the first-order approximation
+from the gradient breaks down).  On the other hand, a tree depth equal
+to the maximum depth indicates that NUTS is taking many leapfrog steps
+and being terminated prematurely to avoid excessively long execution
+time. Taking very many steps is usually a sign of adapting a small
+step size for high-curvature regions that then needs to take many
+steps in low-curvature regions.  Both of these problems can be tackled
+by reparameterization, but that involves geometric considerations and
+can be very problem specific.  In the rare cases where the model is
+correctly specified and a large number of steps is necessary, the
+maximum depth should be increased to ensure that that the NUTS tree
+can grow as large as necessary to not prematurely terminate, as that
+will be more efficient than the diffusive behavior induced by early
+termination.
 
 ## Sampling without parameters
 

@@ -14,7 +14,7 @@ approach is to code a user-defined transform function and either
 adjust for then change-of-variables or not, depending on the intended
 distribution.
 
-## Stan's approach to constrained parameters
+## Stan's approach to constrained parameters {#sec-stan-constraints}
 
 Stan's built-in types are designed so that the default distribution on
 a parameter is uniform over parameter values satisfying the declared
@@ -55,8 +55,8 @@ p_\Phi(\phi) &= p_\Theta(\exp(\phi)) \cdot \left| \frac{\textrm{d}}{\textrm{d} \
 On the log scale, that's $\log p(\phi) = p_\Theta(\exp(\phi)) + \phi$.
 Stan implicitly adds the log change-of-variables correction $\phi$ to
 the log density (this correction may be turned off for maximum
-likielihood estimation).  In the Stan setting, $p_\Theta$ is defined
-in the model block, as the example worked inthe next section
+likelihood estimation).  In the Stan setting, $p_\Theta$ is defined
+in the model block, as the example worked in the next section
 demonstrates.
 
 ### When is a change-of-variables adjustment required?
@@ -331,7 +331,7 @@ transformed parameters {
 }
 ```
 
-### Skew-symmetric matrices
+### Skew-symmetric matrices {#sec-skew-symmetric-matrices}
 
 An $N \times N$ matrix $A$ is skew symmetric if its negation is equal to its transpose,
 $-A = A^\top$, or equivalently, if it's equal to its negated transpose, $A = -A^\top$.
@@ -381,7 +381,7 @@ transformed parameters {
 ```
 
 There are only $N-1$ underlying parameters to produce a simplex
-varibale $\theta$.  The `pos_ordered` constraint produces a sequence
+variable $\theta$.  The `pos_ordered` constraint produces a sequence
 of positive values `theta_raw[1]`, `theta_raw[2]`, to `theta_raw[N -
 1]` in increasing order.  This means `-theta_raw[1]`, `-theta_raw[2]`,
 to `-theta_raw[N]` will be in decreasing order.  The built-in simplex
@@ -439,8 +439,8 @@ non-linear.
 Stan does _not_ provide a built-in type for correlation matrices that
 have structural zeros (i.e., correlations known to be zero). Such
 constraints arise from graphical models in structural equation
-modeling and as priors in varying (aka "random") effects models.  This
-section shows how to parameterize Cholesky factors of correlation
+modeling (SEM) and as priors in varying (aka "random") effects models.
+This section shows how to parameterize Cholesky factors of correlation
 matrices with specified structural zeros and define matching
 restricted LKJ distributions.
 
@@ -457,7 +457,7 @@ parameters {
 }
 transformed parameters {
   cholesky_factor_corr[5] L1 = cholesky_factor(Omega1);
-  corr_marrix[5] Omega2 = L * L';
+  corr_matrix[5] Omega2 = L * L';
 }
 ```
 
@@ -1084,86 +1084,69 @@ determinant, so this should be work with Stan's default
 initialization, which retries up to 100 times, assuming there
 aren't other stochastic initialization bottlenecks.
 
-### Rotations via skew-symmetric matrix exponential
+### Rotations by exponentiating a skew-symmetric matrix
 
-A matrix $S \in \mathbb{R}^{N \times N}$ is said to be _skew
-symmetric_ if it is equal to the negation of its transpose, $-S =
-S^\top$.  The matrix exponential of a skew-symmetric matrix will
-be a rotation.
+The matrix exponential of an $N \times N$ skew-symmetric matrix is a
+member of the special orthogonal group $\textrm{SO}(N)$.  The transform
+will be implemented like a built-in Stan transform with a Jacobian
+adjustment.  The transform itself is rather opaque, as is the
+following helper function.  The helper function computes provides
+a numerical stable computation of $2 \cdot
+\textrm{sum}\!\left(\log \left| \textrm{sinc}(x / 2)\right|\right)$, where all operations are elementwise. The arithmetic
+stability stems from replacing calculations when $x$ is near zero with their
+Taylor expansion.
 
-An $N \times N$ skew-symmetric matrix only has $\binom{N}{2}$ degrees
-of freedom (the diagonal plus points below the diagonal).
-Given a vector $v \in \mathbb{R}^{\binom{N}{2}}$, here's a function
-to produce a skew-symmetric matrix.
-
-```stan
-  matrix skew_symmetric(vector v, int N) {
-    matrix[N, N] S = rep_matrix(0, N, N);
-    int idx = 1;
-    for (i in 1:N) {
-      for (j in (i + 1):N) {
-        S[i, j] = v[idx];
-        S[j, i] = -v[idx];
-        idx += 1;
-      }
-    }
-    return S;
-  }
-```
-
-The transform is going to require a Jacobian adjustment, which
-will be written like a built-in transform.  The transform itself
-is rather opaque, as is the following helper function.  
-The helper function computes $\textrm{sinc}(x / 2) / (x / 2)$
-accurately even if $x$ is near zero.  It applies to a whole vector
-and then returns 2 times the sum of the log absolute values of that
-vector.  
 
 ```stan
-  real two_log_abs_half_sinc(vector x) {
+  real sum_two_log_abs_half_sinc(vector x) {
     int N = rows(x);
     vector[N] h = x / 2;
     vector[N] half_sinc = sin(h) ./ h;
-    // fall back to Taylor expansion for x near 0
     for (n in 1:N) {
-      if (abs(h[n]) < 1e-4) {
-	real h_sq = square(h[n]);
-	half_sinc[n] = 1 - h_sq / 6 + square(h_sq) / 120;
+      if (abs(h[n]) < 1e-4) {  // Taylor expansion for x near 0
+        real h_sq = square(h[n]);
+        half_sinc[n] = 1 - h_sq / 6 + square(h_sq) / 120;
       }
     }
     return 2 * sum(log(abs(half_sinc)));
   }
 ```  
 
-Depending on the application, this could be simplified.  Then there's the transform
-itself, which takes a vector $v$ of size $\binom{N}{2}$, creates a skew-symmetric
-matrix, applies matrix exponential, then adds the Jacobian adjustment to the Jacobian
-accumulator.
+The transform itself, which takes a vector $v$ of size $\binom{N}{2}$,
+creates a skew-symmetric matrix (the `skew_symmetric` function is defined
+in @sec-skew-symmetric-matrices), applies matrix exponential, then adds
+the Jacobian adjustment to the Jacobian accumulator.
 
 ```stan
-  matrix special_orthogonal_jacobian(vector v, int N) {
-    matrix[N, N] S = skew_symmetric(v, N);
-    matrix[N, N] Q_rot = matrix_exp(S);  // determinant(Q_rot) = 1
-    int m = N / 2;    // rounds down (skip last odd eigenvalue)
-    matrix[N, N] M = -S * S;              // symmetric psd
-    vector[N] eig = eigenvalues_sym(M);
-    vector[m] theta;                        // rotation angles
-    for (i in 1:m) {
-      real val = eig[n % 2 + 2 * i];   // one from each eq. pair
-      theta[i] = val > 0 ? sqrt(val) : 0;
-    }
-    real log_J = 0;
-    if (N % 2 == 1) {
-      jacobian += two_log_abs_half_sinc(theta);
-    }
-    for (j in 1:(m - 1)) {
-      jacobian
-          += two_log_abs_half_sinc(theta[j] - theta[(j + 1):m]);
-      jacobian
-          += two_log_abs_half_sinc(theta[j] + theta[(j + 1):m]);
-    }
-    return Q_rot;
+/**
+* Return the rotation matrix for the specified basis, adding the
+* change-of-variables adjustment to the Jacobian accumulator.
+*
+* @param v Basis vector (size `choose(N, 2)`).
+* @param N Dimensions of rotation.
+* @return The `N` x `N` rotation matrix for which `v` is the basis
+*/
+matrix special_orthogonal_jacobian(vector v, int N) {
+  matrix[N, N] S = skew_symmetric(v, N);
+  matrix[N, N] Q_rot = matrix_exp(S);   // determinant(Q_rot) = 1
+  int half_N = N %/% 2;                 // drops the unpaired odd dimension
+  matrix[N, N] M = -S * S;              // symmetric positive semi-definite
+  vector[N] eig = eigenvalues_sym(M);   // ascending; each theta^2 appears twice
+  vector[half_N] theta;                 // rotation angles
+  for (n in 1:half_N) {
+    real val = eig[N % 2 + 2 * n];      // one eigenvalue per conjugate pair
+    theta[n] = val > 0 ? sqrt(val) : 0;
   }
+  if (N % 2 == 1) {                     // short roots for odd N
+    jacobian += two_log_abs_half_sinc(theta);
+  }
+  for (j in 1:(half_N - 1)) {           // long roots
+    vector theta_rest = theta[(j + 1):half_N];  // create once
+    jacobian += two_log_abs_half_sinc(theta[j] - theta_rest);
+    jacobian += two_log_abs_half_sinc(theta[j] + theta_rest);
+  }
+  return Q_rot;
+}
 ```
 
 Given these function definitions are placed in a `functions` block, the program
@@ -1181,7 +1164,297 @@ transformed parameters {
 }
 ```
 
-The result is a uniform distribution over $X$.
+The result is a uniform distribution over rotation matrices $X \in \textrm{SO}(N)$.
+
+
+## Stationary VAR parameterizations
+
+This section shows how to code a first-order vector autoregressive
+(VAR) process, aka a VAR(1) model, with a parameterization constrained
+to values that result in a stationary autoregressive process.
+
+### Two approaches to distributions on VAR parameterizations
+
+As noted in @sec-stan-constraints, there are two ways to put
+distributions (e.g., priors) on these parameterizations.  The first,
+is to impose a distribution on the basis before it is transformed,
+which induces a distribution on the constrained parameter.  The
+second, which is used by Stan's built-in transforms, is to apply a
+change-of-variables correction so that the parameterization is uniform
+over variables satisfying the constraints.  @Heaps:2023 takes the
+first approach and motivates priors based on partial correlations for
+VAR processes of all orders.  This section takes the second approach,
+which is only really feasible for first-order VAR processes.
+
+### Vector autoregressive processes and stationarity
+
+Vector autoregressive processes generalize scalar autoregressive
+processes in the obvious way by treating the innovation as multivariate
+normal and the location as a simultaneous multiple regression.
+Consider a time series $Y_1, Y_2, \ldots, $.  This chapter will
+consider first-order autoregressive processes, where each element
+is conditionally independent given the previous element (i.e., they
+form a Markov chain).  It will also only consider zero-mean processes.
+It is straightforward to add an intercept for the mean.  
+$Y$ is said to form a first-order, zero-mean, vector autoregressive
+process if
+$$
+p(y_t \mid y_{t-1}, \phi, \Sigma)
+=
+\textrm{multiNormal}(y_t \mid \phi \cdot y_{t - 1}, \Sigma),
+$$
+where $y_t \in \mathbb{R}^D$ is an element of the time series, $\phi
+\in \mathbb{R}^{D \times D}$ is the matrix of regression coefficients,
+and the covariance $\Sigma \in \mathbb{R}^{D \times D}$ is symmetric
+and positive definite.
+
+
+The innovation is now governed by a multivariate normal, the
+location of which is given as a simultaneous multivariate regression.
+
+A VAR model can be extended with a moving average component to
+a VARMA model, which approximates a Gaussian process arbitrarily
+well [@Heaps:2023].
+
+Following the presentation in @Heaps:2023, a multivariate process or
+order $k$ is said to be _stationary_ if conditional distribution of
+its elements given the previous $k$ is fixed.  Technically, this
+requires that the mean,
+$$
+\mu = \mathbb{E}[Y_t],
+$$
+does not depend on $t$, and also requires that the autocovariance at lag $k$,
+$$
+$\Sigma_k = \mathbb{E}\!\left[(Y_t - \mu) \cdot (Y_{t + k} - \mu)^\top\right],
+$$
+does not depend on $t$.
+
+
+If the eigenvalues of $\phi$ are all within the unit circle, then the
+resulting process will be have the stationary distribution
+distribution
+$$
+\lim_{n \rightarrow \infty} \
+p(y_{t + n} \mid y_t, \phi, Sigma)
+=
+\textrm{multinormal}(y_{t + n} \mid 0, \Gamma).
+$$
+
+In the case of a $\textrm{VAR}(1)$ process, the conditional
+covariance of a single step, $\Sigma$, is related to the
+stationary variance $\Gamma$ through
+$$
+\Sigma = \Gamma - \phi^\top \cdot \Gamma \cdot \phi.
+$$
+
+
+### Parameterizing a stationary VAR(1) process
+
+It's easy to code stationary parameterizatons of a $\textrm{VAR}(1)$
+process where $\phi$ is symmetric, but that will not be the case for
+general VAR processes.  Instead, this section will use the
+parameterization developed by @Heaps:2023, which takes $\phi,\Gamma$
+as the basis, then calculate $\Sigma$ as a function of $\phi$ and
+$\Gamma$ as shown above.
+
+Unlike the approach of @Heaps:2023, this section will put a prior
+directly on the $\textrm{VAR}(1)$ parameterization $(\Sigma, \phi)$.
+In this section, the parameterization will be built up directly
+in Stan using the following helper functions.  The first is
+a matrix square root for symmetric, positive-definite matrices,
+which is not built into Stan.
+
+```stan
+/**
+ * Return the symmetric square root of the symmetric, positive-definite
+ * matrix S; that is, the symmetric, positive-definite matrix R such
+ * that R * R = S.  
+ *
+ * @param S A symmetric, positive-definite matrix
+ * @return The square root of `S`.
+ */
+matrix matrix_sqrt_spd(matrix S) {
+  int D = rows(S);
+  tuple(matrix[D, D], vector[D]) eig_vecs_vals = eigendecompose_sym(S);
+  return tcrossprod(diag_post_multiply(eig_vecs_vals.1,
+                                       sqrt(sqrt(eig_vecs_vals.2))));
+}
+```
+
+The second helper function is going to generate a matrix with singular
+values less than one.  It adds its own Jacobian adjustment to the
+accumulator and thus carries the suffix `_jacobian`.
+
+```stan
+/**
+ * Return the D x D matrix with singular values less than one obtained
+ * by transforming the the unconstrained raw parameters and increment
+ * the Jacobian accumulator with the change-of-variables adjustment.
+ *
+ * The returned value is (I + A * A')^{-1/2} * A, where A =
+ * to_matrix(raw, D, D). The Jacobian is incremented with the log
+ * absolute determinant of the transform,
+ * -0.5 * (2 * D + 1) * log det(I + A * A').
+ *
+ * @param The unconstrained parameters (size D * D).
+ * @param D The dimensionality of the result.
+ * @return A D x D matrix with singular values less than one.
+ */
+matrix contraction_jacobian(vector raw, int D) {
+  matrix[D, D] A = to_matrix(raw, D, D);
+  matrix[D, D] B = add_diag(tcrossprod(A), 1.0);
+  jacobian += -0.5 * (2 * D + 1) * log_determinant_spd(B);
+  return mdivide_left_spd(matrix_sqrt_spd(B), A);
+}
+```
+
+The function doing the heavy lifting here is the transform from raw
+parameters to the pair of parameters, $(\phi, \Gamma)$.
+
+```stan
+/**
+
+ * Map the raw parameters to coefficients (phi) and stationary
+ * covariance (Gamma) of a stationary D-dimensional VAR(1) process and
+ * increment the Jacobian accumulator for the change-of-variables.
+ * The VAR(1) process is
+ *    y[t] ~ multi_normal(phi_col * y[t - 1], Sigma)
+ * with covariance given by the discrete Lyapunov equation
+ *     Sigma = Gamma - phi_col * Gamma * phi_col',
+ * The returned phi is the transpose of phi_col and has
+ * spectral radius less than 1.
+ *
+ * @param The unconstrained parameters (size choose(D, 2) + D^2 + D)
+ * @param D dimension of the VAR(1) process
+ * @return The coefficient matrix in row-major and stationary covariance.
+ */
+tuple(matrix, matrix) stationary_var1_jacobian(vector raw, int D) {
+  int n_chol = D + choose(D, 2);
+  matrix[D, D] L_Gamma = cholesky_factor_cov_jacobian(raw[ :n_chol], D, D);
+  matrix[D, D] Gamma = multiply_lower_tri_self_transpose(L_Gamma);
+  for (k in 1 : D) {
+    jacobian += (D - k + 1) * log(L_Gamma[k, k]);
+  }
+  jacobian += D * log(2);
+  matrix[D, D] P = contraction_jacobian(raw[(n_chol + 1): ], D);
+  matrix[D, D] phi = mdivide_right_tri_low(L_Gamma * P, L_Gamma)';
+  return (phi, Gamma);
+}
+```
+The Cholesky factorization does its own increment of the Jacobian to
+adjust for that transform from raw parameters, then the explicit
+Jacobian adjustment is for the self product of `L_Gamma`.  The
+variable `P` is the result of our earlier function, which also updates
+the Jacobian with its change of variables adjustment.  Then a matrix
+division produces a tuple consisting of the transposed regression
+coefficients `phi` and the _stationary_ covariance `Gamma`, with the
+innovation covariance given by the construction shown in the
+documentation.
+
+That is all that is needed to write the VAR(_1_) time series model down.
+Priors can be placed directly on the coefficients `phi` and the
+stationary covariance `Gamma`.
+
+The time series model is going to use a simple helper function, which
+is not documented here because it follows Stan's naming convention
+for reshaping functions.
+
+```stan
+array[] row_vector to_array_of_row_vectors(matrix m) {
+  int R = rows(m);
+  array[R] row_vector[cols(m)] a;
+  for (r in 1 : R) {
+    a[r] = m[r];
+  }
+  return a;
+}
+```  
+
+The model itself is what one would expect given what came before.
+The data is the dimensionality, number of time steps, and observations.
+The transforms generate a vector of zeros and an identity matrix, as well
+as a convenient matrix form of the observations transposed.
+
+```stan
+data {
+  int<lower=1> D;
+  int<lower=2> T;
+  array[T] vector[D] y;
+}
+transformed data {
+  vector[D] zeros_D = rep_vector(0, D);
+  matrix[D, D] I_D = identity_matrix(D);
+  matrix[T - 1, D] y_last;
+  for (t in 1 : T - 1) {
+    y_last[t] = y[t]';
+  }
+}
+```
+
+The parameters are just the raw parameters, which are then
+transformed using the functions just defined.
+
+```stan
+parameters {
+  vector[choose(D, 2) + D * D + D] raw;
+}
+transformed parameters {
+  matrix[D, D] phi;
+  matrix[D, D] Gamma;
+  {
+    tuple(matrix[D, D], matrix[D, D]) phi_Gamma
+      = stationary_var1_jacobian(raw, D);
+    phi = phi_Gamma.1;
+    Gamma = phi_Gamma.2;
+  }
+  matrix[D, D] Sigma = Gamma - quad_form_sym(Gamma, phi);
+}
+```
+
+The result is an induced uniform distribution over the coefficients
+`phi` leading to a stationary VAR(1) process and the stationary
+covariance `Gamma`.  These just need to be pulled out of the tuple.
+This is one function returning a tuple because there is shared work.
+The extra braces mean that `phi_Gamma` is no longer a top-level
+`transformed parameters` variable and thus will not be saved in the
+output (it would be redundant).  The model could have just been
+written in terms of `phi_Gamma.1` and `phi_Gamma.2`, but it's
+easier to follow as written.  Note that `phi` is used in its
+transposed form here.  All the transposition was to ensure none
+was needed at run time, just at data construction time.
+
+```stan
+model {
+  Gamma ~ inv_wishart(D + 2, I_D);
+  to_vector(phi) ~ normal(0, 1);
+
+  y[1] ~ multi_normal(zeros_D, Gamma);
+  array[T - 1] row_vector[D] mu = to_array_of_row_vectors(y_last * phi);
+  y[2: ] ~ multi_normal(mu, Sigma);
+}
+```
+
+The priors are an inverse Wishart prior on the stationary covariance and a weakly
+informative standard normal on the regression coefficients.  These could
+have been chosen differently.  To apply an LKJ prior would require factoring out
+a correlation matrix from `Gamma` and applying the appropriate change-of-variables
+adjustment.  
+
+As a test precaution, the spectral radius (i.e., the maximum absolute eigenvalue)
+of `phi` can be computed.  
+
+```stan
+generated quantities {
+  real<lower=0, upper=1> spectral_radius = max(abs(eigenvalues(phi)));
+}
+```
+
+The constraints set `lower=0` and `upper=1`, because that's the
+constraint that leads to stationarity.  There are no additional
+constraints on `Gamma` beyond the positive-definiteness required by
+its declaration.
+
+
 
 
 ## Matrices matching known margins
@@ -1601,3 +1874,130 @@ Draws from the soft ring distribution are shown in @fig-soft-ring.
 
 ![Non-uniform draws from a soft ring.](img/soft-ring.png){#fig-soft-ring width=50%}
 
+
+## Softer positivity constraints
+
+Stan's built-in transforms use standard link functions like the standard logarithm
+for positively-constrained variables and log odds for probabilities.  These have
+ill-behaved inverses, exponential for the logarithm and inverse logit for log odds,
+that intrinsically involve evaluating exponential functions.  Exponential functions
+are prone to overflow or underflow.  This section considers some more numericall
+well-behaved alternatives that behave more linearly throughout much of their range
+than the built ins.
+
+### Positivity constraints and softplus
+
+Stan's built-in transform for a variable declared `real<lower=0>` is the natural logarithm,
+which is a bijection from $(0, \infty)$ to $(-\infty, infty)$.  As such, the change-of-variables
+adjustment is just the variable being constrained, making the following two programs
+equivalent.  First, the version using Stan's built-in constraints.
+
+```stan
+parameters {
+  real<lower=0> sigma;
+}
+model {
+  sigma ~ exponential(1);
+}
+```
+
+Second, a version that does the transform manually.
+
+```stan
+functions {
+  real positive_constrain_jacobian(real x) {
+    real y = exp(x);
+    jacobian += x;  // += log |exp'(x)|
+  }
+}
+parameters {
+  real log_sigma:
+}
+transformed parameters {
+  real<lower=0> sigma = positive_constrain_jacobian(log_sigma);
+}
+model {
+  sigma ~ exponential(1);
+}
+```
+
+The exponential function is very badly behaved.  It has extreme
+derivatives and underflows and overflows for inputs with absolute
+values above a few hundred.  Consider as an alternative the softplus
+function,
+$$
+\textrm{softplus}(x) = \log \left(1 + \exp(x)) = \log (1 - \textrm{logit}^{-1}(x)).
+$$
+Unlike the exponential function, the derivative of softplus is bounded,
+$$
+\textrm{softplus}'(x) = \textrm{logit}^{-1}(x).
+$$
+
+The softplus function can be defined using the identity above.  Stan's
+`log1m_inv_logit()` is nuemrically stable.
+
+It is straightforward to define the change of variables function for
+lower-bounded variables, starting by defining the softplus function
+itself as a transform using Stan's arithmetically stable
+`log1m_inv_logit` function.
+
+```stan
+real softplus_transform(real x) {
+  return -log1m_inv_logit(x);
+}
+
+The Jacobian adjustment is just the log of the absolute derivative.
+
+```stan
+real lower_softplus_jacobian(real lb, real x) {
+  jacobian += log_inv_logit(x);
+  return softplus_transform(x);
+}
+
+
+### Positive constraints with bisoftplus
+
+To fix the tails in @Seyboldt:2026 introduced an even better behaved link function for
+positive constrained parameters, which he called bisoftplus.  Bisoftplus
+is a smooth bijection from $(-\infty, \infty)$ to $(0, \infty)$, defined by
+$$
+\textrm{bisoftplus}(x) = x + \sqrt{1 + x^2}.
+$$
+Unlike softplus, which only has a non-exponential right tail, bisoftplus also
+has a non-exponential left tail (hence the name---it's "soft" in both tails).
+This makes the derivative function particularly well behaved, with
+
+\begin{align}
+\textrm{bisoftplus}'(x)
+&= 1 + \dfrac{x}{\sqrt{1 + x^2}}
+\\[4pt]
+&= \dfrac{\sqrt{1 + x^2} + x}{\sqrt{1 + x^2}}
+\\[4pt]
+&= \dfrac{\textrm{bisoftplus}(x)}{\sqrt{1 + x^2}}
+\\[4pt]
+&= \dfrac{\textrm{bisoftplus}(x)}{\textrm{bisoftplus}(x) - x}.
+\end{align}
+
+The derivative conveniently reuses the result of the function evaluation.
+
+Writing the transform function in Stan is straightforward.
+
+```stan
+real bisoftplus_transform(real x) {
+ return x + hypot(1, x);
+}
+```
+
+The Jacobian is an easy adjustment here.
+
+```stan
+real bisoftplus_jacobian(real x) {
+  jacobian += log1p(x / sqrt(1 + x^2));
+  return bisoftplus_transform(x);
+}
+```
+
+The inverse, whihc will be needed for initialization, is
+$$
+\textrm{bisoftplus}^{-1}(y) = \dfrac{y^2 - 1}{2 \cdot y}.
+$$

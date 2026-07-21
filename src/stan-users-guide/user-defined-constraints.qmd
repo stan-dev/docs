@@ -179,7 +179,7 @@ transformed parameters {
 }
 ```
 
-No Jacobian is required as the `diag_matrix()` function is just
+No Jacobian is required as the `diag_matrix()` function is only
 copying `alpha` into the diagonal, which is a linear transform, and
 then filling in zero values, which is itself constant.
 
@@ -299,7 +299,7 @@ transformed parameters {
 ```
 
 Upper-triangular matrices could be constructed by transposing lower-triangular
-matrices, but it's more efficient to just code them directly with a modified
+matrices, but it's more efficient to code them directly with a modified
 form of the `lower_triangular_matrix` function.
 
 ### Symmetric matrices
@@ -335,7 +335,7 @@ transformed parameters {
 
 An $N \times N$ matrix $A$ is skew symmetric if its negation is equal to its transpose,
 $-A = A^\top$, or equivalently, if it's equal to its negated transpose, $A = -A^\top$.
-Building a skew symmetric matrix is just like building a symmetric matrix only the
+Building a skew symmetric matrix is like building a symmetric matrix only the
 above-diagonal entries are negated.
 
 ```stan
@@ -617,7 +617,7 @@ only solution is the identity matrix.
 Dealing with the structural zeros is trickier, but it conveniently
 works out that a structural zero in position $(i,j)$ can be
 finessed by setting $L_{i,j}$ appropriately based on previously
-constructed entries of $L$.  Just solve for $L_{i,j}$
+constructed entries of $L$.  Now solve for $L_{i,j}$
 in terms of elements already visited in the row-major construction order
 of $L$.
 \begin{align}
@@ -879,7 +879,7 @@ generated quantities {
 }
 ```
 
-This just declares the data, including the LKJ concentration and the
+This declares the data, including the LKJ concentration and the
 structural zeros.  The transformed data pulls out the column zero
 counts which will be needed by he new Cholesky distribution defined
 above.  The number of raw parameters is the number of correlation
@@ -1036,7 +1036,7 @@ $$
 
 ### Uniform distributions on SO(_N_)
 
-To restrict sampling of orthogonal matrices to just the rotations,
+To restrict sampling of orthogonal matrices to the rotations,
 the determinant of the constructed variable `X` needs to be pinned
 to 1.  To do this, it suffices to flip the sign of a single row.
 To generate only rotation matrices, the previous `transformed parameters`
@@ -1067,7 +1067,7 @@ the identity matrix.  For the same reason as above, it's unlikely to
 jump to reflection matrices because of the energy gap.
 
 Without fiddling with initialization, it would probably
-work to just reject in cases where the determinant is not positive,
+work to reject in cases where the determinant is not positive,
 as follows.
 
 ```stan
@@ -1391,8 +1391,8 @@ transformed data {
 }
 ```
 
-The parameters are just the raw parameters, which are then
-transformed using the functions just defined.
+The parameters are the raw parameters, which are then transformed
+using the functions just defined.
 
 ```stan
 parameters {
@@ -1413,15 +1413,15 @@ transformed parameters {
 
 The result is an induced uniform distribution over the coefficients
 `phi` leading to a stationary VAR(1) process and the stationary
-covariance `Gamma`.  These just need to be pulled out of the tuple.
-This is one function returning a tuple because there is shared work.
-The extra braces mean that `phi_Gamma` is no longer a top-level
+covariance `Gamma`.  These need to be pulled out of the tuple.  This
+is one function returning a tuple because there is shared work.  The
+extra braces mean that `phi_Gamma` is no longer a top-level
 `transformed parameters` variable and thus will not be saved in the
-output (it would be redundant).  The model could have just been
-written in terms of `phi_Gamma.1` and `phi_Gamma.2`, but it's
-easier to follow as written.  Note that `phi` is used in its
-transposed form here.  All the transposition was to ensure none
-was needed at run time, just at data construction time.
+output (it would be redundant).  The model could have been written
+directly in terms of `phi_Gamma.1` and `phi_Gamma.2`, but it's easier
+to follow as written.  Note that `phi` is used in its transposed form
+here.  All the transposition was to ensure none was needed at run
+time, just at data construction time.
 
 ```stan
 model {
@@ -1965,7 +1965,7 @@ $$
 \textrm{softplus}^{-1}(y) = \log(\exp(y) - 1).
 $$
 
-The derivative of the softplus constraining transform is just the
+The derivative of the softplus constraining transform is the
 logistic sigmoid function.
 $$
 \nabla \textrm{softplus}(x) = \textrm{softplus}'(x) = \textrm{logit}^{-1}(x)
@@ -1984,7 +1984,7 @@ real softplus_transform(real x) {
 }
 ```
 
-The Jacobian adjustment is just the log of the absolute derivative, which
+The Jacobian adjustment is the log of the absolute derivative, which
 is also available as a Stan built-in.
 
 ```stan
@@ -2021,13 +2021,13 @@ The derivative function is well behaved and bounded within $(0, 1)$.
 \begin{align}
 \textrm{bisoftplus}'(x)
 &= \dfrac{1}{2} \left(1 + \dfrac{x}{\sqrt{1 + x^2}} \right).
-\\[4pt]
+\\[8pt]
 &= \dfrac{\textrm{bisoftplus}(x)}{\sqrt{1 + x^2}}
 \end{align}
 
 As $x \rightarrow \infty$, $\textrm{bisoftplus}(x) \approx x$, just
 like for softplus.  In contrast, as $x \rightarrow -\infty$,
-$\textrm{bisoftplus}(x) \approx \frac{1}{4 \cdot | x |}.$ This decays
+$\textrm{bisoftplus}(x) \approx 1 / (4 \cdot | x |)}.$ This decays
 much more slowly than $\exp(x)$, making bisoftplus soft in both directions.
 
 Writing the transform function in Stan is straightforward with

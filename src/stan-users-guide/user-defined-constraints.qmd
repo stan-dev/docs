@@ -2,7 +2,7 @@
 pagetitle: User-Defined Constrained Parameterizations
 ---
 
-# User-Defined Constrained Parameters
+# Usser-Defined Constrained Parameters
 
 This chapter introduces techniques for defining model
 parameterizations that satisfy constraints not handled by Stan's
@@ -1191,7 +1191,7 @@ which is only really feasible for first-order VAR processes.
 Vector autoregressive processes generalize scalar autoregressive
 processes in the obvious way by treating the innovation as multivariate
 normal and the location as a simultaneous multiple regression.
-Consider a time series $Y_1, Y_2, \ldots, $.  This chapter will
+Consider a time series $Y_1, Y_2, \ldots$.  This chapter will
 consider first-order autoregressive processes, where each element
 is conditionally independent given the previous element (i.e., they
 form a Markov chain).  It will also only consider zero-mean processes.
@@ -1225,7 +1225,7 @@ $$
 $$
 does not depend on $t$, and also requires that the autocovariance at lag $k$,
 $$
-$\Sigma_k = \mathbb{E}\!\left[(Y_t - \mu) \cdot (Y_{t + k} - \mu)^\top\right],
+\Sigma_k = \mathbb{E}\!\left[(Y_t - \mu) \cdot (Y_{t + k} - \mu)^\top\right],
 $$
 does not depend on $t$.
 
@@ -1235,7 +1235,7 @@ resulting process will be have the stationary distribution
 distribution
 $$
 \lim_{n \rightarrow \infty} \
-p(y_{t + n} \mid y_t, \phi, Sigma)
+p(y_{t + n} \mid y_t, \phi, \Sigma)
 =
 \textrm{multinormal}(y_{t + n} \mid 0, \Gamma).
 $$
@@ -1250,7 +1250,7 @@ $$
 
 ### Parameterizing a stationary VAR(1) process
 
-It's easy to code stationary parameterizatons of a $\textrm{VAR}(1)$
+It's easy to code stationary parameterizations of a $\textrm{VAR}(1)$
 process where $\phi$ is symmetric, but that will not be the case for
 general VAR processes.  Instead, this section will use the
 parameterization developed by @Heaps:2023, which takes $\phi,\Gamma$
@@ -1875,22 +1875,31 @@ Draws from the soft ring distribution are shown in @fig-soft-ring.
 ![Non-uniform draws from a soft ring.](img/soft-ring.png){#fig-soft-ring width=50%}
 
 
-## Softer positivity constraints
+## Softer positivity inverse transforms
 
-Stan's built-in transforms use standard link functions like the standard logarithm
-for positively-constrained variables and log odds for probabilities.  These have
-ill-behaved inverses, exponential for the logarithm and inverse logit for log odds,
-that intrinsically involve evaluating exponential functions.  Exponential functions
-are prone to overflow or underflow.  This section considers some more numericall
-well-behaved alternatives that behave more linearly throughout much of their range
-than the built ins.
+Stan's built-in transform for positive-constrained variables, such as
+the scale parameter in a linear regression, is the logarithm, $f(y) =
+\log y$.  The inverse transform is the exponential function $f^{-1}(x)
+= \exp(x)$.  That means as $x \rightarrow \infty$ or $x \rightarrow
+-\infty$, $f^{-1}(x)$ grows or drops off at an exponential rate.  This
+can be very ill-behaved because the exponential function quickly takes
+on extreme values and then overflows for arguments greater than a few
+hundred and underflows for arguments less than negative a few hundred.
+The underlying problem for sampling is that the derivative is also
+exponential, $\nabla f^{-1}(x) = \exp(x)$.  This chapter considers a
+pair of softer alternatives, softplus, which softens values as they go
+to positive infinity, and bisoftplus, which softens values as they go
+to positive or negative infinity.
 
-### Positivity constraints and softplus
 
-Stan's built-in transform for a variable declared `real<lower=0>` is the natural logarithm,
-which is a bijection from $(0, \infty)$ to $(-\infty, infty)$.  As such, the change-of-variables
-adjustment is just the variable being constrained, making the following two programs
-equivalent.  First, the version using Stan's built-in constraints.
+### The exponential constraining transform
+
+Stan's built-in transform for a variable declared `real<lower=0>` is
+the natural logarithm, which is a bijection from $(0, \infty)$ to
+$(-\infty, \infty)$.  As such, the change-of-variables adjustment is
+just the variable being constrained, making the following two programs
+equivalent.  First, consider a version defined in the usual way using
+Stan's built-in constrained parameter types.
 
 ```stan
 parameters {
@@ -1901,7 +1910,11 @@ model {
 }
 ```
 
-Second, a version that does the transform manually.
+Using `_jacobian` functions, the underlying behavior of Stan's built
+in logarithmic transform (with exponential inverse transform) can
+be coded directly.  The following program has exactly the same behavior
+as the previous one.  In both cases, Stan samples `log_sigma` under the
+hood, implicitly in the previous case, and explicitly in the following.
 
 ```stan
 functions {
@@ -1921,66 +1934,104 @@ model {
 }
 ```
 
-The exponential function is very badly behaved.  It has extreme
-derivatives and underflows and overflows for inputs with absolute
-values above a few hundred.  Consider as an alternative the softplus
-function,
+The function `positive_constrain_jacobian` is charged with updating the
+change of variables with the log of the absolute derivative of the constraining
+transform, as documented above.
+
+
+### The softplus constraining transform
+
+First consider the rectified linear unit (relu) function,
 $$
-\textrm{softplus}(x) = \log \left(1 + \exp(x)) = \log (1 - \textrm{logit}^{-1}(x)).
+\textrm{relu}(x) = \max(0, x) = \dfrac{x + | x |}{2}.
 $$
-Unlike the exponential function, the derivative of softplus is bounded,
+The relu function maps values less than zero to zero and values
+greater than or equal to zero to themselves.  The relu function is one
+of the most widely used non-linearities to apply between layers of a
+deep neural network.  
+
+The softplus function is a "soft" form of relu. 
 $$
-\textrm{softplus}'(x) = \textrm{logit}^{-1}(x).
+\textrm{softplus}(x) = \log (1 + \exp(x)) = \log (1 - \textrm{logit}^{-1}(x)).
+$$
+It approximates relu as the inputs go to plus or minus infinity.
+Like the exponential function, softplus is a strictly monotonic
+bijection from $(-\infty, \infty)$ to $(0, \infty)$ and has a
+well-defined inverse.  The relu function is monotonic, but not strictly so.
+
+The transform for which softplus is the inverse is the following monotonic
+bijection from $(0, \infty)$ to $(-\infty, \infty)$.
+$$
+\textrm{softplus}^{-1}(y) = \log(\exp(y) - 1).
 $$
 
-The softplus function can be defined using the identity above.  Stan's
-`log1m_inv_logit()` is nuemrically stable.
+The derivative of the softplus constraining transform is just the
+logistic sigmoid function.
+$$
+\nabla \textrm{softplus}(x) = \textrm{softplus}'(x) = \textrm{logit}^{-1}(x)
+= \dfrac{\exp(x)}{1 + \exp(x)}.
+$$
+The derivatives are a close match for the relu function, as well, which has
+a derivative of one for non-negative numbers and zero for negative numbers.
 
-It is straightforward to define the change of variables function for
-lower-bounded variables, starting by defining the softplus function
-itself as a transform using Stan's arithmetically stable
-`log1m_inv_logit` function.
+In practice, the softplus function can be defined using the identity
+given with its definition.  Stan's `log1m_inv_logit()` is numerically
+stable.
 
 ```stan
 real softplus_transform(real x) {
   return -log1m_inv_logit(x);
 }
+```
 
-The Jacobian adjustment is just the log of the absolute derivative.
+The Jacobian adjustment is just the log of the absolute derivative, which
+is also available as a Stan built-in.
 
 ```stan
 real lower_softplus_jacobian(real lb, real x) {
   jacobian += log_inv_logit(x);
   return softplus_transform(x);
 }
+```
+
+The right tail behavior of softplus matches that of relu.  As $x
+\rightarrow \infty$, $\textrm{softplus}(x) \approx x$.  The left tail
+behavior of softplus matches the exponential.  As $x \rightarrow
+-\infty$, $\textrm{softplus}(x) \approx \exp(x)$.  This can cause
+trouble in a hierarchical model setting where the data is consistent
+with complete pooling (i.e., a hierarchical variance of zero).
 
 
-### Positive constraints with bisoftplus
+### The bisoftplus constraining transform
 
-To fix the tails in @Seyboldt:2026 introduced an even better behaved link function for
-positive constrained parameters, which he called bisoftplus.  Bisoftplus
-is a smooth bijection from $(-\infty, \infty)$ to $(0, \infty)$, defined by
+@Seyboldt:2026 introduced a constraining tranform, bisoftplus, that is
+soft in both the positive and negative directions.  Like the
+exponential, relu, and softplus, the bisoftplus function is a smooth
+bijection from $(-\infty, \infty)$ to $(0, \infty)$.
 $$
-\textrm{bisoftplus}(x) = x + \sqrt{1 + x^2}.
+\textrm{bisoftplus}(x) = \frac{1}{2} \cdot \left( x + \sqrt{1 + x^2} \right).
 $$
-Unlike softplus, which only has a non-exponential right tail, bisoftplus also
-has a non-exponential left tail (hence the name---it's "soft" in both tails).
-This makes the derivative function particularly well behaved, with
+The transform for which bisoftplus is the inverse is
+$$
+\textrm{bisoftplus}^{-1}(y) = \dfrac{4 \cdot y^2 - 1}{4 \cdot y}.
+$$
+
+The derivative function is well behaved and bounded within $(0, 1)$.
 
 \begin{align}
 \textrm{bisoftplus}'(x)
-&= 1 + \dfrac{x}{\sqrt{1 + x^2}}
-\\[4pt]
-&= \dfrac{\sqrt{1 + x^2} + x}{\sqrt{1 + x^2}}
+&= \dfrac{1}{2} \left(1 + \dfrac{x}{\sqrt{1 + x^2}} \right).
 \\[4pt]
 &= \dfrac{\textrm{bisoftplus}(x)}{\sqrt{1 + x^2}}
-\\[4pt]
-&= \dfrac{\textrm{bisoftplus}(x)}{\textrm{bisoftplus}(x) - x}.
 \end{align}
 
-The derivative conveniently reuses the result of the function evaluation.
+As $x \rightarrow \infty$, $\textrm{bisoftplus}(x) \approx x$, just
+like for softplus.  In contrast, as $x \rightarrow -\infty$,
+$\textrm{bisoftplus}(x) \approx \frac{1}{4 \cdot | x |}.$ This decays
+much more slowly than $\exp(x)$, making bisoftplus soft in both directions.
 
-Writing the transform function in Stan is straightforward.
+Writing the transform function in Stan is straightforward with
+the hypotenuse function, defined by $\textrm{hypot}(u, v) = \sqrt{u^2 + v^2}$.
 
 ```stan
 real bisoftplus_transform(real x) {
@@ -1988,16 +2039,74 @@ real bisoftplus_transform(real x) {
 }
 ```
 
-The Jacobian is an easy adjustment here.
+The Jacobian adjustment uses the derivative on the log scale.
 
 ```stan
 real bisoftplus_jacobian(real x) {
-  jacobian += log1p(x / sqrt(1 + x^2));
-  return bisoftplus_transform(x);
+  real y = bisoftplus_transform(x);
+  jacobian += log(y) - 0.5 * log1p(square(x));
+  return y;
 }
 ```
 
-The inverse, whihc will be needed for initialization, is
-$$
-\textrm{bisoftplus}^{-1}(y) = \dfrac{y^2 - 1}{2 \cdot y}.
-$$
+Here's an example of using bisoftplus as a link function in a Poisson regression
+that uses a vectorized form of the transform.
+
+```stan
+functions {
+  vector bisoftplus_transform(vector x) {
+    return x + hypot(1, x);
+  }
+}
+data {
+  int<lower=0> N;
+  array[N] int<lower=0> y;
+  vector[N] x;
+}
+parameters {
+  real alpha, beta;
+}
+model {
+  alpha ~ normal(0, 1);
+  beta ~ normal(0, 1);
+  y ~ poisson(bisoftplus_transform(alpha + beta * x));
+}
+```
+
+Here's an example of using bisoftplus with Jacobian adjustment to
+construct a hierarchical model.  Seyboldt's funnel does not have the
+same wide tails as Neal's funnel.
+
+```stan
+functions {
+  real bisoftplus_transform(real x) {
+    return x + hypot(1, x);
+  }
+
+  real bisoftplus_jacobian(real x) {
+    real y = bisoftplus_transform(x);
+    jacobian += log(y) - 0.5 * log1p(square(x));
+    return y;
+  }
+}
+parameters {
+  real sigma_raw;
+  vector[10] alpha;
+}
+transformed parameters {
+  real<lower=0> sigma = bisoftplus_jacobian(sigma_raw);
+}
+model {
+  sigma ~ exponential(1);
+  alpha ~ normal(0, sigma);
+}
+```
+
+Fitting just this in Stan show effective sample size and $\widehat{R}$
+to be consistent with convergence.  That's misleading.  The 90%
+central interval for `sigma` in the output is $(0.19, 3.13)$, which is
+biased to the high side compared to the marginal target
+$\textrm{exponential}(1)$, which has a 90% central interval of $(0.05,
+3.00)$.  Stan's convergence monitoring can be fooled when the sample
+mixes well in a subregion of the output.
+

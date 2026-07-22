@@ -657,7 +657,8 @@ example,
    * @param val Indicator value to match (0 or 1).
    * @return Ascending array of indexes of columns that match.
    */
-  array[] int columns_matching(int i, array[,] int is_zero, int val) {
+  array[] int columns_matching(int i, array[,] int is_zero,
+                               int val) {
     int n = 0;
     for (c in 1:(i - 1)) {
       n += (is_zero[i, c] == val);
@@ -767,25 +768,29 @@ matrix cholesky_corr_zeros_jacobian(int D, vector raw,
       L[i, 1:d] = z;           // unconstrained row: z used directly
     } else if (d > 0) {
       // B[k, m]: entry at zero column zc[m] of the basis direction
-      // for free column fc[k], patched to orthogonal to row zc[m] of L.
+      // for free column fc[k], patched to orthogonal to row
+      // zc[m] of L.
       matrix[d, n_z] B = rep_matrix(0, d, n_z);
       for (k in 1:d) {
         for (m in 1:n_z) {
           int j = zc[m];
           if (j > fc[k]) {
             real b = L[j, fc[k]]
-                     + dot_product(L[j, zc[1:(m - 1)]], B[k, 1:(m - 1)]);
+                     + dot_product(L[j, zc[1:(m - 1)]],
+		                   B[k, 1:(m - 1)]);
             B[k, m] = -b / L[j, j];
           }
         }
       }
-      // Overlap (Gram) matrix of the basis directions is G = I + B * B';
-      // straighten with its Cholesky factor C so row's length matches z.
-      matrix[d, d] C = cholesky_decompose(add_diag(tcrossprod(B), 1.0));
+      // Overlap (Gram) matrix of the basis directions is
+      // G = I + B * B'; straighten with its Cholesky factor C so
+      // row's length matches z.
+      matrix[d, d] C = cholesky_decompose(add_diag(tcrossprod(B),
+                                                   1.0));
       jacobian += -sum(log(diagonal(C)));           
       row_vector[d] t = mdivide_right_tri_low(z, C);
-      L[i, fc] = t;                                  // free entries
-      L[i, zc] = t * B;                              // forced entries
+      L[i, fc] = t;                             // free entries
+      L[i, zc] = t * B;                         // forced entries
     }
   }    
   return L;
@@ -854,7 +859,7 @@ on them is simple.
 data {
   int<lower=2> D;                            // dimensions
   real<lower=0> eta;                         // LKJ concentration
-  array[D, D] int<lower=0, upper=1> zeros;   // lower tri struct zeros
+  array[D, D] int<lower=0, upper=1> zeros;   // lower tri zeros
 }
 transformed data {
   array[D] int<lower=0> col_zeros;
@@ -1129,12 +1134,12 @@ the Jacobian adjustment to the Jacobian accumulator.
 matrix special_orthogonal_jacobian(vector v, int N) {
   matrix[N, N] S = skew_symmetric(v, N);
   matrix[N, N] Q_rot = matrix_exp(S);   // determinant(Q_rot) = 1
-  int half_N = N %/% 2;                 // drops the unpaired odd dimension
-  matrix[N, N] M = -S * S;              // symmetric positive semi-definite
-  vector[N] eig = eigenvalues_sym(M);   // ascending; each theta^2 appears twice
+  int half_N = N %/% 2;         // drops the unpaired odd dimension
+  matrix[N, N] M = -S * S;      // symmetric positive semi-definite
+  vector[N] eig = eigenvalues_sym(M); // ascending; theta^2 twice
   vector[half_N] theta;                 // rotation angles
   for (n in 1:half_N) {
-    real val = eig[N % 2 + 2 * n];      // one eigenvalue per conjugate pair
+    real val = eig[N % 2 + 2 * n];  // one eigenvalue per pair
     theta[n] = val > 0 ? sqrt(val) : 0;
   }
   if (N % 2 == 1) {                     // short roots for odd N
@@ -1266,18 +1271,19 @@ which is not built into Stan.
 
 ```stan
 /**
- * Return the symmetric square root of the symmetric, positive-definite
- * matrix S; that is, the symmetric, positive-definite matrix R such
- * that R * R = S.  
+ * Return the symmetric square root of the symmetric, positive-
+ * definite matrix S; that is, the symmetric, positive-definite
+ * matrix R such that R * R = S.  
  *
  * @param S A symmetric, positive-definite matrix
  * @return The square root of `S`.
  */
 matrix matrix_sqrt_spd(matrix S) {
   int D = rows(S);
-  tuple(matrix[D, D], vector[D]) eig_vecs_vals = eigendecompose_sym(S);
+  tuple(matrix[D, D], vector[D]) eig_vecs_vals
+    = eigendecompose_sym(S);
   return tcrossprod(diag_post_multiply(eig_vecs_vals.1,
-                                       sqrt(sqrt(eig_vecs_vals.2))));
+                                    sqrt(sqrt(eig_vecs_vals.2))));
 }
 ```
 
@@ -1287,9 +1293,10 @@ accumulator and thus carries the suffix `_jacobian`.
 
 ```stan
 /**
- * Return the D x D matrix with singular values less than one obtained
- * by transforming the the unconstrained raw parameters and increment
- * the Jacobian accumulator with the change-of-variables adjustment.
+ * Return the D x D matrix with singular values less than one
+ * obtained by transforming the the unconstrained raw parameters
+ * and increment the Jacobian accumulator with the
+ * change-of-variables adjustment.
  *
  * The returned value is (I + A * A')^{-1/2} * A, where A =
  * to_matrix(raw, D, D). The Jacobian is incremented with the log
@@ -1315,8 +1322,8 @@ parameters to the pair of parameters, $(\phi, \Gamma)$.
 /**
 
  * Map the raw parameters to coefficients (phi) and stationary
- * covariance (Gamma) of a stationary D-dimensional VAR(1) process and
- * increment the Jacobian accumulator for the change-of-variables.
+ * covariance (Gamma) of a stationary D-dimensional VAR(1) process
+ * and increment the Jacobian accumulator for the change-of-variables.
  * The VAR(1) process is
  *    y[t] ~ multi_normal(phi_col * y[t - 1], Sigma)
  * with covariance given by the discrete Lyapunov equation
@@ -1326,11 +1333,12 @@ parameters to the pair of parameters, $(\phi, \Gamma)$.
  *
  * @param The unconstrained parameters (size choose(D, 2) + D^2 + D)
  * @param D dimension of the VAR(1) process
- * @return The coefficient matrix in row-major and stationary covariance.
+ * @return Row-major coefficients and stationary covariance.
  */
 tuple(matrix, matrix) stationary_var1_jacobian(vector raw, int D) {
   int n_chol = D + choose(D, 2);
-  matrix[D, D] L_Gamma = cholesky_factor_cov_jacobian(raw[ :n_chol], D, D);
+  matrix[D, D] L_Gamma
+    = cholesky_factor_cov_jacobian(raw[ :n_chol], D, D);
   matrix[D, D] Gamma = multiply_lower_tri_self_transpose(L_Gamma);
   for (k in 1 : D) {
     jacobian += (D - k + 1) * log(L_Gamma[k, k]);
@@ -1429,7 +1437,8 @@ model {
   to_vector(phi) ~ normal(0, 1);
 
   y[1] ~ multi_normal(zeros_D, Gamma);
-  array[T - 1] row_vector[D] mu = to_array_of_row_vectors(y_last * phi);
+  array[T - 1] row_vector[D] mu
+    = to_array_of_row_vectors(y_last * phi);
   y[2: ] ~ multi_normal(mu, Sigma);
 }
 ```
@@ -1445,7 +1454,8 @@ of `phi` can be computed.
 
 ```stan
 generated quantities {
-  real<lower=0, upper=1> spectral_radius = max(abs(eigenvalues(phi)));
+  real<lower=0, upper=1> spectral_radius
+    = max(abs(eigenvalues(phi)));
 }
 ```
 
@@ -1589,7 +1599,7 @@ X^{(100)}
  2.67 &  4.91 &  5.19 & 10.23 \\
  4.31 &  2.09 &  7.72 &  7.88
 \end{bmatrix}
-\qquad \qquad
+\qquad
 X^{(200)}
 =
 \begin{bmatrix}
@@ -1653,7 +1663,8 @@ transformed data {
 }
 parameters {
   real<lower=-r, upper=r> x;
-  real<lower=-sqrt(r_squared - square(x)), upper=sqrt(r_squared - square(x))> y;
+  real<lower=-sqrt(r_squared - square(x)),
+       upper=sqrt(r_squared - square(x))> y;
 }
 ```
 

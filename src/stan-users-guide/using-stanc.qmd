@@ -281,6 +281,9 @@ in more detail in following sections):
 -   *Nonlinear transformations.* When the left-hand side of a tilde statement
     (or first argument of a log probability function) contains a nonlinear
     transform which may require a Jacobian change of variables adjustment.
+-   *Redundant eigendecomposition.* Both `eigenvectors_sym` and
+    `eigenvalues_sym` are applied to the same matrix, performing two full
+    eigendecompositions where one would suffice.
 
 Some important limitations of pedantic mode are listed at the end of this chapter.
 
@@ -665,6 +668,49 @@ Warning in 'jacobian.stan', line 5, column 2 to column 23:
     Jacobian of the transform. You could also consider defining a transformed
     parameter and using jacobian += in the transformed parameters block.
 ```
+
+### Redundant eigendecomposition {-}
+
+When both `eigenvectors_sym` and `eigenvalues_sym` are applied to the same
+matrix, each call performs a full eigendecomposition of that matrix. In
+models where the result feeds gradient computation (such as Gaussian
+process kernels), this doubles an expensive operation.
+
+For example, consider the following program.
+
+```stan
+transformed data {
+  matrix[30, 30] X = ...;
+}
+transformed parameters {
+  vector[30] eig_vals = eigenvalues_sym(X);
+  matrix[30, 30] eig_vecs = eigenvectors_sym(X);
+}
+```
+
+Pedantic mode produces the following warning.
+
+```
+Warning: The same argument is passed to both eigenvectors_sym and
+  eigenvalues_sym. Each call performs a full eigendecomposition of its
+  argument; consider computing both results from a single decomposition,
+  e.g. tuple(matrix, vector) e = eigendecompose_sym(A); with the
+  eigenvectors in e.1 and the eigenvalues in e.2.
+```
+
+Both results can be computed from a single decomposition with
+`eigendecompose_sym` (available since Stan 2.34):
+
+```stan
+transformed parameters {
+  tuple(matrix[30, 30], vector[30]) e = eigendecompose_sym(X);
+  vector[30] eig_vals = e.2;
+  matrix[30, 30] eig_vecs = e.1;
+}
+```
+
+Compiling with `--O1` or higher additionally fuses adjacent pairs like
+this automatically.
 
 ### Pedantic mode limitations {-}
 

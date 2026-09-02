@@ -315,6 +315,9 @@ Create a default Laplace options tuple containing `theta_init`.
 
 In `generated quantities`, it is possible to sample from the Laplace
 approximation of $p(\theta \mid \phi, y)$ using `laplace_latent_rng`.
+To obtain the approximate mean and Cholesky factor of the covariance
+instead of a random draw, see
+[`laplace_latent_solve`](#return-the-approximate-conditional-mean-and-cholesky-factor).
 The signature for `laplace_latent_rng` follows closely
 the signature for `laplace_marginal`:
 
@@ -335,6 +338,55 @@ Once again, it is possible to specify control parameters:
 Samples from the approximate conditional posterior $p(\theta \mid y, \phi)$
 and allows the user to tune the control parameters of the approximation.
 {{< since 2.39 >}}
+
+## Return the approximate conditional mean and Cholesky factor
+
+In `generated quantities`, when the parameters of the Gaussian approximation
+are needed directly, rather than a random draw from it, use
+`laplace_latent_solve`. This returns a tuple containing:
+
+1. the posterior mean of the Laplace approximation to $p(\theta \mid y, \phi)$, and
+2. the lower-triangular Cholesky factor of the posterior covariance of that
+   approximation.
+
+The signature for `laplace_latent_solve` follows closely
+the signature for `laplace_marginal`:
+
+<!-- tuple(vector, matrix); laplace_latent_solve; (function likelihood_function, tuple(...) likelihood_arguments, int hessian_block_size, function covariance_function, tuple(...) covariance_arguments); -->
+\index{{\tt \bfseries laplace\_latent\_solve }!{\tt (function likelihood\_function, tuple(...) likelihood\_arguments, int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments): tuple(vector, matrix)}|hyperpage}
+
+`tuple(vector, matrix)` **`laplace_latent_solve`**`(function likelihood_function, tuple(...) likelihood_arguments, int hessian_block_size, function covariance_function, tuple(...) covariance_arguments)`<br>\newline
+
+Returns the posterior mean and the lower-triangular Cholesky factor of the
+posterior covariance from the Laplace approximation to
+$p(\theta \mid y, \phi)$; may only be used in the generated quantities block or with all-`data` arguments to the likelihood and covariance functions.
+
+{{< since 2.40 >}}
+
+As with the other embedded Laplace functions, control parameters can be
+specified with a `_tol` variant:
+
+<!-- tuple(vector, matrix); laplace_latent_solve_tol; (function likelihood_function, tuple(...) likelihood_arguments, int hessian_block_size, function covariance_function, tuple(...) covariance_arguments, tuple(vector, real, int, int, int, int) tolerances); -->
+\index{{\tt \bfseries laplace\_latent\_solve\_tol }!{\tt (function likelihood\_function, tuple(...) likelihood\_arguments, int hessian\_block\_size, function covariance\_function, tuple(...) covariance\_arguments, tuple(vector, real, int, int, int, int) tolerances): tuple(vector, matrix)}|hyperpage}
+
+`tuple(vector, matrix)` **`laplace_latent_solve_tol`**`(function likelihood_function, tuple(...), int hessian_block_size, function covariance_function, tuple(...), tuple(vector, real, int, int, int, int) tolerances)`<br>\newline
+
+Returns the posterior mean and the lower-triangular Cholesky factor of the
+posterior covariance from the Laplace approximation to
+$p(\theta \mid y, \phi)$, and allows the user to tune the control parameters
+of the approximation; may only be used in the generated quantities block.
+
+{{< since 2.40 >}}
+
+The returned tuple can be unpacked with Stan's tuple indexing, for example:
+
+```stan
+vector[N] mu;
+matrix[N, N] L;
+
+(mu, L) = laplace_latent_solve(ll_function, (a, y), hessian_block_size,
+                               cov_function, (rho, alpha, x, N, delta));
+```
 
 ## Built-in Laplace marginal likelihood functions
 

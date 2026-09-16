@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.39">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>The Stan Ecosystem</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../stan-users-guide/how-stan-works.html" rel="next">
+<link href="../stan-users-guide/index.html" rel="prev">
+<link href="../img/logo_tm.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-05fe91a66cf75bbbb8c9664867fe5124.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-59fdbf2653e1aaac23acf64cc15a0d7d.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-c8797e56f292efa64a58fb22734b7e0a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-753017069812d5161ff59efde9aaa572.min.css" rel="prefetch" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../quarto-config/quarto_styles.css">
+<meta property="og:title" content="The Stan Ecosystem">
+<meta property="og:description" content="">
+<meta property="og:image" content="img/stan-ecosystem.png">
+<meta property="og:site_name" content="Stan Docs">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="https://mc-stan.org/" class="navbar-brand navbar-brand-logo">
+    <img src="../img/logo_tm.png" alt="Stan logo" class="navbar-logo">
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Documentation</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../stan-users-guide/index.html" aria-current="page"> 
+<span class="menu-text">Stan Users Guide</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../reference-manual/index.html"> 
+<span class="menu-text">Reference Manual</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../functions-reference/index.html"> 
+<span class="menu-text">Functions Reference</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-interfaces" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Interfaces</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-interfaces">    
+        <li>
+    <a class="dropdown-item" href="../cmdstan-guide/index.html">
+ <span class="dropdown-text">CmdStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanpy" target="_blank">
+ <span class="dropdown-text">CmdStanPy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/cmdstanr" target="_blank">
+ <span class="dropdown-text">CmdStanR</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://pystan.readthedocs.io/en/latest/" target="_blank">
+ <span class="dropdown-text">PyStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstan" target="_blank">
+ <span class="dropdown-text">RStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="http://stanjulia.github.io/Stan.jl/stable/INTRO/" target="_blank">
+ <span class="dropdown-text">Stan.jl</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-other-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Other Packages</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-other-packages">    
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/bayesplot/" target="_blank">
+ <span class="dropdown-text">bayesplot</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://roualdes.github.io/bridgestan/latest/" target="_blank">
+ <span class="dropdown-text">BridgeStan</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://paul-buerkner.github.io/brms/" target="_blank">
+ <span class="dropdown-text">brms</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/loo/" target="_blank">
+ <span class="dropdown-text">loo</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/posterior" target="_blank">
+ <span class="dropdown-text">posterior</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/projpred" target="_blank">
+ <span class="dropdown-text">projpred</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstanarm" target="_blank">
+ <span class="dropdown-text">rstanarm</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/rstantools" target="_blank">
+ <span class="dropdown-text">rstantools</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://mc-stan.org/shinystan" target="_blank">
+ <span class="dropdown-text">shinystan</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools tools-wide">
+    <a href="https://github.com/stan-dev" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-github"></i></a>
+    <a href="https://discourse.mc-stan.org" title="" class="quarto-navigation-tool px-1" aria-label=""><i class="bi bi-chat-text-fill"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../stan-users-guide/ecosystem.html">Introduction</a></li><li class="breadcrumb-item"><a href="../stan-users-guide/ecosystem.html">The Stan Ecosystem</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Stan User’s Guide</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <span class="sidebar-item-text sidebar-link text-start">
+ <span class="menu-text">Version 2.40</span></span>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Introduction</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/ecosystem.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">The Stan Ecosystem</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/how-stan-works.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">How Stan Works</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Example Models</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Regression Models</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/time-series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Time-Series Models</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/missing-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Missing Data and Partially Known Parameters</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/truncation-censoring.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Truncated or Censored Data</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/finite-mixtures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Finite Mixtures</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/measurement-error.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Measurement Error and Meta-Analysis</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/latent-discrete.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Latent Discrete Parameters</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/sparse-ragged.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sparse and Ragged Data Structures</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/clustering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Clustering Models</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/gaussian-processes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Gaussian Processes</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/copulas.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Copulas</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/hyperspherical-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Directions, Rotations, and Hyperspheres</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/algebraic-equations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Solving Algebraic Equations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/odes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Ordinary Differential Equations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/one-dimensional-integrals.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Computing One Dimensional Integrals</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/complex-numbers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Complex Numbers</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/dae.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Differential-Algebraic Equations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/survival.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Survival Models</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/wiener_diffusion_model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Wiener diffusion model</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Programming Techniques</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/floating-point.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Floating Point Arithmetic</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/matrices-arrays.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Matrices, Vectors, Arrays, and Tuples</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/multi-indexing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Multiple Indexing and Range Indexing</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/user-functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">User-Defined Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/custom-probability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Custom Probability Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/proportionality-constants.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Proportionality Constants</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/problematic-posteriors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Problematic Posteriors</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/reparameterization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Reparameterization and Change of Variables</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/efficiency-tuning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Efficiency Tuning</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/parallelization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Parallelization</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Posterior Inference &amp; Model Checking</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/posterior-prediction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Posterior Predictive Sampling</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/simulation-based-calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Simulation-Based Calibration Checking</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/posterior-predictive-checks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Posterior and Prior Predictive Checks</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/cross-validation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Held-Out Evaluation and Cross-Validation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/poststratification.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Poststratification</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/decision-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Decision Analysis</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/bootstrap.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Bootstrap and Bagging</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/multiple-imputation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Multiple imputation</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/using-stanc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Using the Stan Compiler</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/style-guide.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Stan Program Style Guide</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../stan-users-guide/for-bugs-users.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Transitioning from BUGS</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#ecosystem.chapter" id="toc-ecosystem.chapter" class="nav-link active" data-scroll-target="#ecosystem.chapter">The Stan Ecosystem</a>
+  <ul class="collapse">
+  <li><a href="#what-is-the-stan-users-guide" id="toc-what-is-the-stan-users-guide" class="nav-link" data-scroll-target="#what-is-the-stan-users-guide">What is the <em>Stan User’s Guide</em>?</a></li>
+  <li><a href="#who-uses-stan" id="toc-who-uses-stan" class="nav-link" data-scroll-target="#who-uses-stan">Who uses Stan?</a></li>
+  <li><a href="#user-and-developer-communities" id="toc-user-and-developer-communities" class="nav-link" data-scroll-target="#user-and-developer-communities">User and developer communities</a></li>
+  <li><a href="#how-is-the-project-organized" id="toc-how-is-the-project-organized" class="nav-link" data-scroll-target="#how-is-the-project-organized">How is the project organized?</a></li>
+  <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a>
+  <ul class="collapse">
+  <li><a href="#core-stan-language-documentation" id="toc-core-stan-language-documentation" class="nav-link" data-scroll-target="#core-stan-language-documentation">Core Stan language documentation</a></li>
+  <li><a href="#case-studies" id="toc-case-studies" class="nav-link" data-scroll-target="#case-studies">Case studies</a></li>
+  <li><a href="#interface-documentation" id="toc-interface-documentation" class="nav-link" data-scroll-target="#interface-documentation">Interface documentation</a></li>
+  <li><a href="#documentation-source-code-web-site" id="toc-documentation-source-code-web-site" class="nav-link" data-scroll-target="#documentation-source-code-web-site">Documentation source code web site</a></li>
+  <li><a href="#web-site-source-code" id="toc-web-site-source-code" class="nav-link" data-scroll-target="#web-site-source-code">Web site source code</a></li>
+  <li><a href="#further-documentation-resources" id="toc-further-documentation-resources" class="nav-link" data-scroll-target="#further-documentation-resources">Further documentation resources</a></li>
+  </ul></li>
+  <li><a href="#core-c-and-interface-organization" id="toc-core-c-and-interface-organization" class="nav-link" data-scroll-target="#core-c-and-interface-organization">Core C++ and interface organization</a>
+  <ul class="collapse">
+  <li><a href="#higher-level-stan-interfaces-brms-and-rstanarm" id="toc-higher-level-stan-interfaces-brms-and-rstanarm" class="nav-link" data-scroll-target="#higher-level-stan-interfaces-brms-and-rstanarm">Higher-level Stan interfaces: <code>brms</code> and <code>rstanarm</code></a></li>
+  <li><a href="#programming-language" id="toc-programming-language" class="nav-link" data-scroll-target="#programming-language">Programming language</a></li>
+  <li><a href="#ide-support" id="toc-ide-support" class="nav-link" data-scroll-target="#ide-support">IDE support</a></li>
+  </ul></li>
+  <li><a href="#stan-math-library" id="toc-stan-math-library" class="nav-link" data-scroll-target="#stan-math-library">Stan math library</a></li>
+  <li><a href="#additional-r-packages" id="toc-additional-r-packages" class="nav-link" data-scroll-target="#additional-r-packages">Additional R packages</a></li>
+  <li><a href="#python-package-arviz-for-downstream-analysis" id="toc-python-package-arviz-for-downstream-analysis" class="nav-link" data-scroll-target="#python-package-arviz-for-downstream-analysis">Python package <code>ArviZ</code> for downstream analysis</a></li>
+  <li><a href="#stan-inference-engines" id="toc-stan-inference-engines" class="nav-link" data-scroll-target="#stan-inference-engines">Stan inference engines</a>
+  <ul class="collapse">
+  <li><a href="#markov-chain-monte-carlo" id="toc-markov-chain-monte-carlo" class="nav-link" data-scroll-target="#markov-chain-monte-carlo">Markov chain Monte Carlo</a></li>
+  <li><a href="#variational-inference" id="toc-variational-inference" class="nav-link" data-scroll-target="#variational-inference">Variational inference</a></li>
+  <li><a href="#laplace-approximation" id="toc-laplace-approximation" class="nav-link" data-scroll-target="#laplace-approximation">Laplace approximation</a></li>
+  <li><a href="#optimization-for-maximum-likelihood-and-maximum-a-posterior-estimation" id="toc-optimization-for-maximum-likelihood-and-maximum-a-posterior-estimation" class="nav-link" data-scroll-target="#optimization-for-maximum-likelihood-and-maximum-a-posterior-estimation">Optimization for maximum likelihood and maximum a posterior estimation</a></li>
+  </ul></li>
+  <li><a href="#background-reading-on-bayesian-statistics-and-stan" id="toc-background-reading-on-bayesian-statistics-and-stan" class="nav-link" data-scroll-target="#background-reading-on-bayesian-statistics-and-stan">Background reading on Bayesian Statistics and Stan</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/stan-users-guide/ecosystem.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../stan-users-guide/ecosystem.html">Introduction</a></li><li class="breadcrumb-item"><a href="../stan-users-guide/ecosystem.html">The Stan Ecosystem</a></li></ol></nav></header>
+
+
+
+
+<section id="ecosystem.chapter" class="level1">
+<h1>The Stan Ecosystem</h1>
+<p>Stan is a domain-specific programming language for specifying probabilistic models along with a collection of algorithms for performing statistical inference and analyzing model fits.</p>
+<section id="what-is-the-stan-users-guide" class="level2">
+<h2 class="anchored" data-anchor-id="what-is-the-stan-users-guide">What is the <em>Stan User’s Guide</em>?</h2>
+<p>This document, the <em>Stan User’s Guide</em>, is intended to explain techniques for statistical modeling using the Stan modeling language. As such, it concentrates on the Stan language itself and does <em>not</em> discuss any of the Stan interfaces that are required to actually use Stan (see below).</p>
+</section>
+<section id="who-uses-stan" class="level2">
+<h2 class="anchored" data-anchor-id="who-uses-stan">Who uses Stan?</h2>
+<p>You can find Stan users and example code online from almost every subfield of science and most branches of statistics other than highly non-parametric modeling (e.g., neural networks, high-dimensional Dirichlet processes), highly coupled discrete models (e.g., Ising models), huge scale (e.g., e-commerce, global weather models), and real-time processing (e.g., quad-copter control).</p>
+<p>Stan applications have been drawn from pretty much every branch of biological science (from cellular to population ecology and zoology), physical sciences (from quantum to astro), social sciences (psychometrics, surveys, economics, and anthropology), engineering (from civil to mechanical), educational sciences (testing), medical sciences (from epidemiology to clinical trials), sports statistics (pretty much every major sport, plus bookmaking), finance (asset pricing, risk assessment, forecasting), business (advertising attribution, demand and pricing), and actuarial sciences.</p>
+</section>
+<section id="user-and-developer-communities" class="level2">
+<h2 class="anchored" data-anchor-id="user-and-developer-communities">User and developer communities</h2>
+<p>Stan’s strongest feature is its active community of users. Stan’s users hail from a wide range of mathematical and statistical backgrounds and work in a broad range of application areas.</p>
+<p>The primary Stan discussion board is hosted by Discourse.</p>
+<ul>
+<li><a href="https://discourse.mc-stan.org">Stan Forums</a>, where users and developers discuss issues with Stan and its applications.</li>
+</ul>
+<p>The Stan developers discuss designs, plans, and communicate with each other through the forums and also on GitHub. Users can also access it and make feature requests or report bugs.</p>
+<ul>
+<li><a href="https://github.com/stan-dev">Stan GitHub</a>, which tracks issues and contains the complete source code for Stan (the core is licensed under BSD-3).</li>
+</ul>
+<p>Both developers and users attend Stan conferences, which are a mix of tutorials, talks about applications, and talks from the Stan developers about where Stan is going.</p>
+<ul>
+<li><a href="https://mc-stan.org/learn-stan/stancon-talks.html">StanCon</a>, which is where you’ll find the talks, slides, and executable notebooks.</li>
+</ul>
+</section>
+<section id="how-is-the-project-organized" class="level2">
+<h2 class="anchored" data-anchor-id="how-is-the-project-organized">How is the project organized?</h2>
+<p>Stan is free open source software released under permissive licenses (BSD-3 for the core code). There are no institutional owners and no institutional oversight of the project.</p>
+<p>The Stan project as a whole is managed through the <a href="https://mc-stan.org/about/#stan-governance">Stan Governing Body</a> (SGB), who have final say on all things Stan related. They also organize StanCon. The members are elected by the developers and rotate through short (1–2 year) terms.</p>
+<p>Software development is managed through <a href="https://www.apache.org/foundation/voting.html">Apache-style voting</a> among the developers. Lack of consensus is so rare there have only been a few votes in the history of the project aside from electing SGB members.</p>
+<p>Since development of Stan began in 2011 (the first release was in 2012), funding has been provided through governmental grants across multiple agencies in several countries, through non-profit foundations, through universities, through donations from corporations, and through in-kind donations of time by our developer’s employers. Thank you!</p>
+</section>
+<section id="documentation" class="level2">
+<h2 class="anchored" data-anchor-id="documentation">Documentation</h2>
+<section id="core-stan-language-documentation" class="level3">
+<h3 class="anchored" data-anchor-id="core-stan-language-documentation">Core Stan language documentation</h3>
+<p>Stan’s core internal documentation for the Stan language is organized through a top-level web page.</p>
+<ul>
+<li><a href="https://mc-stan.org/docs/">Stan documentation</a></li>
+</ul>
+<p>You are currently reading the <em>Stan User’s Guide</em>, which is complemented by the <em>Reference Manual</em> and <em>Functions Reference</em>. These are all interface-agnostic guides to the Stan language and its execution. They are available online with integrated navigation and also as pdfs.</p>
+<ul>
+<li><p><a href="https://mc-stan.org/docs/stan-users-guide/"><em>Stan Users’ Guide</em></a></p></li>
+<li><p><a href="https://mc-stan.org/docs/reference-manual/"><em>Stan Reference Manual</em></a></p></li>
+<li><p><a href="https://mc-stan.org/docs/functions-reference/"><em>Stan Functions Reference</em></a></p></li>
+</ul>
+</section>
+<section id="case-studies" class="level3">
+<h3 class="anchored" data-anchor-id="case-studies">Case studies</h3>
+<p>Stan case studies cover specific models or techniques with reproducible code (usually in Python or R). They can be found in the devoted page of case studies or through StanCon presentations.</p>
+<ul>
+<li><p><a href="https://mc-stan.org/learn-stan/case-studies.html"><em>Stan Case Studies</em></a></p></li>
+<li><p><a href="https://mc-stan.org/learn-stan/stancon-talks.html"><em>StanCon Case Studies</em></a></p></li>
+</ul>
+</section>
+<section id="interface-documentation" class="level3">
+<h3 class="anchored" data-anchor-id="interface-documentation">Interface documentation</h3>
+<p>Stan provides several interfaces for compiling Stan models, performing inference, and analyzing the results. Each supplies its own documentation.</p>
+<p>CmdStan is the reference implementation of Stan and is coded entirely in C++.</p>
+<ul>
+<li>Command line: <a href="https://mc-stan.org/docs/cmdstan-guide/"><em>CmdStan User’s Guide</em></a></li>
+</ul>
+<p>It includes tools for posterior analysis.</p>
+<p>CmdStanPy, CmdStanR, and Stan.jl make system calls to CmdStan out of process.</p>
+<ul>
+<li><p>Python: <a href="https://mc-stan.org/cmdstanpy/"><em>CmdstanPy Users’s Guide</em></a></p></li>
+<li><p>R: <a href="https://mc-stan.org/cmdstanr/"><em>CmdStanR Users’ Guide</em></a></p></li>
+<li><p>Julia: <a href="http://stanjulia.github.io/Stan.jl/stable/INTRO/"><em>Stan.jl Interface User’s Guide</em></a></p></li>
+</ul>
+<p>PyStan and RStan call Stan code directly through C++.</p>
+<ul>
+<li><p>Python: <a href="https://pystan.readthedocs.io/en/latest/"><em>PyStan User’s Guide</em></a></p></li>
+<li><p>R: <a href="https://mc-stan.org/rstan/"><em>RStan User’s Guide</em></a></p></li>
+</ul>
+<p>BridgeStan is the cross-platform interface for accessing Stan language components, including (unconstrained) log densities, gradients, and Hessians, as well as parameter transformations and the posterior predictive simulations required for generated quantities.</p>
+<ul>
+<li>Python, R, C, Rust: <a href="https://roualdes.us/bridgestan/latest/"><em>BridgeStan User’s Guide</em></a></li>
+</ul>
+<p>BridgeStan is implemented through low-level foreign function interfaces that link to the compiled C++ class for a Stan program and the Stan math library.</p>
+</section>
+<section id="documentation-source-code-web-site" class="level3">
+<h3 class="anchored" data-anchor-id="documentation-source-code-web-site">Documentation source code web site</h3>
+<p>Stan’s core documentation is also maintained on GitHub, with package-specific documentation maintained in the same repository as the code.</p>
+<ul>
+<li><a href="https://github.com/stan-dev/docs"><code>docs</code></a> (Quarto markdown): where this document’s source is hosted</li>
+<li><a href="https://github.com/stan-dev/design-docs"><code>design-docs</code></a> (GitHub markdown): where the developers discuss designs</li>
+</ul>
+</section>
+<section id="web-site-source-code" class="level3">
+<h3 class="anchored" data-anchor-id="web-site-source-code">Web site source code</h3>
+<p>The Stan web site, <a href="https://mc-stan.org"><code>https://mc-stan.org</code></a>, is managed through GitHub.</p>
+<ul>
+<li><a href="https://github.com/stan-dev/stan-dev.github.io"><code>stan-dev.github.io</code></a> (Markdown, YAML): <code>mc-stan.org</code> web site</li>
+</ul>
+</section>
+<section id="further-documentation-resources" class="level3">
+<h3 class="anchored" data-anchor-id="further-documentation-resources">Further documentation resources</h3>
+<p>In addition to the documentation maintained by the development team, there are many resources available online from the community including books, video courses, talks, papers, and case studies.</p>
+</section>
+</section>
+<section id="core-c-and-interface-organization" class="level2">
+<h2 class="anchored" data-anchor-id="core-c-and-interface-organization">Core C++ and interface organization</h2>
+<!--
+% coded with help from Claude Opus 4.8
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, calc, bending, shapes.geometric}
+\usepackage[scale=0.9]{sourcecodepro}
+
+\begin{document}
+\centering
+
+\begin{tikzpicture}[
+  lib/.style={draw, thick, rounded corners,
+              minimum width=1.9cm, minimum height=0.7cm, font=\ttfamily,
+              text height=1.5ex, text depth=.25ex},
+  dep/.style={-{Stealth[length=2.5mm]}, thick}
+]
+
+\node[lib, fill=yellow!50] (math)    at (7.8, 6.4) {math};
+\node[lib, fill=yellow!50] (stan)    at (7.8, 4.8) {stan};
+\node[lib, fill=yellow!50] (cmdstan) at (2.6,3.2) {cmdstan};
+
+% ===================== Interface row =====================
+% left trio -> cmdstan
+\node[lib, fill=red!50]    (cmdstanr)  at (0,1.6)    {cmdstanr};
+\node[lib, fill=blue!40]   (cmdstanpy) at (2.6,1.6)  {cmdstanpy};
+\node[lib, fill=orange!50] (stanjl)    at (5.2,1.6)  {stan.jl};
+% bridgestan: six language stripes, full height (sharp corners so they reach top & bottom)
+\node[lib, sharp corners, path picture={
+    \coordinate (nw) at (path picture bounding box.north west);
+    \coordinate (ne) at (path picture bounding box.north east);
+    \coordinate (se) at (path picture bounding box.south east);
+    \coordinate (q1) at ($(nw)!0.1667!(ne)$);
+    \coordinate (q2) at ($(nw)!0.3333!(ne)$);
+    \coordinate (q3) at ($(nw)!0.5000!(ne)$);
+    \coordinate (q4) at ($(nw)!0.6667!(ne)$);
+    \coordinate (q5) at ($(nw)!0.8333!(ne)$);
+    \fill[yellow!50] (nw) rectangle (q1 |- se);
+    \fill[blue!40] (q1) rectangle (q2 |- se);
+    \fill[red!50]   (q2) rectangle (q3 |- se);
+    \fill[orange!50]    (q3) rectangle (q4 |- se);
+    \fill[green!50] (q4) rectangle (q5 |- se);
+    \fill[gray!50]  (q5) rectangle (ne |- se);
+  }] (bridgestan) at (7.8,1.6) {bridgestan};
+% right trio -> stan
+\node[lib, fill=red!50]    (rstan)   at (10.4,1.6) {rstan};
+\node[lib, fill=blue!40]   (pystan)  at (13.0,1.6) {pystan};
+
+% ===================== High-level R packages =====================
+\node[lib, fill=red!50] (brms)     at (0,0)    {brms};
+\node[lib, fill=red!50] (rstanarm) at (10.4,0) {rstanarm};
+
+% ===================== Dependency arrows (point up) =====================
+\draw[dep] (cmdstan)    -- (stan);
+\draw[dep] (stan)       -- (math);
+\draw[dep] (cmdstanr)   -- (cmdstan);
+\draw[dep] (cmdstanpy)  -- (cmdstan);
+\draw[dep] (stanjl)     -- (cmdstan);
+\draw[dep] (bridgestan) -- (stan);
+\draw[dep] (rstan)      -- (stan);
+\draw[dep] (pystan)     -- (stan);
+\draw[dep] (brms)       -- (cmdstanr);
+\draw[dep] (rstanarm)   -- (rstan);
+
+% ===================== Legend =====================
+\draw[rounded corners, thick, fill=white] (-0.20,4.9) rectangle (4.0,7.5);
+\node[font=\sffamily] at (0.95,7.05) {Language};
+\foreach \yy/\col/\lab in {%
+    6.5/yellow/C\texttt{++},
+    5.5/blue/Python,
+    6.0/red/R}{%
+  \node[draw, fill=\col!50, minimum size=0.32cm, inner sep=0] at (.45,\yy) {};
+  \node[right, font=\small\sffamily] at (0.7,\yy) {\lab};
+}
+\foreach \yy/\col/\lab in {%
+    6.5/orange/Julia, 
+    6/green/C,
+    5.5/gray/Rust}{%
+  \node[draw, fill=\col!50, minimum size=0.32cm, inner sep=0] at (2.45,\yy) {};
+  \node[right, font=\small\sffamily] at (2.7,\yy) {\lab};
+}
+
+\end{tikzpicture}
+\end{document}
+-->
+<div id="fig-stan-projects" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-stan-projects-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="img/stan-ecosystem.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:75.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-stan-projects-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The core Stan foundation and interface ecosystem as organized in GitHub repositories. The color coding is based on external interface language.
+</figcaption>
+</figure>
+</div>
+<p>The projects shown in <a href="#fig-stan-projects" class="quarto-xref">Figure&nbsp;1</a> are just the tip of the iceberg. Stan is organized into more than fifty GitHub repositories, all of which can be found in the following location.</p>
+<ul>
+<li>GitHub organization for Stan’s source code and documentation: <a href="https://github.com/stan-dev"><code>stan-dev</code></a></li>
+</ul>
+<section id="higher-level-stan-interfaces-brms-and-rstanarm" class="level3">
+<h3 class="anchored" data-anchor-id="higher-level-stan-interfaces-brms-and-rstanarm">Higher-level Stan interfaces: <code>brms</code> and <code>rstanarm</code></h3>
+<p>The Stan project also maintains two high-level interfaces to Stan, <code>brms</code> and <code>rstanarm</code>. These both use R’s expression language for regressions to allow users to write Bayesian models in a natural way while compiling down to well-implemented Stan programs on the back end.</p>
+<ul>
+<li>Bayesian regression models using Stan: <a href="https://paulbuerkner.com/brms/"><code>brms</code></a></li>
+<li>Bayesian applied regression modeling (arm) via Stan: <a href="https://mc-stan.org/rstanarm/"><code>rstanarm</code></a></li>
+</ul>
+<p>Although they cover slightly different model families, the main difference is that <code>rstanarm</code> does not require a C++ toolchain to compile models, whereas <code>brms</code> does. This makes <code>rstanarm</code> much easier to install and distribute.</p>
+<p>Many other individuals and companies have built tools that depend on the core Stan language or packages, many of which are available open source. These handle everything from compartment pharmacometric/pharmacodynamic models (<code>torsten</code>) to structural equation models (<code>blavaan</code>) to general additive models for time series (<code>prophet</code>).</p>
+</section>
+<section id="programming-language" class="level3">
+<h3 class="anchored" data-anchor-id="programming-language">Programming language</h3>
+<p>Stan provides a domain-specific language for specifying smooth, data-dependent target density functions on the logarithmic scale. Stan is a differentiable programming language, meaning that Stan can automatically take first, second, and even higher-order derivatives of any log density it defines. Stan is also a probabilistic programming language in that its variables represent random variables and constants (at least when viewed from the Bayesian perspective).</p>
+<p>Under the hood, Stan uses a standard programming language stack of parser, intermediate representation layer, and code generator. These are all written in the OCaml programming language. The code generator produces a C++ class implementing the model defined by the Stan program.</p>
+<p>The code for the parser, intermediate representation, and C++ code generator is maintained in its own repository.</p>
+<ul>
+<li><a href="https://github.com/stan-dev/stanc3"><code>stanc3</code></a> (OCaml): Stan language compiler</li>
+</ul>
+<p>For Bayesian applications, the target log density will be the posterior log density function (up to an additive constant). For frequentist applications, it will be a penalized likelihood function. Stan also provides a method for efficiently coding posterior predictive quantities through simulation.</p>
+</section>
+<section id="ide-support" class="level3">
+<h3 class="anchored" data-anchor-id="ide-support">IDE support</h3>
+<p>Stan provide syntax highlighting and integrated development environment (IDE) support as outlined on the following page.</p>
+<ul>
+<li><a href="https://mc-stan.org/tools/#editor-and-ide-support">Editor and IDE support</a></li>
+</ul>
+</section>
+</section>
+<section id="stan-math-library" class="level2">
+<h2 class="anchored" data-anchor-id="stan-math-library">Stan math library</h2>
+<p>The C++ class produced by the <code>stanc3</code> compiler depends on the Stan Math Library. The math library implements differentiable arithmetic operations, matrix and linear algebra operations, special mathematical functions, and special statistical functions. The Stan math library itself has four dependencies in addition to C++ itself,</p>
+<ul>
+<li><p><a href="https://www.intel.com/content/www/us/en/developer/tools/oneapi/onetbb.html"><code>tbb</code></a> : Intel Thread Building Blocks for thread management including pools and synchronization,</p></li>
+<li><p><a href="https://www.boost.org"><code>boost</code></a>: Boost for general C++ tooling, special functions, random number generators, and densities.</p></li>
+<li><p><a href="https://libeigen.gitlab.io"><code>Eigen</code></a>: Eigen for templated general matrix operations and linear algebra solvers, and</p></li>
+<li><p><a href="https://computing.llnl.gov/projects/sundials"><code>sundials</code></a>: Suite of nonlinear and differential/algebraic equation solvers (SUNDIALS).</p></li>
+</ul>
+<p>The math library can call out to GPU for some operations (e.g., Cholesky factorization or matrix-matrix multiplication), but overall, it has been much more heavily optimized for CPUs. When using GPUs, there is a further dependency.</p>
+<ul>
+<li><a href="https://www.khronos.org/opencl/"><code>OpenCL</code></a>: Open Computing Language (OpenCL) for GPU management.</li>
+</ul>
+</section>
+<section id="additional-r-packages" class="level2">
+<h2 class="anchored" data-anchor-id="additional-r-packages">Additional R packages</h2>
+<p>Stan provides a dedicated tool for posterior summarization and analysis in R,</p>
+<ul>
+<li><a href="https://github.com/stan-dev/posterior"><code>posterior</code></a> (R): posterior analysis tools</li>
+</ul>
+<p>along with complementary plotting components,</p>
+<ul>
+<li><a href="https://github.com/stan-dev/bayesplot"><code>bayesplot</code></a> (R): plotting tools</li>
+</ul>
+<p>There is a tool for cross-validation.</p>
+<ul>
+<li><a href="https://github.com/stan-dev/loo"><code>loo</code></a> (R): approximate leave-one out cross-validation</li>
+</ul>
+<p>There is a dashboard for visualizing and analyzing posterior results.</p>
+<ul>
+<li><a href="https://github.com/stan-dev/shinystan"><code>shinystan</code></a> (R): dashboard for exploring Stan model fits</li>
+</ul>
+<p>And there is a package</p>
+<ul>
+<li><a href="https://github.com/stan-dev/rstantools"><code>rstantools</code></a> (R): tools for developing R packages interfacing with Stan</li>
+</ul>
+</section>
+<section id="python-package-arviz-for-downstream-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="python-package-arviz-for-downstream-analysis">Python package <code>ArviZ</code> for downstream analysis</h2>
+<p>The Stan project doesn’t maintain its own Python packages for downstream analysis, however it can interface directly with <a href="https://python.arviz.org/">ArviZ</a>. ArviZ is Python library which provides diagnostics and visualizations for Bayesian workflow. The function <a href="https://python.arviz.org/projects/base/en/latest/how_to/ConversionGuideCmdStanPy.html">from_cmdstanpy</a> accepts a CmdStanPy <a href="https://mc-stan.org/cmdstanpy/api.html#cmdstanmcmc">MCMC object</a> and provides the Python equivalent of the functions in the R packages <code>posterior</code>, <code>bayesplot</code>, and <code>loo</code>.</p>
+</section>
+<section id="stan-inference-engines" class="level2">
+<h2 class="anchored" data-anchor-id="stan-inference-engines">Stan inference engines</h2>
+<p>Stan supports inference for probability models through general, model-agnostic sampling techniques.</p>
+<section id="markov-chain-monte-carlo" class="level3">
+<h3 class="anchored" data-anchor-id="markov-chain-monte-carlo">Markov chain Monte Carlo</h3>
+<p>Stan’s default inference method is Markov chain Monte Carlo sampling using the no-U-turn sampler (NUTS). supports two Markov chain Monte Carlo (MCMC) methods. There is more detail in the reference manual.</p>
+<ul>
+<li><a href=" https://mc-stan.org/docs/reference-manual/mcmc.html">MCMC</a> (<em>Reference Manual</em>)</li>
+</ul>
+</section>
+<section id="variational-inference" class="level3">
+<h3 class="anchored" data-anchor-id="variational-inference">Variational inference</h3>
+<p>Stan also includes the following two approximate inference techniques based on variational inference,</p>
+<ul>
+<li><p><a href="https://mc-stan.org/docs/reference-manual/variational.html">Automatic differentiation variational inference</a> (<em>Reference Manual</em>)</p></li>
+<li><p><a href="https://mc-stan.org/docs/reference-manual/pathfinder.html">Pathfinder variational inference</a> (<em>Reference Manual</em>)</p></li>
+</ul>
+</section>
+<section id="laplace-approximation" class="level3">
+<h3 class="anchored" data-anchor-id="laplace-approximation">Laplace approximation</h3>
+<p>Stan also supplies an approximate method based on optimization and curvature.</p>
+<ul>
+<li><a href="https://mc-stan.org/docs/reference-manual/laplace.html">Laplace approximation</a> (<em>Reference Manual</em>)</li>
+</ul>
+</section>
+<section id="optimization-for-maximum-likelihood-and-maximum-a-posterior-estimation" class="level3">
+<h3 class="anchored" data-anchor-id="optimization-for-maximum-likelihood-and-maximum-a-posterior-estimation">Optimization for maximum likelihood and maximum a posterior estimation</h3>
+<p>Stan supplies industry-standard optimization methods, which can be used for maximum likelihood estimates and as the basis for Laplace approximations. Stan supplies standard Newton optimization, BFGS, and L-BFGS.</p>
+<ul>
+<li><a href="https://mc-stan.org/docs/reference-manual/optimization.html">Optimization</a></li>
+</ul>
+<p>Stan can estimate confidence intervals through the bootstrap as explained in the posterior inference and model checking part of this document.</p>
+</section>
+</section>
+<section id="background-reading-on-bayesian-statistics-and-stan" class="level2">
+<h2 class="anchored" data-anchor-id="background-reading-on-bayesian-statistics-and-stan">Background reading on Bayesian Statistics and Stan</h2>
+<p>This section links some resources for getting started with Bayesian statistics using Stan. The first two recommendations are for introductions to Bayesian statistics using Stan, a complete hands-on introductory textbook and shorter introductory article.</p>
+<ul>
+<li><p><a href="https://xcelab.net/rm/"><em>Statistical Rethinking: A Bayesian Course with Examples in R and Stan</em>, Second Edition</a>. 2020. Richard McElreath. CRC Press.</p></li>
+<li><p><a href="https://bob-carpenter.github.io/stan-getting-started/stan-getting-started.html">Getting started with Bayesian statistics using Stan and Python</a>. 2023. Bob Carpenter.</p></li>
+</ul>
+<p>The next step to understanding Bayesian statistics more deeply after these introductory texts is <em>BDA3</em>, a free pdf for which is available from the linked web site.</p>
+<ul>
+<li><a href="https://sites.stat.columbia.edu/gelman/book/"><em>Bayesian Data Analysis, Third Edition</em></a>. 2013. Andrew Gelman, John Carlin, Hal Stern, David Dunson, Aki Vehtari, and Donald Rubin. CRC Press.</li>
+</ul>
+<p>Model building and inference, as supplied by Stan, are only two pieces in a bigger toolchain needed for effective applied statistical modeling. The bigger picture extends to exploratory data analysis, model construction and choice, algorithm calibration checking, prior and posterior predictive checking, plotting and visualization, and results presentation. The following short article and book provide advice on this broader statistical workflow from a Bayesian perspective with worked examples in Stan.</p>
+<ul>
+<li><p><a href="https://sites.stat.columbia.edu/gelman/research/published/Statistical_Workflow_article.pdf">Statistical workflow</a>. 2026. Andrew Gelman, Aki Vehtari, Richard McElreath. <em>Philosophical Transactions of the Royal Society A</em>.</p></li>
+<li><p><a href="https://avehtari.github.io/Bayesian-Workflow/"><em>Bayesian Workflow</em></a>. 2026. Andrew Gelman, Aki Vehtari, Richard McElreath, Daniel Simpson, Charles C. Margossian, Yuling Yao, Lauren Kennedy, Jonah Gabry, Paul-Christian Bürkner, Martin Modrák, Vianey Leos Barajas. Cambridge University Press.</p></li>
+</ul>
+
+
+</section>
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../stan-users-guide/index.html" class="pagination-link" aria-label="Stan User's Guide">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Stan User’s Guide</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../stan-users-guide/how-stan-works.html" class="pagination-link" aria-label="How Stan Works">
+        <span class="nav-page-text">How Stan Works</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/stan-dev/docs/edit/master/src/stan-users-guide/ecosystem.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/stan-dev/docs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script>
+// Workaround for Safari not scrolling to URL fragment identifiers
+// on fresh page loads. Uses MutationObserver to wait for Quarto's
+// post-load DOM rendering (sidebar, TOC, MathJax) to settle before
+// scrolling. Scrolls as soon as DOM changes stop for 80ms.
+window.addEventListener('load', function () {
+  if (!window.location.hash) return;
+  var el = document.querySelector(window.location.hash);
+  if (!el) return;
+
+  var timer;
+  var observer = new MutationObserver(function () {
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      observer.disconnect();
+      el.scrollIntoView();
+    }, 80);
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  timer = setTimeout(function () {
+    observer.disconnect();
+    el.scrollIntoView();
+  }, 80);
+});
+</script>
+
+
+
+
+</body></html>

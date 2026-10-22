@@ -220,17 +220,18 @@ $$
 \tilde{y}_n^{(m)} \sim \textrm{normal}(\tilde{y}_n \mid \alpha^{(m)} +
 \beta^{(m)} \cdot \tilde{x}_n, \sigma^{(m)}),
 $$
-and the normal distribution has symmetric error so that the expectation of
-$\tilde{y}_n^{(m)}$ is the same as $\alpha^{(m)} + \beta^{(m)} \cdot
-\tilde{x}_n$.  Replacing the sampled quantity $\tilde{y}_n^{(m)}$ with
-its expectation is a general variance reduction technique for Monte
-Carlo estimates known as *Rao-Blackwellization* [@Rao:1945; @Blackwell:1947].
+and the expectation of a normal distribution is its location parameter,
+so that the expectation of $\tilde{y}_n^{(m)}$ is
+$\alpha^{(m)} + \beta^{(m)} \cdot \tilde{x}_n$.  Replacing the sampled
+quantity $\tilde{y}_n^{(m)}$ with its expectation is a general variance
+reduction technique for Monte Carlo estimates known as
+*Rao-Blackwellization* [@Rao:1945; @Blackwell:1947].
 
 In the linear case, because the predictor is linear in the
 coefficients, the estimate can be further simplified to use the
 estimated coefficients,
 \begin{eqnarray*}
-\tilde{y}_n^{(m)}
+\hat{\tilde{y}}_n
 & \approx &
 \frac{1}{M} \sum_{m = 1}^M
   \left( \alpha^{(m)} + \beta^{(m)} \cdot \tilde{x}_n \right)
@@ -293,9 +294,8 @@ functions {
     for (n in 1 : N) {
       y[n] = n;
     }
-    vector[N] theta = rep_vector(1.0 / N, N);
-    for (n in 1 : size(y)) {
-      int i = categorical_rng(theta);
+    for (n in 1 : N - 1) {
+      int i = discrete_range_rng(n, N);
       int temp = y[n];
       y[n] = y[i];
       y[i] = temp;
@@ -307,9 +307,10 @@ functions {
 The name of the function must end in `_rng` because it uses other
 random functions internally.  This will restrict its usage to the
 transformed data and generated quantities block.  The code walks
-through an array of integers exchanging each item with another randomly chosen
-item, resulting in a uniformly drawn permutation of the integers
-`1:N`.^[The traditional approach is to walk through a vector and replace each item with a random element from the remaining elements, which is guaranteed to only move each item once. This was not done here as it'd require new categorical `theta` because Stan does not have a uniform discrete RNG built in.]
+through an array of integers and exchanges the item at position `n`
+with an item drawn uniformly from positions `n` to `N`.  This is the
+Fisher-Yates shuffle, and the result is a uniformly drawn permutation
+of the integers `1:N`.
 
 The transformed data block uses the permutation RNG to generate
 training data and test data by taking prefixes and suffixes of the
@@ -349,19 +350,28 @@ model {
   { alpha, beta, sigma } ~ normal(0, 1);
 }
 generated quantities {
-  vector[N] y_test_hat = normal_rng(alpha + beta * x_test, sigma);
-  vector[N] err = y_test_sim - y_hat;
+  vector[N_test] mu_test = alpha + beta * x_test;
+  vector[N_test] err = mu_test - y_test;
 }
 ```
-The prediction `y_test_hat` is defined in the generated quantities
-block using the general form involving all uncertainty.  The posterior
-of this quantity corresponds to using a posterior mean estimator,
+The prediction `mu_test` is the linear predictor for the test data.
+As shown in the previous section, its posterior mean is the posterior
+mean estimate of the test outcomes,
 \begin{eqnarray*}
 \hat{y}^{\textrm{test}}
-& = & \mathbb{E}\left[ y^{\textrm{test}} \mid x^{\textrm{test}}, x^{\textrm{train}} y^{\textrm{train}} \right]
+& = & \mathbb{E}\left[
+  \mu^{\textrm{test}}
+  \mid x^{\textrm{test}}, x^{\textrm{train}}, y^{\textrm{train}}
+\right]
 \\[4pt]
-& \approx & \frac{1}{M} \sum_{m = 1}^M \hat{y}^{\textrm{test}(m)}.
+& \approx & \frac{1}{M} \sum_{m = 1}^M \mu^{\textrm{test}(m)},
 \end{eqnarray*}
+where
+$$
+\mu^{\textrm{test}(m)}
+= \alpha^{(m)} + \beta^{(m)} \cdot x^{\textrm{test}}
+$$
+for posterior draws $\alpha^{(m)}$ and $\beta^{(m)}$.
 
 Because the test set is constant and the expectation operator is
 linear, the posterior mean of `err` as defined in the Stan program
@@ -370,26 +380,20 @@ will be the error of the posterior mean estimate,
   \hat{y}^{\textrm{test}} - y^{\textrm{test}}
 & = &
 \mathbb{E}\left[
-  \hat{y}^{\textrm{test}}
+  \mu^{\textrm{test}}
   \mid x^{\textrm{test}}, x^{\textrm{train}}, y^{\textrm{train}}
 \right]
   - y^{\textrm{test}}
 \\[4pt]
 & = &
 \mathbb{E}\left[
-  \hat{y}^{\textrm{test}} - y^{\textrm{test}}
+  \mu^{\textrm{test}} - y^{\textrm{test}}
   \mid x^{\textrm{test}}, x^{\textrm{train}}, y^{\textrm{train}}
 \right]
 \\[4pt]
 & \approx &
-\frac{1}{M} \sum_{m = 1}^M \hat{y}^{\textrm{test}(m)} - y^{\textrm{test}},
+\frac{1}{M} \sum_{m = 1}^M \mu^{\textrm{test}(m)} - y^{\textrm{test}}.
 \end{eqnarray*}
-where
-$$
-\hat{y}^{\textrm{test}(m)}
-\sim p(y \mid x^{\textrm{test}}, x^{\textrm{train}},
-y^{\textrm{train}}).
-$$
 This just calculates error; taking absolute value or squaring will
 compute absolute error and mean square error. Note that the absolute
 value and square operation should *not* be done within the Stan
@@ -446,4 +450,4 @@ prediction performs with more or less historical data.
 @VehtariEtAl:2017 introduce a method that approximates the evaluation
 of leave-one-out cross validation inexpensively using only the data
 point log likelihoods from a single model fit.  This method is
-documented and implemented in the R package loo [@GabryEtAl:2019].
+documented and implemented in the R package loo [@VehtariEtAl:2026].

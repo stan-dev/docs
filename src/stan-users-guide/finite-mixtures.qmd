@@ -398,7 +398,7 @@ generated quantities {
   for (n in 1:N_tilde) {
     log_p_y_tilde[n]
       = log_mix(lambda,
-                normal_lpdf(y_tilde[n] | mu[1], sigma[1])
+                normal_lpdf(y_tilde[n] | mu[1], sigma[1]),
                 normal_lpdf(y_tilde[n] | mu[2], sigma[2]));
   }
 }
@@ -407,9 +407,11 @@ generated quantities {
 It is a bit of a bother afterwards, because the logarithm function
 isn't linear and hence doesn't distribute through averages (Jensen's
 inequality shows which way the inequality goes).  The right thing to
-do is to apply `log_sum_exp` of the posterior draws of
-`log_p_y_tilde`.  The average log predictive density is then
-given by subtracting `log(N_new)`.
+do is to apply `log_sum_exp` to the $M$ posterior draws of
+`log_p_y_tilde[n]` and subtract `log(M)`.  The result is the log
+predictive density $\log p(\tilde{y}_n \mid y)$ of test point $n$.
+The average of these values over the `N_tilde` test points is the
+average log predictive density.
 
 
 #### Clustering and similarity {-}

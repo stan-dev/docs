@@ -74,9 +74,15 @@ and total count parameter
 $$
 \lambda = \alpha + \beta.
 $$
-Following @[GelmanEtAl:2013, Chapter 5] the mean
-gets a uniform prior and the count parameter a Pareto prior with
-$p(\lambda) \propto \lambda^{-2.5}$.
+Following @GelmanEtAl:2013 [chap. 5], the prior on the original
+parameters is $p(\alpha, \beta) \propto (\alpha + \beta)^{-5/2}$,
+which is uniform on $\alpha / (\alpha + \beta)$ and
+$(\alpha + \beta)^{-1/2}$.  The Jacobian of the transform from
+$(\phi, \lambda)$ to $(\alpha, \beta)$ is $\lambda$, so the mean gets
+a uniform prior and the count parameter gets the prior
+$p(\lambda) \propto \lambda \cdot \lambda^{-5/2} = \lambda^{-3/2}$.
+This prior is improper.  The lower bound of 0.1 on $\lambda$ makes it
+a proper Pareto prior.
 
 ```stan
 parameters {
@@ -91,7 +97,7 @@ transformed parameters {
 }
 model {
   phi ~ beta(1, 1); // uniform on phi, could drop
-  lambda ~ pareto(0.1, 1.5);
+  lambda ~ pareto(0.1, 0.5);
   for (n in 1:N) {
     theta[n] ~ beta(alpha, beta);
   }

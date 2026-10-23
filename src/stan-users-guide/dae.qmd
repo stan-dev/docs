@@ -199,7 +199,9 @@ vector[3] y_hat[N] = dae_tol(chem, yy0, yp0, t0, ts,
 
 `relative_tolerance` and `absolute_tolerance` control accuracy the solver tries to achieve, and
 `max_num_steps` specifies the maximum number of steps the solver will
-take between output time points before throwing an error.
+take between output time points.  If the solver reaches this limit, it
+throws an error; see the section on the [maximum number of
+steps](#dae-max-num-steps) below.
 
 The control parameters must be data variables -- they cannot be
 parameters or expressions that depend on parameters, including local
@@ -213,11 +215,22 @@ one hundred million. We suggest the user choose the control parameters according
 to the problem in hand, and resort to the defaults only when no
 knowledge of the DAE system or the physics it models is available.
 
-### Maximum number of steps {-}
+### Maximum number of steps {- #dae-max-num-steps}
 
 The maximum number of steps can be used to stop a runaway simulation.
 This can arise in when MCMC moves to a part of parameter space very far from
 where a differential equation would typically be solved. In particular this
-can happen during warmup.  With the non-stiff solver, this may happen when
-the sampler moves to stiff regions of parameter space, which will requires small
-step sizes.
+can happen during warmup.
+
+If the solver reaches the maximum number of steps, it throws an error
+that Stan handles in the same way as a [reject
+statement](https://mc-stan.org/docs/reference-manual/statements.html#reject-statements.section).
+The effect depends on where the solver is called:
+
+* In the transformed data block, the error stops the program.
+* During initialization, Stan rejects the initial values and tries new
+  random initial values.
+* During warmup and sampling with NUTS, the sampler marks the
+  transition as divergent.
+
+Stan prints the error message in each case.

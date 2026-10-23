@@ -1601,15 +1601,41 @@ Fatal errors in other blocks may also be signaled by use of the
 
 Rejections in the transformed parameters and model blocks are
 not in and of themselves instantly fatal.  The result has the same
-effect as assigning a $-\infty$ log probability, which causes
+effect as assigning a $-\infty$ log density, which causes
 rejection of the current proposal in MCMC samplers and adjustment of
 search parameters in optimization.
 
-If the log probability function results in a rejection every time it is
+During initialization, a rejection causes the initial values to be
+rejected, and new random initial values are drawn.  There are at most
+100 attempts.  If the user supplies initial values for all parameters,
+or uses zero initialization, there is only one attempt, and a
+rejection stops the algorithm.
+
+In the NUTS sampler, a rejection while the sampler simulates a
+trajectory has the same effect as a $-\infty$ log density at that
+point.  The Hamiltonian then moves far from its initial value, so the
+sampler stops the trajectory and marks the transition as
+[divergent](mcmc.qmd#divergent-transitions).  This is the same in
+warmup and in sampling.
+
+If the log density function results in a rejection every time it is
 called, the containing application (MCMC sampler or optimization)
 should diagnose this problem and terminate with an appropriate error
 message.  To aid in diagnosing problems, the message for each
 reject statement will be printed as a result of executing it.
+
+#### Rejections in generated quantities {-}
+
+Rejections in the generated quantities block do not stop the
+algorithm.  The message is printed, and the draw is written to the
+output.  The values of the parameters and of the transformed
+parameters are kept, and the generated quantities that were not
+computed before the rejection are written as NaN.  This is the same
+for MCMC sampling and for standalone generated quantities.
+
+Exceptions from built-in functions in the generated quantities block
+have the same effect.  An exception that is not a rejection, for
+example an exception from `fatal_error`, stops the algorithm.
 
 
 ### Rejection is not for constraints {-}

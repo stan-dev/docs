@@ -1605,6 +1605,18 @@ effect as assigning a $-\infty$ log probability, which causes
 rejection of the current proposal in MCMC samplers and adjustment of
 search parameters in optimization.
 
+During initialization, a rejection causes the initial values to be
+rejected, and new random initial values are drawn.  There are at most
+100 attempts.  If the user supplies initial values for all parameters,
+or uses zero initialization, there is only one attempt, and a
+rejection stops the algorithm.
+
+In the NUTS sampler, a rejection while the sampler simulates a
+trajectory sets the potential energy to infinity.  The sampler then
+stops the trajectory and marks the transition as
+[divergent](mcmc.qmd#divergent-transitions).  This is the same in
+warmup and in sampling.
+
 If the log probability function results in a rejection every time it is
 called, the containing application (MCMC sampler or optimization)
 should diagnose this problem and terminate with an appropriate error

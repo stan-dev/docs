@@ -14,10 +14,12 @@ argument configuration has subargument `test` which currently only takes value `
 There are two available gradient test configuration arguments:
 
 - `epsilon` - The finite difference step size.
-Must be a positive real number. Default value is $1^{-6}$
+Must be a positive real number. Default value is $10^{-6}$.
 
-- `error` - The error threshold.
-Must be a positive real number. Default value is $1^{-6}$
+- `error` - The error threshold.  A gradient element fails the test
+if the absolute difference between the automatic differentiation
+gradient and the finite difference gradient is larger than this value.  Must be a positive real number. Default value is
+$10^{-6}$.
 
 To run on the different platforms with the default configuration, use one of the following.
 
@@ -40,7 +42,7 @@ To relax the test threshold, specify the `error` argument as follows:
 To see how this works, we run diagnostics on the example bernoulli model:
 
 ```
-> ./bernoulli diagnose data file=bernoulli.data.R
+> ./bernoulli diagnose data file=bernoulli.data.json
 ```
 
 Executing this command prints output to the console and as a series of
@@ -75,3 +77,40 @@ TEST GRADIENT MODE
 
 The same information is printed to the output file as csv comments, i.e.,
 each line is prefixed with a pound sign `#`.
+
+## Output columns
+
+The test evaluates the model at one set of initial values, on the
+unconstrained scale.  The `Log probability` line gives the log density
+at these values, with the Jacobian adjustment and without constant
+terms.  This is the same value as `lp__` in the output of the `sample`
+method.  The table has one row for each element of the unconstrained
+parameter vector.
+
+- `param idx` - The index of the element in the vector of unconstrained
+parameters, starting at 0.  The elements are in the order of the
+parameter declarations.  A constrained parameter can have fewer
+unconstrained elements than constrained elements.  For example, a
+`simplex[K]` has $K-1$ unconstrained elements.
+
+- `value` - The unconstrained value of the element.
+
+- `model` - The gradient of the log density with respect to the
+element, computed by automatic differentiation.
+
+- `finite diff` - The same gradient, computed by central finite
+differences with step size `epsilon`.
+
+- `error` - The difference `model` minus `finite diff`.
+
+Because the threshold is absolute, a large gradient can fail the test
+even if the model is correct.  In that case, compare the error with
+the size of the gradient, or use a larger `error`.
+
+## Return code
+
+The `diagnose` method returns the exit code 1 if at least one element
+fails the test.  In this case, the output table is complete, and the
+`error` column shows the failed elements.  The exit code is also 1 if
+the method cannot run, for example if initialization fails.  Then the
+console shows the error message instead of the table.

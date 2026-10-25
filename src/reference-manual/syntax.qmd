@@ -464,26 +464,36 @@ Functions ending in `_rng` may only be called in the `transformed
 data` and `generated quantities` block, and within the bodies of
 user-defined functions with names ending in `_rng`.
 
-#### Unnormalized distributions
+#### Incrementing and accessing the log density {#target-jacobian-restrictions}
 
-Unnormalized distributions (with suffixes `_lupmf` or `_lupdf`) may only be
-called in the `model` block, user-defined probability functions, or within the
-bodies of user defined functions which end in `_lp`.
+The tables show where each construct may be used: by program block,
+and by the name suffix of the user-defined function that contains it.
 
-#### Incrementing and accessing target
+| Construct                         | Transformed data | Transformed parameters | Model | Generated quantities |
+|:----------------------------------|:----:|:----:|:----:|:----:|
+| `target +=`                       | no   | no   | yes  | no   |
+| distribution statement (`~`)      | no   | no   | yes  | no   |
+| call to an `_lp` function         | no   | yes^1^ | yes | no |
+| `target()`                        | no   | yes  | yes  | no   |
+| `jacobian +=`                     | no   | yes  | no   | no   |
+| call to a `_jacobian` function    | no   | yes  | no   | no   |
+| `_lupdf` and `_lupmf` functions   | no   | no   | yes  | no   |
+| `_lpdf`, `_lpmf`, `_cdf`, `_lcdf`, and `_lccdf` functions | yes | yes | yes | yes |
 
-`target +=` statements can only be used inside of the `model` block or
-user-defined functions which end in `_lp`.
+^1^ Deprecated; see [deprecations](deprecations.qmd#use-of-_lp-functions-in-transformed-parameters).
 
-User defined functions which end in `_lp` and the `target()` function can only
-be used in the `model` block, `transformed parameters` block, and in the bodies
-of other user defined functions which end in `_lp`.
+| Construct, by function suffix | `_lp` | `_jacobian` | `_lpdf`, `_lpmf` | other |
+|:----------|:----:|:----:|:----:|:----:|
+| `target +=`, `~`, call to an `_lp` function, `target()` | yes | no | no | no |
+| `jacobian +=`, call to a `_jacobian` function | no | yes | no | no |
+| `_lupdf` and `_lupmf` functions | no | no | yes | no |
+| `_lpdf`, `_lpmf`, `_cdf`, `_lcdf`, and `_lccdf` functions | yes | yes | yes | yes |
 
-Distribution statements (using `~`) can only be used in the `model` block or in the
-bodies of user-defined functions which end in `_lp`.
-
-`jacobian +=` statements can only be used inside of the `transformed parameters` block
-or in functions that end with `_jacobian`.
+By default, optimization turns the Jacobian adjustment off and skips
+the `jacobian +=` increments.  Optimization still applies the
+increments in `_lp` functions, also when the transformed parameters
+block calls them.  Write a Jacobian adjustment with `jacobian +=` or a
+`_jacobian` function.
 
 ### Probability function naming {-}
 

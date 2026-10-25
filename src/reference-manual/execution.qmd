@@ -198,8 +198,8 @@ must be added to the accumulated log probability.
 
 Next, the transformed parameter statements are executed.  After they
 complete, any constraints declared for the transformed parameters are
-checked.  If the constraints are violated, the model will halt with a
-diagnostic error message.
+checked.  If a constraint is violated, the result is a rejection; see
+the section on [rejections and errors](#rejections-and-errors.section).
 
 The final step in the log probability function calculation is to
 execute the statements defined in the model block.
@@ -283,8 +283,9 @@ on parameters of the model.  Or it may be used to transform parameters
 to an appropriate form for output.
 
 After the generated quantities statements execute, the constraints
-declared on generated quantities variables are validated.   If these
-constraints are violated, the program will terminate with a diagnostic message.
+declared on generated quantities variables are validated.  If a
+constraint is violated, the result is a rejection; see the section on
+[rejections and errors](#rejections-and-errors.section).
 
 ### Write {-}
 
@@ -299,3 +300,85 @@ parameters, and generated quantities are written to a file in
 comma-separated value (CSV) notation with a header defining
 the names of the parameters (including indices for multivariate
 parameters).^[In the R version of Stan, the values may either be written to a CSV file or directly back to R's memory.]
+
+
+## Rejections and errors {#rejections-and-errors.section}
+
+The execution of a block can stop early in two ways.
+
+* A *rejection* occurs when a
+  [`reject` statement](statements.qmd#reject-statements.section)
+  executes, when a variable does not satisfy its declared constraint,
+  or when a built-in function cannot return a value for its arguments.
+  For example, `normal_lpdf` causes a rejection if the scale is not
+  positive, and an ODE solver causes a rejection if it reaches its
+  maximum number of steps.
+
+* A *fatal error* occurs when a
+  [`fatal_error` statement](statements.qmd#fatal-error-statements)
+  executes, or when Stan cannot continue for another reason, for
+  example when memory allocation fails.
+
+Stan prints the message of each rejection and of each fatal error.  A
+fatal error always stops the algorithm.  The effect of a rejection
+depends on the step of the execution in which it occurs.
+
+### Transformed data {-}
+
+A rejection in the transformed data block stops the algorithm.  The
+algorithm cannot start without the transformed data.
+
+### Initialization {-}
+
+At the initial values, Stan evaluates the log density and its
+gradient.  If this evaluation causes a rejection, Stan rejects the
+initial values.  The next step depends on how the initial values were
+given.
+
+* Random initial values: Stan draws new random initial values and
+  evaluates again.  There are at most 100 attempts.
+* User-supplied initial values for some of the parameters: Stan keeps
+  the user-supplied values, draws new random values for the other
+  parameters, and evaluates again.  There are at most 100 attempts.
+* User-supplied initial values for all of the parameters, or zero
+  initial values: there is only one attempt.  A rejection stops the
+  algorithm.
+
+If all attempts cause a rejection, the algorithm stops.
+
+### Sampling {-}
+
+In sampling, a rejection while Stan evaluates the log density or its
+gradient has the same effect as a log density of $-\infty$.  This is
+the same in warmup and in sampling.
+
+With the NUTS sampler, a rejection during a doubling of the trajectory
+makes the Hamiltonian move far from its initial value.  The sampler
+stops the trajectory, discards the current doubling, and marks the
+transition as [divergent](mcmc.qmd#divergent-transitions).  The next
+draw is selected from the part of the trajectory that the sampler
+built before the current doubling.  Thus the sampler can move to a new
+point.  If the rejection occurs in the first leapfrog step of the
+transition, the next draw is the current point.
+
+With static HMC, the proposal is rejected, and the next draw is the
+current point.
+
+A small number of these rejections, for example during early warmup,
+is usually not a problem.  If many transitions are divergent because
+of rejections, examine the messages to find the cause.
+
+### Optimization {-}
+
+In optimization, a rejection during the line search makes the
+optimizer try a shorter step.  If the shorter steps also cause
+rejections, the line search fails.
+
+### Generated quantities {-}
+
+A rejection in the generated quantities block does not stop the
+algorithm.  Stan writes the draw to the output.  The values of the
+parameters and of the transformed parameters are kept, and the
+generated quantities that were not computed before the rejection are
+written as NaN.  This is the same in sampling and in standalone
+generated quantities.

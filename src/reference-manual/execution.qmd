@@ -90,7 +90,7 @@ an initial value of 0 for `theta` leads to an unconstrained value
 of $-\infty$, whereas a value of 1 leads to an unconstrained value of
 $+\infty$.  While this will be inverse transformed back correctly
 given the behavior of floating point arithmetic, the Jacobian will be
-infinite and the log probability function will fail and raise an
+infinite and the log probability density function will fail and raise an
 exception.
 
 
@@ -160,7 +160,7 @@ steps.
 
 ### Leapfrog steps {-}
 
-For each leapfrog step, the negative log probability function and its
+For each leapfrog step, the negative log probability density function and its
 gradient need to be evaluated at the position corresponding to the
 current parameter values (a more detailed sketch is provided in the
 next section).  These are used to update the momentum based on the
@@ -178,11 +178,11 @@ sampler (NUTS) will determine the number of leapfrog steps adaptively
 [@Hoffman-Gelman:2014].
 
 
-### Log probability and gradient calculation {-}
+### Log probability density and gradient calculation {- #log-probability-and-gradient-calculation}
 
-During each leapfrog step, the log probability function and its
+During each leapfrog step, the log probability density function and its
 gradient must be calculated.  This is where most of the time in the
-Stan algorithm is spent.  This log probability function, which is
+Stan algorithm is spent.  This log probability density function, which is
 used by the sampling algorithm, is defined over the unconstrained
 parameters.
 
@@ -194,19 +194,19 @@ in whose range satisfies the constraints.
 
 Because the probability statements in the model are defined in terms
 of constrained parameters, the log Jacobian of the inverse transform
-must be added to the accumulated log probability.
+must be added to the accumulated log probability density.
 
 Next, the transformed parameter statements are executed.  After they
 complete, any constraints declared for the transformed parameters are
 checked.  If the constraints are violated, the model will halt with a
 diagnostic error message.
 
-The final step in the log probability function calculation is to
+The final step in the log probability density function calculation is to
 execute the statements defined in the model block.
 
-As the log probability function executes, it accumulates an in-memory
+As the log probability density function executes, it accumulates an in-memory
 representation of the expression tree used to calculate the log
-probability.  This includes all of the transformed parameter
+probability density.  This includes all of the transformed parameter
 operations and all of the Jacobian adjustments.  This tree is then
 used to evaluate the gradients by propagating partial derivatives
 backward along the expression graph.  The gradient calculations
@@ -218,9 +218,9 @@ account for the majority of the cycles consumed by a Stan program.
 A standard Metropolis accept/reject step is required to retain detailed
 balance and ensure draws are marginally distributed according to the
 probability function defined by the model.  This Metropolis adjustment
-is based on comparing log probabilities, here defined by the
+is based on comparing log probability densities, here defined by the
 Hamiltonian, which is the sum of the potential (negative log
-probability) and kinetic (squared momentum) energies.  In theory, the
+probability density) and kinetic (squared momentum) energies.  In theory, the
 Hamiltonian is invariant over the path of the particle and rejection
 should never occur.  In practice, the probability of rejection is
 determined by the accuracy of the leapfrog approximation to the true
@@ -268,7 +268,7 @@ depend on a model's data being read and its parameters being
 initialized.  The user's guides for the interfaces (RStan, PyStan,
 CmdStan) provide more details on the diagnostics available; as of Stan
 2.0, that's just gradients on the unconstrained scale and log
-probabilities.
+probability densities.
 
 ## Output
 

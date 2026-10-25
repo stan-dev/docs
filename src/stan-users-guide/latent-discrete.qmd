@@ -521,7 +521,7 @@ to define the likelihood (i.e., marginalize out the latent discrete
 parameter) for the CJS model [@Schofield:2007].
 
 The Stan model defines $\chi$ as a transformed parameter based on
-parameters $\phi$ and $p$.  In the model block, the log probability is
+parameters $\phi$ and $p$.  In the model block, `target` is
 incremented for each history based on its count.  This second step is
 similar to collecting Bernoulli observations into a binomial or
 categorical observations into a multinomial, only it is coded directly
@@ -633,7 +633,7 @@ functions {
 ```
 
 These two functions are used to define the first and last capture time
-for each individual in the transformed data block.^[Both functions return 0 if the individual represented by the input array was never captured.  Individuals with no captures are not relevant for estimating the model because all probability statements are conditional on earlier captures.  Typically they would be removed from the data, but the program allows them to be included even though they make not contribution to the log probability function.]
+for each individual in the transformed data block.^[Both functions return 0 if the individual represented by the input array was never captured.  Individuals with no captures are not relevant for estimating the model because all probability statements are conditional on earlier captures.  Typically they would be removed from the data, but the program allows them to be included even though they make no contribution to the log density function.]
 
 ```stan
 transformed data {
@@ -735,8 +735,8 @@ The outer loop is over individuals, conditional skipping individuals
 on the convention of the first-capture and last-capture functions
 returning 0 for `first` if an individual is never captured.
 
-The inner loop for individual `i` first increments the log
-probability based on the survival of the individual with probability
+The inner loop for individual `i` first increments
+`target` based on the survival of the individual with probability
 `phi[t - 1]`.  The outcome of 1 is fixed because the individual
 must survive between the first and last capture (i.e., no zombies).
 The loop starts after the first capture, because all

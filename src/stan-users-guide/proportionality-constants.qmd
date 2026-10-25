@@ -99,14 +99,20 @@ $$
 -\frac{1}{2} \left( \frac{x - \mu}{\sigma} \right)^2.
 $$
 
-Now because the density here is only a function of $x$, the additive terms in
-the log density that are not a function of $x$ can be dropped. In this case it
-is enough to know only the quadratic term:
+Stan drops an additive term if the term does not depend on any
+parameter, transformed parameter, or other value computed from
+parameters.  Here $\mu$ and $\sigma$ are data, so Stan keeps only the
+quadratic term:
 
 $$
 \textsf{normal\_lupdf}(x | \mu, \sigma) =
 -\frac{1}{2} \left( \frac{x - \mu}{\sigma} \right)^2.
 $$
+
+If $\sigma$ is a parameter, Stan keeps the term $-\log \sigma$,
+because it depends on a parameter.  Stan always drops the term
+$-\log \sqrt{2 \pi}$.  The dropped terms thus depend only on which
+arguments are parameters.
 
 ## Keeping Proportionality Constants
 
@@ -116,6 +122,44 @@ a situation where it is unclear if the normalization is necessary, it should
 always be safe to include it. Only use the `~` or `target += normal_lupdf`
 syntaxes if it is absolutely clear that the proportionality constants are not
 necessary.
+
+The constants are necessary when the dropped terms differ between
+evaluations of the log density.  This happens in three cases.
+
+* A condition that depends on parameters selects between two
+  distributions, or between `~` and `_lpdf`.  The log density then
+  changes discontinuously by the difference of the dropped terms where
+  the condition changes.
+
+  ```stan
+  if (mu > 0) {
+    y ~ normal(mu, sigma);  // wrong: drops -log(sqrt(2 * pi))
+  } else {
+    y ~ cauchy(mu, sigma);  // wrong: drops -log(pi)
+  }
+  ```
+
+* Unnormalized densities of different distributions are combined
+  inside `log_mix` or `log_sum_exp`.  The different dropped terms
+  change the mixing proportions.
+
+  ```stan
+  // wrong
+  target += log_mix(lambda, normal_lupdf(y | mu, sigma),
+                    cauchy_lupdf(y | mu, sigma));
+  // correct
+  target += log_mix(lambda, normal_lpdf(y | mu, sigma),
+                    cauchy_lpdf(y | mu, sigma));
+  ```
+
+* The program uses the same distribution with data arguments in one
+  branch or component and with parameter arguments in another.  The dropped
+  terms are then different, as shown in the section on dropping
+  proportionality constants.
+
+In these cases, use the `_lpdf` and `_lpmf` functions.  If the
+condition depends only on data, the dropped terms are the same in
+every evaluation.  Then `~` is correct.
 
 ## User-defined Distributions
 

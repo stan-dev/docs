@@ -469,6 +469,37 @@ model {
 }
 ```
 
+Vectors, row vectors, matrices, and arrays can also have an offset and
+a multiplier, and Stan applies the transform to each element.  The
+offset and the multiplier can each be a scalar or a container (see
+[Expressions as bounds and offset/multiplier](#expressions-as-bounds-and-offsetmultiplier)).
+In the following program, each element of `beta` has its own offset
+and multiplier.
+
+```stan
+data {
+  int<lower=0> K;
+  vector[K] m;
+  vector<lower=0>[K] s;
+}
+parameters {
+  vector<offset=m, multiplier=s>[K] beta;
+}
+model {
+  beta ~ normal(m, s);
+}
+```
+
+A container offset or multiplier must have the same type as the
+variable.  For example, the offset of `array[2] vector<offset=m>[3] z`
+must be a scalar or of type `array[] vector`, and it cannot be a
+`vector`.  If the sizes do not match, Stan reports an error at run
+time.
+
+A matrix multiplier for a matrix variable also applies to each element.
+Stan has no multivariate affine transform, such as a multiplication
+by a Cholesky factor of a covariance matrix.
+
 ### Expressions as bounds and offset/multiplier {-}
 
 Bounds (and offset and multiplier)
@@ -492,9 +523,14 @@ parameters {
 
 This declares a real-valued parameter `phi` to take values
 greater than the value of the real-valued data variable `lb`.
-Constraints may be arbitrary expressions, but must be of type `int`
-for integer variables and of type `real` for real variables
-(including constraints on vectors, row vectors, and matrices).
+Constraints may be arbitrary expressions.  A scalar bound must be of
+type `int` for integer variables, and of type `int` or `real` for real
+variables.  A bound, offset, or multiplier of a container variable can
+be a scalar or a container of the same type and size as the variable.
+A scalar applies to all elements, and a container gives one value for
+each element.  For example, a `vector` parameter can have a `vector`
+lower bound, and an `array[] int` data variable can have an
+`array[] int` lower bound.
 Variables used in constraints can be any variable that has been
 defined at the point the constraint is used.  For instance,
 ```stan
@@ -1712,12 +1748,6 @@ dimensions `matrix[K, K]` types.
 +---------------------+-------------------------+----------------------------------------------+
 |                     |                         | `int<lower=L, upper=U>`                      |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `int<offset=O>`                              |
-+---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `int<multiplier=M>`                          |
-+---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `int<offset=O, multiplier=M>`                |
-+---------------------+-------------------------+----------------------------------------------+
 | `real`              | `real`                  | `real`                                       |
 +---------------------+-------------------------+----------------------------------------------+
 |                     |                         | `real<lower=L>`                              |
@@ -1736,17 +1766,17 @@ dimensions `matrix[K, K]` types.
 +---------------------+-------------------------+----------------------------------------------+
 | `vector`            | `vector[N]`             | `vector[N]`                                  |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `vector[N]<lower=L>`                         |
+|                     |                         | `vector<lower=L>[N]`                         |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `vector[N]<upper=U>`                         |
+|                     |                         | `vector<upper=U>[N]`                         |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `vector[N]<lower=L, upper=U>`                |
+|                     |                         | `vector<lower=L, upper=U>[N]`                |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `vector[N]<offset=O>`                        |
+|                     |                         | `vector<offset=O>[N]`                        |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `vector[N]<multiplier=M>`                    |
+|                     |                         | `vector<multiplier=M>[N]`                    |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `vector[N]<offset=O, multiplier=M>`          |
+|                     |                         | `vector<offset=O, multiplier=M>[N]`          |
 +---------------------+-------------------------+----------------------------------------------+
 |                     |                         | `ordered[N]`                                 |
 +---------------------+-------------------------+----------------------------------------------+
@@ -1760,31 +1790,31 @@ dimensions `matrix[K, K]` types.
 +---------------------+-------------------------+----------------------------------------------+
 | `row_vector`        | `row_vector[N]`         | `row_vector[N]`                              |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `row_vector[N]<lower=L>`                     |
+|                     |                         | `row_vector<lower=L>[N]`                     |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `row_vector[N]<upper=U>`                     |
+|                     |                         | `row_vector<upper=U>[N]`                     |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `row_vector[N]<lower=L, upper=U>`            |
+|                     |                         | `row_vector<lower=L, upper=U>[N]`            |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `row_vector[N]<offset=O>`                    |
+|                     |                         | `row_vector<offset=O>[N]`                    |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `row_vector[N]<multiplier=M>`                |
+|                     |                         | `row_vector<multiplier=M>[N]`                |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `row_vector[N]<offset=O, multiplier=M>`      |
+|                     |                         | `row_vector<offset=O, multiplier=M>[N]`      |
 +---------------------+-------------------------+----------------------------------------------+
 | `matrix`            | `matrix[M, N]`          | `matrix[M, N]`                               |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `matrix[M, N]<lower=L>`                      |
+|                     |                         | `matrix<lower=L>[M, N]`                      |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `matrix[M, N]<upper=U>`                      |
+|                     |                         | `matrix<upper=U>[M, N]`                      |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `matrix[M, N]<lower=L, upper=U>`            |
+|                     |                         | `matrix<lower=L, upper=U>[M, N]`             |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `matrix[M, N]<offset=O>`                     |
+|                     |                         | `matrix<offset=O>[M, N]`                     |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `matrix[M, N]<multiplier=M>`                 |
+|                     |                         | `matrix<multiplier=M>[M, N]`                 |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `matrix[M, N]<offset=O, multiplier=M>`       |
+|                     |                         | `matrix<offset=O, multiplier=M>[M, N]`       |
 +---------------------+-------------------------+----------------------------------------------+
 |                     |                         | `column_stochastic_matrix[M, N]`             |
 +---------------------+-------------------------+----------------------------------------------+
@@ -1808,17 +1838,17 @@ dimensions `matrix[K, K]` types.
 +---------------------+-------------------------+----------------------------------------------+
 | `array[] vector`    | `array[M] vector[N]`    | `array[M] vector[N]`                         |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `array[M] vector[N]<lower=L>`                |
+|                     |                         | `array[M] vector<lower=L>[N]`                |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `array[M] vector[N]<upper=U>`                |
+|                     |                         | `array[M] vector<upper=U>[N]`                |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `array[M] vector[N]<lower=L, upper=U>`       |
+|                     |                         | `array[M] vector<lower=L, upper=U>[N]`       |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `array[M] vector[N]<offset=O>`               |
+|                     |                         | `array[M] vector<offset=O>[N]`               |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `array[M] vector[N]<multiplier=M>`           |
+|                     |                         | `array[M] vector<multiplier=M>[N]`           |
 +---------------------+-------------------------+----------------------------------------------+
-|                     |                         | `array[M] vector[N]<offset=O, multiplier=M>` |
+|                     |                         | `array[M] vector<offset=O, multiplier=M>[N]` |
 +---------------------+-------------------------+----------------------------------------------+
 |                     |                         | `array[M] ordered[N]`                        |
 +---------------------+-------------------------+----------------------------------------------+

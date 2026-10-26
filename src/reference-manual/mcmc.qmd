@@ -350,6 +350,35 @@ will also allow some models that would otherwise get stuck to overcome
 their blockages.
 
 
+### Step-size initialization {-}
+
+If adaptation is engaged, the specified step size is only the start of
+the step size adaptation.  Before warmup, Stan sets a new step size
+with a heuristic.  The heuristic starts from the current step size,
+the current parameter values and the current metric.  It draws a
+random momentum, takes one leapfrog step, and calculates the
+Metropolis acceptance probability of that step.  If this probability
+is above 0.8, Stan doubles the step size until the probability is 0.8
+or less.  Otherwise, Stan halves the step size until the probability
+is 0.8 or more.  Each try uses a new random momentum.  If the step
+size becomes larger than $10^7$ or becomes 0, Stan reports an error
+and produces no draws.
+
+Dual averaging shrinks the logarithm of the step size toward
+$\mu = \log(10 \epsilon_0)$ [@Hoffman-Gelman:2014].  For the first
+adaptation interval, $\epsilon_0$ is the specified step size.
+
+With a diagonal or dense metric, Stan updates the metric at the end of
+each slow adaptation interval.  Then it runs the heuristic again.  It
+also restarts dual averaging with $\epsilon_0$ set to the step size
+from the heuristic.
+
+At the end of warmup, Stan sets the step size to the dual-averaging
+estimate.  This value is usually different from the specified value,
+also when the specified value comes from an earlier run.  To use a
+specified step size without change, disable adaptation.
+
+
 ### Step-size jitter {-}
 
 All implementations of HMC use numerical integrators requiring a step

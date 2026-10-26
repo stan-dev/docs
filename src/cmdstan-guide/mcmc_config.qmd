@@ -407,6 +407,10 @@ The following keyword-value arguments control the step size:
 
 - `stepsize` - How far to move each time the Hamiltonian system evolves forward.
 Must be a positive real number, default value is $1$.
+If adaptation is engaged, the sampler uses this value only as the start of the step size adaptation.
+Before warmup, the sampler sets a new step size with a heuristic
+(see [Step-size initialization](https://mc-stan.org/docs/reference-manual/mcmc.html#step-size-initialization)).
+If adaptation is disabled, the sampler uses this value without change.
 
 - `stepsize_jitter` - Allows step size to be "jittered" randomly during sampling
 to avoid any poor interactions with a fixed step size and regions of high curvature.
@@ -797,10 +801,12 @@ The resulting output CSV file will contain the following set of comment lines:
 # 0.296291
 ```
 
-As of Stan versione 2.34, the adapted metric can be saved in JSON format, via sub-argument `save_metric`, described above.
-This allows for no or minimal adaptation starting from this file.
-It is still necessary to specify the `stepsize` argument as well as the `metric_file` arguments;
-the former is the value of the `stepsize` element in the saved metric file, and the later is the metric file path.
+As of Stan version 2.34, the adapted metric can be saved in JSON format, via sub-argument `save_metric`, described above.
+To reuse the adapted step size and metric without change, disable adaptation and specify two arguments:
+`stepsize` with the value of the `stepsize` element in the saved metric file,
+and `metric_file` with the path of the saved metric file.
+If adaptation is engaged, the sampler uses the saved metric as the initial metric.
+It uses the specified step size only as a start value (see the `stepsize` argument above).
 
 ### Changing the NUTS-HMC adaptation parameters
 

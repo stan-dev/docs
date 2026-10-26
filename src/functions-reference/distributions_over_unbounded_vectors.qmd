@@ -24,6 +24,9 @@ for $y \in \mathbb{R}^K$,
 \end{equation*}
 where $|\Sigma|$ is the absolute determinant of $\Sigma$.
 
+The [Cholesky parameterization](#multi-normal-cholesky-fun) is more
+efficient and more numerically stable.
+
 ### Distribution statement
 
 `y ~ ` **`multi_normal`**`(mu, Sigma)`
@@ -246,10 +249,46 @@ If $K \in \mathbb{N}$, $\mu \in \mathbb{R}^K$, and $L \in
 is positive definite, then for $y \in \mathbb{R}^K$, \begin{equation*}
 \text{MultiNormalCholesky}(y|\mu,L) =
 \text{MultiNormal}(y|\mu,LL^{\top}). \end{equation*} If $L$ is lower triangular and
-$LL^{top}$ is a $K \times K$ positive definite matrix, then $L_{k,k}$
+$LL^{\top}$ is a $K \times K$ positive definite matrix, then $L_{k,k}$
 must be strictly positive for $k \in 1{:}K$.  If an $L$ is provided
 that is not the Cholesky factor of a positive-definite matrix, the
 probability functions will raise errors.
+
+Because $L$ is triangular, $\det(L L^{\top}) = \prod_{k=1}^K
+L_{k,k}^2$.  The log determinant in the density is thus
+$2 \sum_{k=1}^K \log L_{k,k}$.
+
+On each call, `multi_normal_lpdf` checks that the covariance matrix is
+symmetric and computes its LDLT factorization at a cost of order
+$\mathcal{O}(K^3)$.  `multi_normal_cholesky_lpdf` needs no
+factorization.  It gets the log determinant from the diagonal of $L$
+as shown above.  The quadratic form needs only triangular solves.  If
+$L$ is data, the cost grows as $\mathcal{O}(K^2)$ for a vector $y$ of
+size $K$.  If $L$ is a parameter, the gradient calculation also
+inverts $L$ once per call at a cost of order $\mathcal{O}(K^3)$.
+
+The parameter types `cov_matrix` and `corr_matrix` are built as
+$L L^{\top}$ from a Cholesky factor $L$.  If a model passes such a
+parameter to `multi_normal`, Stan computes $L L^{\top}$ and then
+factors it again.  These declarations avoid the second factorization:
+
+* a `cholesky_factor_cov` parameter `L`, with
+  `multi_normal_cholesky(mu, L)`;
+* a `cholesky_factor_corr` parameter `L_Omega` and a vector of scales
+  `sigma`, with `multi_normal_cholesky(mu, diag_pre_multiply(sigma, L_Omega))`.
+  The matrix `diag_pre_multiply(sigma, L_Omega)` is the Cholesky
+  factor of the covariance matrix
+  `diag_matrix(sigma) * L_Omega * L_Omega' * diag_matrix(sigma)`.
+
+If $L$ has a small diagonal element, rounding in $L L^{\top}$ makes
+`multi_normal_lpdf` inaccurate.  An example is $y = (0.5, 0.5)$,
+$\mu = 0$ and a $2 \times 2$ correlation Cholesky factor with
+$L_{2,2} = 10^{-8}$.  Here `multi_normal_lpdf` returns a log density
+that is 0.05 too low, whereas `multi_normal_cholesky_lpdf` returns the
+correct value.  With $L_{2,2} = 10^{-9}$, $L L^{\top}$ rounds to a
+singular matrix.  Then `multi_normal_lpdf` raises an error.  The Stan User's Guide section
+[Optimization through Cholesky factorization](https://mc-stan.org/docs/stan-users-guide/regression.html#optimization-through-cholesky-factorization)
+shows an example model.
 
 ### Distribution statement
 
@@ -471,6 +510,10 @@ K)/2\right)}      {\Gamma(\nu/2)} \ \frac{1}{\sqrt{\left| \Sigma
 \right|}} \ \left( 1 + \frac{1}{\nu} \, \left(y - \mu\right)^{\top} \,
 \Sigma^{-1} \, \left(y - \mu\right) \right)^{-(\nu + K)/2} \! .
 \end{array} \end{equation*}
+
+The [Cholesky parameterization](#multi-student-t-cholesky-fun) is
+more efficient and more numerically stable, for the same reasons as
+for the [multivariate normal distribution](#multi-normal-cholesky-fun).
 
 ### Distribution statement
 

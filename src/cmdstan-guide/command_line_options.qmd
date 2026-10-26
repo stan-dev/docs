@@ -31,6 +31,9 @@ to obtain new quantities of interest.
 
 - `random` - specifies the seed for the pseudo-random number.
 
+- `num_threads` - specifies the maximum number of threads that the
+program can use.  See the [section on `num_threads`](#num-threads.section).
+
 The remainder of this chapter covers the general configuration options used for all processing.
 The following chapters cover the per-inference configuration options.
 
@@ -139,6 +142,35 @@ The syntax for the random seed argument is:
 random seed=<int>
 ```
 The keyword `random` must be followed directly by the keyword-value pair `seed=<int>`.
+
+## Number of threads argument: `num_threads` {#num-threads.section}
+
+The `num_threads` argument sets the maximum number of threads that the
+program can use.  It is a top-level argument, like `data` and `init`.
+All methods accept it.
+
+```
+num_threads=<int>
+```
+
+If the model was compiled without `STAN_THREADS=true`, the only valid
+value is 1.  If the model was compiled with `STAN_THREADS=true`, the
+value must be a positive integer, or -1 to use all available cores.
+The default value is 1, or the value of the `STAN_NUM_THREADS`
+environment variable if it is set.  If `STAN_NUM_THREADS` is set to a
+value other than 1 and `num_threads` is also given, the two values
+must be equal.
+
+The program uses the threads for:
+
+- the `reduce_sum` and `map_rect` functions in the model, in all
+methods;
+- several chains in parallel, in the `sample` and
+`generate_quantities` methods with `num_chains` greater than 1;
+- several paths in parallel, in the `pathfinder` method with
+`num_paths` greater than 1.
+
+The [chapter on parallelization](parallelization.qmd) gives examples.
 
 ## Chain identifier argument:  `id`
 

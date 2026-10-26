@@ -336,6 +336,27 @@ Stan code, it is useful to provide a comment indicating what the
 distribution for the parameter implies for the distribution of the
 transformed parameter.
 
+With Stan's
+[affine transform](https://mc-stan.org/docs/reference-manual/types.html#affine-transform.section),
+the program needs no `_raw` variables.
+A scalar multiplier applies to each element of `x`.
+
+```stan
+parameters {
+  real<multiplier=3> y;
+  vector<multiplier=exp(y/2)>[9] x;
+}
+model {
+  y ~ normal(0, 3);
+  x ~ normal(0, exp(y/2));
+}
+```
+
+The model block is the same as in the direct implementation of the
+funnel.  Stan samples the unconstrained values `y / 3` and
+`x / exp(y/2)`.  These are independent standard normals, like `y_raw`
+and `x_raw` in the second model.
+
 ### Reparameterizing the Cauchy {-}
 
 Sampling from heavy tailed distributions such as the Cauchy is
@@ -601,7 +622,7 @@ Any priors defined for `mu_beta` and `sigma_beta` remain as
 defined in the original model.
 
 Alternatively, Stan's
-[affine transform](https://mc-stan.org/docs/reference-manual/types.html#affinely-transformed-real)
+[affine transform](https://mc-stan.org/docs/reference-manual/types.html#affine-transform.section)
 can be used to decouple `sigma` and `beta`:
 
 ```stan

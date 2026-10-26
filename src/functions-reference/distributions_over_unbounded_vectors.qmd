@@ -254,14 +254,18 @@ must be strictly positive for $k \in 1{:}K$.  If an $L$ is provided
 that is not the Cholesky factor of a positive-definite matrix, the
 probability functions will raise errors.
 
+Because $L$ is triangular, $\det(L L^{\top}) = \prod_{k=1}^K
+L_{k,k}^2$.  The log determinant in the density is thus
+$2 \sum_{k=1}^K \log L_{k,k}$.
+
 On each call, `multi_normal_lpdf` checks that the covariance matrix is
-symmetric and computes its LDLT factorization, whose cost grows with
-$K^3$.  `multi_normal_cholesky_lpdf` needs no factorization.  The log
-determinant is $2 \sum_{k=1}^K \log L_{k,k}$, and the quadratic form
-needs only triangular solves.  If $L$ is data, the cost grows with
-$K^2$ for each vector $y$.  If $L$ is a parameter, the gradient
-calculation inverts $L$ once per call, and the cost of this inversion
-grows with $K^3$.
+symmetric and computes its LDLT factorization at a cost of order
+$\mathcal{O}(K^3)$.  `multi_normal_cholesky_lpdf` needs no
+factorization.  It gets the log determinant from the diagonal of $L$
+as shown above.  The quadratic form needs only triangular solves.  If
+$L$ is data, the cost grows as $\mathcal{O}(K^2)$ for a vector $y$ of
+size $K$.  If $L$ is a parameter, the gradient calculation also
+inverts $L$ once per call at a cost of order $\mathcal{O}(K^3)$.
 
 The parameter types `cov_matrix` and `corr_matrix` are built as
 $L L^{\top}$ from a Cholesky factor $L$.  If a model passes such a
@@ -280,10 +284,9 @@ If $L$ has a small diagonal element, rounding in $L L^{\top}$ makes
 `multi_normal_lpdf` inaccurate.  An example is $y = (0.5, 0.5)$,
 $\mu = 0$ and a $2 \times 2$ correlation Cholesky factor with
 $L_{2,2} = 10^{-8}$.  Here `multi_normal_lpdf` returns a log density
-that is 0.05 too low, and `multi_normal_cholesky_lpdf` returns the
-correct value.  With
-$L_{2,2} = 10^{-9}$, $L L^{\top}$ rounds to a singular matrix, and
-`multi_normal_lpdf` raises an error.  The Stan User's Guide section
+that is 0.05 too low, whereas `multi_normal_cholesky_lpdf` returns the
+correct value.  With $L_{2,2} = 10^{-9}$, $L L^{\top}$ rounds to a
+singular matrix.  Then `multi_normal_lpdf` raises an error.  The Stan User's Guide section
 [Optimization through Cholesky factorization](https://mc-stan.org/docs/stan-users-guide/regression.html#optimization-through-cholesky-factorization)
 shows an example model.
 

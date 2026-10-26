@@ -527,31 +527,34 @@ can be defined in functions block by using function names ending with `_lpdf`.
 
 ### Log probability density increment vs. distribution statement {- #log-probability-increment-vs.-distribution-statement}
 
-Although both lead to the same inference algorithm behavior in Stan,
-there is one
-critical difference between using the distribution statement, as in
+The distribution statement
 
 ```stan
 y ~ normal(mu, sigma);
 ```
 
-and explicitly incrementing `target`, as in
+is the same as
+
+```stan
+target += normal_lupdf(y | mu, sigma);
+```
+
+Both drop the terms of the log probability density function that do
+not depend on parameters.  The explicit call to `normal_lpdf`, as in
 
 ```stan
 target += normal_lpdf(y | mu, sigma);
 ```
 
-The distribution statement drops all the terms in the log probability density
-function that are constant, whereas the explicit call to
-`normal_lpdf` adds all of the terms in the definition of the log
-normal probability function, including all of the constant normalizing
-terms.  Therefore, the explicit increment form can be used to recreate
-the exact log probability density values for the model.  Otherwise, the
-distribution statement form will be faster if any of the input expressions,
-`y`, `mu`, or `sigma`, involve only constants, data
-variables, and transformed data variables. See the section
+adds all of the terms, including the constant normalizing terms.
+Therefore, the `_lpdf` form gives the exact log density values for the
+model.  The distribution statement
+form is faster if any of the input expressions, `y`, `mu`, or `sigma`,
+involve only constants, data variables, and transformed data
+variables.^[The distribution statement and the `_lpdf` call give the same results if the dropped terms are the same in every evaluation of the log density.  The results differ if the choice between `~` and `_lpdf`, or between two distributions, depends on parameters.  They also differ if `log_mix` or `log_sum_exp` combines unnormalized densities of different distributions.  See the User's Guide chapter on [proportionality constants](https://mc-stan.org/docs/stan-users-guide/proportionality-constants.html).]
+See the section
 [Built in distributions](#built-in-distributions) above discussing
-`_lupdf` and `_lupmf` functions that also drops all the constant terms.
+`_lupdf` and `_lupmf` functions.
 
 
 ### User-transformed variables {-}

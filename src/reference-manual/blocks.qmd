@@ -45,7 +45,7 @@ data.  The parameters block declares the model's parameters --- the
 unconstrained version of the parameters is what's sampled or
 optimized.  The transformed parameters block allows variables to be
 defined in terms of data and parameters that may be used later and
-will be saved.  The model block is where the log probability function
+will be saved.  The model block is where the log probability density function
 is defined.  The generated quantities block allows derived quantities
 based on parameters, data, and optionally (pseudo) random number
 generation.
@@ -89,8 +89,8 @@ literals).
 Random-number-generating functions are restricted to transformed data
 and generated quantities blocks, and within user-defined functions
 ending in `_rng`; such functions are suffixed with `_rng`.
-Log-probability modifying functions to blocks where the log
-probability accumulator is in scope (transformed parameters and
+Log probability  density modifying functions are restricted to blocks where
+`target` is in scope (transformed parameters and
 model); such functions are suffixed with `_lp`.
 
 Density functions defined in the program may be used in distribution
@@ -111,7 +111,7 @@ current parameter values (either standard HMC or NUTS).  The initial
 values may be provided through an external input source, which is also
 typically a file or a designated R data structure.  In each case, the
 parameters are instantiated to the values for which the model defines
-a log probability function.
+a log probability density function.
 
 
 ### Transformed variables {-}
@@ -131,7 +131,7 @@ Transformed parameters work the same way, being defined in terms of
 the parameters, transformed data, and data variables.  The difference
 is the frequency of evaluation.  Parameters are read in and (inverse)
 transformed to constrained representations on their natural scales
-once per log probability and gradient evaluation.  This means the
+once per log probability density and gradient evaluation.  This means the
 inverse transforms and their log absolute Jacobian determinants are
 evaluated once per leapfrog step.  Transformed parameters are then
 declared and their defining statements executed once per leapfrog
@@ -178,7 +178,7 @@ applied once per chain.*
 *This table indicates where variables that are not basic
 data or parameters should be declared, based on whether it is
 defined in terms of parameters, whether it is used in the log
-probability function defined in the model block, and whether it is
+probability density function defined in the model block, and whether it is
 printed.  The two lines marked with asterisks ($*$) should not be
 used as there is no need to print a variable every iteration that
 does not depend on the value of any parameters.*
@@ -392,8 +392,8 @@ in the `transformed data` block.
 #### Restriction on operations in `transformed data` {-}
 
 The statements in the transformed data block are designed to be
-executed once and have a deterministic result.  Therefore, log
-probability is not accumulated and 
+executed once and have a deterministic result.  Therefore, the log
+probability density is not accumulated and 
 [distribution statements](statements.qmd#distribution-statements.section)
 may not be used.
 
@@ -438,23 +438,23 @@ unconstrained.
 In practice, the samplers keep an unconstrained parameter vector in
 memory representing the current state of the sampler.  The model
 defined by the compiled Stan program defines an (unnormalized) log
-probability function over the unconstrained parameters.  In order to
-do this, the log probability function must apply the inverse transform
+probability density function over the unconstrained parameters.  In order to
+do this, the log probability density function must apply the inverse transform
 to the unconstrained parameters to calculate the constrained
 parameters defined in Stan's `parameters` program block.  The
 log Jacobian of the inverse transform is then added to the accumulated
-log probability function.  This then allows the Stan model to be
+log probability density.  This then allows the Stan model to be
 defined in terms of the constrained parameters.
 
 In some cases, the number of parameters is reduced in the
 unconstrained space.  For instance, a $K$-simplex only requires $K-1$
 unconstrained parameters, and a $K$-correlation matrix only requires
 $\binom{K}{2}$ unconstrained parameters.  This means that the
-probability function defined by the compiled Stan program may have
+log probability density function defined by the compiled Stan program may have
 fewer parameters than it would appear from looking at the declarations
 in the `parameters` program block.
 
-The probability function on the unconstrained parameters is defined in
+The log probability density function on the unconstrained parameters is defined in
 such a way that the order of the parameters in the vector corresponds
 to the order of the variables defined in the `parameters` program
 block.  The details of the specific transformations are provided in
@@ -464,7 +464,7 @@ the [variable transforms chapter](transforms.qmd).
 ### Gradient calculation {-}
 
 Hamiltonian Monte Carlo requires the gradient of the (unnormalized)
-log probability function with respect to the unconstrained parameters
+log probability density function with respect to the unconstrained parameters
 to be evaluated during every leapfrog step.  There may be one leapfrog
 step per sample or hundreds, with more being required for models with
 complex posterior distribution geometries.
@@ -472,7 +472,7 @@ complex posterior distribution geometries.
 Gradients are calculated behind the scenes using Stan's algorithmic
 differentiation library.  The time to compute the gradient does not
 depend directly on the number of parameters, only on the number of
-subexpressions in the calculation of the log probability.  This
+subexpressions in the calculation of the log probability density.  This
 includes the expressions added from the transforms' Jacobians.
 
 The amount of work done by the sampler does depend on the number of

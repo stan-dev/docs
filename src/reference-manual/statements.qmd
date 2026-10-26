@@ -1567,8 +1567,10 @@ if (x < 0) {
 Reject statements have the same behavior as exceptions thrown by
 built-in Stan functions.  For example, the `normal_lpdf` function
 raises an exception if the input scale is not positive and finite.
-The effect of a reject statement depends on the program block in which
-the rejection occurs.
+The effect of a reject statement depends on the program block and on
+the step of the execution in which the rejection occurs.  The section
+on [rejections and errors](execution.qmd#rejections-and-errors.section)
+describes the effect in each step.
 
 In all cases of rejection, the interface accessing the Stan
 program should print the arguments to the reject statement.
@@ -1601,11 +1603,15 @@ Fatal errors in other blocks may also be signaled by use of the
 
 Rejections in the transformed parameters and model blocks are
 not in and of themselves instantly fatal.  The result has the same
-effect as assigning a $-\infty$ log probability, which causes
+effect as assigning a $-\infty$ log density, which causes
 rejection of the current proposal in MCMC samplers and adjustment of
-search parameters in optimization.
+search parameters in optimization.  Rejections in the generated
+quantities block also do not stop the algorithm.  The section on
+[rejections and errors](execution.qmd#rejections-and-errors.section)
+describes the effect in initialization, sampling, optimization, and
+generated quantities.
 
-If the log probability function results in a rejection every time it is
+If the log density function results in a rejection every time it is
 called, the containing application (MCMC sampler or optimization)
 should diagnose this problem and terminate with an appropriate error
 message.  To aid in diagnosing problems, the message for each

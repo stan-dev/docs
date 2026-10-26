@@ -396,7 +396,9 @@ array[T] vector[2] y_sim = ode_bdf_tol(sho, y0, t0, ts,
 
 `relative_tolerance` and `absolute_tolerance` control accuracy the solver tries to achieve, and
 `max_num_steps` specifies the maximum number of steps the solver will
-take between output time points before throwing an error.
+take between output time points.  If the solver reaches this limit, it
+causes a rejection; see the section on the [maximum number of
+steps](#ode-max-num-steps) below.
 
 The control parameters must be data variables -- they cannot be
 parameters or expressions that depend on parameters, including local
@@ -468,7 +470,7 @@ is used to control nonlinear solver convergence in `bdf` and `adams` solvers,  a
 tolerances are used to control forward sensitivity calculation. See
 @SerbanHindmarsh:2005 for details.
 
-### Maximum number of steps {-}
+### Maximum number of steps {- #ode-max-num-steps}
 
 The maximum number of steps can be used to stop a runaway simulation.
 This can arise in when MCMC moves to a part of parameter space very far from
@@ -476,6 +478,16 @@ where a differential equation would typically be solved. In particular this
 can happen during warmup.  With the non-stiff solver, this may happen when
 the sampler moves to stiff regions of parameter space, which will requires small
 step sizes.
+
+If the solver reaches the maximum number of steps, it causes a
+rejection, in the same way as a `reject` statement.  The effect of the
+rejection depends on the step of the execution; see the Reference
+Manual section on [rejections and
+errors](https://mc-stan.org/docs/reference-manual/execution.html#rejections-and-errors.section).
+In sampling with the NUTS sampler, each such rejection gives a
+divergent transition.  If many transitions are divergent because of
+this rejection, increase `max_num_steps`, use a stiff solver, or check
+whether the prior allows parameter values for which the ODE is stiff.
 
 ## Adjoint ODE solver {#adjoint-ode.section}
 

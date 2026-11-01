@@ -638,6 +638,26 @@ model {
 }
 ```
 
+The two non-centered programs define the same density, but the program
+with `offset` and `multiplier` loses precision when `sigma_beta` is close
+to zero.  Stan samples the
+unconstrained value `u` of `beta` and computes
+`beta = mu_beta + sigma_beta * u`, and `normal_lpdf` then computes
+`(beta - mu_beta) / sigma_beta` again.  Once the absolute value of
+`sigma_beta * u` is below about $10^{-16}$ times the absolute value of
+`mu_beta`, `beta` rounds to `mu_beta` and the gradient with respect to
+`u` is wrong.  The gradient with respect to `mu_beta` also loses
+precision at small `sigma_beta`.
+
+With the default random initial values, chains of non-centered
+hierarchical models can reach values of `sigma_beta` below $10^{-9}$
+early in warmup with either program.  With the `beta_raw` program they
+recover.  With the `offset` and `multiplier` program, some chains stay
+at such small values for the rest of the run.  If the scale can
+approach zero and the offset is a parameter, use the `beta_raw`
+program.  A multiplier without an offset, as in the funnel example
+above, does not have this problem.
+
 Reparameterization of hierarchical models is not limited to the normal
 distribution, although the normal distribution is the best candidate
 for doing so. In general, any distribution of parameters in the

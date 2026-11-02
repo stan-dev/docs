@@ -72,54 +72,18 @@ After being read, initial values are transformed to unconstrained
 values that will be used to initialize the sampler.
 
 
-#### Partial initial values {-}
+#### Partial initial values {- #partial-initial-values}
 
-The user can supply initial values on the constrained scale for only
-subset of the parameters.  Stan initializes the other parameters
-randomly on the unconstrained scale, as described in the section
-"Random initial values" below.
+The user can supply initial values for only a subset of the parameters.
+Stan initializes the other parameters randomly on the unconstrained
+scale, as described in the section "Random initial values" below.
 
-The two groups can depend on each other, because the offset, multiplier
-or bounds of a parameter can use other parameters.  For example, consider
-the following parameter block:
-
-```stan
-parameters {
-  real mu;
-  real<lower=0> sigma;
-  real<offset=mu, multiplier=sigma> x;
-}
-```
-
-If the user supplies only `x = 3`, the unconstrained value of `x` is
-$(3 - \mu) / \sigma$, where $\mu$ and $\sigma$ are the random initial
-values of `mu` and `sigma`.  Stan first draws the unconstrained values of
-`mu` and `sigma`, and then computes the unconstrained value of `x` from
-them.  If the user supplies only `mu` and `sigma`, Stan draws the
-unconstrained value $u$ of `x` and keeps it, so `x` starts at
-$\mu + \sigma u$ with the supplied $\mu$ and $\sigma$.
-
-One case still fails: a bound that depends on a supplied parameter can
-make every random initial value invalid.  For example, take
-
-```stan
-parameters {
-  real a;
-  real<lower=a> y;
-}
-```
-
-If the user supplies only `a = 10`, Stan still draws a random
-unconstrained value for every parameter, `a` included, and computes the
-initial value of `y` from these draws: $y = a_r + \exp(u)$, where $a_r$
-and $u$ are the random unconstrained values of `a` and `y`.  Only after
-that does Stan replace $a_r$ with the supplied value 10 and check the
-bound of `y`.  With draws in $(-2, 2)$, $y$ is at most
-$2 + e^2 \approx 9.4$, which is below the bound 10, so Stan rejects the
-initial values.  Stan draws again up to 100 times (only once if the
-initialization radius is 0), every attempt fails, and initialization
-stops with an error.  To avoid this, supply initial values for both `a`
-and `y`, or for neither.
+If parameters depend on each other through an offset, a multiplier or
+bounds, we recommend supplying initial values for all of them or for
+none of them.  For example, with `real a; real<lower=a> y;` and only
+`a = 10` supplied, Stan computes the random initial value of `y` from a
+random value of `a`.  This value of `y` is below 10, and initialization
+fails.
 
 
 #### Boundary values are problematic {-}
